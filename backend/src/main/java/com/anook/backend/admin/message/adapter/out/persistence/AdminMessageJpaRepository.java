@@ -14,13 +14,13 @@ import java.util.List;
 public interface AdminMessageJpaRepository extends JpaRepository<AdminMessageJpaEntity, Long> {
 
     /**
-     * 메시지가 존재하는 고유 roomId 목록
+     * 메시지가 존재하는 고유 roomNo 목록
      */
-    @Query("SELECT DISTINCT m.roomId FROM AdminMessage m ORDER BY m.roomId")
-    List<Long> findDistinctRoomIds();
+    @Query("SELECT DISTINCT m.roomNo FROM AdminMessage m ORDER BY m.roomNo")
+    List<String> findDistinctRoomNos();
 
     /**
-     * 특정 roomId의 메시지를 시간순으로 조회
+     * 특정 roomNo의 메시지를 시간순으로 조회
      */
-    List<AdminMessageJpaEntity> findByRoomIdOrderByCreatedAtAsc(Long roomId);
+    List<AdminMessageJpaEntity> findByRoomNoOrderByCreatedAtAsc(String roomNo);
 }
