@@ -22,7 +22,7 @@ const getWsUrl = () => {
 export default function WebSocketTestPage() {
   const [isManualConnected, setIsManualConnected] = useState(false);
   const [messages, setMessages] = useState<WsMessage[]>([]);
-  const [dbRequests, setDbRequests] = useState<any[]>([]);
+
   const [channels, setChannels] = useState({
     room: true,
     dept: true,
@@ -118,77 +118,6 @@ export default function WebSocketTestPage() {
     }
   };
 
-  // 채팅 메시지 전송 (실제 AI 플로우 트리거)
-  const sendChatMessage = async (message: string) => {
-    try {
-      const res = await fetch('/api/chat/707/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: message, guestLanguage: 'ko' }),
-      });
-      const data = await res.json();
-      alert(`✅ 메시지 전송 완료 (id: ${data.messageId})\nAI 응답이 WebSocket으로 도착합니다.`);
-    } catch (err) {
-      alert(`❌ 메시지 전송 실패: ${err}`);
-    }
-  };
-
-  // 707호 DB 요청 목록 조회 (RQ-3)
-  const fetchRequests = async () => {
-    try {
-      const res = await fetch('/api/chat/707/requests');
-      const data = await res.json();
-      setDbRequests(data);
-    } catch (err) {
-      alert(`조회 실패: ${err}`);
-    }
-  };
-
-  // 직원용 요청 상태 변경 (RQ-4)
-  const changeStatus = async (id: number, action: 'accept' | 'complete') => {
-    try {
-      const res = await fetch(`/api/staff/requests/${id}/${action}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ staffId: 1 }), // 임의의 직원 ID
-      });
-      
-      const data = await res.text();
-      
-      if (!res.ok) {
-        throw new Error(data);
-      }
-      
-      alert(`✅ 상태 변경 성공: ${data}`);
-      fetchRequests(); // 상태 변경 후 목록 새로고침
-    } catch (err) {
-      alert(`❌ 상태 변경 실패: ${err}`);
-    }
-  };
-
-  const chatSimulationButtons = [
-    {
-      label: '💬 "수건 2장 주세요"',
-      desc: 'AI → HK 도메인 감지 → Request 자동 생성',
-      message: '수건 2장 주세요'
-    },
-    {
-      label: '💬 "에어컨이 안 돼요"',
-      desc: 'AI → FACILITY 도메인 감지 → 긴급 요청',
-      message: '에어컨이 안 돼요'
-    },
-    {
-      label: '💬 "룸서비스 음식 주문"',
-      desc: 'AI → FB 도메인 감지 → 일반 요청',
-      message: '룸서비스 음식 주문할게요'
-    },
-    {
-      label: '💬 "안녕하세요"',
-      desc: 'AI → 단순 대화 (Request 생성 안 됨)',
-      message: '안녕하세요'
-    }
-  ];
-
   const simulationButtons = [
     {
       label: '하우스키핑 요청 (수건)',
@@ -278,33 +207,6 @@ export default function WebSocketTestPage() {
         </div>
       </div>
 
-      {/* E2E 채팅 시뮬레이션 (실제 AI 플로우) */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '16px', color: '#34d399', marginBottom: '12px' }}>🧪 E2E 채팅 시뮬레이션 (채팅 → AI → Request → WebSocket)</h2>
-        <p style={{ fontSize: '12px', color: '#888', marginBottom: '12px' }}>
-          실제 채팅 API를 호출하여 AI 분석 → RequestDetectedEvent → Request 생성 → WebSocket Push 전체 흐름을 테스트합니다.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {chatSimulationButtons.map((btn, i) => (
-            <div key={i} style={{
-              background: '#0f1f1a', border: '1px solid #1a3a2a', borderRadius: '8px',
-              padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: '1 1 220px'
-            }}>
-              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{btn.label}</div>
-              <div style={{ fontSize: '12px', color: '#888' }}>{btn.desc}</div>
-              <button
-                onClick={() => sendChatMessage(btn.message)}
-                style={{
-                  padding: '8px', borderRadius: '4px', background: '#10b981', marginTop: 'auto',
-                  border: 'none', color: '#fff', cursor: 'pointer', fontSize: '13px'
-                }}
-              >
-                📤 메시지 전송
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* API 시뮬레이션 (이벤트 직접 발행) */}
       <div style={{ marginBottom: '24px' }}>
@@ -331,79 +233,6 @@ export default function WebSocketTestPage() {
         </div>
       </div>
 
-      {/* DB 조회 및 상태 변경 (RQ-3, RQ-4 테스트) */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '16px', color: '#f472b6', margin: 0 }}>🗄️ 707호 DB 요청 관리 (RQ-3, RQ-4 테스트)</h2>
-          <button
-            onClick={fetchRequests}
-            style={{
-              padding: '8px 16px', borderRadius: '6px', background: '#ec4899',
-              border: 'none', color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600
-            }}
-          >
-            🔄 707호 요청 목록 가져오기
-          </button>
-        </div>
-        
-        {dbRequests.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {dbRequests.map((req) => (
-              <div key={req.id} style={{
-                background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '8px',
-                padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }}>
-                <div>
-                  <span style={{ fontWeight: 'bold', marginRight: '12px' }}>ID: {req.id}</span>
-                  <span style={{ 
-                    padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginRight: '12px',
-                    background: req.status === 'PENDING' ? '#fbbf24' : req.status === 'IN_PROGRESS' ? '#3b82f6' : '#10b981',
-                    color: '#fff'
-                  }}>
-                    {req.status}
-                  </span>
-                  <span style={{ color: '#a78bfa', marginRight: '12px' }}>[{req.domainCode}]</span>
-                  <span style={{ color: '#e0e0e0' }}>{req.summary}</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => changeStatus(req.id, 'accept')}
-                    disabled={req.status !== 'PENDING'}
-                    style={{
-                      padding: '6px 12px', borderRadius: '4px', background: req.status !== 'PENDING' ? '#4b5563' : '#3b82f6',
-                      border: 'none', color: '#fff', cursor: req.status !== 'PENDING' ? 'not-allowed' : 'pointer', fontSize: '12px'
-                    }}
-                  >
-                    직원 배정/수락 (Accept)
-                  </button>
-                  <button
-                    onClick={() => changeStatus(req.id, 'complete')}
-                    disabled={req.status === 'COMPLETED' || req.status === 'PENDING'}
-                    style={{
-                      padding: '6px 12px', borderRadius: '4px', 
-                      background: (req.status === 'COMPLETED' || req.status === 'PENDING') ? '#4b5563' : '#10b981',
-                      border: 'none', color: '#fff', 
-                      cursor: (req.status === 'COMPLETED' || req.status === 'PENDING') ? 'not-allowed' : 'pointer', 
-                      fontSize: '12px'
-                    }}
-                    title={req.status === 'PENDING' ? "직원 배정(수락) 후 완료 가능합니다." : ""}
-                  >
-                    완료 처리 (Complete)
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{
-            background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: '8px',
-            padding: '20px', textAlign: 'center', color: '#666', fontSize: '14px',
-          }}>
-            [가져오기] 버튼을 눌러 DB에 저장된 707호의 요청을 확인하세요.<br/>
-            요청이 없다면 위의 [가짜 요청 생성]을 먼저 해주세요.
-          </div>
-        )}
-      </div>
 
       {/* 수신 메시지 로그 */}
       <div>
