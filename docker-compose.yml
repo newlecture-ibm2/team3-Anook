@@ -23,6 +23,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db-data:/var/lib/postgresql/data # 데이터 영구 저장
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - Anook-network
 
@@ -42,7 +48,9 @@ services:
     ports:
       - "127.0.0.1:8080:8080"  # 호스트 Nginx만 접근 가능 (외부 차단)
     depends_on:
-      - db
+      db:
+        condition: service_healthy   # DB가 실제로 준비된 후에만 시작
+    restart: on-failure              # 실패 시 자동 재시작
     networks:
       - Anook-network
 

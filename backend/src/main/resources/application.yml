@@ -10,6 +10,7 @@ spring:
       mode: always                # schema.sql, data.sql 항상 실행
 
   jpa:
+    defer-datasource-initialization: true   # SQL 스크립트를 Hibernate 초기화 이후 실행
     hibernate:
       ddl-auto: none              # SQL 스크립트로 스키마 관리 (Hibernate 자동 DDL 비활성화)
     show-sql: true

@@ -2,18 +2,20 @@
 -- 아늑(Aneuk) 초기 데이터
 -- ============================================================
 
--- 부서 (isAdmin 값 설정)
+-- 부서 (UPSERT: 부서명/관리자 여부 변경 시 자동 반영)
 INSERT INTO department (id, name, is_admin) VALUES
     ('HK',        '하우스키핑',   FALSE),
     ('FB',        '식음료',       FALSE),
     ('FACILITY',  '시설관리',     FALSE),
     ('CONCIERGE', '컨시어지',     FALSE),
     ('FRONT',     '프론트데스크', TRUE)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    is_admin = EXCLUDED.is_admin;
 
 -- (room_type은 더 이상 사용하지 않음)
 
--- 직원 역할 (부서별 직급 추가)
+-- 직원 역할 (UPSERT: 역할명/부서 변경 시 자동 반영)
 INSERT INTO staff_role (id, department_id, name) VALUES
     (1, 'FRONT', '직원'),
     (2, 'FRONT', '관리자'),
@@ -25,7 +27,9 @@ INSERT INTO staff_role (id, department_id, name) VALUES
     (8, 'HK', '현장 스태프'),
     (9, 'FB', '캡틴'),
     (10, 'CONCIERGE', '컨시어지')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    department_id = EXCLUDED.department_id,
+    name = EXCLUDED.name;
 
 -- 초기 관리자 계정 (PIN: 000000)
 INSERT INTO staff (name, pin, role_id, department_id) VALUES
