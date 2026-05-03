@@ -11,4 +11,6 @@ import java.util.List;
 public interface AdminStaffJpaRepository extends JpaRepository<StaffJpaEntity, Long> {
 
     List<StaffJpaEntity> findByDepartmentId(String departmentId);
+    
+    boolean existsByPin(String pin);
 }

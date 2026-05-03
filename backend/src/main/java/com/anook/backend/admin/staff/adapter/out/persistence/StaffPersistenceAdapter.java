@@ -53,4 +53,9 @@ public class StaffPersistenceAdapter implements StaffRepositoryPort {
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
     }
+
+    @Override
+    public boolean existsByPin(String pin) {
+        return jpaRepository.existsByPin(pin);
+    }
 }

@@ -37,11 +37,32 @@ public class ManageStaffService implements ManageStaffUseCase {
         validateDepartmentExists(command.departmentId());
         validateRoleExists(command.roleId());
 
-        String pin = generatePin();
+        // 1. 중복되지 않는 PIN 번호 생성 (최대 10번 재시도)
+        String pin = generateUniquePin();
+
+        // 2. 직원 도메인 모델 생성 및 저장 (초기 생성 시 JTI는 null)
         Staff staff = new Staff(null, command.name(), pin,
-                command.roleId(), command.departmentId());
+                command.roleId(), command.departmentId(), null);
         Staff saved = staffRepositoryPort.save(staff);
+
         return GetStaffResult.from(saved);
+    }
+
+    /**
+     * 중복되지 않는 6자리 PIN 번호를 생성합니다.
+     * 최대 10번까지 재시도하며, 실패 시 예외를 던집니다.
+     */
+    private String generateUniquePin() {
+        int maxRetries = 10;
+        for (int i = 0; i < maxRetries; i++) {
+            String pin = generatePin();
+            // DB에 해당 PIN이 존재하는지 확인 (Port 사용)
+            if (!staffRepositoryPort.existsByPin(pin)) {
+                return pin; // 중복되지 않으면 반환
+            }
+        }
+        // 10번 시도 후에도 중복이면 비즈니스 예외 발생
+        throw new BusinessException(ErrorCode.DUPLICATE_PIN);
     }
 
     @Override
@@ -85,7 +106,8 @@ public class ManageStaffService implements ManageStaffUseCase {
                 command.name() != null ? command.name() : existing.getName(),
                 existing.getPin(),
                 command.roleId() != null ? command.roleId() : existing.getRoleId(),
-                departmentId
+                departmentId,
+                existing.getJti() // 기존 세션 식별자(JTI) 유지
         );
 
         Staff saved = staffRepositoryPort.save(updated);

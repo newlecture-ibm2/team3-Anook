@@ -7,6 +7,9 @@ import java.util.Optional;
 
 public interface StaffJpaRepository extends JpaRepository<StaffJpaEntity, Long> {
 
-    @EntityGraph(attributePaths = {"department"})
+    @EntityGraph(attributePaths = "department")
     Optional<StaffJpaEntity> findByPin(String pin);
+
+    @EntityGraph(attributePaths = "department")
+    Optional<StaffJpaEntity> findById(Long id);
 }

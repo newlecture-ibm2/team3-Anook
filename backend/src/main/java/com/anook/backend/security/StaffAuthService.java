@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 /**
  * 직원/관리자 인증 서비스
  * PIN 검증 및 권한 기반 토큰 생성을 담당합니다.
@@ -27,6 +29,7 @@ public class StaffAuthService {
     /**
      * PIN 번호로 직원을 조회하고 인증을 수행합니다.
      */
+    @Transactional
     public LoginResponse login(StaffLoginRequest request) {
         // 1. PIN 번호로 직원 조회
         Staff staff = staffRepositoryPort.findByPin(request.pin())
@@ -35,10 +38,25 @@ public class StaffAuthService {
         // 2. 부서의 isAdmin 여부에 따라 권한(Role) 결정
         String role = staff.getDepartment().isAdmin() ? "ADMIN" : "STAFF";
 
-        // 3. JWT 토큰 생성 (보안을 위해 PIN 대신 식별자 ID를 Subject로 사용)
-        String token = jwtProvider.generateToken(staff.getId().toString(), role);
+        // 3. 중복 로그인 방지를 위한 새로운 JTI 생성
+        String jti = UUID.randomUUID().toString();
 
-        // 4. 최종 응답 생성
+        // 4. DB에 JTI 업데이트 (동일 PIN 다중 접속 제한의 핵심)
+        // staff 도메인 모델에 jti를 설정하고 저장 (도메인이 불변이므로 새로 생성)
+        Staff updatedStaff = Staff.builder()
+                .id(staff.getId())
+                .name(staff.getName())
+                .pin(staff.getPin())
+                .roleId(staff.getRoleId())
+                .department(staff.getDepartment())
+                .jti(jti)
+                .build();
+        staffRepositoryPort.save(updatedStaff);
+
+        // 5. JWT 토큰 생성 (JTI 포함)
+        String token = jwtProvider.generateToken(staff.getId().toString(), role, jti);
+
+        // 6. 최종 응답 생성
         return LoginResponse.builder()
                 .token(token)
                 .role(role)

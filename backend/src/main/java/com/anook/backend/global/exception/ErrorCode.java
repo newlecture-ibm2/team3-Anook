@@ -70,7 +70,11 @@ public enum ErrorCode {
 
         UNPAID_RECEIPTS_EXIST(HttpStatus.CONFLICT,
                         "미결제 룸서비스 내역이 있습니다. 결제를 먼저 완료해주세요.",
-                        "해당 객실에 미결제(UNPAID) 룸서비스 영수증이 있습니다. PATCH /pms/receipts/pay-all?roomNo=xxx로 결제 후 체크아웃하세요.");
+                        "해당 객실에 미결제(UNPAID) 룸서비스 영수증이 있습니다. PATCH /pms/receipts/pay-all?roomNo=xxx로 결제 후 체크아웃하세요."),
+
+        DUPLICATE_PIN(HttpStatus.CONFLICT,
+                        "이미 존재하는 PIN 번호입니다.",
+                        "자동 생성된 PIN 번호가 중복되었거나 이미 존재하는 PIN입니다. 다시 시도해주세요.");
 
         private final HttpStatus status;
         private final String message;

@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS staff (
     name            VARCHAR(50)  NOT NULL,
     pin             VARCHAR(10)  NOT NULL UNIQUE,
     role_id         BIGINT       NOT NULL REFERENCES staff_role(id),
-    department_id   VARCHAR(20)  NOT NULL REFERENCES department(id)
+    department_id   VARCHAR(20)  NOT NULL REFERENCES department(id),
+    jti             VARCHAR(100) -- 중복 로그인 방지를 위한 JWT ID
 );
 
 -- (guest 테이블은 pms_guest로 통합됨 — 아래 PMS 섹션 참조)
@@ -213,5 +214,5 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 -- 참고: docs/DB_스키마_변경_가이드.md
 
 -- 예시:
--- [2026-05-04] request 테이블에 language 컬럼 추가 (작성자: 홍길동)
--- ALTER TABLE request ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'ko';
+-- [2026-05-04] staff 테이블에 jti 컬럼 추가 (중복 로그인 방지용)
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS jti VARCHAR(100);

@@ -20,4 +20,19 @@ public class StaffPersistenceAdapter implements StaffRepositoryPort {
         return staffJpaRepository.findByPin(pin)
                 .map(StaffJpaEntity::toDomain);
     }
+
+    @Override
+    public Optional<Staff> findById(Long id) {
+        return staffJpaRepository.findById(id)
+                .map(StaffJpaEntity::toDomain);
+    }
+
+    @Override
+    public void save(Staff staff) {
+        // 더티 체킹을 사용하여 JTI만 업데이트합니다.
+        staffJpaRepository.findById(staff.getId()).ifPresent(entity -> {
+            entity.updateJti(staff.getJti());
+            staffJpaRepository.save(entity);
+        });
+    }
 }
