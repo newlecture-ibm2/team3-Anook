@@ -41,7 +41,7 @@ export default function StaffDashboardPage() {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
-  const { tasks, loading, error } = useTasks(view === 'my' ? 'HK' : undefined);
+  const { tasks, loading, error, acceptTask, completeTask } = useTasks(view === 'my' ? 'HK' : undefined);
 
   // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,6 +139,8 @@ function DashboardContent() {
         isOpen={selectedTask !== null}
         onClose={() => setSelectedTask(null)}
         task={selectedTask}
+        onAccept={acceptTask}
+        onComplete={completeTask}
       />
     </div>
   );

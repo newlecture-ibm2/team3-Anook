@@ -87,3 +87,7 @@
 .closeButton {
   min-width: 100px;
 }
+
+.actionButton {
+  min-width: 120px;
+}

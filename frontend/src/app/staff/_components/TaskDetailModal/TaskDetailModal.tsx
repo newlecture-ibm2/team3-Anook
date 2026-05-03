@@ -10,9 +10,11 @@ interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: StaffTask | null;
+  onAccept?: (id: number) => Promise<void>;
+  onComplete?: (id: number) => Promise<void>;
 }
 
-export default function TaskDetailModal({ isOpen, onClose, task }: TaskDetailModalProps) {
+export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete }: TaskDetailModalProps) {
   if (!isOpen || !task) return null;
 
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
@@ -63,10 +65,35 @@ export default function TaskDetailModal({ isOpen, onClose, task }: TaskDetailMod
           </div>
 
           <div className={styles.footer}>
+            {task.status === 'PENDING' && onAccept && (
+              <Button 
+                variant="primary" 
+                onClick={async () => {
+                  await onAccept(task.id);
+                  onClose();
+                }}
+                className={styles.actionButton}
+              >
+                업무 수락
+              </Button>
+            )}
+            
+            {task.status === 'IN_PROGRESS' && onComplete && (
+              <Button 
+                variant="primary" 
+                onClick={async () => {
+                  await onComplete(task.id);
+                  onClose();
+                }}
+                className={styles.actionButton}
+              >
+                업무 완료
+              </Button>
+            )}
+
             <Button variant="outlined" onClick={onClose} className={styles.closeButton}>
               닫기
             </Button>
-            {/* 추후 상태 변경(진행중, 완료 처리) 버튼을 여기에 추가할 수 있습니다. */}
           </div>
         </div>
       </ModalCard>
