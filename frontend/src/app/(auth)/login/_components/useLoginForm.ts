@@ -36,7 +36,7 @@ export const useLoginForm = () => {
       if (data.role === "ADMIN") {
         router.push("/admin/dashboard");
       } else if (data.role === "STAFF") {
-        router.push("/staff/requests");
+        router.push("/staff");
       } else if (data.role === "GUEST") {
         router.push("/guest/chat");
       }

@@ -22,6 +22,8 @@ interface UseTasksReturn {
   loading: boolean;
   error: string | null;
   refetch: () => void;
+  acceptTask: (id: number) => Promise<void>;
+  completeTask: (id: number) => Promise<void>;
 }
 
 export function useTasks(departmentId?: string): UseTasksReturn {
@@ -35,11 +37,19 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     setLoading(true);
     setError(null);
     try {
-      const url = departmentId 
+      const url = departmentId
         ? `/api/staff?action=requests&departmentId=${departmentId}`
         : '/api/staff?action=requests';
-        
+
       const res = await fetch(url);
+
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+          return;
+        }
+      }
+
       const data = await handleResponse<StaffTask[]>(res);
       setTasks(data);
     } catch (err) {
@@ -48,6 +58,44 @@ export function useTasks(departmentId?: string): UseTasksReturn {
       setLoading(false);
     }
   }, [departmentId]);
+
+  const acceptTask = useCallback(async (id: number) => {
+    try {
+      const res = await fetch(`/api/staff?action=accept&id=${id}`, {
+        method: 'PATCH',
+      });
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+          return;
+        }
+      }
+      await handleResponse(res);
+      await fetchTasks();
+    } catch (err) {
+      console.error('Failed to accept task:', err);
+      throw err;
+    }
+  }, [fetchTasks]);
+
+  const completeTask = useCallback(async (id: number) => {
+    try {
+      const res = await fetch(`/api/staff?action=complete&id=${id}`, {
+        method: 'PATCH',
+      });
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+          return;
+        }
+      }
+      await handleResponse(res);
+      await fetchTasks();
+    } catch (err) {
+      console.error('Failed to complete task:', err);
+      throw err;
+    }
+  }, [fetchTasks]);
 
   useEffect(() => {
     fetchTasks();
@@ -73,7 +121,7 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
-    
+
     // 부서 전용 채널 구독 (전달받은 departmentId 사용, 없으면 HK 기본)
     const deptChannel = `/topic/dept/${departmentId || 'HK'}`;
     const unsubscribeDept = subscribe(deptChannel, handleEvent);
@@ -84,5 +132,5 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     };
   }, [subscribe, departmentId]);
 
-  return { tasks, loading, error, refetch: fetchTasks };
+  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask };
 }

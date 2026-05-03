@@ -11,14 +11,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
-        ErrorCode code = e.getErrorCode();
-        return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(
-                        code.name(),
-                        e.getMessage(),
-                        code.getDetail()
-                ));
-    }
+        @ExceptionHandler(BusinessException.class)
+        public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
+                ErrorCode code = e.getErrorCode();
+                return ResponseEntity.status(code.getStatus())
+                                .body(ErrorResponse.of(
+                                                code.name(),
+                                                e.getMessage(),
+                                                code.getDetail()));
+        }
 }

@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
-    
+
     session.token = data.token;
     session.role = data.role;
     session.name = data.name;
     session.isLoggedIn = true;
-    
+
     await session.save();
 
     return NextResponse.json({

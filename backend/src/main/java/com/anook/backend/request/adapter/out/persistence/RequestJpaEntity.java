@@ -97,8 +97,7 @@ public class RequestJpaEntity {
                 this.assignedStaffId,
                 this.version,
                 this.createdAt,
-                this.updatedAt
-        );
+                this.updatedAt);
     }
 
     // === 상태 변경 ===

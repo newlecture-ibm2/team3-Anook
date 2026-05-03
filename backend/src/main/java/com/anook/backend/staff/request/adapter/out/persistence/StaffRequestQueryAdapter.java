@@ -19,7 +19,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
     @Override
     public List<StaffTaskResult> findRequests(String departmentId, String status, String priority) {
         StringBuilder sql = new StringBuilder(
-                "SELECT r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at " +
+                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at " +
                 "FROM request r WHERE 1=1"
         );
         
@@ -41,6 +41,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
         sql.append(" ORDER BY r.created_at DESC");
 
         return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
+            Long rId = rs.getLong("id");
             String rStatus = rs.getString("status");
             String rPriority = rs.getString("priority");
             String rDeptId = rs.getString("department_id");
@@ -51,6 +52,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
             LocalDateTime rCreatedAt = rs.getTimestamp("created_at").toLocalDateTime();
 
             return new StaffTaskResult(
+                rId,
                 rStatus,
                 rPriority,
                 rDeptId,
