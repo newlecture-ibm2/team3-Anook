@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,26 +27,37 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         Request request = requestRepositoryPort.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
 
-        // 담당자 배정 (PENDING -> ASSIGNED)
-        request.assignStaff(staffId);
-        
-        // 작업 시작 (ASSIGNED -> IN_PROGRESS)
-        request.changeStatus(RequestStatus.IN_PROGRESS);
+        // Request 도메인을 직접 수정하지 않고, 상태(IN_PROGRESS)와 담당자(staffId)가 업데이트된 새로운 객체로 재구성
+        Request updatedRequest = Request.reconstitute(
+                request.getId(),
+                RequestStatus.IN_PROGRESS,
+                request.getPriority(),
+                request.getDomainCode(),
+                request.getEntities(),
+                request.getConfidence(),
+                request.getRawText(),
+                request.getSummary(),
+                request.getRoomNo(),
+                staffId,
+                request.getVersion(),
+                request.getCreatedAt(),
+                LocalDateTime.now()
+        );
 
-        requestRepositoryPort.save(request);
+        requestRepositoryPort.save(updatedRequest);
         log.info("요청 수락 완료: requestId={}, staffId={}", requestId, staffId);
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                request.getId(),
-                request.getStatus().name(),
-                request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
-                request.getSummary(),
-                request.getRoomNo()
+                updatedRequest.getId(),
+                updatedRequest.getStatus().name(),
+                updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
+                updatedRequest.getSummary(),
+                updatedRequest.getRoomNo()
         );
-        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
-        if (request.getDomainCode() != null) {
-            dispatchPort.dispatchToDepartment(request.getDomainCode().name(), payload);
+        dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
+        if (updatedRequest.getDomainCode() != null) {
+            dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
         }
     }
 
@@ -54,23 +67,37 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         Request request = requestRepositoryPort.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
 
-        // 작업 완료 (IN_PROGRESS/ASSIGNED -> COMPLETED)
-        request.changeStatus(RequestStatus.COMPLETED);
+        // Request 도메인을 직접 수정하지 않고, 상태(COMPLETED)가 업데이트된 새로운 객체로 재구성
+        Request updatedRequest = Request.reconstitute(
+                request.getId(),
+                RequestStatus.COMPLETED,
+                request.getPriority(),
+                request.getDomainCode(),
+                request.getEntities(),
+                request.getConfidence(),
+                request.getRawText(),
+                request.getSummary(),
+                request.getRoomNo(),
+                request.getAssignedStaffId(),
+                request.getVersion(),
+                request.getCreatedAt(),
+                LocalDateTime.now()
+        );
 
-        requestRepositoryPort.save(request);
+        requestRepositoryPort.save(updatedRequest);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                request.getId(),
-                request.getStatus().name(),
-                request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
-                request.getSummary(),
-                request.getRoomNo()
+                updatedRequest.getId(),
+                updatedRequest.getStatus().name(),
+                updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
+                updatedRequest.getSummary(),
+                updatedRequest.getRoomNo()
         );
-        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
-        if (request.getDomainCode() != null) {
-            dispatchPort.dispatchToDepartment(request.getDomainCode().name(), payload);
+        dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
+        if (updatedRequest.getDomainCode() != null) {
+            dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
         }
     }
 }

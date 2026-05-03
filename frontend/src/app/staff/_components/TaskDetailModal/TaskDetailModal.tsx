@@ -55,7 +55,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               <span className={styles.infoLabel}>부서</span>
               <span className={styles.infoValue}>{task.departmentId}</span>
             </div>
-            
+
             <div className={styles.descriptionSection}>
               <h3 className={styles.descriptionTitle}>요청 상세 내용</h3>
               <div className={styles.descriptionBox}>
@@ -66,8 +66,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
           <div className={styles.footer}>
             {task.status === 'PENDING' && onAccept && (
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={async () => {
                   await onAccept(task.id);
                   onClose();
@@ -77,10 +77,10 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 업무 수락
               </Button>
             )}
-            
+
             {task.status === 'IN_PROGRESS' && onComplete && (
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={async () => {
                   await onComplete(task.id);
                   onClose();

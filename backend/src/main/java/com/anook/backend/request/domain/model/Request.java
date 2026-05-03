@@ -27,19 +27,18 @@ public class Request {
 
     // === 생성자 (팩토리 메서드 + 재구성용) ===
 
-    private Request() {
-    }
+    private Request() {}
 
     /**
      * 신규 Request 생성 (이벤트 수신 시)
      */
     public static Request create(String roomNo,
-            DomainCode domainCode,
-            String priority,
-            Map<String, Object> entities,
-            double confidence,
-            String rawText,
-            String summary) {
+                                  DomainCode domainCode,
+                                  String priority,
+                                  Map<String, Object> entities,
+                                  double confidence,
+                                  String rawText,
+                                  String summary) {
         Request request = new Request();
         request.roomNo = roomNo;
         request.domainCode = domainCode;
@@ -59,18 +58,18 @@ public class Request {
      * DB에서 재구성할 때 사용 (PersistenceAdapter → Domain 변환)
      */
     public static Request reconstitute(Long id,
-            RequestStatus status,
-            Priority priority,
-            DomainCode domainCode,
-            Map<String, Object> entities,
-            double confidence,
-            String rawText,
-            String summary,
-            String roomNo,
-            Long assignedStaffId,
-            int version,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt) {
+                                        RequestStatus status,
+                                        Priority priority,
+                                        DomainCode domainCode,
+                                        Map<String, Object> entities,
+                                        double confidence,
+                                        String rawText,
+                                        String summary,
+                                        String roomNo,
+                                        Long assignedStaffId,
+                                        int version,
+                                        LocalDateTime createdAt,
+                                        LocalDateTime updatedAt) {
         Request request = new Request();
         request.id = id;
         request.status = status;
@@ -147,57 +146,19 @@ public class Request {
 
     // === Getter ===
 
-    public Long getId() {
-        return id;
-    }
-
-    public RequestStatus getStatus() {
-        return status;
-    }
-
-    public Priority getPriority() {
-        return priority;
-    }
-
-    public DomainCode getDomainCode() {
-        return domainCode;
-    }
-
-    public Map<String, Object> getEntities() {
-        return entities;
-    }
-
-    public double getConfidence() {
-        return confidence;
-    }
-
-    public String getRawText() {
-        return rawText;
-    }
-
-    public String getSummary() {
-        return summary;
-    }
-
-    public String getRoomNo() {
-        return roomNo;
-    }
-
-    public Long getAssignedStaffId() {
-        return assignedStaffId;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+    public Long getId() { return id; }
+    public RequestStatus getStatus() { return status; }
+    public Priority getPriority() { return priority; }
+    public DomainCode getDomainCode() { return domainCode; }
+    public Map<String, Object> getEntities() { return entities; }
+    public double getConfidence() { return confidence; }
+    public String getRawText() { return rawText; }
+    public String getSummary() { return summary; }
+    public String getRoomNo() { return roomNo; }
+    public Long getAssignedStaffId() { return assignedStaffId; }
+    public int getVersion() { return version; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     /**
      * department 테이블의 ID로 변환 (domainCode → deptId)
