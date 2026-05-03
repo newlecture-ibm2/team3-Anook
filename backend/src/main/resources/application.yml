@@ -31,5 +31,5 @@ server:
 ai:
   service:
     enabled: false  # AI 서버 완성 후 true로 변경 → PythonAiHttpAdapter 활성화
-    url: ${AI_SERVICE_URL:http://localhost:8000}
+    url: ${AI_SERVER_URL:http://localhost:8000}
 

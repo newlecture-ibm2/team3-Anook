@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { sessionOptions, SessionData } from "@/lib/session";
 
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
+
 /**
  * POST /api/auth/guest
  * 투숙객(QR 랜덤코드) 로그인을 처리하고 세션 쿠키를 생성합니다.
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { accessCode } = body;
 
-    const response = await fetch("http://localhost:8080/auth/guest", {
+    const response = await fetch(`${BACKEND_URL}/auth/guest`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accessCode }),
