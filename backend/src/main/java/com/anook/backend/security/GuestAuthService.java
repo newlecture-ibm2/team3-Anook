@@ -28,7 +28,8 @@ public class GuestAuthService {
     public LoginResponse login(GuestLoginRequest request) {
         // 1. 전달받은 랜덤 코드로 현재 투숙 중인 고객이 있는지 조회
         Guest guest = guestRepositoryPort.findByAccessCode(request.accessCode())
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않거나 만료된 접속 코드입니다."));
+                .orElseThrow(() -> new com.anook.backend.global.exception.BusinessException(
+                        com.anook.backend.global.exception.ErrorCode.GUEST_NOT_FOUND));
 
         // 2. 토큰 생성 (Subject: roomNumber, Claim: Role)
         String token = jwtProvider.generateToken(guest.getRoomNumber(), "GUEST");

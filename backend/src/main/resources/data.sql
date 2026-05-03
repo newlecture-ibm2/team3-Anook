@@ -130,4 +130,5 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO pms_guest (room_no, name, phone, access_code, checkout_date) VALUES
     ('707', '홍길동', '010-1234-5678', 'test-guest-code-1234', '2026-12-31')
-ON CONFLICT (room_no) DO NOTHING;
+ON CONFLICT (room_no) DO UPDATE SET
+    access_code = EXCLUDED.access_code;

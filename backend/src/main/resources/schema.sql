@@ -212,6 +212,5 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 -- ↓↓↓ 새 변경사항은 날짜와 작성자를 기록하고 여기에 추가하세요 ↓↓↓
 -- 참고: docs/DB_스키마_변경_가이드.md
 
--- 예시:
--- [2026-05-04] request 테이블에 language 컬럼 추가 (작성자: 홍길동)
--- ALTER TABLE request ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'ko';
+-- [2026-05-04] pms_guest 테이블에 QR 로그인용 access_code 컬럼 추가
+ALTER TABLE pms_guest ADD COLUMN IF NOT EXISTS access_code VARCHAR(100) UNIQUE;
