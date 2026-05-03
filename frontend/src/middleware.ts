@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/login") {
     if (session.isLoggedIn) {
       // 역할에 따른 리다이렉트
-      let redirectUrl = "/staff/requests";
+      let redirectUrl = "/staff";
       if (session.role === "ADMIN") redirectUrl = "/admin/dashboard";
       if (session.role === "GUEST") redirectUrl = "/guest/chat";
       
@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
 
   // 3. 권한별 세부 통제
   if (pathname.startsWith("/admin") && session.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/staff/requests", request.url));
+    return NextResponse.redirect(new URL("/staff", request.url));
   }
   
   if (pathname.startsWith("/staff") && (session.role !== "STAFF" && session.role !== "ADMIN")) {

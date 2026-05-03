@@ -40,6 +40,14 @@ export function useTasks(departmentId?: string): UseTasksReturn {
         : '/api/staff?action=requests';
         
       const res = await fetch(url);
+      
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+          return;
+        }
+      }
+      
       const data = await handleResponse<StaffTask[]>(res);
       setTasks(data);
     } catch (err) {

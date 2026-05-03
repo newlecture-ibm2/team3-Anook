@@ -7,7 +7,8 @@ import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
-import { useTasks } from './useTasks';
+import TaskDetailModal from './_components/TaskDetailModal/TaskDetailModal';
+import { useTasks, StaffTask } from './useTasks';
 import styles from './page.module.css';
 
 const COLUMN_CONFIG = [
@@ -42,9 +43,10 @@ function DashboardContent() {
   const view = searchParams.get('view');
   const { tasks, loading, error } = useTasks(view === 'my' ? 'HK' : undefined);
 
-  // 필터 상태 관리
+  // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [selectedTask, setSelectedTask] = useState<StaffTask | null>(null);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
@@ -108,14 +110,19 @@ function DashboardContent() {
                 >
                   <div className={styles.columnContent}>
                     {columnTasks.map(task => (
-                      <TaskTicket
+                      <div 
                         key={`${task.roomNumber}-${task.createdAt}`}
-                        priority={mapPriority(task.priority)}
-                        title={`[${task.roomNumber}호] ${task.summary}`}
-                        description={task.rawText}
-                        status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
-                        createdAt={task.createdAt}
-                      />
+                        className={styles.ticketWrapper}
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <TaskTicket
+                          priority={mapPriority(task.priority)}
+                          title={`[${task.roomNumber}호] ${task.summary}`}
+                          description={task.rawText}
+                          status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
+                          createdAt={task.createdAt}
+                        />
+                      </div>
                     ))}
                     {columnTasks.length === 0 && (
                       <div className={styles.empty}>해당하는 작업이 없습니다.</div>
@@ -127,6 +134,12 @@ function DashboardContent() {
           </section>
         )}
       </main>
+
+      <TaskDetailModal 
+        isOpen={selectedTask !== null}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+      />
     </div>
   );
 }
