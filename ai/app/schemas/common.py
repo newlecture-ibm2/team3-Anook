@@ -18,9 +18,19 @@ class HotelRequestSchema(BaseModel):
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")
     
     # --- [2. 챗봇 UX & 부서별 가변 데이터 (동적 데이터)] ---
+    # [부서별 entities 작성 가이드]
+    # 부서마다 달라지는 동적 데이터를 담는 주머니입니다.
+    # 대시보드 '최다 요청 항목' 통계를 위해 'intent' 키는 모든 부서 필수입니다. (이거 꼭지키기)
+    # 예시:
+    #   HK:        {'intent': 'TOWEL', 'item': '수건', 'count': 2}
+    #   FB:        {'intent': 'ROOM_SERVICE', 'menu': '콜라', 'price': 5000}
+    #   FACILITY:  {'intent': 'AC_REPAIR', 'symptom': '안 켜짐', 'location': '침실'}
+    #   CONCIERGE: {'intent': 'TAXI', 'destination': '인천공항', 'time': '14:00'}
+    #   FRONT:     {'intent': 'CHECKOUT', 'requested_time': '11:00'}
+    #   EMERGENCY: {'intent': 'FIRE', 'floor': '3층'}
     entities: Dict[str, Any] = Field(
         default_factory=dict, 
-        description="부서마다 달라지는 동적 데이터 (목적지, 수량, 고장 증상 등)"
+        description="부서마다 달라지는 동적 데이터 (대시보드 통계용 'intent' 키 필수 포함)"
     )
     missing_fields: List[str] = Field(
         default_factory=list, 
