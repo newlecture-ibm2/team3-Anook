@@ -186,12 +186,11 @@ CREATE TABLE IF NOT EXISTS pms_receipt (
 -- 7. 인덱스
 -- ============================================================
 
+-- 요청 조회 성능
 CREATE INDEX IF NOT EXISTS idx_request_status ON request(status);
 CREATE INDEX IF NOT EXISTS idx_request_room_no ON request(room_no);
 CREATE INDEX IF NOT EXISTS idx_request_department_id ON request(department_id);
 CREATE INDEX IF NOT EXISTS idx_request_created_at ON request(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_message_room_no ON message(room_no);
-CREATE INDEX IF NOT EXISTS idx_message_request_id ON message(request_id);
 
 -- 메시지 조회 성능
 CREATE INDEX IF NOT EXISTS idx_message_room_no ON message(room_no);
@@ -206,3 +205,13 @@ CREATE INDEX IF NOT EXISTS idx_dispatch_sent_at ON dispatch_log(sent_at DESC);
 -- PMS 영수증 조회 성능
 CREATE INDEX IF NOT EXISTS idx_receipt_room_no ON pms_receipt(room_no);
 CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
+
+-- ============================================================
+-- 8. 스키마 마이그레이션 (신규 컬럼/인덱스)
+-- ============================================================
+-- ↓↓↓ 새 변경사항은 날짜와 작성자를 기록하고 여기에 추가하세요 ↓↓↓
+-- 참고: docs/DB_스키마_변경_가이드.md
+
+-- 예시:
+-- [2026-05-04] request 테이블에 language 컬럼 추가 (작성자: 홍길동)
+-- ALTER TABLE request ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'ko';

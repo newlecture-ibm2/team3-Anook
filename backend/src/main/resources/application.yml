@@ -11,6 +11,7 @@ spring:
       continue-on-error: true     # SQL 스크립트 에러 시 앱 종료 방지 (스키마 불일치 등)
 
   jpa:
+    defer-datasource-initialization: true   # SQL 스크립트를 Hibernate 초기화 이후 실행
     hibernate:
       ddl-auto: none              # SQL 스크립트로 스키마 관리 (Hibernate 자동 DDL 비활성화)
     show-sql: true
