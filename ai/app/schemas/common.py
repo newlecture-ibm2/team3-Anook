@@ -10,6 +10,7 @@ class HotelRequestSchema(BaseModel):
     request_id: str = Field(description="요청 고유 ID (예: REQ_1029)")
     room_no: str = Field(description="객실 번호 (예: 101)")
     
+    mode: str = Field(description="메시지 처리 모드 (예: TASK, CHITCHAT, CLARIFICATION 등)")
     domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY)")
     
     summary: str = Field(description="직원용 Jira 대시보드 카드 제목으로 렌더링될 세 줄 요약")
