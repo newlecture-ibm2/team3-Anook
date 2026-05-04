@@ -43,15 +43,16 @@ public class KnowledgePersistenceAdapter implements KnowledgeRepositoryPort {
     @Override
     @Transactional
     public void update(KnowledgeEntry entry, float[] embedding) {
-        KnowledgeJpaEntity entity = new KnowledgeJpaEntity(
-                entry.getId(),
+        KnowledgeJpaEntity entity = knowledgeJpaRepository.findById(entry.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entry.getId()));
+
+        entity.updateFields(
                 entry.getQuestion(),
                 entry.getAnswer(),
-                entry.getDomainCode(),
-                entry.getStatus() != null ? entry.getStatus().name() : KnowledgeStatus.PENDING.name(),
-                entry.getApprovedBy()
+                entry.getStatus() != null ? entry.getStatus().name() : KnowledgeStatus.PENDING.name()
         );
 
+        // Dirty checking에 의해 자동으로 UPDATE 쿼리가 실행되지만 명시적 save도 무방
         knowledgeJpaRepository.save(entity);
 
         if (embedding != null && embedding.length > 0) {

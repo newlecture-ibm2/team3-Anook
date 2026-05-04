@@ -16,7 +16,8 @@ public enum DomainCode {
     FACILITY("FACILITY"),
     CONCIERGE("CONCIERGE"),
     FRONT("FRONT"),
-    EMERGENCY("EMERGENCY");
+    EMERGENCY("EMERGENCY"),
+    COMMON("COMMON");
 
     private final String code;
 

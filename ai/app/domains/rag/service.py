@@ -25,7 +25,7 @@ def search_similar(query: str, domain_code: str, top_k: int = 3, threshold: floa
                 SELECT id, question, answer, domain_code, status,
                        1 - (embedding <=> %s::vector) AS similarity
                 FROM knowledge_entry
-                WHERE domain_code = %s AND status = 'APPROVED'
+                WHERE domain_code IN (%s, 'COMMON') AND status = 'APPROVED'
                 AND 1 - (embedding <=> %s::vector) >= %s
                 ORDER BY similarity DESC
                 LIMIT %s

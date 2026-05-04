@@ -56,3 +56,29 @@
   gap: 0; /* gap 0 as requested */
   overflow: hidden;
 }
+
+.searchWrapper {
+  flex: 1;
+  max-width: 300px;
+}
+
+.statusMessage {
+  padding: var(--space-32);
+  text-align: center;
+  color: var(--color-gray-600);
+  font: var(--text-body-regular);
+}
+
+.errorMessage {
+  padding: var(--space-32);
+  text-align: center;
+  color: var(--color-red-500);
+  font: var(--text-body-regular);
+}
+
+.emptyMessage {
+  padding: var(--space-32);
+  text-align: center;
+  color: var(--color-gray-500);
+  font: var(--text-body-regular);
+}

@@ -16,6 +16,44 @@
   background-color: var(--color-gray-50);
 }
 
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.badgeWrapper {
+  margin-bottom: var(--space-16);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.container:hover .actions {
+  opacity: 1;
+}
+
+.actionIcon {
+  color: var(--color-gray-400);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  font-size: 14px;
+}
+
+.actionIcon:hover {
+  color: var(--color-gray-800);
+  background-color: var(--color-gray-100);
+}
+
 .title {
   font: var(--text-h3-bold);
   color: var(--color-gray-900);

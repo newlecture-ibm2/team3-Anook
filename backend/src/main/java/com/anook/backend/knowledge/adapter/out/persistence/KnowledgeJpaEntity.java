@@ -54,4 +54,13 @@ public class KnowledgeJpaEntity {
         this.status = status;
         this.approvedBy = approvedBy;
     }
+
+    public void updateFields(String question, String answer, String status) {
+        this.question = question;
+        this.answer = answer;
+        if (status != null) {
+            this.status = status;
+        }
+        this.updatedAt = java.time.LocalDateTime.now();
+    }
 }
