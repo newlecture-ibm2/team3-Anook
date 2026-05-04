@@ -44,7 +44,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
     }
 
     @Override
-    public MessageAiResult analyze(String text, String roomNo, String language) {
+    public MessageAiResult analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory) {
         log.info("[PythonAI] 분석 요청 — room: {}, lang: {}, text: {}", roomNo, language, text);
 
         try {
@@ -53,7 +53,8 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                     .bodyValue(Map.of(
                             "text", text,
                             "room_no", roomNo,
-                            "language", language
+                            "language", language,
+                            "chat_history", chatHistory
                     ))
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})

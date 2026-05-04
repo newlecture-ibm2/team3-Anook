@@ -36,5 +36,13 @@ public class MessagePersistenceAdapter implements MessageRepositoryPort {
                 .map(MessageJpaEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Message> findRecentByRoomNoAndGuestId(String roomNo, Long guestId, int limit) {
+        return jpaRepository.findByRoomNoAndGuestIdOrderByCreatedAtDesc(roomNo, guestId, org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(MessageJpaEntity::toDomain)
+                .toList();
+    }
 }
 

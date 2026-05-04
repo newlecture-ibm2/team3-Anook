@@ -80,8 +80,26 @@ public class SendMessageService implements SendMessageUseCase {
     @Transactional
     public void processAiAsync(String roomNo, Long guestId, String content, String language) {
         try {
-            // 3. AI 호출
-            MessageAiResult analysis = aiPort.analyze(content, roomNo, language);
+            // 3. AI 호출을 위해 최근 10개 메시지 조회 (대화 맥락 확장)
+            java.util.List<Message> recentMessages = new java.util.ArrayList<>(messagePort.findRecentByRoomNoAndGuestId(roomNo, guestId, 10));
+
+            // 방금 저장한 현재 메시지는 AI가 'Current Request'로 중복 인식하지 않도록 제외
+            if (!recentMessages.isEmpty() && recentMessages.get(0).getContent().equals(content)) {
+                recentMessages.remove(0);
+            }
+
+            // DB에서 최신순(DESC)으로 가져왔으므로, AI가 문맥을 읽기 편하게 시간순(ASC)으로 뒤집기
+            java.util.Collections.reverse(recentMessages);
+
+            java.util.List<Map<String, String>> chatHistory = recentMessages.stream()
+                    .map(m -> Map.of(
+                            "role", m.getSenderType().equals(com.anook.backend.message.domain.model.SenderType.GUEST) ? "user" : "ai",
+                            "content", m.getContent()
+                    ))
+                    .toList();
+
+            // AI 호출
+            MessageAiResult analysis = aiPort.analyze(content, roomNo, language, chatHistory);
 
             // 4. AI 응답 메시지 저장
             Message aiMsg = Message.createAiReply(roomNo, guestId, analysis.guestReply());
