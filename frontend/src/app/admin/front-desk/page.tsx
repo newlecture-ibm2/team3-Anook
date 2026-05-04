@@ -3,10 +3,34 @@
 import React, { useState } from 'react';
 import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
+import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
+  const { requests, pending, loading, error } = useAdminRequests('FRONT');
+
+  const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
+    if (status === 'PENDING') return 'red';
+    if (status === 'ASSIGNED') return 'purple';
+    if (status === 'IN_PROGRESS') return 'green';
+    return 'gray';
+  };
+
+  const mapStatusText = (status: string): string => {
+    if (status === 'PENDING') return '프론트 대기';
+    if (status === 'ASSIGNED') return '배정됨';
+    if (status === 'IN_PROGRESS') return '처리 중';
+    if (status === 'COMPLETED') return '완료';
+    return status;
+  };
+
+  // 탭에 따른 필터링
+  const filteredRequests = activeTab === 'all'
+    ? requests
+    : activeTab === 'unhandled'
+      ? pending
+      : requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
 
   return (
     <div className={styles.container}>
@@ -20,8 +44,8 @@ export default function FrontDeskPage() {
         <Tabs 
           options={[
             { label: '전체 요청', value: 'all' },
-            { label: '미처리 대기', value: 'unhandled', count: 5 },
-            { label: '예외 발생', value: 'exception', count: 2 }
+            { label: '미처리 대기', value: 'unhandled', count: pending.length },
+            { label: '예외 발생', value: 'exception', count: 0 }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}
@@ -32,36 +56,28 @@ export default function FrontDeskPage() {
       <div className={styles.contentSection}>
         <h2 className={styles.sectionTitle}>미처리 / 예외 요청</h2>
         
-        <div className={styles.cardGrid}>
-          {/* Dummy Request Cards */}
-          <RequestCard 
-            roomNumber="101" 
-            title="에어컨이 너무 추워요, 온도 조절 부탁드립니다." 
-            statusText="프론트 대기"
-            statusVariant="red"
-            createdAt={new Date()}
-            primaryActionText="상담 시작"
-            secondaryActionText="수동 배정"
-          />
-          <RequestCard 
-            roomNumber="204" 
-            title="수건 2장 추가 요청" 
-            statusText="AI 의도 파악 실패"
-            statusVariant="purple"
-            createdAt={new Date(Date.now() - 1000 * 60 * 30)}
-            primaryActionText="상담 시작"
-            secondaryActionText="수동 배정"
-          />
-          <RequestCard 
-            roomNumber="502" 
-            title="룸서비스 메뉴판이 없어요" 
-            statusText="프론트 대기"
-            statusVariant="gray"
-            createdAt={new Date(Date.now() - 1000 * 60 * 120)}
-            primaryActionText="상담 시작"
-            secondaryActionText="수동 배정"
-          />
-        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
+        ) : filteredRequests.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>요청이 없습니다.</div>
+        ) : (
+          <div className={styles.cardGrid}>
+            {filteredRequests.map(req => (
+              <RequestCard
+                key={req.id}
+                roomNumber={req.roomNo}
+                title={req.summary}
+                statusText={mapStatusText(req.status)}
+                statusVariant={mapStatusVariant(req.status)}
+                createdAt={req.createdAt}
+                primaryActionText="상담 시작"
+                secondaryActionText="수동 배정"
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
