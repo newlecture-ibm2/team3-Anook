@@ -116,14 +116,14 @@ ON CONFLICT DO NOTHING;
 -- Mock 요청 시드 데이터
 -- ============================================================
 
-INSERT INTO request (status, priority, department_id, summary, raw_text, confidence, room_no, assigned_staff_id, version, created_at, updated_at) VALUES
-    ('PENDING',     'NORMAL', 'HK',        '수건 2장 추가 요청',      '수건 두 장만 더 주세요',              0.95, '707', NULL, 0, NOW() - INTERVAL '2 hours',      NOW() - INTERVAL '2 hours'),
-    ('ASSIGNED',    'HIGH',   'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes'),
-    ('IN_PROGRESS', 'URGENT', 'FACILITY',  '에어컨 고장 수리 요청',    '에어컨이 안 켜져요',                 0.92, '707', 1,    0, NOW() - INTERVAL '45 minutes',   NOW() - INTERVAL '10 minutes'),
-    ('COMPLETED',   'NORMAL', 'CONCIERGE', '택시 호출 요청',          '공항까지 택시 하나 불러주세요',        0.97, '707', 1,    0, NOW() - INTERVAL '3 hours',      NOW() - INTERVAL '1 hour'),
-    ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes'),
-    ('PENDING',     'HIGH',   'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes'),
-    ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes')
+INSERT INTO request (status, priority, department_id, summary, raw_text, confidence, room_no, assigned_staff_id, version, created_at, updated_at, entities) VALUES
+    ('PENDING',     'NORMAL', 'HK',        '수건 2장 추가 요청',      '수건 두 장만 더 주세요',              0.95, '707', NULL, 0, NOW() - INTERVAL '2 hours',      NOW() - INTERVAL '2 hours',      '{"REQ_ITEM": ["수건"]}'),
+    ('ASSIGNED',    'HIGH',   'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes',   '{"REQ_ITEM": ["룸서비스", "스테이크"]}'),
+    ('IN_PROGRESS', 'URGENT', 'FACILITY',  '에어컨 고장 수리 요청',    '에어컨이 안 켜져요',                 0.92, '707', 1,    0, NOW() - INTERVAL '45 minutes',   NOW() - INTERVAL '10 minutes',   '{"REQ_ITEM": ["에어컨"]}'),
+    ('COMPLETED',   'NORMAL', 'CONCIERGE', '택시 호출 요청',          '공항까지 택시 하나 불러주세요',        0.97, '707', 1,    0, NOW() - INTERVAL '3 hours',      NOW() - INTERVAL '1 hour',       '{"REQ_ITEM": ["택시"]}'),
+    ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),
+    ('PENDING',     'HIGH',   'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes',   '{"REQ_ITEM": ["체크아웃"]}'),
+    ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["객실 키"]}')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

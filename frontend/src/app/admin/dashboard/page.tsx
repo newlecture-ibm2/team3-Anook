@@ -17,7 +17,7 @@ const PRIORITY_NAMES: Record<string, string> = {
   URGENT: '긴급', HIGH: '높음', NORMAL: '보통', LOW: '낮음'
 };
 
-const DONUT_COLORS = ['#1a1a2e', '#4a4a5a', '#f97316', '#d1d5db'];
+const DONUT_COLORS = ['#111827', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 
 /**
  * 세로 막대 그래프 (참고 디자인: 검은 바, Y축 눈금, X축 부서명)
@@ -70,9 +70,11 @@ function DonutChart({ data, colors }: { data: { label: string; value: number; pc
     <div className={styles.donutWrapper}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {data.map((item, i) => {
-          const dash = (item.pct / 100) * circumference;
+          const sliceLength = (item.pct / 100) * circumference;
+          const gap = 4; // 슬라이스 사이의 간격(px)
+          const dash = Math.max(0, sliceLength - gap);
           const currentOffset = -offset;
-          offset += dash;
+          offset += sliceLength;
           return (
             <circle
               key={item.label}
@@ -83,6 +85,7 @@ function DonutChart({ data, colors }: { data: { label: string; value: number; pc
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={currentOffset}
               transform={`rotate(-90 ${size / 2} ${size / 2})`}
+              strokeLinecap="butt"
             />
           );
         })}
@@ -109,13 +112,18 @@ export default function DashboardPage() {
     ? Object.entries(stats.byDepartment).map(([k, v]) => ({ label: DEPT_NAMES[k] || k, value: v }))
     : [];
 
-  const priorityData = stats
-    ? Object.entries(stats.byPriority).map(([k, v]) => ({
-        label: PRIORITY_NAMES[k] || k,
-        value: v,
-        pct: stats.total > 0 ? Math.round((v / stats.total) * 100) : 0,
-      }))
+  const frequentRequestsList = stats
+    ? Object.entries(stats.frequentRequests).map(([k, v]) => ({ label: k, value: v }))
     : [];
+  
+  const totalFrequentCount = frequentRequestsList.reduce((acc, curr) => acc + curr.value, 0);
+
+  const frequentRequestsData = frequentRequestsList
+    .map(item => ({
+      ...item,
+      pct: totalFrequentCount > 0 ? Math.round((item.value / totalFrequentCount) * 100) : 0
+    }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div className={styles.container}>
@@ -154,7 +162,7 @@ export default function DashboardPage() {
         <ChartCard title="최다 요청 항목" subtitle="MOST FREQUENT REQUESTS (%)">
            <div className={styles.chartPlaceholder}>
               {loading ? '로딩 중...' : error ? error : (
-                <DonutChart data={priorityData} colors={DONUT_COLORS} />
+                <DonutChart data={frequentRequestsData} colors={DONUT_COLORS} />
               )}
            </div>
         </ChartCard>

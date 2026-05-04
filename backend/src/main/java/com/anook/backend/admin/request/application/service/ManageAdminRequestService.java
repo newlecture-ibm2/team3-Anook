@@ -148,6 +148,49 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         // 전체 데이터 조회하여 실제 통계 계산
         List<com.anook.backend.admin.request.domain.model.AdminRequest> allRequests = 
                 adminRequestQueryPort.findAll(null, null, null, null);
+
+        // 4. 최다 요청 항목 동적 추출 (AI 엔티티 기반)
+        Map<String, Long> itemCounts = new java.util.HashMap<>();
+        
+        for (com.anook.backend.admin.request.domain.model.AdminRequest r : allRequests) {
+            Map<String, Object> entities = r.getEntities();
+            if (entities != null && entities.containsKey("REQ_ITEM")) {
+                Object reqItemObj = entities.get("REQ_ITEM");
+                if (reqItemObj instanceof java.util.List<?> list) {
+                    for (Object item : list) {
+                        String itemStr = item.toString().trim();
+                        if (!itemStr.isEmpty()) {
+                            itemCounts.put(itemStr, itemCounts.getOrDefault(itemStr, 0L) + 1);
+                        }
+                    }
+                } else if (reqItemObj instanceof String itemStr) {
+                    itemStr = itemStr.trim();
+                    if (!itemStr.isEmpty()) {
+                        itemCounts.put(itemStr, itemCounts.getOrDefault(itemStr, 0L) + 1);
+                    }
+                }
+            }
+        }
+
+        // 카운트 기준으로 내림차순 정렬
+        List<Map.Entry<String, Long>> sortedItems = new java.util.ArrayList<>(itemCounts.entrySet());
+        sortedItems.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+
+        Map<String, Long> frequentRequests = new java.util.LinkedHashMap<>();
+        long otherCount = 0;
+        
+        // 상위 4개 추출, 나머지는 '기타'로 합산
+        for (int i = 0; i < sortedItems.size(); i++) {
+            if (i < 4) {
+                frequentRequests.put(sortedItems.get(i).getKey(), sortedItems.get(i).getValue());
+            } else {
+                otherCount += sortedItems.get(i).getValue();
+            }
+        }
+        
+        if (otherCount > 0 || frequentRequests.isEmpty()) {
+            frequentRequests.put("기타", otherCount);
+        }
         
         long completedCount = allRequests.stream()
                 .filter(r -> "COMPLETED".equals(r.getStatus()))
