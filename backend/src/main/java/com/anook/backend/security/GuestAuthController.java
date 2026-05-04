@@ -3,10 +3,7 @@ package com.anook.backend.security;
 import com.anook.backend.security.dto.request.GuestLoginRequest;
 import com.anook.backend.security.dto.response.LoginResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 투숙객 인증 컨트롤러
@@ -30,5 +27,13 @@ public class GuestAuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody GuestLoginRequest request) {
         LoginResponse response = guestAuthService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 세션 유효성 검증 API
+     */
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verify() {
+        return ResponseEntity.ok().build();
     }
 }

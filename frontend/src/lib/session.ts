@@ -16,7 +16,7 @@ export interface SessionData {
  */
 export const sessionOptions: SessionOptions = {
   password: "complex_password_at_least_32_characters_long", 
-  cookieName: "aneuk_session",
+  cookieName: "anook_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,

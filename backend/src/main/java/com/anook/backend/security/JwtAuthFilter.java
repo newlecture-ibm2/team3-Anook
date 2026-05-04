@@ -2,7 +2,6 @@ package com.anook.backend.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -48,10 +47,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     
                     if (staffOpt.isPresent()) {
                         String dbJti = staffOpt.get().getJti();
-                        // JTI 비교 (로그 추가)
+                        // JTI 비교
                         if (jti == null || !jti.equals(dbJti)) {
                             log.warn("중복 로그인 감지: Staff={}, TokenJTI={}, DBJTI={}", identifier, jti, dbJti);
-                            isAuthorized = false;
+                            sendErrorResponse(response, com.anook.backend.global.exception.ErrorCode.DUPLICATE_LOGIN);
+                            return; // 필터 체인 중단
                         }
                     } else {
                         isAuthorized = false;
@@ -73,10 +73,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    private void sendErrorResponse(HttpServletResponse response, com.anook.backend.global.exception.ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType("application/json;charset=UTF-8");
+
+        com.anook.backend.global.dto.ErrorResponse errorResponse = com.anook.backend.global.dto.ErrorResponse.of(
+                errorCode.name(),
+                errorCode.getMessage(),
+                errorCode.getDetail()
+        );
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        
+        String json = mapper.writeValueAsString(errorResponse);
+        response.getWriter().write(json);
+    }
+
     private String extractTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후의 실제 토큰 문자열만 반환
+            return bearerToken.substring(7);
         }
         return null;
     }

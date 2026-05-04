@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "../../login.module.css";
 import { useLoginForm } from "../useLoginForm";
+import { useUiStore } from "@/stores/useUiStore";
+import Toast from "@/components/ui/Modal/Toast";
 
 /**
  * 실제 로그인 폼 컴포넌트 (useSearchParams 사용)
@@ -12,18 +14,33 @@ import { useLoginForm } from "../useLoginForm";
 export default function LoginForm() {
   const { pin, setPin, isLoading, error, handleLogin, performLogin } = useLoginForm();
   const searchParams = useSearchParams();
+  const { showToast } = useUiStore();
 
-  // QR 코드 자동 로그인 로직
+  // QR 코드 자동 로그인 및 중복 로그인 에러 체크
   useEffect(() => {
+    // 1. QR 코드 자동 로그인
     const code = searchParams.get("code");
     if (code) {
-      setPin(code); // 입력창에도 표시
-      performLogin(code); // 즉시 로그인 시도
+      setPin(code);
+      performLogin(code);
     }
-  }, [searchParams, performLogin, setPin]);
+
+    // 2. 중복 로그인 에러 체크 (기존 UI 시스템의 showToast 활용)
+    const errorParam = searchParams.get("error");
+    if (errorParam === "DUPLICATE_LOGIN") {
+      showToast(
+        "다른 기기 접속 감지", 
+        "error", 
+        "다른 곳에서 로그인이 확인되어 현재 세션이 종료되었습니다."
+      );
+    }
+  }, [searchParams, performLogin, setPin, showToast]);
 
   return (
     <div className={styles.container}>
+      {/* 로그인 페이지 전용 토스트 컴포넌트 배치 */}
+      <Toast />
+      
       <div className={styles.loginCard}>
         <header className={styles.header}>
           <h1 className={styles.logo}>Aneuk</h1>

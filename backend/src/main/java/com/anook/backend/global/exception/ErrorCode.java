@@ -74,7 +74,11 @@ public enum ErrorCode {
 
         DUPLICATE_PIN(HttpStatus.CONFLICT,
                         "이미 존재하는 PIN 번호입니다.",
-                        "자동 생성된 PIN 번호가 중복되었거나 이미 존재하는 PIN입니다. 다시 시도해주세요.");
+                        "자동 생성된 PIN 번호가 중복되었거나 이미 존재하는 PIN입니다. 다시 시도해주세요."),
+
+        DUPLICATE_LOGIN(HttpStatus.UNAUTHORIZED,
+                        "다른 기기에서 로그인되었습니다.",
+                        "동일한 PIN으로 다른 곳에서 로그인이 감지되어 현재 세션을 종료합니다.");
 
         private final HttpStatus status;
         private final String message;
