@@ -4,11 +4,17 @@ import React, { useState } from 'react';
 import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import useAdminRequests from '../useAdminRequests';
+import useAssignRequest from './useAssignRequest';
+import AssignModal from './_components/AssignModal/AssignModal';
 import styles from './page.module.css';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
-  const { requests, pending, loading, error } = useAdminRequests('FRONT');
+  const { requests, pending, loading, error, refetch } = useAdminRequests('FRONT');
+  const { staffList, assignRequest, loading: assigning } = useAssignRequest();
+
+  // 수동 배정 모달 상태
+  const [assignTarget, setAssignTarget] = useState<{ id: number; summary: string; roomNo: string } | null>(null);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
@@ -31,6 +37,13 @@ export default function FrontDeskPage() {
     : activeTab === 'unhandled'
       ? pending
       : requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+
+  const handleAssign = async (staffId: number) => {
+    if (!assignTarget) return false;
+    const success = await assignRequest(assignTarget.id, staffId);
+    if (success && refetch) refetch();
+    return success;
+  };
 
   return (
     <div className={styles.container}>
@@ -74,11 +87,23 @@ export default function FrontDeskPage() {
                 createdAt={req.createdAt}
                 primaryActionText="상담 시작"
                 secondaryActionText="수동 배정"
+                onSecondaryAction={() => setAssignTarget({ id: req.id, summary: req.summary, roomNo: req.roomNo })}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* 수동 배정 모달 */}
+      <AssignModal
+        isOpen={assignTarget !== null}
+        onClose={() => setAssignTarget(null)}
+        onAssign={handleAssign}
+        staffList={staffList}
+        requestSummary={assignTarget?.summary ?? ''}
+        roomNo={assignTarget?.roomNo ?? ''}
+        loading={assigning}
+      />
     </div>
   );
 }
