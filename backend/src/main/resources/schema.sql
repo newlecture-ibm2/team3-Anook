@@ -216,3 +216,5 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 -- 예시:
 -- [2026-05-04] staff 테이블에 jti 컬럼 추가 (중복 로그인 방지용)
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS jti VARCHAR(100);
+-- [2026-05-04] pms_guest 테이블에 QR 로그인용 access_code 컬럼 추가
+ALTER TABLE pms_guest ADD COLUMN IF NOT EXISTS access_code VARCHAR(100) UNIQUE;
