@@ -33,7 +33,6 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
         {ticks.map((t, i) => (
           <span key={i} className={styles.barYLabel}>{t}</span>
         ))}
-        <span className={styles.barYLabel}>0</span>
       </div>
       <div className={styles.barArea}>
         <div className={styles.barGridLines}>
