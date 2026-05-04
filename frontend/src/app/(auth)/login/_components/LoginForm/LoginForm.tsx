@@ -38,10 +38,11 @@ export default function LoginForm() {
         title="Anook"
         subtitle="스태프 통합 관리 시스템"
         icon={<SecurityIcon width={48} height={48} />}
-        placeholder="PIN 번호 6자리 입력"
+        placeholder="PIN 번호 또는 접속 코드 입력"
         onLogin={handleLogin}
         isLoading={isLoading}
         error={error || ''}
+        maxLength={20} // ★ 길이를 20자리로 확장
         footerContent={
           <>
             <p>© 2024 Team Anook. All rights reserved.</p>

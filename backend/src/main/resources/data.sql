@@ -113,6 +113,7 @@ INSERT INTO pms_menu (name, price, category, allergens, available) VALUES
     ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', TRUE),
     ('바닐라 아이스크림',    8000,  'DESSERT', '유제품',               TRUE)
 ON CONFLICT DO NOTHING;
+
 -- Mock 요청 시드 데이터
 -- ============================================================
 
@@ -129,8 +130,21 @@ ON CONFLICT DO NOTHING;
 -- ============================================================
 -- PMS 테스트 데이터 (투숙객 인증 테스트용)
 -- ============================================================
-
 INSERT INTO pms_guest (room_no, name, phone, access_code, checkout_date) VALUES
-    ('707', '홍길동', '010-1234-5678', 'test-guest-code-1234', '2026-12-31')
+    ('707', '김철수', '010-1234-5678', 'test-guest-code-1234', '2024-12-31'),
+    ('101', '테스트', '010-0000-0000', 'test-guest-code-1233', '2024-12-31')
 ON CONFLICT (room_no) DO UPDATE SET
     access_code = EXCLUDED.access_code;
+
+-- 시퀀스 동기화
+SELECT setval('pms_guest_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pms_guest));
+
+-- ============================================================
+-- AI 대화 메시지 시드 데이터 (격리 테스트용)
+-- ============================================================
+INSERT INTO message (sender_type, content, room_no, guest_id, created_at) VALUES
+    ('GUEST', '안녕하세요, 707호 홍길동입니다. 수건 좀 가져다주세요.', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '2 hours'),
+    ('AI',    '안녕하세요! 요청하신 대로 수건 2장을 하우스키핑 부서에 전달했습니다. 더 필요하신 게 있으신가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '119 minutes'),
+    ('GUEST', '아, 그리고 스테이크 주문도 가능한가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '60 minutes'),
+    ('AI',    '네, 가능합니다! 스테이크 굽기는 어떻게 해드릴까요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '59 minutes')
+ON CONFLICT DO NOTHING;

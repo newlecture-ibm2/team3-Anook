@@ -57,6 +57,13 @@ public class RequestPersistenceAdapter implements RequestRepositoryPort {
     }
 
     @Override
+    public List<Request> findByRoomNoAndGuestId(String roomNo, Long guestId) {
+        return jpaRepository.findByRoomNoAndGuestId(roomNo, guestId).stream()
+                .map(RequestJpaEntity::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<Request> findById(Long id) {
         return jpaRepository.findById(id)
                 .map(RequestJpaEntity::toDomain);

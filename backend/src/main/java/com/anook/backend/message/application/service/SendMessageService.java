@@ -8,7 +8,6 @@ import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
-import com.anook.backend.message.domain.exception.MessageThrottleException;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,12 +57,12 @@ public class SendMessageService implements SendMessageUseCase {
         checkDebounce(cmd.roomNo());
 
         // 2. Guest 메시지 저장 → 즉시 반환
-        Message guestMsg = Message.createGuestMessage(cmd.roomNo(), cmd.content());
+        Message guestMsg = Message.createGuestMessage(cmd.roomNo(), cmd.guestId(), cmd.content());
         guestMsg = messagePort.save(guestMsg);
         log.info("[Message] Guest 메시지 저장 완료 — id: {}, room: {}", guestMsg.getId(), cmd.roomNo());
 
         // 3. AI 처리는 비동기로 위임
-        processAiAsync(cmd.roomNo(), cmd.content(), cmd.guestLanguage());
+        processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -79,13 +78,13 @@ public class SendMessageService implements SendMessageUseCase {
      */
     @Async("aiTaskExecutor")
     @Transactional
-    public void processAiAsync(String roomNo, String content, String language) {
+    public void processAiAsync(String roomNo, Long guestId, String content, String language) {
         try {
             // 3. AI 호출
             MessageAiResult analysis = aiPort.analyze(content, roomNo, language);
 
             // 4. AI 응답 메시지 저장
-            Message aiMsg = Message.createAiReply(roomNo, analysis.guestReply());
+            Message aiMsg = Message.createAiReply(roomNo, guestId, analysis.guestReply());
             aiMsg = messagePort.save(aiMsg);
             log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), analysis.guestReply());
 
@@ -103,6 +102,7 @@ public class SendMessageService implements SendMessageUseCase {
                 eventPublisher.publishEvent(new RequestDetectedEvent(
                         this,
                         roomNo,
+                        guestId,
                         analysis.domainCode(),
                         analysis.priority(),
                         analysis.entities(),
@@ -132,7 +132,11 @@ public class SendMessageService implements SendMessageUseCase {
         long now = System.currentTimeMillis();
         Long lastTime = lastSendTimeMap.get(roomNo);
 
-
+        if (lastTime != null && (now - lastTime) < DEBOUNCE_MS) {
+            log.warn("[Message] 디바운스 차단 — room: {}, interval: {}ms", roomNo, (now - lastTime));
+            throw new com.anook.backend.global.exception.BusinessException(
+                    com.anook.backend.global.exception.ErrorCode.DEBOUNCE_ERROR);
+        }
 
         lastSendTimeMap.put(roomNo, now);
     }

@@ -1,5 +1,7 @@
 package com.anook.backend.message.adapter.in.web;
 
+import com.anook.backend.global.exception.BusinessException;
+import com.anook.backend.global.exception.ErrorCode;
 import com.anook.backend.message.adapter.in.web.dto.request.SendMessageRequest;
 import com.anook.backend.message.application.dto.request.SendMessageCommand;
 import com.anook.backend.message.application.dto.response.MessageDto;
@@ -7,10 +9,14 @@ import com.anook.backend.message.application.dto.response.SendMessageResult;
 import com.anook.backend.message.application.port.in.GetMessageHistoryUseCase;
 import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 고객 메시지 컨트롤러
@@ -19,6 +25,7 @@ import java.util.List;
  * ❌ @RequestMapping에 /api 접두어 금지 (BFF가 제거하고 전달)
  * ❌ @RequestBody Map 금지 — 전용 Request DTO 사용
  */
+@Slf4j
 @RestController
 @RequestMapping("/chat/{roomNo}/messages")
 @RequiredArgsConstructor
@@ -27,22 +34,19 @@ public class GuestMessageController {
     private final SendMessageUseCase sendMessageUseCase;
     private final GetMessageHistoryUseCase getMessageHistoryUseCase;
 
-    /**
-     * 고객 메시지 전송
-     *
-     * POST /chat/{roomNo}/messages
-     * Body: { "content": "수건 2장 주세요" }
-     */
     @PostMapping
     public ResponseEntity<SendMessageResult> sendMessage(
             @PathVariable String roomNo,
-            @RequestBody SendMessageRequest request
+            @RequestBody SendMessageRequest request,
+            Principal principal
     ) {
+        validateRoomNo(principal, roomNo);
         if (request.content() == null || request.content().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 
-        SendMessageCommand command = new SendMessageCommand(roomNo, request.content());
+        Long guestId = Long.parseLong(principal.getName());
+        SendMessageCommand command = new SendMessageCommand(roomNo, guestId, request.content());
         SendMessageResult result = sendMessageUseCase.send(command);
 
         return ResponseEntity.ok(result);
@@ -54,8 +58,29 @@ public class GuestMessageController {
      * GET /chat/{roomNo}/messages
      */
     @GetMapping
-    public ResponseEntity<List<MessageDto>> getHistory(@PathVariable String roomNo) {
-        List<MessageDto> messages = getMessageHistoryUseCase.getHistory(roomNo);
+    public ResponseEntity<List<MessageDto>> getHistory(
+            @PathVariable String roomNo,
+            Principal principal
+    ) {
+        validateRoomNo(principal, roomNo);
+        Long guestId = Long.parseLong(principal.getName());
+        List<MessageDto> messages = getMessageHistoryUseCase.getHistory(roomNo, guestId);
         return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * URL의 roomNo와 토큰의 roomNo 클레임이 일치하는지 검증 (격리 보안)
+     */
+    private void validateRoomNo(Principal principal, String roomNo) {
+        if (principal instanceof UsernamePasswordAuthenticationToken auth) {
+            Object details = auth.getDetails();
+            if (details instanceof Map<?, ?> claims) {
+                String tokenRoomNo = (String) claims.get("roomNo");
+                if (tokenRoomNo != null && !tokenRoomNo.equals(roomNo)) {
+                    log.warn("접근 거부: URL roomNo({}) != Token roomNo({})", roomNo, tokenRoomNo);
+                    throw new BusinessException(ErrorCode.ACCESS_DENIED);
+                }
+            }
+        }
     }
 }

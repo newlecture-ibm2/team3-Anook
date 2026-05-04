@@ -784,3 +784,27 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+/* ── QR Code ── */
+.qrTitleGroup {
+  margin-bottom: 24px;
+}
+
+.qrWrapper {
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  display: inline-block;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.qrUrlText {
+  font-size: 11px;
+  color: #64748b;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-family: monospace;
+}

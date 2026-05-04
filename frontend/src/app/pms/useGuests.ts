@@ -3,11 +3,12 @@
 import { useState, useCallback } from 'react';
 import { handleResponse } from '@/lib/api';
 
-interface Guest {
+export interface Guest {
   id: number;
   roomNumber: string;
   name: string;
   phone: string | null;
+  accessCode: string; // ★ 추가
   checkinDate: string;
   checkoutDate: string;
 }

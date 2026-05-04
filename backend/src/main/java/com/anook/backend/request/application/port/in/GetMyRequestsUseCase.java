@@ -10,10 +10,11 @@ import java.util.List;
 public interface GetMyRequestsUseCase {
     
     /**
-     * 방 번호로 모든 요청 목록을 조회합니다.
+     * 방 번호와 투숙객 ID로 모든 요청 목록을 조회합니다. (데이터 격리)
      * 
      * @param roomNo 방 번호
+     * @param guestId 투숙객 ID
      * @return 요청 목록
      */
-    List<GetMyRequestsResult> getMyRequests(String roomNo);
+    List<GetMyRequestsResult> getMyRequests(String roomNo, Long guestId);
 }
