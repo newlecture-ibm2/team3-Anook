@@ -5,6 +5,7 @@ interface Stats {
   byStatus: Record<string, number>;
   byDepartment: Record<string, number>;
   byPriority: Record<string, number>;
+  frequentRequests: Record<string, number>;
   overdueCount: number;
   avgResolutionTimeMins: number;
   resolutionRatePct: number;
