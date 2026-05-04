@@ -17,8 +17,8 @@ public class GetMyRequestsService implements GetMyRequestsUseCase {
     private final RequestRepositoryPort requestRepositoryPort;
 
     @Override
-    public List<GetMyRequestsResult> getMyRequests(String roomNo) {
-        return requestRepositoryPort.findByRoomNo(roomNo).stream()
+    public List<GetMyRequestsResult> getMyRequests(String roomNo, Long guestId) {
+        return requestRepositoryPort.findByRoomNoAndGuestId(roomNo, guestId).stream()
                 .map(request -> new GetMyRequestsResult(
                         request.getId(),
                         request.getStatus().name(),

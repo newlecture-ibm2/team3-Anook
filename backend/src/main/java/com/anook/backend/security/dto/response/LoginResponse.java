@@ -13,6 +13,7 @@ public record LoginResponse(
     String token,      // JWT 토큰
     String role,       // 권한 (ADMIN, STAFF, GUEST)
     String name,       // 사용자 이름
-    String department  // 소속 부서명 (투숙객은 null 처리하여 제외)
+    String department, // 소속 부서명 (투숙객은 null 처리하여 제외)
+    String roomNo      // 객실 번호 (투숙객 전용)
 ) {
 }

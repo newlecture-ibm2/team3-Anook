@@ -37,6 +37,7 @@ public class CreateRequestOnEventService {
         // Request 도메인 객체 생성
         Request request = Request.create(
                 event.getRoomNo(),
+                event.getGuestId(),
                 domainCode,
                 event.getPriority(),
                 event.getEntities(),

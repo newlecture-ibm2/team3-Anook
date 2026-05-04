@@ -33,7 +33,8 @@ public class StaffAuthService {
     public LoginResponse login(StaffLoginRequest request) {
         // 1. PIN 번호로 직원 조회
         Staff staff = staffRepositoryPort.findByPin(request.pin())
-                .orElseThrow(() -> new IllegalArgumentException("잘못된 PIN 번호입니다."));
+                .orElseThrow(() -> new com.anook.backend.global.exception.BusinessException(
+                        com.anook.backend.global.exception.ErrorCode.GUEST_NOT_FOUND)); // 임시로 NOT_FOUND 계열 사용
 
         // 2. 부서의 isAdmin 여부에 따라 권한(Role) 결정
         String role = staff.getDepartment().isAdmin() ? "ADMIN" : "STAFF";

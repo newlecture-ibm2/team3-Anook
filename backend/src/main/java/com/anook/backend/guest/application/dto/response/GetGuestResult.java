@@ -13,6 +13,7 @@ public record GetGuestResult(
         String roomNumber,
         String name,
         String phone,
+        String accessCode, // ★ QR 코드 생성을 위한 랜덤 코드 추가
         LocalDateTime checkinDate,
         LocalDate checkoutDate
 ) {
@@ -22,6 +23,7 @@ public record GetGuestResult(
                 guest.getRoomNumber(),
                 guest.getName(),
                 guest.getPhone(),
+                guest.getAccessCode(), // ★ 매핑 추가
                 guest.getCheckinDate(),
                 guest.getCheckoutDate()
         );
