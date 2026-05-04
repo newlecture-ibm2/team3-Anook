@@ -111,7 +111,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ message: "요청 ID가 누락되었습니다." }, { status: 400 });
     }
 
-    if (action === "accept" || action === "complete") {
+    const body = await request.json().catch(() => ({}));
+
+    if (action === "accept" || action === "complete" || action === "transfer") {
       let staffId = null;
       try {
         const payloadBase64 = session.token.split('.')[1];
@@ -123,6 +125,16 @@ export async function PATCH(request: NextRequest) {
       }
 
       const backendEndpoint = `${BACKEND_URL}/staff/requests/${id}/${action}`;
+      
+      const payload: any = { staffId: Number(staffId) };
+      if (body.version !== undefined) payload.version = body.version;
+      if (action === "transfer") {
+        if (!body.toDepartmentId || !body.reason) {
+          return NextResponse.json({ message: "부서 전달 파라미터가 누락되었습니다." }, { status: 400 });
+        }
+        payload.toDepartmentId = body.toDepartmentId;
+        payload.reason = body.reason;
+      }
 
       const response = await fetch(backendEndpoint, {
         method: "PATCH",
@@ -130,7 +142,7 @@ export async function PATCH(request: NextRequest) {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.token}`,
         },
-        body: JSON.stringify({ staffId: Number(staffId) }),
+        body: JSON.stringify(payload),
         cache: "no-store",
       });
 
@@ -163,4 +175,5 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
 

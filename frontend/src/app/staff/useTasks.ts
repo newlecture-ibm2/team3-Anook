@@ -15,6 +15,7 @@ export interface StaffTask {
   assignedStaffName: string | null;
   confidence: number | null;
   createdAt: string;
+  version: number;
 }
 
 interface UseTasksReturn {
@@ -22,8 +23,9 @@ interface UseTasksReturn {
   loading: boolean;
   error: string | null;
   refetch: () => void;
-  acceptTask: (id: number) => Promise<void>;
-  completeTask: (id: number) => Promise<void>;
+  acceptTask: (id: number, version: number) => Promise<void>;
+  completeTask: (id: number, version: number) => Promise<void>;
+  transferTask: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
 }
 
 export function useTasks(departmentId?: string): UseTasksReturn {
@@ -33,8 +35,10 @@ export function useTasks(departmentId?: string): UseTasksReturn {
 
   const { subscribe } = useWebSocket();
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
+  const fetchTasks = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const url = departmentId
@@ -47,32 +51,56 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     } catch (err) {
       setError(err instanceof Error ? err.message : '요청 목록을 불러오지 못했습니다.');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [departmentId]);
 
-  const acceptTask = useCallback(async (id: number) => {
+  const acceptTask = useCallback(async (id: number, version: number) => {
     try {
       const res = await fetch(`/api/staff?action=accept&id=${id}`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
       });
       await handleResponse(res);
-      await fetchTasks();
+      await fetchTasks(true);
     } catch (err) {
       console.error('Failed to accept task:', err);
+      fetchTasks(true);
       throw err;
     }
   }, [fetchTasks]);
 
-  const completeTask = useCallback(async (id: number) => {
+  const completeTask = useCallback(async (id: number, version: number) => {
     try {
       const res = await fetch(`/api/staff?action=complete&id=${id}`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
       });
       await handleResponse(res);
-      await fetchTasks();
+      await fetchTasks(true);
     } catch (err) {
       console.error('Failed to complete task:', err);
+      fetchTasks(true);
+      throw err;
+    }
+  }, [fetchTasks]);
+
+  const transferTask = useCallback(async (id: number, version: number, toDepartmentId: string, reason: string) => {
+    try {
+      const res = await fetch(`/api/staff?action=transfer&id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version, toDepartmentId, reason })
+      });
+      await handleResponse(res);
+      await fetchTasks(true);
+    } catch (err) {
+      console.error('Failed to transfer task:', err);
+      fetchTasks(true);
       throw err;
     }
   }, [fetchTasks]);
@@ -83,19 +111,11 @@ export function useTasks(departmentId?: string): UseTasksReturn {
 
   useEffect(() => {
     const handleEvent = (data: unknown) => {
-      const event = data as { type?: string; payload?: StaffTask };
+      const event = data as { type?: string };
       if (!event || !event.type) return;
 
-      if (event.type === 'NEW_REQUEST' && event.payload) {
-        setTasks((prev) => {
-          if (prev.some(t => t.id === event.payload!.id)) return prev;
-          if (departmentId && event.payload!.departmentId !== departmentId) return prev;
-          return [event.payload!, ...prev];
-        });
-      } else if (event.type === 'STATUS_CHANGED' && event.payload) {
-        setTasks((prev) =>
-          prev.map((t) => (t.id === event.payload!.id ? event.payload! : t))
-        );
+      if (event.type === 'NEW_REQUEST' || event.type === 'STATUS_CHANGED') {
+        fetchTasks(true);
       }
     };
 
@@ -109,5 +129,5 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     };
   }, [subscribe, departmentId]);
 
-  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask };
+  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask };
 }
