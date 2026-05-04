@@ -112,7 +112,7 @@ export default function DashboardPage() {
     ? Object.entries(stats.byDepartment).map(([k, v]) => ({ label: DEPT_NAMES[k] || k, value: v }))
     : [];
 
-  const frequentRequestsList = stats
+  const frequentRequestsList = stats && stats.frequentRequests
     ? Object.entries(stats.frequentRequests).map(([k, v]) => ({ label: k, value: v }))
     : [];
   
