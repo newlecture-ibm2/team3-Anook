@@ -6,6 +6,13 @@ interface Stats {
   byDepartment: Record<string, number>;
   byPriority: Record<string, number>;
   overdueCount: number;
+  avgResolutionTimeMins: number;
+  resolutionRatePct: number;
+  customerSatisfaction: number;
+  totalChange: string;
+  avgResolutionTimeChange: string;
+  resolutionRateChange: string;
+  customerSatisfactionChange: string;
 }
 
 export default function useAdminStats() {

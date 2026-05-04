@@ -164,24 +164,31 @@ export default function DashboardPage() {
       {/* Bottom Content Section (Summaries) */}
       <div className={styles.summaryGrid}>
         <SummaryCard 
-          title="총 요청" 
+          title="오늘 총 요청" 
           value={loading ? '-' : stats?.total ?? 0} 
+          changeValue={stats?.totalChange ?? '+0%'} 
+          changeType={(stats?.totalChange?.startsWith('-') || stats?.totalChange === '+0%') ? 'negative' : 'positive'} 
           size="md" 
         />
         <SummaryCard 
-          title="대기 중" 
-          value={loading ? '-' : stats?.byStatus?.PENDING ?? 0} 
+          title="평균 응답 시간" 
+          value={loading ? '-' : `${stats?.avgResolutionTimeMins ?? 0}m`} 
+          changeValue={stats?.avgResolutionTimeChange ?? '-0.0m'} 
+          changeType={(stats?.avgResolutionTimeChange?.startsWith('-') || stats?.avgResolutionTimeChange === '+0.0m') ? 'positive' : 'negative'} 
           size="md" 
         />
         <SummaryCard 
-          title="진행 중" 
-          value={loading ? '-' : (stats?.byStatus?.ASSIGNED ?? 0) + (stats?.byStatus?.IN_PROGRESS ?? 0)} 
+          title="해결률" 
+          value={loading ? '-' : `${stats?.resolutionRatePct ?? 0}%`} 
+          changeValue={stats?.resolutionRateChange ?? '+0.0%'} 
+          changeType={(stats?.resolutionRateChange?.startsWith('-') || stats?.resolutionRateChange === '+0.0%') ? 'negative' : 'positive'} 
           size="md" 
         />
         <SummaryCard 
-          title="초과 건수" 
-          value={loading ? '-' : stats?.overdueCount ?? 0} 
-          changeType={stats && stats.overdueCount > 0 ? 'negative' : 'positive'}
+          title="고객 만족도" 
+          value={loading ? '-' : stats?.customerSatisfaction ?? 0} 
+          changeValue={stats?.customerSatisfactionChange ?? '+0.0'} 
+          changeType={(stats?.customerSatisfactionChange?.startsWith('-') || stats?.customerSatisfactionChange === '+0.0') ? 'negative' : 'positive'} 
           size="md" 
         />
       </div>

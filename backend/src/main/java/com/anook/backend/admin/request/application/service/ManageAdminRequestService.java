@@ -145,7 +145,87 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
         long overdueCount = adminRequestQueryPort.findOverdue().size();
 
-        return new AdminRequestStatsResult(total, byStatus, byDept, byPriority, overdueCount);
+        // 전체 데이터 조회하여 실제 통계 계산
+        List<com.anook.backend.admin.request.domain.model.AdminRequest> allRequests = 
+                adminRequestQueryPort.findAll(null, null, null, null);
+        
+        long completedCount = allRequests.stream()
+                .filter(r -> "COMPLETED".equals(r.getStatus()))
+                .count();
+
+        // 1. 해결률 (%)
+        double resolutionRatePct = total > 0 ? ((double) completedCount / total) * 100.0 : 0.0;
+
+        // 2. 평균 응답 시간 (분) - COMPLETED 상태인 항목들의 (updatedAt - createdAt) 평균
+        double avgResolutionTimeMins = allRequests.stream()
+                .filter(r -> "COMPLETED".equals(r.getStatus()) && r.getUpdatedAt() != null && r.getCreatedAt() != null)
+                .mapToLong(r -> java.time.Duration.between(r.getCreatedAt(), r.getUpdatedAt()).toMinutes())
+                .average()
+                .orElse(0.0);
+
+        // 3. 고객 만족도 (5.0 만점) - 평균 처리 시간을 기반으로 점수 산정 (빠를수록 높음)
+        double customerSatisfaction = 4.5;
+        if (completedCount > 0) {
+            double penalty = avgResolutionTimeMins / 30.0; // 30분마다 1점 감점
+            customerSatisfaction = Math.max(3.0, Math.min(5.0, 5.0 - penalty));
+        }
+
+        // 오늘 / 어제 기준일 계산
+        java.time.LocalDateTime startOfToday = java.time.LocalDate.now().atStartOfDay();
+        java.time.LocalDateTime startOfYesterday = startOfToday.minusDays(1);
+
+        List<com.anook.backend.admin.request.domain.model.AdminRequest> todayRequests = allRequests.stream()
+                .filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().isBefore(startOfToday))
+                .toList();
+        List<com.anook.backend.admin.request.domain.model.AdminRequest> yesterdayRequests = allRequests.stream()
+                .filter(r -> r.getCreatedAt() != null && !r.getCreatedAt().isBefore(startOfYesterday) && r.getCreatedAt().isBefore(startOfToday))
+                .toList();
+
+        // 1. 총 요청 증감률
+        long todayTotal = todayRequests.size();
+        long yesterdayTotal = yesterdayRequests.size();
+        String totalChange = "+0%";
+        if (yesterdayTotal > 0) {
+            long diff = todayTotal - yesterdayTotal;
+            totalChange = (diff > 0 ? "+" : "") + Math.round(((double) diff / yesterdayTotal) * 100) + "%";
+        } else if (todayTotal > 0) {
+            totalChange = "+100%";
+        }
+
+        // 지표 계산을 위한 헬퍼 클래스 (내부 레코드)
+        record Metrics(double avgTime, double resRate, double satisfaction) {}
+        
+        java.util.function.Function<List<com.anook.backend.admin.request.domain.model.AdminRequest>, Metrics> calcMetrics = (reqs) -> {
+            long count = reqs.size();
+            long compCount = reqs.stream().filter(r -> "COMPLETED".equals(r.getStatus())).count();
+            double rate = count > 0 ? ((double) compCount / count) * 100.0 : 0.0;
+            double avgTime = reqs.stream()
+                    .filter(r -> "COMPLETED".equals(r.getStatus()) && r.getUpdatedAt() != null && r.getCreatedAt() != null)
+                    .mapToLong(r -> java.time.Duration.between(r.getCreatedAt(), r.getUpdatedAt()).toMinutes())
+                    .average().orElse(0.0);
+            double sat = 4.5;
+            if (compCount > 0) sat = Math.max(3.0, Math.min(5.0, 5.0 - (avgTime / 30.0)));
+            return new Metrics(avgTime, rate, sat);
+        };
+
+        Metrics todayMetrics = calcMetrics.apply(todayRequests);
+        Metrics yesterdayMetrics = calcMetrics.apply(yesterdayRequests);
+
+        // 증감 텍스트 생성
+        String avgResolutionTimeChange = String.format("%s%.1fm", (todayMetrics.avgTime() >= yesterdayMetrics.avgTime() ? "+" : ""), todayMetrics.avgTime() - yesterdayMetrics.avgTime());
+        String resolutionRateChange = String.format("%s%.1f%%", (todayMetrics.resRate() >= yesterdayMetrics.resRate() ? "+" : ""), todayMetrics.resRate() - yesterdayMetrics.resRate());
+        String customerSatisfactionChange = String.format("%s%.1f", (todayMetrics.satisfaction() >= yesterdayMetrics.satisfaction() ? "+" : ""), todayMetrics.satisfaction() - yesterdayMetrics.satisfaction());
+
+        // 소수점 1자리 반올림
+        avgResolutionTimeMins = Math.round(avgResolutionTimeMins * 10.0) / 10.0;
+        resolutionRatePct = Math.round(resolutionRatePct * 10.0) / 10.0;
+        customerSatisfaction = Math.round(customerSatisfaction * 10.0) / 10.0;
+
+        return new AdminRequestStatsResult(
+                total, byStatus, byDept, byPriority, overdueCount,
+                avgResolutionTimeMins, resolutionRatePct, customerSatisfaction,
+                totalChange, avgResolutionTimeChange, resolutionRateChange, customerSatisfactionChange
+        );
     }
 
     private Map<String, Long> toMap(List<Object[]> rows) {
