@@ -51,6 +51,11 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     """
     백엔드 PythonAiHttpAdapter가 호출하는 단일 분석 엔드포인트.
     """
+    print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
+    if request.chat_history:
+        print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
+    else:
+        print("[Analyze] 📚 수신된 대화 맥락: 없음 (첫 대화 또는 DB 조회 실패)")
 
     # ──────────────────────────────────────────────
     # STEP 1: RAG 지식 검색 (COMMON 도메인 우선)

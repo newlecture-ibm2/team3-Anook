@@ -53,6 +53,8 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION.
+- If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CHITCHAT" so no actionable ticket is created.
 - If mode is "CHITCHAT" or "CLARIFICATION", the domain MUST be `null`.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
 - Regardless of the input language (English, Japanese, Chinese, etc.), classify it uniformly based on meaning.
