@@ -16,7 +16,7 @@ import styles from './page.module.css';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
-  const { requests, pending, loading, error, refetch } = useAdminRequests('FRONT');
+  const { requests, pending, inProgress, loading, error, refetch } = useAdminRequests('FRONT');
   const { staffList, assignRequest, loading: assigning } = useAssignRequest();
   const { createRequest, loading: creating } = useCreateRequest();
   const { detail, fetchDetail, changePriority, assignStaff, cancelRequest } = useRequestDetail();
@@ -50,7 +50,8 @@ export default function FrontDeskPage() {
     if (activeTab === 'all') return requests;
     if (activeTab === 'unhandled') return pending;
     if (activeTab === 'escalation') return escalations;
-    return requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+    if (activeTab === 'exception') return inProgress;
+    return requests;
   };
   const filteredRequests = getFilteredRequests();
 
@@ -92,7 +93,7 @@ export default function FrontDeskPage() {
             { label: '전체 요청', value: 'all' },
             { label: '미처리 대기', value: 'unhandled', count: pending.length },
             { label: '승인 대기', value: 'escalation', count: escalations.length },
-            { label: '예외 발생', value: 'exception', count: 0 }
+            { label: '예외 발생', value: 'exception', count: inProgress.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}

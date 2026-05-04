@@ -73,7 +73,7 @@ public class AdminRequest {
      * 배정 가능 여부
      */
     public boolean isAssignable() {
-        return "PENDING".equals(status) || "ASSIGNED".equals(status);
+        return "PENDING".equals(status) || "ASSIGNED".equals(status) || "IN_PROGRESS".equals(status);
     }
 
     // === Getter ===
