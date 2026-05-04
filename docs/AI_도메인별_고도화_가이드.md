@@ -207,13 +207,15 @@ def run_hk_agent(user_message: str, room_no: str = "", chat_history: list = None
 
 ### 3.4 Step 3 — 독립 API 엔드포인트 (`ai/app/api/v1/endpoints/hk.py`)
 
-> 이 파일은 **개별 테스트용**입니다. 실제 채팅 흐름은 `/analyze`를 통해 자동 호출됩니다.
+> 이 파일은 **개별 테스트 및 직접 호출용**입니다. 실제 채팅 흐름은 `/analyze`를 통해 자동 호출됩니다.
+> ⚠️ `response_model`은 반드시 `HotelRequestSchema`로 지정해야 합니다.
 
 ```python
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List
 from app.core.hk_engine import run_hk_agent
+from app.schemas.common import HotelRequestSchema
 
 router = APIRouter()
 
@@ -222,9 +224,27 @@ class DomainRequest(BaseModel):
     room_no: str
     chat_history: List[dict] = []
 
-@router.post("/hk")
+@router.post("/hk", response_model=HotelRequestSchema)
 async def handle_hk(request: DomainRequest):
     return run_hk_agent(request.message, request.room_no, request.chat_history)
+```
+
+### 3.5 Step 4 — 메인 라우터에 플러그 꽂기 (`ai/app/api/v1/router.py` 수정)
+
+> **기존 코드를 지우지 말고**, 하단에 `include_router`를 **추가만** 하세요.
+
+```python
+from fastapi import APIRouter
+from app.api.v1.endpoints.router import router as router_endpoint
+from app.api.v1.endpoints.hk import router as hk_endpoint  # ← 추가
+
+api_router = APIRouter()
+
+# 기존 메인 라우터
+api_router.include_router(router_endpoint, tags=["router"])
+
+# 추가: 멀티탭에 도메인 플러그 꽂기
+api_router.include_router(hk_endpoint, prefix="/hk", tags=["housekeeping"])
 ```
 
 ---
