@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { handleResponse } from '@/lib/api';
 
 interface PmsRoom {
   number: string;
@@ -19,8 +20,7 @@ export default function useRooms() {
     setError(null);
     try {
       const res = await fetch('/api/pms/rooms');
-      if (!res.ok) throw new Error('객실 목록 조회 실패');
-      const data = await res.json();
+      const data = await handleResponse<PmsRoom[]>(res);
       setRooms(data);
     } catch (err: any) {
       setError(err.message);

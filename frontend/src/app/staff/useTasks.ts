@@ -42,14 +42,6 @@ export function useTasks(departmentId?: string): UseTasksReturn {
         : '/api/staff?action=requests';
 
       const res = await fetch(url);
-
-      if (res.status === 401) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-          return;
-        }
-      }
-
       const data = await handleResponse<StaffTask[]>(res);
       setTasks(data);
     } catch (err) {
@@ -64,12 +56,6 @@ export function useTasks(departmentId?: string): UseTasksReturn {
       const res = await fetch(`/api/staff?action=accept&id=${id}`, {
         method: 'PATCH',
       });
-      if (res.status === 401) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-          return;
-        }
-      }
       await handleResponse(res);
       await fetchTasks();
     } catch (err) {
@@ -83,12 +69,6 @@ export function useTasks(departmentId?: string): UseTasksReturn {
       const res = await fetch(`/api/staff?action=complete&id=${id}`, {
         method: 'PATCH',
       });
-      if (res.status === 401) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-          return;
-        }
-      }
       await handleResponse(res);
       await fetchTasks();
     } catch (err) {
@@ -109,7 +89,6 @@ export function useTasks(departmentId?: string): UseTasksReturn {
       if (event.type === 'NEW_REQUEST' && event.payload) {
         setTasks((prev) => {
           if (prev.some(t => t.id === event.payload!.id)) return prev;
-          // 부서 필터링이 걸려있을 경우, 다른 부서의 새 요청은 무시
           if (departmentId && event.payload!.departmentId !== departmentId) return prev;
           return [event.payload!, ...prev];
         });
@@ -121,8 +100,6 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
-
-    // 부서 전용 채널 구독 (전달받은 departmentId 사용, 없으면 HK 기본)
     const deptChannel = `/topic/dept/${departmentId || 'HK'}`;
     const unsubscribeDept = subscribe(deptChannel, handleEvent);
 

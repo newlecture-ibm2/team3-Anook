@@ -11,4 +11,5 @@ public class Staff {
     private String pin;
     private Long roleId;
     private Department department;
+    private String jti; // JWT 식별자
 }

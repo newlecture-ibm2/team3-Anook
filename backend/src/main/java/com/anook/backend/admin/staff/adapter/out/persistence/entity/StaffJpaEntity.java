@@ -28,20 +28,24 @@ public class StaffJpaEntity {
     @Column(name = "department_id", nullable = false, length = 20)
     private String departmentId;
 
-    private StaffJpaEntity(Long id, String name, String pin, Long roleId, String departmentId) {
+    @Column(length = 100)
+    private String jti; // JWT 식별자 (중복 로그인 방지)
+
+    private StaffJpaEntity(Long id, String name, String pin, Long roleId, String departmentId, String jti) {
         this.id = id;
         this.name = name;
         this.pin = pin;
         this.roleId = roleId;
         this.departmentId = departmentId;
+        this.jti = jti;
     }
 
     public Staff toDomain() {
-        return new Staff(id, name, pin, roleId, departmentId);
+        return new Staff(id, name, pin, roleId, departmentId, jti);
     }
 
     public static StaffJpaEntity fromDomain(Staff staff) {
         return new StaffJpaEntity(staff.getId(), staff.getName(), staff.getPin(),
-                staff.getRoleId(), staff.getDepartmentId());
+                staff.getRoleId(), staff.getDepartmentId(), staff.getJti());
     }
 }

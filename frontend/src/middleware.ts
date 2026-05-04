@@ -4,6 +4,8 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { sessionOptions, SessionData } from "@/lib/session";
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+
 /**
  * Next.js Middleware
  * 특정 경로에 대한 접근 권한을 서버 사이드에서 사전에 검사합니다.
@@ -15,7 +17,6 @@ export async function middleware(request: NextRequest) {
   // 1. 이미 로그인한 사용자가 로그인 페이지에 접근할 때
   if (pathname === "/login") {
     if (session.isLoggedIn) {
-      // 역할에 따른 리다이렉트
       let redirectUrl = "/staff";
       if (session.role === "ADMIN") redirectUrl = "/admin/dashboard";
       if (session.role === "GUEST") redirectUrl = "/guest/chat";
@@ -25,18 +26,49 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. 보호된 경로 접근 시 로그인 여부 확인
+  // 2. 보호된 경로 정의
   const isProtectedPath = 
     pathname.startsWith("/admin") || 
     pathname.startsWith("/staff") || 
-    pathname.startsWith("/guest"); // ★ /guest 경로 보호 추가
+    pathname.startsWith("/guest");
 
+  // 3. 비로그인 상태로 보호된 경로 접근 시
   if (isProtectedPath && !session.isLoggedIn) {
-    // 투숙객 경로(/guest)에서 튕길 때는 /login 대신 전용 안내 페이지가 필요할 수 있으나, 우선 /login으로 통일
+    const hasDuplicateLoginError = request.cookies.get('duplicate_login_error');
+    if (hasDuplicateLoginError) {
+      const response = NextResponse.redirect(new URL("/login?error=DUPLICATE_LOGIN", request.url));
+      response.cookies.delete('duplicate_login_error');
+      return response;
+    }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 3. 권한별 세부 통제
+  // 4. 로그인 상태일 때 세션 유효성 서버 사이드 검증 (중복 로그인 즉시 감지)
+  if (isProtectedPath && session.isLoggedIn && session.token) {
+    const verifyPath = session.role === 'GUEST' ? '/auth/guest/verify' : '/auth/staff/verify';
+    
+    try {
+      const verifyRes = await fetch(`${BACKEND_URL}${verifyPath}`, {
+        headers: { 'Authorization': `Bearer ${session.token}` },
+        cache: 'no-store',
+      });
+
+      if (verifyRes.status === 401) {
+        const errorData = await verifyRes.json().catch(() => ({}));
+        if (errorData.code === 'DUPLICATE_LOGIN') {
+          const response = NextResponse.redirect(new URL("/login?error=DUPLICATE_LOGIN", request.url));
+          // 쿠키 삭제 (이름 변경 고려하여 둘 다 정리)
+          response.cookies.delete(sessionOptions.cookieName);
+          response.cookies.delete('aneuk_session');
+          return response;
+        }
+      }
+    } catch (e) {
+      // 백엔드 연결 실패 시에는 서비스 가용성을 위해 통과시킴
+    }
+  }
+
+  // 5. 권한별 세부 통제
   if (pathname.startsWith("/admin") && session.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/staff", request.url));
   }
@@ -57,6 +89,6 @@ export const config = {
     "/login",
     "/admin/:path*",
     "/staff/:path*",
-    "/guest/:path*", // ★ matcher 업데이트
+    "/guest/:path*",
   ],
 };

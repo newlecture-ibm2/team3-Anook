@@ -2,7 +2,6 @@ package com.anook.backend.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,46 +14,86 @@ import java.io.IOException;
 import java.util.Collections;
 
 @Component
+@lombok.extern.slf4j.Slf4j
 // 클라이언트의 모든 API 요청을 중간에 가로채서 쿠키 안의 토큰을 검사하는 문지기 필터
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort;
 
-    public JwtAuthFilter(JwtProvider jwtProvider) {
+    public JwtAuthFilter(JwtProvider jwtProvider, com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort) {
         this.jwtProvider = jwtProvider;
+        this.staffRepositoryPort = staffRepositoryPort;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. HTTP 요청의 헤더에서 "Authorization" 값을 꺼냅니다.
         String token = extractTokenFromHeader(request);
 
-        // 2. 토큰이 존재하고, 유효한(위조되지 않은) 토큰인지 검사합니다.
         if (token != null && jwtProvider.validateToken(token)) {
             var claims = jwtProvider.getClaims(token);
             String identifier = claims.getSubject();
             String role = claims.get("role", String.class);
+            String jti = claims.getId();
 
-            // 3. 토큰에서 꺼낸 권한(Role)에 "ROLE_" 접두사를 붙여 스프링 시큐리티 규격에 맞춥니다.
-            var authority = new SimpleGrantedAuthority("ROLE_" + role);
-            
-            // 4. "이 유저는 인증되었다"는 증명서(Authentication)를 만듭니다.
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    identifier, null, Collections.singletonList(authority));
+            boolean isAuthorized = true;
+
+            if ("STAFF".equals(role) || "ADMIN".equals(role)) {
+                try {
+                    Long staffId = Long.parseLong(identifier);
+                    var staffOpt = staffRepositoryPort.findById(staffId);
                     
-            // 5. 증명서를 시큐리티 컨텍스트(사내 장부)에 등록하여 컨트롤러로 무사히 통과하게 만듭니다.
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                    if (staffOpt.isPresent()) {
+                        String dbJti = staffOpt.get().getJti();
+                        // JTI 비교
+                        if (jti == null || !jti.equals(dbJti)) {
+                            log.warn("중복 로그인 감지: Staff={}, TokenJTI={}, DBJTI={}", identifier, jti, dbJti);
+                            sendErrorResponse(response, com.anook.backend.global.exception.ErrorCode.DUPLICATE_LOGIN);
+                            return; // 필터 체인 중단
+                        }
+                    } else {
+                        isAuthorized = false;
+                    }
+                } catch (Exception e) {
+                    log.error("JTI 검증 중 오류 발생: {}", e.getMessage());
+                    isAuthorized = false;
+                }
+            }
+
+            if (isAuthorized) {
+                var authority = new SimpleGrantedAuthority("ROLE_" + role);
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        identifier, null, Collections.singletonList(authority));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
         filterChain.doFilter(request, response);
     }
 
+    private void sendErrorResponse(HttpServletResponse response, com.anook.backend.global.exception.ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType("application/json;charset=UTF-8");
+
+        com.anook.backend.global.dto.ErrorResponse errorResponse = com.anook.backend.global.dto.ErrorResponse.of(
+                errorCode.name(),
+                errorCode.getMessage(),
+                errorCode.getDetail()
+        );
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        
+        String json = mapper.writeValueAsString(errorResponse);
+        response.getWriter().write(json);
+    }
+
     private String extractTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후의 실제 토큰 문자열만 반환
+            return bearerToken.substring(7);
         }
         return null;
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { handleResponse } from '@/lib/api';
 
 interface Guest {
   id: number;
@@ -28,8 +29,7 @@ export default function useGuests() {
     setError(null);
     try {
       const res = await fetch('/api/pms/guests');
-      if (!res.ok) throw new Error('투숙객 목록 조회 실패');
-      const data = await res.json();
+      const data = await handleResponse<Guest[]>(res);
       setGuests(data);
     } catch (err: any) {
       setError(err.message);
@@ -46,10 +46,7 @@ export default function useGuests() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || '체크인 실패');
-      }
+      await handleResponse(res);
       await fetchGuests();
     } catch (err: any) {
       setError(err.message);
@@ -61,10 +58,7 @@ export default function useGuests() {
     setError(null);
     try {
       const res = await fetch(`/api/pms/guests/${guestId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || '체크아웃 실패');
-      }
+      await handleResponse(res);
       await fetchGuests();
     } catch (err: any) {
       setError(err.message);

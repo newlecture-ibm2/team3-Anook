@@ -24,11 +24,17 @@ public class JwtProvider {
         this.expirationTime = expirationTime;
     }
 
-    // 유저의 고유 정보(식별자)와 권한(Role)을 담아 새로운 토큰을 발급합니다.
+    // 기존 호환성을 위해 JTI 없이 토큰을 생성하는 메서드 (GUEST 등에서 사용)
     public String generateToken(String identifier, String role) {
+        return generateToken(identifier, role, null);
+    }
+
+    // 유저의 고유 정보(식별자), 권한(Role), 그리고 세션 식별자(JTI)를 담아 새로운 토큰을 발급합니다.
+    public String generateToken(String identifier, String role, String jti) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(identifier)
+                .id(jti) // JWT ID (JTI) 추가
                 .claim("role", role)
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + expirationTime))

@@ -21,4 +21,9 @@ public interface StaffRepositoryPort {
     void deleteById(Long id);
 
     boolean existsById(Long id);
+    
+    /**
+     * PIN 번호 중복 여부 확인
+     */
+    boolean existsByPin(String pin);
 }

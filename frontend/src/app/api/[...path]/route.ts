@@ -53,10 +53,34 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
     }
 
     const data = await backendRes.text();
-    return new NextResponse(data, {
+    
+    // 기본 응답 객체 생성
+    const res = new NextResponse(data, {
       status: backendRes.status,
       headers: { 'Content-Type': backendRes.headers.get('content-type') || 'application/json' },
     });
+
+    // ★ 중복 로그인(DUPLICATE_LOGIN) 감지 시 세션 파기 및 에러 마커 쿠키 설정
+    if (backendRes.status === 401) {
+      try {
+        const errorData = JSON.parse(data);
+        if (errorData.code === 'DUPLICATE_LOGIN') {
+          // 1. 현재 세션 쿠키 삭제 (설정된 이름 및 이전 이름 모두 정리)
+          res.cookies.delete(sessionOptions.cookieName);
+          res.cookies.delete('aneuk_session'); // 과도기 대비 이전 이름 삭제 추가
+          
+          // 2. 미들웨어에서 인지할 수 있도록 임시 에러 마커 쿠키 설정 (10초 유효)
+          res.cookies.set('duplicate_login_error', 'true', { 
+            maxAge: 10,
+            path: '/', // 모든 경로에서 보이도록 명시
+          });
+        }
+      } catch (e) {
+        // 일반적인 401 혹은 JSON이 아닌 응답은 무시
+      }
+    }
+
+    return res;
   } catch {
     return NextResponse.json(
       { message: '백엔드 서버에 연결할 수 없습니다.' },
