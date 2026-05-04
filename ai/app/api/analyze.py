@@ -33,11 +33,12 @@ class AnalyzeRequest(BaseModel):
 
 # ── 부서별 에이전트 레지스트리 ──
 # 팀원이 에이전트를 완성하면 여기에 등록합니다.
-# 예) "HK": run_hk_agent  (from app.core.hk_engine import run_hk_agent)
+from app.core.facility_engine import run_facility_agent
+
 DOMAIN_AGENTS: Dict[str, Any] = {
+    "FACILITY": run_facility_agent,
     # "HK": run_hk_agent,
     # "FB": run_fb_agent,
-    # "FACILITY": run_facility_agent,
     # "CONCIERGE": run_concierge_agent,
     # "FRONT": run_front_agent,
     # "EMERGENCY": run_emergency_agent,
@@ -95,7 +96,7 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
         # 부서별 에이전트가 등록되어 있으면 호출 (플러그 앤 플레이)
         if domain in DOMAIN_AGENTS:
             try:
-                agent_result = DOMAIN_AGENTS[domain](request.text)
+                agent_result = DOMAIN_AGENTS[domain](request.text, request.room_no)
                 response = {
                     "guest_reply": agent_result.get("guest_reply", "요청을 접수하였습니다."),
                     "summary": agent_result.get("summary", f"{domain} 요청"),

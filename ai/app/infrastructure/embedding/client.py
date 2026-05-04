@@ -16,10 +16,9 @@ def generate_embedding(text: str) -> List[float]:
         result = genai.embed_content(
             model=EMBEDDING_MODEL,
             content=text,
-            task_type="retrieval_document",
-            output_dimensionality=768
+            task_type="retrieval_document"
         )
-        return result['embedding']
+        return result['embedding'][:768]
     except Exception as e:
         print(f"Failed to generate embedding: {e}")
         raise
