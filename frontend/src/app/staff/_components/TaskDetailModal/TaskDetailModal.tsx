@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
@@ -10,12 +10,83 @@ interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: StaffTask | null;
-  onAccept?: (id: number) => Promise<void>;
-  onComplete?: (id: number) => Promise<void>;
+  onAccept?: (id: number, version: number) => Promise<void>;
+  onComplete?: (id: number, version: number) => Promise<void>;
+  onTransfer?: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
 }
 
-export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete }: TaskDetailModalProps) {
+const DEPARTMENTS = [
+  { id: 'HK', name: '하우스키핑' },
+  { id: 'FACILITY', name: '시설관리' },
+  { id: 'FB', name: '식음료' },
+  { id: 'FRONT', name: '프론트데스크' },
+  { id: 'CONCIERGE', name: '컨시어지' }
+];
+
+export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete, onTransfer }: TaskDetailModalProps) {
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [toDepartmentId, setToDepartmentId] = useState('');
+  const [transferReason, setTransferReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   if (!isOpen || !task) return null;
+
+  const handleClose = () => {
+    setShowTransferForm(false);
+    setToDepartmentId('');
+    setTransferReason('');
+    onClose();
+  };
+
+  const handleTransferSubmit = async () => {
+    if (!toDepartmentId || !transferReason.trim()) {
+      alert('전달할 부서와 사유를 모두 입력해주세요.');
+      return;
+    }
+    if (onTransfer) {
+      setIsSubmitting(true);
+      try {
+        await onTransfer(task.id, task.version, toDepartmentId, transferReason);
+        alert('부서 전달이 완료되었습니다.');
+        handleClose();
+      } catch (err: any) {
+        alert(err.message || '부서 전달 중 오류가 발생했습니다.');
+        handleClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleAccept = async () => {
+    if (onAccept) {
+      setIsSubmitting(true);
+      try {
+        await onAccept(task.id, task.version);
+        handleClose();
+      } catch (err: any) {
+        alert(err.message || '요청 수락 중 오류가 발생했습니다.');
+        handleClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleComplete = async () => {
+    if (onComplete) {
+      setIsSubmitting(true);
+      try {
+        await onComplete(task.id, task.version);
+        handleClose();
+      } catch (err: any) {
+        alert(err.message || '요청 완료 중 오류가 발생했습니다.');
+        handleClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
 
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
   if (task.priority === 'HIGH' || task.priority === 'URGENT') {
@@ -31,7 +102,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   });
 
   return (
-    <ModalOverlay isOpen={isOpen} onClose={onClose}>
+    <ModalOverlay isOpen={isOpen} onClose={handleClose}>
       <ModalCard size="md" padding="var(--space-32)">
         <div className={styles.container}>
           <div className={styles.header}>
@@ -62,39 +133,79 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 {task.rawText}
               </div>
             </div>
+
+            {showTransferForm && (
+              <div className={styles.transferForm}>
+                <h3 className={styles.descriptionTitle}>부서 전달 (이관)</h3>
+                <div className={styles.transferFormGroup}>
+                  <label className={styles.transferLabel}>전달 대상 부서</label>
+                  <select 
+                    className={styles.transferSelect}
+                    value={toDepartmentId} 
+                    onChange={e => setToDepartmentId(e.target.value)}
+                  >
+                    <option value="">부서 선택</option>
+                    {DEPARTMENTS.filter(d => d.id !== task.departmentId).map(dept => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.transferFormGroup}>
+                  <label className={styles.transferLabel}>전달 사유</label>
+                  <textarea 
+                    className={styles.transferTextarea}
+                    placeholder="이관 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
+                    value={transferReason}
+                    onChange={e => setTransferReason(e.target.value)}
+                  />
+                </div>
+                <div className={styles.transferActions}>
+                  <Button variant="outlined" onClick={() => setShowTransferForm(false)} disabled={isSubmitting}>취소</Button>
+                  <Button variant="primary" onClick={handleTransferSubmit} disabled={isSubmitting}>전달하기</Button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className={styles.footer}>
-            {task.status === 'PENDING' && onAccept && (
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  await onAccept(task.id);
-                  onClose();
-                }}
-                className={styles.actionButton}
-              >
-                업무 수락
-              </Button>
-            )}
+          {!showTransferForm && (
+            <div className={styles.footer}>
+              {task.status === 'PENDING' && (
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowTransferForm(true)}
+                    className={styles.actionButton}
+                    disabled={isSubmitting}
+                  >
+                    부서 전달
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleAccept}
+                    className={styles.actionButton}
+                    disabled={isSubmitting}
+                  >
+                    업무 수락
+                  </Button>
+                </>
+              )}
 
-            {task.status === 'IN_PROGRESS' && onComplete && (
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  await onComplete(task.id);
-                  onClose();
-                }}
-                className={styles.actionButton}
-              >
-                업무 완료
-              </Button>
-            )}
+              {task.status === 'IN_PROGRESS' && onComplete && (
+                <Button
+                  variant="primary"
+                  onClick={handleComplete}
+                  className={styles.actionButton}
+                  disabled={isSubmitting}
+                >
+                  업무 완료
+                </Button>
+              )}
 
-            <Button variant="outlined" onClick={onClose} className={styles.closeButton}>
-              닫기
-            </Button>
-          </div>
+              <Button variant="outlined" onClick={handleClose} className={styles.closeButton}>
+                닫기
+              </Button>
+            </div>
+          )}
         </div>
       </ModalCard>
     </ModalOverlay>

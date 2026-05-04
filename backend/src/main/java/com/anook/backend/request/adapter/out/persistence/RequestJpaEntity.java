@@ -55,6 +55,7 @@ public class RequestJpaEntity {
     @Column(name = "guest_id")
     private Long guestId;
 
+    @Version
     @Column(nullable = false)
     private Integer version;
 

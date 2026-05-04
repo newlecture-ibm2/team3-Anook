@@ -123,6 +123,16 @@ public class Request {
     }
 
     /**
+     * 부서 전달 (이관)
+     */
+    public void transferDepartment(DomainCode newDomainCode) {
+        this.domainCode = newDomainCode;
+        this.assignedStaffId = null;
+        this.status = RequestStatus.PENDING;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
      * 초과 시간 여부 (30분 기준)
      */
     public boolean isOverdue() {
