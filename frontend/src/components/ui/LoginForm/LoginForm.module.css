@@ -1,0 +1,81 @@
+.container {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: var(--radius-xl);
+  padding: var(--space-48);
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.6s ease-out;
+  color: var(--color-gray-900);
+  font-family: var(--font-sans);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-48);
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-16);
+  color: var(--color-primary);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--color-gray-900);
+  margin-bottom: var(--space-8);
+}
+
+.subtitle {
+  color: var(--color-gray-500);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* InputField는 이미 기본 색상을 따르므로 별도 커스터마이징 최소화 */
+.customInput {
+  width: 100%;
+}
+
+.submitBtn {
+  height: 52px !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-white) !important;
+  transition: all 0.2s ease !important;
+}
+
+.submitBtn:not(:disabled):hover {
+  background-color: var(--color-primary-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.footer {
+  margin-top: var(--space-48);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-gray-400);
+}
+
+.footer p {
+  margin: var(--space-4) 0;
+}

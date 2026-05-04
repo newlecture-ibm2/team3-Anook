@@ -1,79 +1,57 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import styles from "../../login.module.css";
-import { useLoginForm } from "../useLoginForm";
-import { useUiStore } from "@/stores/useUiStore";
-import Toast from "@/components/ui/Modal/Toast";
+import React, { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useUiStore } from '@/stores/useUiStore';
+import { SecurityIcon } from '@/components/icons';
+import { useLoginForm } from '../useLoginForm';
+import CommonLoginForm from '@/components/ui/LoginForm/LoginForm';
+import Toast from '@/components/ui/Modal/Toast';
+import styles from '../../login.module.css';
 
 /**
- * 실제 로그인 폼 컴포넌트 (useSearchParams 사용)
- * 별도 파일로 분리하여 Suspense 경계를 명확히 함
+ * 서비스 로그인 페이지 컴포넌트
+ * 공통 UI 컴포넌트인 LoginForm을 사용하여 구성되었습니다.
  */
 export default function LoginForm() {
-  const { pin, setPin, isLoading, error, handleLogin, performLogin } = useLoginForm();
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { pin, setPin, isLoading, error, performLogin } = useLoginForm();
   const { showToast } = useUiStore();
 
-  // QR 코드 자동 로그인 및 중복 로그인 에러 체크
+  // URL 파라미터에서 에러 확인 (중복 로그인 등)
   useEffect(() => {
-    // 1. QR 코드 자동 로그인
-    const code = searchParams.get("code");
-    if (code) {
-      setPin(code);
-      performLogin(code);
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'DUPLICATE_LOGIN') {
+      showToast('다른 기기에서 로그인이 감지되어 세션이 종료되었습니다.', 'error');
+      router.replace('/login');
     }
+  }, [searchParams, showToast, router]);
 
-    // 2. 중복 로그인 에러 체크 (기존 UI 시스템의 showToast 활용)
-    const errorParam = searchParams.get("error");
-    if (errorParam === "DUPLICATE_LOGIN") {
-      showToast(
-        "다른 기기 접속 감지", 
-        "error", 
-        "다른 곳에서 로그인이 확인되어 현재 세션이 종료되었습니다."
-      );
-    }
-  }, [searchParams, performLogin, setPin, showToast]);
+  const handleLogin = (code: string) => {
+    performLogin(code);
+  };
 
   return (
     <div className={styles.container}>
-      {/* 로그인 페이지 전용 토스트 컴포넌트 배치 */}
+      <CommonLoginForm
+        title="Anook"
+        subtitle="스태프 통합 관리 시스템"
+        icon={<SecurityIcon width={48} height={48} />}
+        placeholder="PIN 번호 6자리 입력"
+        onLogin={handleLogin}
+        isLoading={isLoading}
+        error={error || ''}
+        footerContent={
+          <>
+            <p>© 2024 Team Anook. All rights reserved.</p>
+            <p>관리자 문의: 02-1234-5678</p>
+          </>
+        }
+      />
+
+      {/* 전역 토스트 모달 */}
       <Toast />
-      
-      <div className={styles.loginCard}>
-        <header className={styles.header}>
-          <h1 className={styles.logo}>Aneuk</h1>
-          <p className={styles.subtitle}>Welcome to Premium Service</p>
-        </header>
-
-        <form className={styles.form} onSubmit={handleLogin}>
-          <div className={styles.inputGroup}>
-            <label htmlFor="auth-code" className={styles.inputLabel}>
-              PIN Code or Access Code
-            </label>
-            <input
-              id="auth-code"
-              type="text"
-              placeholder="Enter PIN or Access Code"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className={styles.pinInput}
-              autoFocus
-            />
-          </div>
-
-          {error && <div className={styles.errorMsg}>{error}</div>}
-
-          <button type="submit" className={styles.submitBtn} disabled={isLoading || !pin}>
-            {isLoading ? "Authenticating..." : "Start Service"}
-          </button>
-        </form>
-
-        <footer className={styles.footer}>
-          <p>© 2026 Aneuk Hotel Concierge Service</p>
-        </footer>
-      </div>
     </div>
   );
 }
