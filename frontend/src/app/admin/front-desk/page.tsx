@@ -8,6 +8,7 @@ import useAdminRequests from '../useAdminRequests';
 import useAssignRequest from './useAssignRequest';
 import useCreateRequest from './useCreateRequest';
 import useRequestDetail from './useRequestDetail';
+import useEscalations from './useEscalations';
 import AssignModal from './_components/AssignModal/AssignModal';
 import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
 import RequestDetailModal from './_components/RequestDetailModal/RequestDetailModal';
@@ -19,6 +20,7 @@ export default function FrontDeskPage() {
   const { staffList, assignRequest, loading: assigning } = useAssignRequest();
   const { createRequest, loading: creating } = useCreateRequest();
   const { detail, fetchDetail, changePriority, assignStaff, cancelRequest } = useRequestDetail();
+  const { escalations, approveEscalation, rejectEscalation } = useEscalations();
 
   // 수동 배정 모달 상태
   const [assignTarget, setAssignTarget] = useState<{ id: number; summary: string; roomNo: string } | null>(null);
@@ -39,15 +41,18 @@ export default function FrontDeskPage() {
     if (status === 'ASSIGNED') return '배정됨';
     if (status === 'IN_PROGRESS') return '처리 중';
     if (status === 'COMPLETED') return '완료';
+    if (status === 'ESCALATED') return '승인 대기';
     return status;
   };
 
   // 탭에 따른 필터링
-  const filteredRequests = activeTab === 'all'
-    ? requests
-    : activeTab === 'unhandled'
-      ? pending
-      : requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  const getFilteredRequests = () => {
+    if (activeTab === 'all') return requests;
+    if (activeTab === 'unhandled') return pending;
+    if (activeTab === 'escalation') return escalations;
+    return requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  };
+  const filteredRequests = getFilteredRequests();
 
   const handleAssign = async (staffId: number) => {
     if (!assignTarget) return false;
@@ -67,6 +72,9 @@ export default function FrontDeskPage() {
     setIsDetailOpen(true);
   };
 
+  // 탭에 따른 섹션 제목
+  const sectionTitle = activeTab === 'escalation' ? '승인 대기 요청' : '미처리 / 예외 요청';
+
   return (
     <div className={styles.container}>
       {/* Header Section */}
@@ -83,6 +91,7 @@ export default function FrontDeskPage() {
           options={[
             { label: '전체 요청', value: 'all' },
             { label: '미처리 대기', value: 'unhandled', count: pending.length },
+            { label: '승인 대기', value: 'escalation', count: escalations.length },
             { label: '예외 발생', value: 'exception', count: 0 }
           ]}
           activeValue={activeTab}
@@ -92,7 +101,7 @@ export default function FrontDeskPage() {
 
       {/* Content Section */}
       <div className={styles.contentSection}>
-        <h2 className={styles.sectionTitle}>미처리 / 예외 요청</h2>
+        <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
         
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
@@ -110,9 +119,14 @@ export default function FrontDeskPage() {
                 statusText={mapStatusText(req.status)}
                 statusVariant={mapStatusVariant(req.status)}
                 createdAt={req.createdAt}
-                primaryActionText="상담 시작"
-                secondaryActionText="수동 배정"
-                onSecondaryAction={() => setAssignTarget({ id: req.id, summary: req.summary, roomNo: req.roomNo })}
+                primaryActionText={activeTab === 'escalation' ? '승인' : '상담 시작'}
+                secondaryActionText={activeTab === 'escalation' ? '반려' : '수동 배정'}
+                onPrimaryAction={activeTab === 'escalation' ? () => approveEscalation(req.id) : undefined}
+                onSecondaryAction={
+                  activeTab === 'escalation'
+                    ? () => rejectEscalation(req.id)
+                    : () => setAssignTarget({ id: req.id, summary: req.summary, roomNo: req.roomNo })
+                }
                 onCardClick={() => handleCardClick(req.id)}
               />
             ))}
