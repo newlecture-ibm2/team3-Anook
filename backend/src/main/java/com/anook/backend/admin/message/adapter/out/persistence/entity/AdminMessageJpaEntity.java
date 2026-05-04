@@ -32,8 +32,8 @@ public class AdminMessageJpaEntity {
     @Column(name = "translated_content", columnDefinition = "TEXT")
     private String translatedContent;
 
-    @Column(name = "room_id", nullable = false)
-    private Long roomId;
+    @Column(name = "room_no", nullable = false, length = 10)
+    private String roomNo;
 
     @Column(name = "request_id")
     private Long requestId;

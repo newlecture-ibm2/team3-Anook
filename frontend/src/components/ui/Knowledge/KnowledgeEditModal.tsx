@@ -14,32 +14,35 @@ import styles from './KnowledgeEditModal.module.css';
 export interface KnowledgeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialCategory?: string;
-  initialTitle?: string;
-  initialDescription?: string;
-  onSave?: (data: { category: string; title: string; description: string }) => void;
+  initialDomainCode?: string;
+  initialQuestion?: string;
+  initialAnswer?: string;
+  domainOptions?: { value: string; label: string }[];
+  onSave?: (data: { domainCode: string; question: string; answer: string }) => void;
 }
 
 export default function KnowledgeEditModal({
   isOpen,
   onClose,
-  initialCategory = '',
-  initialTitle = '',
-  initialDescription = '',
+  initialDomainCode = '',
+  initialQuestion = '',
+  initialAnswer = '',
+  domainOptions = [
+    { value: 'HK', label: '하우스키핑 (HK)' },
+    { value: 'FB', label: 'F&B (FB)' },
+    { value: 'FACILITY', label: '시설 (FACILITY)' },
+    { value: 'CONCIERGE', label: '컨시어지 (CONCIERGE)' },
+    { value: 'FRONT', label: '프론트 (FRONT)' },
+    { value: 'EMERGENCY', label: '긴급 (EMERGENCY)' },
+    { value: 'COMMON', label: '공통 (COMMON)' }
+  ],
   onSave
 }: KnowledgeEditModalProps) {
-  const [category, setCategory] = useState(initialCategory);
-  const [title, setTitle] = useState(initialTitle);
-  const [description, setDescription] = useState(initialDescription);
+  const [domainCode, setDomainCode] = useState(initialDomainCode);
+  const [question, setQuestion] = useState(initialQuestion);
+  const [answer, setAnswer] = useState(initialAnswer);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const showToast = useUiStore(state => state.showToast);
-
-  const categoryOptions = [
-    { value: '체크인/아웃', label: '체크인/아웃' },
-    { value: '부대시설', label: '부대시설' },
-    { value: '주변 관광', label: '주변 관광' },
-    { value: '교통 정보', label: '교통 정보' }
-  ];
 
   return (
     <>
@@ -59,21 +62,21 @@ export default function KnowledgeEditModal({
         {/* Body */}
         <div className={styles.body}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>카테고리</label>
+            <label className={styles.label}>도메인 분류</label>
             <Dropdown
-              options={categoryOptions}
-              value={category}
-              onChange={(val) => setCategory(val as string)}
-              placeholder="카테고리 선택"
+              options={domainOptions}
+              value={domainCode}
+              onChange={(val) => setDomainCode(val as string)}
+              placeholder="분류 선택"
             />
           </div>
 
           <div className={styles.formGroup}>
             <label className={styles.label}>제목</label>
             <InputField
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목을 입력하세요"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="예상 질문이나 제목을 입력하세요"
             />
           </div>
 
@@ -81,9 +84,9 @@ export default function KnowledgeEditModal({
             <label className={styles.label}>내용</label>
             <textarea
               className={styles.textarea}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="내용을 입력하세요"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="답변이나 매뉴얼 상세 내용을 입력하세요"
             />
           </div>
         </div>
@@ -94,7 +97,7 @@ export default function KnowledgeEditModal({
             취소
           </Button>
           <Button variant="primary" onClick={() => {
-            if (onSave) onSave({ category, title, description });
+            if (onSave) onSave({ domainCode, question, answer });
             showToast('지식 정보가 성공적으로 수정되었습니다.', 'success');
           }} className={styles.btn}>
             변경사항 저장하기

@@ -6,21 +6,20 @@ import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import ChatHistory, { ChatHistoryData } from '@/components/ui/ChatHistory/ChatHistory';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import { MoreVertical } from 'lucide-react';
+import useChatHistory from './useChatHistory';
 import styles from './page.module.css';
-
-const dummyRooms: ChatHistoryData[] = [
-  { id: '1001', roomNumber: '1001', statusText: '보관됨' },
-  { id: '1204', roomNumber: '1204', statusText: '활성 대화' },
-  { id: '2105', roomNumber: '2105', statusText: '보관됨' },
-  { id: '302', roomNumber: '302', statusText: '보관됨' },
-  { id: '502', roomNumber: '502', statusText: '보관됨' },
-  { id: '805', roomNumber: '805', statusText: '보관됨' },
-];
 
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
-  const [activeRoomId, setActiveRoomId] = useState<string | number>('1001');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom } = useChatHistory();
+
+  // API 데이터를 ChatHistory 컴포넌트 형식으로 매핑
+  const chatRooms: ChatHistoryData[] = rooms.map(r => ({
+    id: r.roomNo,
+    roomNumber: r.roomNo,
+    statusText: r.lastMessage ? '활성 대화' : '보관됨',
+  }));
 
   return (
     <div className={styles.container}>
@@ -51,11 +50,17 @@ export default function ChatHistoryPage() {
       <div className={styles.mainContent}>
         {/* Left Sidebar: Room List */}
         <div className={styles.sidebar}>
-          <ChatHistory 
-            rooms={dummyRooms} 
-            activeRoomId={activeRoomId} 
-            onRoomSelect={setActiveRoomId} 
-          />
+          {loadingRooms ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+          ) : error ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
+          ) : (
+            <ChatHistory 
+              rooms={chatRooms} 
+              activeRoomId={selectedRoom || undefined} 
+              onRoomSelect={(id) => selectRoom(String(id))} 
+            />
+          )}
         </div>
 
         {/* Right Area: Chat Logs */}
@@ -63,7 +68,7 @@ export default function ChatHistoryPage() {
           {/* Chat Header */}
           <div className={styles.chatHeader}>
             <div className={styles.chatHeaderLeft}>
-              <h2 className={styles.chatTitle}>{activeRoomId}호 채팅 기록</h2>
+              <h2 className={styles.chatTitle}>{selectedRoom ? `${selectedRoom}호 채팅 기록` : '객실을 선택하세요'}</h2>
               <span className={styles.chatSubtitle}>전체 대화 로그</span>
             </div>
             <div className={styles.chatHeaderActions} onClick={() => setIsPopoverOpen(!isPopoverOpen)}>
@@ -80,17 +85,18 @@ export default function ChatHistoryPage() {
 
           {/* Chat Body */}
           <div className={styles.chatBody}>
-            {activeRoomId === '1001' ? (
+            {loadingMessages ? (
+              <div style={{ textAlign: 'center', color: 'var(--color-gray-400)', marginTop: '40px' }}>메시지 로딩 중...</div>
+            ) : messages.length > 0 ? (
               <>
-                <ChatBubble variant="received">
-                  안녕하세요! 그랜드 호텔입니다. 무엇을 도와드릴까요?
-                </ChatBubble>
-                <ChatBubble variant="sent">
-                  1001호인데, 근처 맛집 추천해주실 수 있나요?
-                </ChatBubble>
-                <ChatBubble variant="received">
-                  네, 고객님! 호텔 근처 긴자 지구의 "스시 미즈타니"와 미슐랭 라멘 맛집을 추천해 드립니다. 상세 지도를 원하시면 객실 내 태블릿으로 전송해 드릴까요?
-                </ChatBubble>
+                {messages.map(msg => (
+                  <ChatBubble
+                    key={msg.id}
+                    variant={msg.sender === 'GUEST' ? 'sent' : 'received'}
+                  >
+                    {msg.content}
+                  </ChatBubble>
+                ))}
               </>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--color-gray-400)', marginTop: '40px' }}>
@@ -103,3 +109,4 @@ export default function ChatHistoryPage() {
     </div>
   );
 }
+

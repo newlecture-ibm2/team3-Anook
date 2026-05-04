@@ -48,9 +48,9 @@ export default function AiTrainingPage() {
           timestamp="10:30 AM"
           onAddRag={(content) => {
             setSelectedKnowledge({
-              category: "지식 추가 (프론트 데스크)",
-              title: "",
-              description: content,
+              domainCode: "FRONT",
+              question: "",
+              answer: content,
               updatedAt: "방금 전",
               isNew: true
             });
@@ -66,9 +66,9 @@ export default function AiTrainingPage() {
           timestamp="11:45 AM"
           onAddRag={(content) => {
             setSelectedKnowledge({
-              category: "지식 추가 (하우스키핑)",
-              title: "",
-              description: content,
+              domainCode: "HK",
+              question: "",
+              answer: content,
               updatedAt: "방금 전",
               isNew: true
             });
@@ -87,9 +87,9 @@ export default function AiTrainingPage() {
               setSelectedKnowledge(null);
             }
           }}
-          initialCategory={selectedKnowledge.category}
-          initialTitle={selectedKnowledge.title}
-          initialDescription={selectedKnowledge.description}
+          initialDomainCode={selectedKnowledge.domainCode}
+          initialQuestion={selectedKnowledge.question}
+          initialAnswer={selectedKnowledge.answer}
           onSave={(data) => {
             console.log('Saved knowledge:', data);
             setIsEditModalOpen(false);

@@ -10,21 +10,23 @@ import styles from './KnowledgeModal.module.css';
 export interface KnowledgeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  category: string;
-  title: string;
-  description: string;
+  domainCode: string;
+  question: string;
+  answer: string;
   updatedAt: string;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export default function KnowledgeModal({
   isOpen,
   onClose,
-  category,
-  title,
-  description,
+  domainCode,
+  question,
+  answer,
   updatedAt,
-  onEdit
+  onEdit,
+  onDelete
 }: KnowledgeModalProps) {
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
@@ -32,8 +34,8 @@ export default function KnowledgeModal({
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <StatusBadge variant="gray">{category}</StatusBadge>
-            <h2 className={styles.title}>{title}</h2>
+            <StatusBadge variant="gray">{domainCode}</StatusBadge>
+            <h2 className={styles.title}>{question}</h2>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>
             <X size={24} />
@@ -43,7 +45,7 @@ export default function KnowledgeModal({
         {/* Body */}
         <div className={styles.body}>
           <div className={styles.descriptionBox}>
-            {description}
+            {answer}
           </div>
         </div>
         
@@ -53,10 +55,17 @@ export default function KnowledgeModal({
             <Clock size={16} className={styles.clockIcon} />
             <span className={styles.dateText}>최종 업데이트: {updatedAt}</span>
           </div>
-          <Button variant="primary" onClick={onEdit} className={styles.editBtn}>
-            <Edit2 size={16} />
-            정보 수정하기
-          </Button>
+          <div className={styles.actionButtons} style={{ display: 'flex', gap: 'var(--space-8)' }}>
+            {onDelete && (
+              <Button variant="danger" onClick={onDelete} className={styles.editBtn}>
+                삭제
+              </Button>
+            )}
+            <Button variant="primary" onClick={onEdit} className={styles.editBtn}>
+              <Edit2 size={16} />
+              정보 수정하기
+            </Button>
+          </div>
         </div>
       </ModalCard>
     </ModalOverlay>
