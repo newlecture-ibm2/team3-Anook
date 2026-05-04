@@ -47,11 +47,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-gray-50);
-  border-radius: var(--radius-md);
   color: var(--color-gray-500);
   font: var(--text-body-regular);
-  padding: var(--space-16);
 }
 
 /* ── 막대 그래프 ── */
