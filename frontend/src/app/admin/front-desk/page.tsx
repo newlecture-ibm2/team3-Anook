@@ -3,18 +3,24 @@
 import React, { useState } from 'react';
 import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
+import Button from '@/components/ui/Button/Button';
 import useAdminRequests from '../useAdminRequests';
 import useAssignRequest from './useAssignRequest';
+import useCreateRequest from './useCreateRequest';
 import AssignModal from './_components/AssignModal/AssignModal';
+import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
 import styles from './page.module.css';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, pending, loading, error, refetch } = useAdminRequests('FRONT');
   const { staffList, assignRequest, loading: assigning } = useAssignRequest();
+  const { createRequest, loading: creating } = useCreateRequest();
 
   // 수동 배정 모달 상태
   const [assignTarget, setAssignTarget] = useState<{ id: number; summary: string; roomNo: string } | null>(null);
+  // 요청 생성 모달 상태
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
@@ -45,11 +51,20 @@ export default function FrontDeskPage() {
     return success;
   };
 
+  const handleCreate = async (payload: any) => {
+    const success = await createRequest(payload);
+    if (success && refetch) refetch();
+    return success;
+  };
+
   return (
     <div className={styles.container}>
       {/* Header Section */}
       <div className={styles.header}>
         <h1 className={styles.title}>프론트 데스크</h1>
+        <Button variant="primary" onClick={() => setIsCreateOpen(true)}>
+          + 요청 생성
+        </Button>
       </div>
 
       {/* Tabs Section */}
@@ -103,6 +118,14 @@ export default function FrontDeskPage() {
         requestSummary={assignTarget?.summary ?? ''}
         roomNo={assignTarget?.roomNo ?? ''}
         loading={assigning}
+      />
+
+      {/* 요청 생성 모달 */}
+      <CreateRequestModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreate={handleCreate}
+        loading={creating}
       />
     </div>
   );
