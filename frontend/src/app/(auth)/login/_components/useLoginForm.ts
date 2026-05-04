@@ -52,13 +52,9 @@ export const useLoginForm = () => {
 
       if (!guestResponse.ok) throw new Error(data.message || "인증에 실패했습니다.");
 
-      // 게스트 리다이렉트: /chat/{roomNo}/messages
+      // 게스트 리다이렉트
       if (data.role === "GUEST") {
-        if (data.roomNo) {
-          router.push(`/chat/${data.roomNo}/messages`);
-        } else {
-          router.push("/guest/chat"); // 폴백
-        }
+        router.push("/guest/chat");
       }
     } catch (err: any) {
       setError(err.message);

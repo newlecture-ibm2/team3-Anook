@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     session.token = data.token;
     session.role = data.role;
     session.name = data.name;
+    session.roomNo = data.roomNo;
     session.isLoggedIn = true;
 
     await session.save();

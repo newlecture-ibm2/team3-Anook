@@ -186,8 +186,15 @@ CREATE TABLE IF NOT EXISTS pms_receipt (
 );
 
 -- ============================================================
--- 7. 인덱스
+-- 7. 인덱스 및 스키마 마이그레이션
 -- ============================================================
+
+-- [2026-05-04] 신규 컬럼 마이그레이션 (인덱스 생성 전 실행 필요)
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS jti VARCHAR(100);
+ALTER TABLE pms_guest ADD COLUMN IF NOT EXISTS access_code VARCHAR(100) UNIQUE;
+ALTER TABLE request ADD COLUMN IF NOT EXISTS guest_id BIGINT;
+ALTER TABLE message ADD COLUMN IF NOT EXISTS guest_id BIGINT;
+
 
 -- 요청 조회 성능
 CREATE INDEX IF NOT EXISTS idx_request_status ON request(status);
@@ -217,7 +224,4 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 -- 참고: docs/DB_스키마_변경_가이드.md
 
 -- 예시:
--- [2026-05-04] staff 테이블에 jti 컬럼 추가 (중복 로그인 방지용)
-ALTER TABLE staff ADD COLUMN IF NOT EXISTS jti VARCHAR(100);
--- [2026-05-04] pms_guest 테이블에 QR 로그인용 access_code 컬럼 추가
-ALTER TABLE pms_guest ADD COLUMN IF NOT EXISTS access_code VARCHAR(100) UNIQUE;
+

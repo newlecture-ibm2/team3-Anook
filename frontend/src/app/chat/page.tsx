@@ -27,13 +27,8 @@ function ChatLoginHandler() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.roomNo) {
-          // 로그인 성공 시 해당 객실 채팅방으로 리다이렉트
-          router.replace(`/chat/${data.roomNo}/messages`);
-        } else {
-          router.replace('/login');
-        }
+        // 로그인 성공 시 게스트 채팅 페이지로 리다이렉트
+        router.replace('/guest/chat');
       } else {
         console.error('Auto login failed');
         router.replace('/login?error=invalid_code');
@@ -47,7 +42,7 @@ function ChatLoginHandler() {
   return (
     <div className={styles.container}>
       <div className={styles.loader}></div>
-      <p className={styles.text}>잠시만 기다려주세요...<br/>객실 서비스를 연결 중입니다.</p>
+      <p className={styles.text}>잠시만 기다려주세요...<br />객실 서비스를 연결 중입니다.</p>
     </div>
   );
 }

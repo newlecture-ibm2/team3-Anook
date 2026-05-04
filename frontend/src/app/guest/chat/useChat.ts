@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import { ChatMessage } from './_components/ChatScreen';
 
-const ROOM_NO = '707'; // 하드코딩 (추후 연동 시 동적 할당)
-
 interface BackendMessage {
   id: number;
   senderType: 'GUEST' | 'AI';
@@ -15,19 +13,39 @@ interface BackendMessage {
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [roomNo, setRoomNo] = useState<string | null>(null);
   const stompClientRef = useRef<Client | null>(null);
+
+  // 0. 세션 정보 가져오기
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.roomNo) {
+            setRoomNo(data.roomNo);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch session:', error);
+      }
+    };
+    fetchSession();
+  }, []);
 
   // 1. 대화 내역 불러오기
   useEffect(() => {
+    if (!roomNo) return;
+
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`/api/chat/${ROOM_NO}/messages`);
+        const response = await fetch(`/api/chat/${roomNo}/messages`);
         if (!response.ok) throw new Error('Failed to fetch chat history');
         
         const data: BackendMessage[] = await response.json();
         
         if (data.length === 0) {
-          // 히스토리가 없으면 Welcome & Idle 메시지 기본 제공
           setMessages([
             {
               id: 'welcome-1',
@@ -48,7 +66,7 @@ export function useChat() {
             id: msg.id.toString(),
             variant: msg.senderType === 'GUEST' ? 'sent' : 'received',
             content: msg.content,
-            type: 'TEXT' // 과거 기록은 기본 TEXT로 처리 (추후 DB 확장에 따라 수정 가능)
+            type: 'TEXT'
           }));
           setMessages(historyMessages);
         }
@@ -58,10 +76,12 @@ export function useChat() {
     };
 
     fetchHistory();
-  }, []);
+  }, [roomNo]);
 
   // 2. WebSocket 연결
   useEffect(() => {
+    if (!roomNo) return;
+
     const client = new Client({
       brokerURL: process.env.NODE_ENV === 'production'
         ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`
@@ -72,25 +92,23 @@ export function useChat() {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('STOMP Connected');
-        client.subscribe(`/topic/room/${ROOM_NO}`, (message) => {
+        client.subscribe(`/topic/room/${roomNo}`, (message) => {
           if (message.body) {
             const payload = JSON.parse(message.body);
             
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
-              // AI 응답 수신 시 타이핑 종료
               setIsTyping(false);
               
               const newAiMsg: ChatMessage = {
                 id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
                 variant: 'received',
                 content: payload.content,
-                type: payload.uiType || 'TEXT', // 백엔드에서 uiType을 주면 매핑, 없으면 TEXT
+                type: payload.uiType || 'TEXT',
                 meta: payload.meta || {},
               };
               
               setMessages(prev => [...prev, newAiMsg]);
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
-              // Request 도메인 이벤트 → StatusCard로 렌더링
               const progressMap: Record<string, number> = {
                 'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100
               };
@@ -103,7 +121,6 @@ export function useChat() {
               };
 
               setMessages(prev => {
-                // 같은 requestId의 카드가 이미 있으면 교체, 없으면 추가
                 const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
                 if (existingIdx >= 0) {
                   const updated = [...prev];
@@ -113,7 +130,6 @@ export function useChat() {
                 return [...prev, statusMsg];
               });
 
-              // 완료 시 피드백 카드 표시
               if (payload.status === 'COMPLETED') {
                 setTimeout(() => {
                   setMessages(prev => [...prev, {
@@ -141,20 +157,20 @@ export function useChat() {
         stompClientRef.current.deactivate();
       }
     };
-  }, []);
+  }, [roomNo]);
 
   // 3. 메시지 전송
   const sendMessage = async (text: string) => {
-    // 임시 아이디로 화면에 먼저 표시
+    if (!roomNo) return;
+
     const tempId = `temp-${Date.now()}`;
     const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
     setMessages(prev => [...prev, newUserMsg]);
     
-    // 타이핑 애니메이션 시작
     setIsTyping(true);
 
     try {
-      const response = await fetch(`/api/chat/${ROOM_NO}/messages`, {
+      const response = await fetch(`/api/chat/${roomNo}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,11 +179,8 @@ export function useChat() {
       });
 
       if (!response.ok) {
-        // 에러 발생 시 처리
         setIsTyping(false);
         const errorData = await response.json().catch(() => ({}));
-        
-        // 429 에러(디바운스) 또는 기타 에러 메시지 표시
         const errorMsg: ChatMessage = {
           id: `error-${Date.now()}`,
           variant: 'received',
@@ -178,8 +191,6 @@ export function useChat() {
       }
       
       const data = await response.json();
-      
-      // 임시 아이디를 실제 아이디로 교체 (선택사항, 화면 변화 없음)
       setMessages(prev => prev.map(msg => 
         msg.id === tempId ? { ...msg, id: data.guestMessageId.toString() } : msg
       ));
