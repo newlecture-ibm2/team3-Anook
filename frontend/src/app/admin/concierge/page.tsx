@@ -23,7 +23,8 @@ const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
 
 export default function ConciergePage() {
   const [searchValue, setSearchValue] = useState('');
-  const { pending, inProgress, completed, loading, error } = useAdminRequests('CONCIERGE');
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const { pending, inProgress, completed, loading, error } = useAdminRequests('CONCIERGE', searchValue, selectedFilter);
 
   if (error) return <div className={styles.container}><p>오류: {error}</p></div>;
 
@@ -44,10 +45,11 @@ export default function ConciergePage() {
           <FilterButton 
             filterOptions={[
               { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: '최신순', value: 'latest' },
+              { label: '오래된순', value: 'oldest' }
             ]}
-            selectedFilter="all"
-            onFilterSelect={() => {}}
+            selectedFilter={selectedFilter}
+            onFilterSelect={(val) => setSelectedFilter(val)}
           />
         </div>
       </div>

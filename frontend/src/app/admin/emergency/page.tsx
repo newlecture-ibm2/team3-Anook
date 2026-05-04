@@ -9,7 +9,8 @@ import styles from './page.module.css';
 
 export default function EmergencyPage() {
   const [searchValue, setSearchValue] = useState('');
-  const { requests, loading, error } = useAdminRequests(); // 전체 부서 요청 가져오기
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const { requests, loading, error } = useAdminRequests('', searchValue, selectedFilter); // 전체 부서 요청 가져오기
 
   // 우선순위가 URGENT(긴급)이거나 HIGH(높음)인 것만 필터링
   const emergencyRequests = requests.filter(req => req.priority === 'URGENT');
@@ -39,10 +40,11 @@ export default function EmergencyPage() {
           <FilterButton 
             filterOptions={[
               { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: '최신순', value: 'latest' },
+              { label: '오래된순', value: 'oldest' }
             ]}
-            selectedFilter="all"
-            onFilterSelect={() => {}}
+            selectedFilter={selectedFilter}
+            onFilterSelect={(val) => setSelectedFilter(val)}
           />
         </div>
       </div>

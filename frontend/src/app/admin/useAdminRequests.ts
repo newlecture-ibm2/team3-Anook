@@ -14,7 +14,7 @@ interface AdminRequest {
   updatedAt: string;
 }
 
-export default function useAdminRequests(dept?: string) {
+export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all') {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +39,27 @@ export default function useAdminRequests(dept?: string) {
     fetchRequests();
   }, [dept]);
 
-  const pending = requests.filter(r => r.status === 'PENDING');
-  const inProgress = requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
-  const completed = requests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
+  // 클라이언트 사이드 검색 및 필터링
+  let filteredRequests = [...requests];
+  
+  if (searchQuery) {
+    const lowerQ = searchQuery.toLowerCase();
+    filteredRequests = filteredRequests.filter(r => 
+      (r.summary && r.summary.toLowerCase().includes(lowerQ)) ||
+      (r.roomNo && r.roomNo.includes(lowerQ)) ||
+      (r.assignedStaffName && r.assignedStaffName.toLowerCase().includes(lowerQ))
+    );
+  }
 
-  return { requests, pending, inProgress, completed, loading, error };
+  if (filterType === 'oldest') {
+    filteredRequests.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  } else if (filterType === 'latest' || filterType === 'all') {
+    filteredRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  const pending = filteredRequests.filter(r => r.status === 'PENDING');
+  const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  const completed = filteredRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
+
+  return { requests: filteredRequests, pending, inProgress, completed, loading, error };
 }
