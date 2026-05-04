@@ -20,6 +20,7 @@ public class Request {
     private String rawText;
     private String summary;
     private String roomNo;
+    private Long guestId;
     private Long assignedStaffId;
     private int version;
     private LocalDateTime createdAt;
@@ -33,6 +34,7 @@ public class Request {
      * 신규 Request 생성 (이벤트 수신 시)
      */
     public static Request create(String roomNo,
+                                  Long guestId,
                                   DomainCode domainCode,
                                   String priority,
                                   Map<String, Object> entities,
@@ -41,6 +43,7 @@ public class Request {
                                   String summary) {
         Request request = new Request();
         request.roomNo = roomNo;
+        request.guestId = guestId;
         request.domainCode = domainCode;
         request.status = RequestStatus.PENDING;
         request.priority = Priority.from(priority);
@@ -66,6 +69,7 @@ public class Request {
                                         String rawText,
                                         String summary,
                                         String roomNo,
+                                        Long guestId,
                                         Long assignedStaffId,
                                         int version,
                                         LocalDateTime createdAt,
@@ -80,6 +84,7 @@ public class Request {
         request.rawText = rawText;
         request.summary = summary;
         request.roomNo = roomNo;
+        request.guestId = guestId;
         request.assignedStaffId = assignedStaffId;
         request.version = version;
         request.createdAt = createdAt;
@@ -155,6 +160,7 @@ public class Request {
     public String getRawText() { return rawText; }
     public String getSummary() { return summary; }
     public String getRoomNo() { return roomNo; }
+    public Long getGuestId() { return guestId; }
     public Long getAssignedStaffId() { return assignedStaffId; }
     public int getVersion() { return version; }
     public LocalDateTime getCreatedAt() { return createdAt; }

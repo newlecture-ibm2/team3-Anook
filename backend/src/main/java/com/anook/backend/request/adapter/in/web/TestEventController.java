@@ -43,6 +43,7 @@ public class TestEventController {
         RequestDetectedEvent event = new RequestDetectedEvent(
                 this,
                 dto.roomNo(),
+                dto.guestId() != null ? dto.guestId() : 1L, // 기본값 1L
                 domainCode,
                 priority,
                 entities,
@@ -62,6 +63,7 @@ public class TestEventController {
      */
     public record SimulateRequestDto(
             String roomNo,
+            Long guestId,
             String domainCode,
             String priority,
             Map<String, Object> entities,

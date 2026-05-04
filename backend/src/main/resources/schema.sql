@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS request (
     confidence          REAL,
     room_no             VARCHAR(10)  NOT NULL REFERENCES room(number),
     assigned_staff_id   BIGINT       REFERENCES staff(id),
+    guest_id            BIGINT,      -- PMS 투숙객 ID (RAG 및 이력 관리용)
     version             INT          NOT NULL DEFAULT 0,
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP    NOT NULL DEFAULT NOW()
@@ -72,6 +73,7 @@ CREATE TABLE IF NOT EXISTS message (
     content             TEXT         NOT NULL,
     translated_content  TEXT,
     room_no             VARCHAR(10)  NOT NULL REFERENCES room(number),
+    guest_id            BIGINT,      -- PMS 투숙객 ID (데이터 격리 및 RAG용)
     request_id          BIGINT       REFERENCES request(id),
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW()
 );
@@ -195,6 +197,7 @@ CREATE INDEX IF NOT EXISTS idx_request_created_at ON request(created_at DESC);
 
 -- 메시지 조회 성능
 CREATE INDEX IF NOT EXISTS idx_message_room_no ON message(room_no);
+CREATE INDEX IF NOT EXISTS idx_message_guest_id ON message(guest_id);
 CREATE INDEX IF NOT EXISTS idx_message_request_id ON message(request_id);
 
 -- 지식 도메인별 필터링

@@ -22,6 +22,9 @@ public class RequestDetectedEvent extends ApplicationEvent {
     /** 객실 번호 (예: "302") */
     private final String roomNo;
 
+    /** PMS 투숙객 ID */
+    private final Long guestId;
+
     /** 도메인 코드 (예: "HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "EMERGENCY") */
     private final String domainCode;
 
@@ -45,6 +48,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
 
     public RequestDetectedEvent(Object source,
                                  String roomNo,
+                                 Long guestId,
                                  String domainCode,
                                  String priority,
                                  Map<String, Object> entities,
@@ -54,6 +58,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
                                  boolean escalated) {
         super(source);
         this.roomNo = roomNo;
+        this.guestId = guestId;
         this.domainCode = domainCode;
         this.priority = priority;
         this.entities = entities;

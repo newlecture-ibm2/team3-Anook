@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import styles from './page.module.css';
-import useGuests from './useGuests';
+import useGuests, { Guest } from './useGuests';
 import useRooms from './useRooms';
 import useReceipts from './useReceipts';
+import { QRCodeCanvas } from 'qrcode.react';
 
 /* ── 날짜 포맷 ── */
 function formatDateTime(dateStr: string) {
@@ -52,6 +53,14 @@ export default function PmsPage() {
   } | null>(null);
   const [showUnpaid, setShowUnpaid] = useState(false);
   const [payingAll, setPayingAll] = useState(false);
+  const [selectedGuestForQR, setSelectedGuestForQR] = useState<Guest | null>(null);
+  const [baseUrl, setBaseUrl] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
   // ── 폼 상태 ──
   const [roomNumber, setRoomNumber] = useState('');
@@ -296,6 +305,14 @@ export default function PmsPage() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                       className={styles.actionBtn}
+                      style={{ marginRight: 8 }}
+                      title="QR 코드 보기"
+                      onClick={() => setSelectedGuestForQR(guest)}
+                    >
+                      📱
+                    </button>
+                    <button
+                      className={styles.actionBtn}
                       title="체크아웃 (Hard Delete)"
                       onClick={() => handleCheckOutClick({
                         id: guest.id,
@@ -519,6 +536,46 @@ export default function PmsPage() {
               <button className={styles.btnCancel} onClick={() => { setShowUnpaid(false); setCheckOutTarget(null); }}>취소</button>
               <button className={styles.btnSubmit} onClick={handlePayAllAndCheckOut} disabled={payingAll}>
                 {payingAll ? '처리 중...' : '💳 일괄 결제 후 체크아웃'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ══ QR Modal ══ */}
+      {selectedGuestForQR && (
+        <div className={styles.overlay} onClick={() => setSelectedGuestForQR(null)}>
+          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.qrTitleGroup}>
+              <h3 className={styles.confirmTitle}>
+                {selectedGuestForQR.roomNumber}호 {selectedGuestForQR.name}님
+              </h3>
+              <p className={styles.confirmSubtitle}>AI 서비스 접속 QR 코드</p>
+            </div>
+            
+            <div className={styles.qrWrapper}>
+              <QRCodeCanvas 
+                value={`${baseUrl}/chat?code=${selectedGuestForQR.accessCode}`}
+                size={200}
+                level="H"
+                includeMargin={true}
+                imageSettings={{
+                  src: "/favicon.ico",
+                  x: undefined,
+                  y: undefined,
+                  height: 40,
+                  width: 40,
+                  excavate: true,
+                }}
+              />
+            </div>
+
+            <p className={styles.qrUrlText}>
+              {baseUrl}/chat?code={selectedGuestForQR.accessCode}
+            </p>
+
+            <div className={styles.confirmActions}>
+              <button className={styles.btnSubmit} onClick={() => setSelectedGuestForQR(null)}>
+                확인
               </button>
             </div>
           </div>

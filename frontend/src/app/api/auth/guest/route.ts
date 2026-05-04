@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       name: data.name,
-      role: data.role
+      role: data.role,
+      roomNo: data.roomNo
     });
 
   } catch (error) {
