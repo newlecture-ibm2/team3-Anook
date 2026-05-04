@@ -265,7 +265,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         customerSatisfaction = Math.round(customerSatisfaction * 10.0) / 10.0;
 
         return new AdminRequestStatsResult(
-                total, byStatus, byDept, byPriority, overdueCount,
+                total, byStatus, byDept, byPriority, frequentRequests, overdueCount,
                 avgResolutionTimeMins, resolutionRatePct, customerSatisfaction,
                 totalChange, avgResolutionTimeChange, resolutionRateChange, customerSatisfactionChange
         );
