@@ -7,8 +7,10 @@ import Button from '@/components/ui/Button/Button';
 import useAdminRequests from '../useAdminRequests';
 import useAssignRequest from './useAssignRequest';
 import useCreateRequest from './useCreateRequest';
+import useRequestDetail from './useRequestDetail';
 import AssignModal from './_components/AssignModal/AssignModal';
 import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
+import RequestDetailModal from './_components/RequestDetailModal/RequestDetailModal';
 import styles from './page.module.css';
 
 export default function FrontDeskPage() {
@@ -16,11 +18,14 @@ export default function FrontDeskPage() {
   const { requests, pending, loading, error, refetch } = useAdminRequests('FRONT');
   const { staffList, assignRequest, loading: assigning } = useAssignRequest();
   const { createRequest, loading: creating } = useCreateRequest();
+  const { detail, fetchDetail, changePriority, assignStaff, cancelRequest } = useRequestDetail();
 
   // 수동 배정 모달 상태
   const [assignTarget, setAssignTarget] = useState<{ id: number; summary: string; roomNo: string } | null>(null);
   // 요청 생성 모달 상태
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // 상세 모달 상태
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
@@ -55,6 +60,11 @@ export default function FrontDeskPage() {
     const success = await createRequest(payload);
     if (success && refetch) refetch();
     return success;
+  };
+
+  const handleCardClick = async (requestId: number) => {
+    await fetchDetail(requestId);
+    setIsDetailOpen(true);
   };
 
   return (
@@ -103,6 +113,7 @@ export default function FrontDeskPage() {
                 primaryActionText="상담 시작"
                 secondaryActionText="수동 배정"
                 onSecondaryAction={() => setAssignTarget({ id: req.id, summary: req.summary, roomNo: req.roomNo })}
+                onCardClick={() => handleCardClick(req.id)}
               />
             ))}
           </div>
@@ -126,6 +137,18 @@ export default function FrontDeskPage() {
         onClose={() => setIsCreateOpen(false)}
         onCreate={handleCreate}
         loading={creating}
+      />
+
+      {/* 요청 상세 모달 */}
+      <RequestDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        detail={detail}
+        staffList={staffList}
+        onChangePriority={changePriority}
+        onAssignStaff={assignStaff}
+        onCancel={cancelRequest}
+        onUpdate={() => refetch && refetch()}
       />
     </div>
   );

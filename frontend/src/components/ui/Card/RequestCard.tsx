@@ -16,6 +16,7 @@ export interface RequestCardProps {
   secondaryActionText?: string;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  onCardClick?: () => void;
   variant?: 'default' | 'warning';
 }
 
@@ -31,6 +32,7 @@ export default function RequestCard({
   secondaryActionText = '무시하기',
   onPrimaryAction,
   onSecondaryAction,
+  onCardClick,
   variant = 'default'
 }: RequestCardProps) {
   const isWarning = variant === 'warning';
@@ -47,7 +49,7 @@ export default function RequestCard({
 
   return (
     <>
-      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''}`}>
+      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''}`} onClick={onCardClick} style={onCardClick ? { cursor: 'pointer' } : undefined}>
         <div className={`${styles.roomBox} ${isWarning ? styles.roomBoxWarning : ''}`}>
           <span className={`${styles.roomType} ${isWarning ? styles.textWhite : ''}`}>{roomType}</span>
           <span className={`${styles.roomNumber} ${isWarning ? styles.textWhite : ''}`}>{roomNumber}</span>
