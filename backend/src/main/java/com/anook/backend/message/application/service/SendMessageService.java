@@ -81,8 +81,17 @@ public class SendMessageService implements SendMessageUseCase {
     @Transactional
     public void processAiAsync(String roomNo, String content, String language) {
         try {
-            // 3. AI 호출
-            MessageAiResult analysis = aiPort.analyze(content, roomNo, language);
+            // 3. AI 호출을 위해 최근 5개 메시지 조회 (대화 맥락)
+            java.util.List<Message> recentMessages = messagePort.findRecentByRoomNo(roomNo, 5);
+            java.util.List<Map<String, String>> chatHistory = recentMessages.stream()
+                    .map(m -> Map.of(
+                            "role", m.getSenderType().equals(com.anook.backend.message.domain.model.SenderType.GUEST) ? "user" : "ai",
+                            "content", m.getContent()
+                    ))
+                    .toList();
+
+            // AI 호출
+            MessageAiResult analysis = aiPort.analyze(content, roomNo, language, chatHistory);
 
             // 4. AI 응답 메시지 저장
             Message aiMsg = Message.createAiReply(roomNo, analysis.guestReply());

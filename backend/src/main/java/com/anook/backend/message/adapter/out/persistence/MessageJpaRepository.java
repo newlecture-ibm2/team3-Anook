@@ -16,4 +16,9 @@ public interface MessageJpaRepository extends JpaRepository<MessageJpaEntity, Lo
      * 특정 객실의 메시지를 시간순으로 조회
      */
     List<MessageJpaEntity> findByRoomNoOrderByCreatedAtAsc(String roomNo);
+
+    /**
+     * 특정 객실의 최근 메시지 조회 (Pageable 이용)
+     */
+    List<MessageJpaEntity> findByRoomNoOrderByCreatedAtDesc(String roomNo, org.springframework.data.domain.Pageable pageable);
 }

@@ -23,5 +23,10 @@ public interface MessageRepositoryPort {
      * 특정 객실의 대화 내역 조회 (시간순 정렬)
      */
     List<Message> findByRoomNo(String roomNo);
+
+    /**
+     * 특정 객실의 최근 대화 내역 조회 (시간순 정렬, limit)
+     */
+    List<Message> findRecentByRoomNo(String roomNo, int limit);
 }
 
