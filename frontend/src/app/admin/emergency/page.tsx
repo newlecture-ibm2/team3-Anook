@@ -4,10 +4,24 @@ import React, { useState } from 'react';
 import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import RequestCard from '@/components/ui/Card/RequestCard';
+import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 
 export default function EmergencyPage() {
   const [searchValue, setSearchValue] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const { requests, loading, error } = useAdminRequests('', searchValue, selectedFilter); // 전체 부서 요청 가져오기
+
+  // 우선순위가 URGENT(긴급)이거나 HIGH(높음)인 것만 필터링
+  const emergencyRequests = requests.filter(req => req.priority === 'URGENT');
+
+  const mapStatusText = (status: string): string => {
+    if (status === 'PENDING') return '대기 중';
+    if (status === 'ASSIGNED') return '배정됨';
+    if (status === 'IN_PROGRESS') return '처리 중';
+    if (status === 'COMPLETED') return '완료';
+    return status;
+  };
 
   return (
     <div className={styles.container}>
@@ -26,30 +40,42 @@ export default function EmergencyPage() {
           <FilterButton 
             filterOptions={[
               { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: '최신순', value: 'latest' },
+              { label: '오래된순', value: 'oldest' }
             ]}
-            selectedFilter="all"
-            onFilterSelect={() => {}}
+            selectedFilter={selectedFilter}
+            onFilterSelect={(val) => setSelectedFilter(val)}
           />
         </div>
       </div>
 
       {/* Content Section */}
       <div className={styles.cardList}>
-        {/* Emergency Request Card */}
-        <RequestCard 
-          roomType="객실"
-          roomNumber="1001" 
-          title="객실 내 응급 환자" 
-          description="심한 복통 호소, 의료진 지원 필요"
-          statusText="CRITICAL"
-          statusVariant="red"
-          createdAt={new Date(Date.now() - 1000 * 60 * 15)} // 15 mins ago
-          variant="warning"
-          primaryActionText="긴급 대응 시작"
-          secondaryActionText="엔지니어 호출"
-        />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
+        ) : emergencyRequests.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>긴급 요청이 없습니다.</div>
+        ) : (
+          emergencyRequests.map(req => (
+            <RequestCard 
+              key={req.id}
+              roomType="객실"
+              roomNumber={req.roomNo} 
+              title={req.summary} 
+              description={`${req.departmentName} 부서 요청`}
+              statusText={mapStatusText(req.status)}
+              statusVariant="red"
+              createdAt={req.createdAt}
+              variant="warning"
+              primaryActionText="긴급 대응 시작"
+              secondaryActionText="엔지니어 호출"
+            />
+          ))
+        )}
       </div>
     </div>
   );
 }
+

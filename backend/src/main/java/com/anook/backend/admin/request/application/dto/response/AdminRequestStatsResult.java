@@ -10,5 +10,13 @@ public record AdminRequestStatsResult(
         Map<String, Long> byStatus,
         Map<String, Long> byDepartment,
         Map<String, Long> byPriority,
-        long overdueCount
+        Map<String, Long> frequentRequests,
+        long overdueCount,
+        double avgResolutionTimeMins,
+        double resolutionRatePct,
+        double customerSatisfaction,
+        String totalChange,
+        String avgResolutionTimeChange,
+        String resolutionRateChange,
+        String customerSatisfactionChange
 ) {}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './ModalOverlay.module.css';
 
 interface ModalOverlayProps {
@@ -10,6 +11,12 @@ interface ModalOverlayProps {
 }
 
 export default function ModalOverlay({ isOpen, onClose, children }: ModalOverlayProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // ESC 키로 닫기 등 부가 기능 지원
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -21,11 +28,13 @@ export default function ModalOverlay({ isOpen, onClose, children }: ModalOverlay
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       {children}
-    </div>
+    </div>,
+    document.body
   );
 }
+
