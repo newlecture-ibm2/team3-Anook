@@ -22,6 +22,9 @@ app.add_middleware(
 # API 라우터 등록
 app.include_router(api_router, prefix="/api/v1")
 
+from app.api.analyze import router as analyze_router
+app.include_router(analyze_router)
+
 @app.get("/health")
 def health_check():
     db_status = "unknown"

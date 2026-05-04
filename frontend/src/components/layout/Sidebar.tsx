@@ -102,7 +102,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       category: 'AI 시스템',
       items: [
         { label: '학습 관리', href: '/admin/ai-training', icon: Target },
-        { label: '지식 라이브러리', href: '/admin/rag-admin', icon: Database },
+        { label: '지식 라이브러리', href: '/admin/rag', icon: Database },
         { label: 'AI 라우팅 로그', href: '/admin/ai-routing', icon: FileSearch },
       ]
     },

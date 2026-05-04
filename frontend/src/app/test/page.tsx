@@ -80,23 +80,23 @@ export default function ComponentShowcasePage() {
   const sampleKnowledges = [
     {
       id: 1,
-      category: '체크인/아웃',
-      title: '체크아웃 시간 연장(Late Checkout)',
-      description: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프런트에 문의 바랍니다.',
+      domainCode: 'FRONT',
+      question: '체크아웃 시간 연장(Late Checkout)',
+      answer: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프런트에 문의 바랍니다.',
       updatedAt: '2024-04-15'
     },
     {
       id: 2,
-      category: '부대시설',
-      title: '천연 온천(대욕장) 이용 안내',
-      description: '호텔 12층에 위치한 천연 온천은 오후 3시부터 익일 오전 10시까지 이용 가능합니다. 문신이 있으신 고객님은 제공해 드리는 커버 씰을 부착해 주시기 바랍니다.',
+      domainCode: 'FACILITY',
+      question: '천연 온천(대욕장) 이용 안내',
+      answer: '호텔 12층에 위치한 천연 온천은 오후 3시부터 익일 오전 10시까지 이용 가능합니다. 문신이 있으신 고객님은 제공해 드리는 커버 씰을 부착해 주시기 바랍니다.',
       updatedAt: '2024-04-10'
     },
     {
       id: 3,
-      category: '주변 관광',
-      title: '도쿄 타워(Tokyo Tower) 방문 가이드',
-      description: '호텔 서쪽 출구에서 도보로 약 10분 거리에 위치해 있습니다. 메인 데크 예매권은 호텔 컨시어지 데스크에서 할인된 가격으로 구매 가능합니다.',
+      domainCode: 'CONCIERGE',
+      question: '도쿄 타워(Tokyo Tower) 방문 가이드',
+      answer: '호텔 서쪽 출구에서 도보로 약 10분 거리에 위치해 있습니다. 메인 데크 예매권은 호텔 컨시어지 데스크에서 할인된 가격으로 구매 가능합니다.',
       updatedAt: '2024-04-18'
     }
   ];
@@ -628,9 +628,10 @@ export default function ComponentShowcasePage() {
               <div key={idx}>
                 <ComponentLabel path="components/ui/Knowledge/KnowledgeItem.tsx" />
                 <KnowledgeItem
-                  category={item.category}
-                  title={item.title}
-                  description={item.description}
+                  id={item.id}
+                  domainCode={item.domainCode}
+                  question={item.question}
+                  answer={item.answer}
                   updatedAt={item.updatedAt}
                   onClick={() => setSelectedKnowledge(item)}
                 />
@@ -723,9 +724,9 @@ export default function ComponentShowcasePage() {
         <KnowledgeModal
           isOpen={!!selectedKnowledge}
           onClose={() => setSelectedKnowledge(null)}
-          category={selectedKnowledge.category}
-          title={selectedKnowledge.title}
-          description={selectedKnowledge.description}
+          domainCode={selectedKnowledge.domainCode}
+          question={selectedKnowledge.question}
+          answer={selectedKnowledge.answer}
           updatedAt={selectedKnowledge.updatedAt}
           onEdit={() => setIsEditModalOpen(true)}
         />
@@ -740,9 +741,9 @@ export default function ComponentShowcasePage() {
               setSelectedKnowledge(null);
             }
           }}
-          initialCategory={selectedKnowledge.category}
-          initialTitle={selectedKnowledge.title}
-          initialDescription={selectedKnowledge.description}
+          initialDomainCode={selectedKnowledge.domainCode}
+          initialQuestion={selectedKnowledge.question}
+          initialAnswer={selectedKnowledge.answer}
           onSave={(data) => {
             setIsEditModalOpen(false);
             setSelectedKnowledge(null);

@@ -28,5 +28,14 @@ export async function handleResponse<T>(res: Response): Promise<T> {
     return {} as T;
   }
 
-  return res.json();
+  const text = await res.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return {} as T;
+  }
 }
