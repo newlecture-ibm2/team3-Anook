@@ -24,4 +24,13 @@ public interface MessageAiPort {
      * @return AI 분석 결과
      */
     MessageAiResult analyze(String text, String roomNo, String language, List<Map<String, String>> chatHistory);
+
+    /**
+     * 한국어(또는 원본 언어) 텍스트를 대상 언어로 번역
+     *
+     * @param text           번역할 원문 (직원 메시지)
+     * @param targetLanguage 도착 언어 코드 (예: "en", "ja")
+     * @return 번역된 텍스트
+     */
+    String translate(String text, String targetLanguage);
 }

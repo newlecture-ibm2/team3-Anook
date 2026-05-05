@@ -104,4 +104,36 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                 null, null, null, Collections.emptyMap(), 0.0
         );
     }
+
+    @Override
+    public String translate(String text, String targetLanguage) {
+        log.info("[PythonAI] 번역 요청 — text: {}, targetLang: {}", text, targetLanguage);
+
+        try {
+            Map<String, Object> response = webClient.post()
+                    .uri("/translate")
+                    .bodyValue(Map.of(
+                            "text", text,
+                            "target_language", targetLanguage
+                    ))
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .timeout(Duration.ofSeconds(15))
+                    .block();
+
+            if (response != null && response.containsKey("translated_text")) {
+                return (String) response.get("translated_text");
+            }
+            
+            log.warn("[PythonAI] 번역 응답이 유효하지 않음 — 원문 반환");
+            return text;
+
+        } catch (WebClientResponseException e) {
+            log.error("[PythonAI] HTTP 에러 (번역) — status: {}, body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return text;
+        } catch (Exception e) {
+            log.error("[PythonAI] 연결 실패 (번역) — {}", e.getMessage());
+            return text;
+        }
+    }
 }

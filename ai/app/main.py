@@ -25,6 +25,9 @@ app.include_router(api_router, prefix="/api/v1")
 from app.api.analyze import router as analyze_router
 app.include_router(analyze_router)
 
+from app.api.translate import router as translate_router
+app.include_router(translate_router)
+
 @app.get("/health")
 def health_check():
     db_status = "unknown"

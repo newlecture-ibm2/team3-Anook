@@ -42,9 +42,9 @@ export function useChat() {
       try {
         const response = await fetch(`/api/chat/${roomNo}/messages`);
         if (!response.ok) throw new Error('Failed to fetch chat history');
-        
+
         const data: BackendMessage[] = await response.json();
-        
+
         if (data.length === 0) {
           setMessages([
             {
@@ -95,10 +95,10 @@ export function useChat() {
         client.subscribe(`/topic/room/${roomNo}`, (message) => {
           if (message.body) {
             const payload = JSON.parse(message.body);
-            
+
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
               setIsTyping(false);
-              
+
               const newAiMsg: ChatMessage = {
                 id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
                 variant: 'received',
@@ -106,7 +106,7 @@ export function useChat() {
                 type: payload.uiType || 'TEXT',
                 meta: payload.meta || {},
               };
-              
+
               setMessages(prev => [...prev, newAiMsg]);
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
@@ -166,7 +166,7 @@ export function useChat() {
     const tempId = `temp-${Date.now()}`;
     const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
     setMessages(prev => [...prev, newUserMsg]);
-    
+
     setIsTyping(true);
 
     try {
@@ -189,9 +189,9 @@ export function useChat() {
         setMessages(prev => [...prev, errorMsg]);
         return;
       }
-      
+
       const data = await response.json();
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === tempId ? { ...msg, id: data.guestMessageId.toString() } : msg
       ));
 
