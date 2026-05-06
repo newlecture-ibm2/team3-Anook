@@ -17,7 +17,7 @@ export interface SessionData {
  * iron-session 설정 옵션
  */
 export const sessionOptions: SessionOptions = {
-  password: "complex_password_at_least_32_characters_long_v2",
+  password: process.env.SESSION_SECRET || "complex_password_at_least_32_characters_long",
   cookieName: "anook_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
