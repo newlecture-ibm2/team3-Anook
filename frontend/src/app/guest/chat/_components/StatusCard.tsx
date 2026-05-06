@@ -5,13 +5,31 @@ import { TimerIcon } from '@/components/icons';
 export interface StatusCardProps {
   progress: number; // 0 to 100
   steps?: string[];
+  cancelled?: boolean;
 }
 
 export default function StatusCard({ 
   progress, 
-  steps = ['접수 완료', '처리 중', '완료'] 
+  steps = ['접수 완료', '처리 중', '완료'],
+  cancelled = false,
 }: StatusCardProps) {
   
+  // 취소 상태면 별도 렌더링
+  if (cancelled) {
+    return (
+      <div className={styles.card}>
+        <div className={styles.title}>
+          <TimerIcon style={{ width: '18px', height: '18px' }} />
+          <span style={{ position: 'relative', top: '1px' }}>요청 처리 현황</span>
+        </div>
+        <div className={styles.barBackground}>
+          <div className={styles.barCancelled} style={{ width: '100%' }} />
+        </div>
+        <div className={styles.cancelledText}>요청이 취소되었습니다</div>
+      </div>
+    );
+  }
+
   // 계산된 진행률에 따라 활성화된 스텝을 판별 (33% = 접수 완료, 66% = 처리 중, 100% = 완료)
   const activeStepIndex = progress >= 100 ? 2 : progress >= 66 ? 1 : 0;
 
