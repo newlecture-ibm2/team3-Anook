@@ -1,7 +1,8 @@
 package com.anook.backend.message.application.service;
 
 import com.anook.backend.message.application.port.out.MessageDispatchPort;
-import com.anook.backend.infrastructure.event.RequestDetectedEvent;
+import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
+import com.anook.backend.message.application.event.RequestDetectedEvent;
 import com.anook.backend.message.application.dto.request.SendMessageCommand;
 import com.anook.backend.message.application.dto.response.SendMessageResult;
 import com.anook.backend.message.application.port.in.SendMessageUseCase;
@@ -131,6 +132,9 @@ public class SendMessageService implements SendMessageUseCase {
                 ));
                 log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}",
                         analysis.domainCode(), escalated);
+            } else if ("CANCEL_REQUEST".equals(analysis.action())) {
+                eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
+                log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);
             }
         } catch (Exception e) {
             log.error("[Message] AI 비동기 처리 실패 — room: {}, error: {}", roomNo, e.getMessage(), e);

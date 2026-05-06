@@ -1,4 +1,4 @@
-package com.anook.backend.infrastructure.event;
+package com.anook.backend.message.application.event;
 
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;

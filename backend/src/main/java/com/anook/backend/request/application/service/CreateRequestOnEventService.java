@@ -1,6 +1,6 @@
 package com.anook.backend.request.application.service;
 
-import com.anook.backend.infrastructure.event.RequestDetectedEvent;
+import com.anook.backend.message.application.event.RequestDetectedEvent;
 import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
