@@ -49,8 +49,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         await onTransfer(task.id, task.version, toDepartmentId, transferReason);
         alert('부서 전달이 완료되었습니다.');
         handleClose();
-      } catch (err: any) {
-        alert(err.message || '부서 전달 중 오류가 발생했습니다.');
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '부서 전달 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -64,8 +64,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
       try {
         await onAccept(task.id, task.version);
         handleClose();
-      } catch (err: any) {
-        alert(err.message || '요청 수락 중 오류가 발생했습니다.');
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '요청 수락 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -79,8 +79,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
       try {
         await onComplete(task.id, task.version);
         handleClose();
-      } catch (err: any) {
-        alert(err.message || '요청 완료 중 오류가 발생했습니다.');
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '요청 완료 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -100,6 +100,10 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
     hour: '2-digit',
     minute: '2-digit'
   });
+
+  const rawTextParts = task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||') : [];
+  const originalRawText = rawTextParts[0] || '';
+  const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n') : null;
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
@@ -130,9 +134,18 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             <div className={styles.descriptionSection}>
               <h3 className={styles.descriptionTitle}>요청 상세 내용</h3>
               <div className={styles.descriptionBox}>
-                {task.rawText}
+                {originalRawText}
               </div>
             </div>
+
+            {transferReasonText && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>
+                <div className={styles.descriptionBox}>
+                  {transferReasonText}
+                </div>
+              </div>
+            )}
 
             {showTransferForm && (
               <div className={styles.transferForm}>

@@ -122,13 +122,13 @@ public class Request {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * 부서 전달 (이관)
-     */
-    public void transferDepartment(DomainCode newDomainCode) {
+    public void transferDepartment(DomainCode newDomainCode, String reason) {
         this.domainCode = newDomainCode;
         this.assignedStaffId = null;
         this.status = RequestStatus.PENDING;
+        if (reason != null && !reason.isBlank()) {
+            this.rawText = this.rawText + "\n|||TRANSFER_REASON|||" + reason;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 

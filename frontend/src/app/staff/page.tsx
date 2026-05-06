@@ -118,7 +118,7 @@ function DashboardContent() {
                         <TaskTicket
                           priority={mapPriority(task.priority)}
                           title={`[${task.roomNumber}호] ${task.summary}`}
-                          description={task.rawText}
+                          description={task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||')[0] : ''}
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
                         />
