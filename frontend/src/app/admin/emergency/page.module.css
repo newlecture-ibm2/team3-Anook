@@ -1,41 +1,67 @@
 .container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-32); /* 컴포넌트 간 간격 */
-  padding: var(--space-48) var(--space-32); /* 상하 48px, 좌우 32px */
+  padding: 32px 40px;
+  background: #fafafa;
+  min-height: 100vh;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.headerLeft {
+.titleArea {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8); /* 제목과 서브타이틀 사이 간격 */
 }
 
 .subtitle {
-  font: var(--text-body-medium);
-  color: var(--color-gray-500);
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .title {
-  font: var(--text-h1-bold);
-  color: var(--color-gray-900);
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 800;
   margin: 0;
 }
 
-.headerActions {
+.actions {
   display: flex;
-  gap: var(--space-12);
-  align-items: center;
+  gap: 12px;
 }
 
-.cardList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16); /* 리스트 아이템 간격 세로 배치 */
+.loading {
+  text-align: center;
+  padding: 60px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.emptyState {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
