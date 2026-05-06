@@ -9,7 +9,7 @@ interface ChatRoom {
 interface ChatMessage {
   id: number;
   roomNo: string;
-  sender: string;
+  senderType: string;
   content: string;
   createdAt: string;
 }

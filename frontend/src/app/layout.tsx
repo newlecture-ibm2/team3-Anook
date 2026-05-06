@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import Toast from "@/components/ui/Modal/Toast";
 
 export const metadata: Metadata = {
   title: "아늑 (Aneuk) — AI 호텔 관리 시스템",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toast />
+      </body>
     </html>
   );
 }

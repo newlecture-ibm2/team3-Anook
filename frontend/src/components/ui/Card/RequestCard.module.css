@@ -98,3 +98,11 @@
   margin: var(--space-4) 0 0 0;
 }
 
+.actionButton {
+  width: 100%;
+  padding: var(--space-8);
+}
+
+.clickable {
+  cursor: pointer;
+}

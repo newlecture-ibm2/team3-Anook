@@ -1,17 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { handleResponse } from '@/lib/api';
+import { getIronSession } from 'iron-session';
+import { cookies } from 'next/headers';
+import { sessionOptions, SessionData } from '@/lib/session';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
 
-export async function POST(request: Request, { params }: { params: { id: string, action: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string, action: string }> }) {
   try {
-    const { id, action } = params;
+    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+
+    if (!session.isLoggedIn || session.role !== "ADMIN") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const { id, action } = resolvedParams;
     
     let url = '';
     if (action === 'start') {
       url = `${BACKEND_URL}/admin/emergency/${id}/start`;
     } else if (action === 'call-engineer') {
       url = `${BACKEND_URL}/admin/emergency/${id}/call-engineer`;
+    } else if (action === 'complete') {
+      url = `${BACKEND_URL}/admin/emergency/${id}/complete`;
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
@@ -20,12 +32,15 @@ export async function POST(request: Request, { params }: { params: { id: string,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.token}`,
       },
     });
 
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    return NextResponse.json(data);
   } catch (error) {
-    console.error(`BFF /api/admin/emergency/${params.id}/${params.action} POST Error:`, error);
+    const resolvedParams = await params;
+    console.error(`BFF /api/admin/emergency/${resolvedParams.id}/${resolvedParams.action} POST Error:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

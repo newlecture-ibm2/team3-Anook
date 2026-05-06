@@ -36,8 +36,15 @@ public interface ManageAdminRequestUseCase {
 
     /**
      * 요청 취소 (관리자 권한)
+     * @param id 요청 ID
+     * @param rejectionReason 반려 사유 (널 가능 — 에스컬레이션 반려 시만 사용)
      */
-    void cancelRequest(Long id);
+    void cancelRequest(Long id, String rejectionReason);
+
+    /**
+     * 부서 변경 (관리자 수동 배정)
+     */
+    void changeDepartment(Long id, String departmentId);
 
     /**
      * 에스컬레이션 대상 목록 조회 
@@ -47,7 +54,7 @@ public interface ManageAdminRequestUseCase {
     /**
      * 에스컬레이션 승인 
      */
-    void escalateRequest(Long id);
+    void escalateRequest(Long id, String departmentId, String priority);
 
     /**
      * 관리자 수동 요청 생성

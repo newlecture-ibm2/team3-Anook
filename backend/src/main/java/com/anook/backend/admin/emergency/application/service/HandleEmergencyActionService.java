@@ -23,4 +23,10 @@ public class HandleEmergencyActionService implements HandleEmergencyActionUseCas
     public void callEngineer(Long taskId) {
         commandPort.callEngineer(taskId);
     }
+
+    @Override
+    @Transactional
+    public void completeEmergencyResponse(Long taskId) {
+        commandPort.updateTaskStatus(taskId, "COMPLETED");
+    }
 }

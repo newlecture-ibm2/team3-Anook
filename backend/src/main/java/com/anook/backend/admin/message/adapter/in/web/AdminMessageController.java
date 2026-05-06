@@ -41,4 +41,22 @@ public class AdminMessageController {
     public ResponseEntity<List<Map<String, Object>>> getRoomMessages(@PathVariable String roomNo) {
         return ResponseEntity.ok(adminMessageQueryPort.findMessagesByRoomNo(roomNo));
     }
+
+    /**
+     * 관리자/직원이 특정 객실에 메시지를 전송
+     *
+     * POST /admin/messages/rooms/{roomNo}/messages
+     * body: { "content": "메시지 내용" }
+     */
+    @PostMapping("/rooms/{roomNo}/messages")
+    public ResponseEntity<Void> sendStaffMessage(
+            @PathVariable String roomNo,
+            @RequestBody Map<String, String> body) {
+        String content = body.get("content");
+        if (content == null || content.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        adminMessageQueryPort.saveStaffMessage(roomNo, content);
+        return ResponseEntity.ok().build();
+    }
 }

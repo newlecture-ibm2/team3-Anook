@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface AdminRequest {
   id: number;
@@ -19,25 +19,26 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setLoading(true);
-        const url = dept
-          ? `/api/admin/requests?dept=${dept}`
-          : '/api/admin/requests';
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: AdminRequest[] = await res.json();
-        setRequests(data);
-      } catch (err: any) {
-        setError(err.message || '요청 목록 로딩 실패');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequests();
+  const fetchRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+      const url = dept
+        ? `/api/admin/requests?dept=${dept}`
+        : '/api/admin/requests';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: AdminRequest[] = await res.json();
+      setRequests(data);
+    } catch (err: any) {
+      setError(err.message || '요청 목록 로딩 실패');
+    } finally {
+      setLoading(false);
+    }
   }, [dept]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   // 클라이언트 사이드 검색 및 필터링
   let filteredRequests = [...requests];
@@ -61,5 +62,5 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
   const completed = filteredRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
-  return { requests: filteredRequests, pending, inProgress, completed, loading, error };
+  return { requests: filteredRequests, pending, inProgress, completed, loading, error, refetch: fetchRequests };
 }

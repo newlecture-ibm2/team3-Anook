@@ -126,8 +126,9 @@ INSERT INTO request (status, priority, department_id, summary, raw_text, confide
     ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),
     ('PENDING',     'HIGH',   'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes',   '{"REQ_ITEM": ["체크아웃"]}'),
     ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["객실 키"]}'),
-    ('PENDING',     'CRITICAL', 'EMERGENCY', '객실 내 응급 환자 발생',   '심한 복통 호소, 의료진 지원 필요',     0.99, '1001', NULL, 0, NOW() - INTERVAL '2 minutes',    NOW() - INTERVAL '2 minutes',    '{"REQ_ITEM": ["응급환자"]}'),
-    ('PENDING',     'CRITICAL', 'EMERGENCY', '화재 의심 신고',          '타는 냄새가 나고 연기가 보입니다',     0.99, '804', NULL, 0, NOW() - INTERVAL '1 minutes',    NOW() - INTERVAL '1 minutes',    '{"REQ_ITEM": ["화재의심"]}')
+    ('PENDING',     'CRITICAL', 'FRONT',     '객실 내 응급 환자 발생',   '심한 복통 호소, 의료진 지원 필요',     0.99, '401', NULL, 0, NOW() - INTERVAL '2 minutes',    NOW() - INTERVAL '2 minutes',    '{"REQ_ITEM": ["응급환자"]}'),
+    ('PENDING',     'CRITICAL', 'FACILITY',  '화재 의심 신고',          '타는 냄새가 나고 연기가 보입니다',     0.99, '402', NULL, 0, NOW() - INTERVAL '1 minutes',    NOW() - INTERVAL '1 minutes',    '{"REQ_ITEM": ["화재의심"]}'),
+    ('ESCALATED',   'HIGH',   'FRONT',     '특수 와인잔 요청',        '리델 와인잔 좀 가져다주세요',        0.90, '707', NULL, 0, NOW() - INTERVAL '30 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["와인잔"]}')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

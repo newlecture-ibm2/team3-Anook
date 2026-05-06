@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './page.module.css';
-import EmergencyCard from '@/components/ui/EmergencyCard/EmergencyCard';
+import RequestCard from '@/components/ui/Card/RequestCard';
 import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
+import Tabs from '@/components/ui/Tab/Tabs';
 
 export default function EmergencyPage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -14,6 +15,7 @@ export default function EmergencyPage() {
   
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [callingId, setCallingId] = useState<number | null>(null);
+  const [completingId, setCompletingId] = useState<number | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -64,11 +66,43 @@ export default function EmergencyPage() {
     }
   };
 
+  const handleCompleteResponse = async (id: number) => {
+    setCompletingId(id);
+    try {
+      const res = await fetch(`/api/admin/emergency/${id}/complete`, { method: 'POST' });
+      if (!res.ok) throw new Error('대응을 완료하지 못했습니다.');
+      await fetchTasks();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
   const filteredTasks = tasks.filter(task => 
-    task.title?.toLowerCase().includes(searchValue.toLowerCase()) || 
-    task.description?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    task.roomNo?.includes(searchValue)
+    task.priority === 'CRITICAL' && (
+      task.title?.toLowerCase().includes(searchValue.toLowerCase()) || 
+      task.description?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      task.roomNo?.includes(searchValue)
+    )
   );
+
+  const [activeTab, setActiveTab] = useState('unhandled');
+
+  const pendingTasks = filteredTasks.filter(task => task.status === 'PENDING' || task.status === 'ASSIGNED');
+  const inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS' || task.status === 'ESCALATED');
+  const completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED');
+
+  const getFilteredRequestsByTab = () => {
+    if (activeTab === 'unhandled') return pendingTasks;
+    if (activeTab === 'inProgress') return inProgressTasks;
+    if (activeTab === 'completed') return completedTasks;
+    return pendingTasks;
+  };
+
+  const requestsToShow = getFilteredRequestsByTab();
+
+  const sectionTitle = activeTab === 'unhandled' ? '미처리 대기' : activeTab === 'inProgress' ? '처리 중' : '처리완료';
 
   return (
     <div className={styles.container}>
@@ -98,34 +132,60 @@ export default function EmergencyPage() {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      {loading ? (
-        <div className={styles.loading}>긴급 대응 데이터를 불러오는 중입니다...</div>
-      ) : filteredTasks.length === 0 ? (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyStateIcon}>✅</div>
-          <h2>현재 처리해야 할 긴급 요청이 없습니다.</h2>
-          <p>모든 상황이 안전하게 관리되고 있습니다.</p>
-        </div>
-      ) : (
-        <div>
-          {filteredTasks.map(task => (
-            <EmergencyCard
-              key={task.id}
-              id={task.id}
-              roomNumber={task.roomNo}
-              title={task.title || task.summary}
-              description={task.description}
-              status={task.status}
-              priority={task.priority}
-              createdAt={task.createdAt}
-              onStartResponse={handleStartResponse}
-              onCallEngineer={handleCallEngineer}
-              isStarting={processingId === task.id}
-              isCalling={callingId === task.id}
-            />
-          ))}
-        </div>
-      )}
+      <div className={styles.tabSection}>
+        <Tabs 
+          options={[
+            { label: '미처리 대기', value: 'unhandled', count: pendingTasks.length },
+            { label: '처리 중', value: 'inProgress', count: inProgressTasks.length },
+            { label: '처리완료', value: 'completed', count: completedTasks.length }
+          ]}
+          activeValue={activeTab}
+          onChange={(val) => setActiveTab(val || 'unhandled')}
+        />
+      </div>
+
+      <div className={styles.contentSection}>
+        <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
+        
+        {loading ? (
+          <div className={styles.loading}>긴급 대응 데이터를 불러오는 중입니다...</div>
+        ) : requestsToShow.length === 0 ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateIcon}>✅</div>
+            <h2>{sectionTitle}인 긴급 요청이 없습니다.</h2>
+          </div>
+        ) : (
+          <div className={styles.cardGrid}>
+            {requestsToShow.map(task => (
+              <RequestCard
+                key={task.id}
+                variant={task.status === 'COMPLETED' ? 'default' : 'warning'}
+                roomType="객실"
+                roomNumber={task.roomNo}
+                title={task.title || task.summary}
+                description={task.description}
+                statusText={sectionTitle}
+                statusVariant={task.status === 'COMPLETED' ? 'green' : task.status === 'IN_PROGRESS' ? 'purple' : 'red'}
+                createdAt={task.createdAt}
+                primaryActionText={
+                  task.status === 'COMPLETED' ? '' :
+                  processingId === task.id ? '처리중...' : 
+                  completingId === task.id ? '완료중...' :
+                  (task.status === 'IN_PROGRESS' || task.status === 'ESCALATED') ? '대응 완료' : '긴급 대응 시작'
+                }
+                secondaryActionText=""
+                onPrimaryAction={() => {
+                  if ((task.status === 'PENDING' || task.status === 'ASSIGNED') && processingId !== task.id) {
+                    handleStartResponse(task.id);
+                  } else if ((task.status === 'IN_PROGRESS' || task.status === 'ESCALATED') && completingId !== task.id) {
+                    handleCompleteResponse(task.id);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

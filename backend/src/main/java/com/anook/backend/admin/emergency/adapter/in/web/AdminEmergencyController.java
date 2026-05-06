@@ -33,4 +33,10 @@ public class AdminEmergencyController {
         handleEmergencyActionUseCase.callEngineer(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<Void> completeEmergencyResponse(@PathVariable Long id) {
+        handleEmergencyActionUseCase.completeEmergencyResponse(id);
+        return ResponseEntity.ok().build();
+    }
 }

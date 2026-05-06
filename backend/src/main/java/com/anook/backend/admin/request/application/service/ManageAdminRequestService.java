@@ -10,6 +10,7 @@ import com.anook.backend.admin.request.application.dto.response.AdminRequestList
 import com.anook.backend.admin.request.application.dto.response.AdminRequestStatsResult;
 import com.anook.backend.admin.request.application.port.in.ManageAdminRequestUseCase;
 import com.anook.backend.admin.request.application.port.out.AdminRequestQueryPort;
+import com.anook.backend.admin.request.application.port.out.AdminRequestMessagePort;
 import com.anook.backend.admin.request.domain.model.AdminRequest;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     private final AdminRequestQueryPort adminRequestQueryPort;
+    private final AdminRequestMessagePort adminRequestMessagePort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
 
@@ -71,7 +73,11 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
             throw new IllegalStateException("현재 상태에서는 담당자를 배정할 수 없습니다: " + request.getStatus());
         }
 
-        adminRequestQueryPort.assignStaff(id, command.staffId());
+        // 직원 부서를 조회하여 해당 부서로 요청의 소속을 변경 (부서간 업무 이관 지원)
+        com.anook.backend.admin.staff.application.dto.response.GetStaffResult staff = 
+                manageStaffUseCase.getById(command.staffId());
+
+        adminRequestQueryPort.assignStaff(id, command.staffId(), staff.departmentId());
     }
 
     @Override
@@ -85,7 +91,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void cancelRequest(Long id) {
+    public void cancelRequest(Long id, String rejectionReason) {
         AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
@@ -94,27 +100,42 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         }
 
         adminRequestQueryPort.cancel(id);
+
+        // 반려 사유가 있으면 해당 객실의 대화 내역에 STAFF 메시지로 저장
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            String formattedMessage = "[요청 반려] " + rejectionReason;
+            adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), formattedMessage);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changeDepartment(Long id, String departmentId) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.changeDepartment(id, departmentId);
     }
 
     @Override
     public List<AdminRequestListResult> getEscalations() {
-        List<AdminRequest> overdue = adminRequestQueryPort.findOverdue();
+        List<AdminRequest> escalations = adminRequestQueryPort.findEscalations();
 
         Map<String, String> deptNameMap = buildDeptNameMap();
         Map<Long, String> staffNameMap = buildStaffNameMap();
 
-        return overdue.stream()
+        return escalations.stream()
                 .map(r -> toListResult(r, deptNameMap, staffNameMap))
                 .toList();
     }
 
     @Override
     @Transactional
-    public void escalateRequest(Long id) {
+    public void escalateRequest(Long id, String departmentId, String priority) {
         adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
-        adminRequestQueryPort.escalate(id);
+        adminRequestQueryPort.escalate(id, departmentId, priority);
     }
 
     @Override
@@ -143,7 +164,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         Map<String, Long> byDept = toMap(adminRequestQueryPort.countByDepartment());
         Map<String, Long> byPriority = toMap(adminRequestQueryPort.countByPriority());
 
-        long overdueCount = adminRequestQueryPort.findOverdue().size();
+        long overdueCount = adminRequestQueryPort.findEscalations().size();
 
         // 전체 데이터 조회하여 실제 통계 계산
         List<com.anook.backend.admin.request.domain.model.AdminRequest> allRequests = 
