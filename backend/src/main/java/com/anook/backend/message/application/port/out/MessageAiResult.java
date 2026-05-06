@@ -31,10 +31,7 @@ public record MessageAiResult(
         double confidence,
 
         /** AI가 지시하는 특수 액션 (예: "CANCEL_REQUEST"). 일반 흐름이면 null */
-        String action,
-
-        /** 고객에게 선택지로 보여줄 되묻기 칩(Pill) 텍스트 배열. 없으면 빈 리스트 */
-        java.util.List<String> clarificationOptions
+        String action
 ) {
 }
 
