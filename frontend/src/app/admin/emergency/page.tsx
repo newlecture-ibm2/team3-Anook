@@ -6,8 +6,10 @@ import RequestCard from '@/components/ui/Card/RequestCard';
 import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import Tabs from '@/components/ui/Tab/Tabs';
+import { useUiStore } from '@/stores/useUiStore';
 
 export default function EmergencyPage() {
+  const { showToast } = useUiStore();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function EmergencyPage() {
       if (!res.ok) throw new Error('대응을 시작하지 못했습니다.');
       await fetchTasks();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message || '오류가 발생했습니다.', 'error');
     } finally {
       setProcessingId(null);
     }
@@ -57,10 +59,10 @@ export default function EmergencyPage() {
     try {
       const res = await fetch(`/api/admin/emergency/${id}/call-engineer`, { method: 'POST' });
       if (!res.ok) throw new Error('엔지니어를 호출하지 못했습니다.');
-      alert('시설팀 엔지니어가 성공적으로 호출되었습니다.');
+      showToast('시설팀 엔지니어가 성공적으로 호출되었습니다.', 'success');
       await fetchTasks();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message || '오류가 발생했습니다.', 'error');
     } finally {
       setCallingId(null);
     }
@@ -73,7 +75,7 @@ export default function EmergencyPage() {
       if (!res.ok) throw new Error('대응을 완료하지 못했습니다.');
       await fetchTasks();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message || '오류가 발생했습니다.', 'error');
     } finally {
       setCompletingId(null);
     }
