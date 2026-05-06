@@ -82,15 +82,10 @@ public class PythonAiHttpAdapter implements MessageAiPort {
 
             String action = (String) response.get("action");
 
-            @SuppressWarnings("unchecked")
-            java.util.List<String> clarificationOptions = response.containsKey("clarification_options")
-                    ? (java.util.List<String>) response.get("clarification_options")
-                    : Collections.emptyList();
+            log.info("[PythonAI] 분석 완료 — domain: {}, confidence: {}, action: {}",
+                    domainCode, confidence, action);
 
-            log.info("[PythonAI] 분석 완료 — domain: {}, confidence: {}, action: {}, options: {}",
-                    domainCode, confidence, action, clarificationOptions.size());
-
-            return new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, clarificationOptions);
+            return new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action);
 
         } catch (WebClientResponseException e) {
             log.error("[PythonAI] HTTP 에러 — status: {}, body: {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -108,7 +103,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
     private MessageAiResult fallbackResult() {
         return new MessageAiResult(
                 "죄송합니다. AI 서비스에 일시적인 문제가 발생했습니다. 프론트 데스크(내선 0번)로 연락 부탁드립니다.",
-                null, null, null, Collections.emptyMap(), 0.0, null, Collections.emptyList()
+                null, null, null, Collections.emptyMap(), 0.0, null
         );
     }
 
