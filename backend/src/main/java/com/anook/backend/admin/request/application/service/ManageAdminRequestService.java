@@ -71,7 +71,11 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
             throw new IllegalStateException("현재 상태에서는 담당자를 배정할 수 없습니다: " + request.getStatus());
         }
 
-        adminRequestQueryPort.assignStaff(id, command.staffId());
+        // 직원 부서를 조회하여 해당 부서로 요청의 소속을 변경 (부서간 업무 이관 지원)
+        com.anook.backend.admin.staff.application.dto.response.GetStaffResult staff = 
+                manageStaffUseCase.getById(command.staffId());
+
+        adminRequestQueryPort.assignStaff(id, command.staffId(), staff.departmentId());
     }
 
     @Override

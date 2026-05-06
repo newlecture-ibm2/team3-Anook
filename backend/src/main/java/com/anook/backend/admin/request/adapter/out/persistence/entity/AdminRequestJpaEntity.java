@@ -82,8 +82,11 @@ public class AdminRequestJpaEntity {
 
     // === 쓰기 메서드 ===
 
-    public void updateAssignedStaff(Long staffId) {
+    public void updateAssignedStaff(Long staffId, String staffDepartmentId) {
         this.assignedStaffId = staffId;
+        if (staffDepartmentId != null && !staffDepartmentId.isBlank()) {
+            this.departmentId = staffDepartmentId;
+        }
         if ("PENDING".equals(this.status)) {
             this.status = "ASSIGNED";
         }

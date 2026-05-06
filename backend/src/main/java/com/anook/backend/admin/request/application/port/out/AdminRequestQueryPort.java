@@ -30,7 +30,7 @@ public interface AdminRequestQueryPort {
     /**
      * 담당자 배정/재배정
      */
-    void assignStaff(Long requestId, Long staffId);
+    void assignStaff(Long requestId, Long staffId, String staffDepartmentId);
 
     /**
      * 우선순위 변경

@@ -41,10 +41,10 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     }
 
     @Override
-    public void assignStaff(Long requestId, Long staffId) {
+    public void assignStaff(Long requestId, Long staffId, String staffDepartmentId) {
         AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
-        entity.updateAssignedStaff(staffId);
+        entity.updateAssignedStaff(staffId, staffDepartmentId);
         jpaRepository.save(entity);
     }
 
