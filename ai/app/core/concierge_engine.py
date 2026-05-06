@@ -28,12 +28,18 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
     # 기본 응답 메시지 생성 (intent별 상세화는 단계 1에서 수행)
     default_reply = f"요청하신 컨시어지 서비스({result.entities.get('intent', '문의사항')})를 확인하였습니다. 담당 직원이 곧 안내해 드리겠습니다."
     
-    # /analyze 응답 규격에 맞게 변환
+    # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     return {
-        "guest_reply": result.clarification_question if result.needs_clarification else default_reply,
+        "request_id": result.request_id if result.request_id else "REQ_TEMP",
+        "room_no": room_no,
+        "domain": "CONCIERGE",
         "summary": result.summary,
-        "domain_code": "CONCIERGE",
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
+        "guest_reply": result.clarification_question if result.needs_clarification else default_reply,
+        "needs_clarification": result.needs_clarification,
+        "clarification_question": result.clarification_question,
+        "clarification_options": result.clarification_options,
+        "missing_fields": result.missing_fields
     }
