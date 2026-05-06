@@ -58,7 +58,7 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   }
 
   const pending = filteredRequests.filter(r => r.status === 'PENDING');
-  const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  const inProgress = filteredRequests.filter(r => r.status === 'IN_PROGRESS');
   const completed = filteredRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
   return { requests: filteredRequests, pending, inProgress, completed, loading, error };

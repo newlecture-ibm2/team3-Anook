@@ -12,14 +12,12 @@ export default function FrontDeskPage() {
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
-    if (status === 'ASSIGNED') return 'purple';
     if (status === 'IN_PROGRESS') return 'green';
     return 'gray';
   };
 
   const mapStatusText = (status: string): string => {
     if (status === 'PENDING') return '프론트 대기';
-    if (status === 'ASSIGNED') return '배정됨';
     if (status === 'IN_PROGRESS') return '처리 중';
     if (status === 'COMPLETED') return '완료';
     return status;
@@ -30,7 +28,7 @@ export default function FrontDeskPage() {
     ? requests
     : activeTab === 'unhandled'
       ? pending
-      : requests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+      : requests.filter(r => r.status === 'IN_PROGRESS');
 
   return (
     <div className={styles.container}>

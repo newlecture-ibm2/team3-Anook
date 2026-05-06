@@ -85,7 +85,7 @@ public class AdminRequestJpaEntity {
     public void updateAssignedStaff(Long staffId) {
         this.assignedStaffId = staffId;
         if ("PENDING".equals(this.status)) {
-            this.status = "ASSIGNED";
+            this.status = "IN_PROGRESS";
         }
         this.updatedAt = LocalDateTime.now();
     }
@@ -105,7 +105,7 @@ public class AdminRequestJpaEntity {
      */
     public void escalate() {
         this.priority = "URGENT";
-        if ("ASSIGNED".equals(this.status) || "IN_PROGRESS".equals(this.status)) {
+        if ("IN_PROGRESS".equals(this.status)) {
             this.status = "PENDING";
             this.assignedStaffId = null;
         }
@@ -124,7 +124,7 @@ public class AdminRequestJpaEntity {
         entity.rawText = rawText;
         entity.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "NORMAL";
         entity.assignedStaffId = assignedStaffId;
-        entity.status = (assignedStaffId != null) ? "ASSIGNED" : "PENDING";
+        entity.status = (assignedStaffId != null) ? "IN_PROGRESS" : "PENDING";
         entity.confidence = 1.0f;
         entity.version = 0;
         entity.createdAt = LocalDateTime.now();

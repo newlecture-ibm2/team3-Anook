@@ -1,17 +1,16 @@
 import React from 'react';
 import styles from './StatusTimeline.module.css';
 
-export type RequestStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SETTLED' | 'CANCELLED';
+export type RequestStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SETTLED' | 'CANCELLED';
 
 interface StatusTimelineProps {
   status: RequestStatus;
 }
 
 const STEPS = [
-  { key: 'PENDING', label: '접수됨' },
-  { key: 'ASSIGNED', label: '담당자 배정' },
-  { key: 'IN_PROGRESS', label: '진행 중' },
-  { key: 'COMPLETED', label: '완료' },
+  { key: 'PENDING', label: '요청 접수' },
+  { key: 'IN_PROGRESS', label: '요청 처리중' },
+  { key: 'COMPLETED', label: '처리 완료' },
 ];
 
 export default function StatusTimeline({ status }: StatusTimelineProps) {
@@ -27,9 +26,9 @@ export default function StatusTimeline({ status }: StatusTimelineProps) {
 
   // 매핑 로직
   let currentIndex = 0;
-  if (status === 'ASSIGNED') currentIndex = 1;
-  else if (status === 'IN_PROGRESS') currentIndex = 2;
-  else if (status === 'COMPLETED' || status === 'SETTLED') currentIndex = 3;
+  if (status === 'IN_PROGRESS') currentIndex = 1;
+  if (status === 'COMPLETED') currentIndex = 2;
+  if (status === 'SETTLED') currentIndex = 3;
 
   const progressPercentage = (currentIndex / (STEPS.length - 1)) * 100;
 
