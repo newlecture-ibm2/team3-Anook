@@ -123,9 +123,10 @@ public class AdminRequestJpaEntity {
     /**
      * 에스컬레이션 승인 — 우선순위를 URGENT로 올리고 상태를 PENDING으로 변경 (재배정 대기)
      */
-    public void approveEscalation() {
-        this.priority = "URGENT";
+    public void approveEscalation(String newDepartmentId, String newPriority) {
+        this.priority = newPriority != null && !newPriority.isBlank() ? newPriority : "URGENT";
         this.status = "PENDING";
+        this.departmentId = newDepartmentId;
         this.assignedStaffId = null;
         this.updatedAt = LocalDateTime.now();
     }

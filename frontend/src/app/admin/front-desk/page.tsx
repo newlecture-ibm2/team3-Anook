@@ -10,6 +10,8 @@ import useRequestDetail from './useRequestDetail';
 import useEscalations from './useEscalations';
 import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
 import RequestDetailModal from './_components/RequestDetailModal/RequestDetailModal';
+import ApproveEscalationModal from './_components/ApproveEscalationModal/ApproveEscalationModal';
+import RejectEscalationModal from './_components/RejectEscalationModal/RejectEscalationModal';
 import styles from './page.module.css';
 
 export default function FrontDeskPage() {
@@ -23,6 +25,9 @@ export default function FrontDeskPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   // 상세 모달 상태
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // 승인/반려 모달 상태
+  const [approveTarget, setApproveTarget] = useState<number | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<number | null>(null);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
@@ -38,6 +43,26 @@ export default function FrontDeskPage() {
     if (status === 'COMPLETED') return '완료';
     if (status === 'ESCALATED') return '승인 대기';
     return status;
+  };
+
+  const handleApproveEscalationSubmit = async (departmentId: string, priority: string) => {
+    if (!approveTarget) return false;
+    const ok = await approveEscalation(approveTarget, departmentId, priority);
+    if (ok) {
+      setApproveTarget(null);
+      refetch && refetch();
+    }
+    return ok;
+  };
+
+  const handleRejectEscalationSubmit = async (reason: string) => {
+    if (!rejectTarget) return false;
+    const ok = await rejectEscalation(rejectTarget, reason);
+    if (ok) {
+      setRejectTarget(null);
+      refetch && refetch();
+    }
+    return ok;
   };
 
   // 탭에 따른 필터링
@@ -108,10 +133,10 @@ export default function FrontDeskPage() {
                 createdAt={req.createdAt}
                 primaryActionText={activeTab === 'escalation' ? '승인' : '상담 시작'}
                 secondaryActionText={activeTab === 'escalation' ? '반려' : '수동 배정'}
-                onPrimaryAction={activeTab === 'escalation' ? () => approveEscalation(req.id) : undefined}
+                onPrimaryAction={activeTab === 'escalation' ? () => setApproveTarget(req.id) : undefined}
                 onSecondaryAction={
                   activeTab === 'escalation'
-                    ? () => rejectEscalation(req.id)
+                    ? () => setRejectTarget(req.id)
                     : () => handleCardClick(req.id)
                 }
                 onCardClick={() => handleCardClick(req.id)}
@@ -137,7 +162,23 @@ export default function FrontDeskPage() {
         onChangePriority={changePriority}
         onChangeDepartment={changeDepartment}
         onCancel={cancelRequest}
+        onApproveEscalation={approveEscalation}
+        onRejectEscalation={rejectEscalation}
         onUpdate={() => refetch && refetch()}
+      />
+
+      {/* 에스컬레이션 승인 모달 */}
+      <ApproveEscalationModal
+        isOpen={approveTarget !== null}
+        onClose={() => setApproveTarget(null)}
+        onApprove={handleApproveEscalationSubmit}
+      />
+
+      {/* 에스컬레이션 반려 모달 */}
+      <RejectEscalationModal
+        isOpen={rejectTarget !== null}
+        onClose={() => setRejectTarget(null)}
+        onReject={handleRejectEscalationSubmit}
       />
     </div>
   );

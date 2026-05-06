@@ -37,10 +37,12 @@ export default function useEscalations() {
     fetchEscalations();
   }, [fetchEscalations]);
 
-  const approveEscalation = async (id: number) => {
+  const approveEscalation = async (id: number, departmentId: string, priority: string) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/escalate`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departmentId, priority }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchEscalations();
@@ -51,10 +53,12 @@ export default function useEscalations() {
     }
   };
 
-  const rejectEscalation = async (id: number) => {
+  const rejectEscalation = async (id: number, reason: string) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/cancel`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rejectionReason: reason }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchEscalations();

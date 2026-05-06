@@ -7,6 +7,9 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { CancelIcon } from '@/components/icons';
+import { useUiStore } from '@/stores/useUiStore';
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import RejectEscalationModal from '../RejectEscalationModal/RejectEscalationModal';
 
 interface Department {
   id: string;
@@ -38,6 +41,8 @@ interface RequestDetailModalProps {
   onChangePriority: (id: number, priority: string) => Promise<boolean>;
   onChangeDepartment: (id: number, departmentId: string) => Promise<boolean>;
   onCancel: (id: number) => Promise<boolean>;
+  onApproveEscalation?: (id: number, departmentId: string, priority: string) => Promise<boolean>;
+  onRejectEscalation?: (id: number, reason: string) => Promise<boolean>;
   onUpdate: () => void;
   loading?: boolean;
 }
@@ -65,6 +70,8 @@ export default function RequestDetailModal({
   onChangePriority,
   onChangeDepartment,
   onCancel,
+  onApproveEscalation,
+  onRejectEscalation,
   onUpdate,
   loading = false,
 }: RequestDetailModalProps) {
@@ -72,6 +79,8 @@ export default function RequestDetailModal({
   const [editDeptId, setEditDeptId] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [saving, setSaving] = useState(false);
+  const [confirmType, setConfirmType] = useState<'none' | 'cancel' | 'approve' | 'reject'>('none');
+  const showToast = useUiStore((s) => s.showToast);
 
   useEffect(() => {
     if (detail) {
@@ -118,11 +127,49 @@ export default function RequestDetailModal({
   };
 
   const handleCancel = async () => {
+    setConfirmType('none');
     const ok = await onCancel(detail.id);
     if (ok) {
+      showToast('요청이 취소되었습니다.', 'success');
       onUpdate();
       onClose();
+    } else {
+      showToast('요청 취소에 실패했습니다.', 'error');
     }
+  };
+
+  const handleApproveEscalation = async () => {
+    if (!onApproveEscalation) return;
+    setConfirmType('none');
+    
+    setSaving(true);
+    // 상세 모달 내에서 직접 승인할 때는 현재 모달에 세팅된 editDeptId와 editPriority 값을 전달합니다.
+    const ok = await onApproveEscalation(detail.id, editDeptId, editPriority);
+    setSaving(false);
+    if (ok) {
+      showToast('에스컬레이션이 승인되어 재배정 대기 상태가 되었습니다.', 'success');
+      onUpdate();
+      onClose();
+    } else {
+      showToast('승인 처리에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleRejectEscalation = async (reason: string) => {
+    if (!onRejectEscalation) return false;
+    setConfirmType('none');
+    
+    setSaving(true);
+    const ok = await onRejectEscalation(detail.id, reason);
+    setSaving(false);
+    if (ok) {
+      showToast('에스컬레이션이 반려(요청 취소)되었습니다.', 'success');
+      onUpdate();
+      onClose();
+    } else {
+      showToast('반려 처리에 실패했습니다.', 'error');
+    }
+    return ok;
   };
 
   const formatDateTime = (dt: string) => {
@@ -232,21 +279,57 @@ export default function RequestDetailModal({
 
         {/* 하단 버튼 */}
         <div className={styles.footer}>
-          {detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' && (
-            <Button variant="secondary" onClick={handleCancel} style={{ color: 'var(--color-error)' }}>
+          {detail.status === 'ESCALATED' ? (
+            <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
+              에스컬레이션 반려
+            </Button>
+          ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
+            <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
               요청 취소
             </Button>
-          )}
+          ) : <div />}
+
           <div className={styles.footerRight}>
             <Button variant="secondary" onClick={onClose}>닫기</Button>
-            {hasChanges && (
+            {detail.status === 'ESCALATED' ? (
+              <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
+                에스컬레이션 승인
+              </Button>
+            ) : hasChanges ? (
               <Button variant="primary" onClick={handleSave} disabled={saving || loading}>
                 {saving ? '저장 중...' : '변경 저장'}
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </ModalCard>
+
+      <ConfirmModal
+        isOpen={confirmType === 'cancel'}
+        onClose={() => setConfirmType('none')}
+        onConfirm={handleCancel}
+        title="요청 취소"
+        subtitle="정말 요청을 취소하시겠습니까?"
+        status="danger"
+        cancelText="아니오"
+        confirmText="예, 취소합니다"
+      />
+
+      <ConfirmModal
+        isOpen={confirmType === 'approve'}
+        onClose={() => setConfirmType('none')}
+        onConfirm={handleApproveEscalation}
+        title="에스컬레이션 승인"
+        subtitle={`선택한 부서(${departments.find(d => d.id === editDeptId)?.name || '...'})로 재배정하며 승인합니다.`}
+        cancelText="아니오"
+        confirmText="승인하기"
+      />
+
+      <RejectEscalationModal
+        isOpen={confirmType === 'reject'}
+        onClose={() => setConfirmType('none')}
+        onReject={handleRejectEscalation}
+      />
     </ModalOverlay>
   );
 }

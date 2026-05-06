@@ -83,8 +83,14 @@ public class AdminRequestController {
      * PATCH /admin/requests/{id}/cancel
      */
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancelRequest(@PathVariable Long id) {
+    public ResponseEntity<Void> cancelRequest(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("rejectionReason") : null;
         manageAdminRequestUseCase.cancelRequest(id);
+        if (reason != null && !reason.isBlank()) {
+            System.out.println(">>> 반려 사유 로깅 (추후 DB 연동 예정): " + reason);
+        }
         return ResponseEntity.noContent().build();
     }
 
@@ -121,8 +127,15 @@ public class AdminRequestController {
      * PATCH /admin/requests/{id}/escalate
      */
     @PatchMapping("/{id}/escalate")
-    public ResponseEntity<Void> escalateRequest(@PathVariable Long id) {
-        manageAdminRequestUseCase.escalateRequest(id);
+    public ResponseEntity<Void> escalateRequest(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String departmentId = body.get("departmentId");
+        String priority = body.get("priority");
+        if (departmentId == null || departmentId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.escalateRequest(id, departmentId, priority);
         return ResponseEntity.noContent().build();
     }
 

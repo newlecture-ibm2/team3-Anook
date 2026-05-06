@@ -70,7 +70,7 @@ export default function RequestCard({
           {description && <p className={styles.description}>{description}</p>}
         </div>
 
-        <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`}>
+        <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`} onClick={(e) => e.stopPropagation()}>
           {primaryActionText && (
             <Button variant="primary" style={{ width: '100%', padding: 'var(--space-8)' }} onClick={handlePrimaryClick}>
               {primaryActionText}

@@ -123,11 +123,11 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void escalateRequest(Long id) {
+    public void escalateRequest(Long id, String departmentId, String priority) {
         adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
-        adminRequestQueryPort.escalate(id);
+        adminRequestQueryPort.escalate(id, departmentId, priority);
     }
 
     @Override

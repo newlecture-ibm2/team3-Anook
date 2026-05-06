@@ -50,7 +50,7 @@ public interface AdminRequestQueryPort {
     /**
      * 에스컬레이션 승인
      */
-    void escalate(Long requestId);
+    void escalate(Long requestId, String departmentId, String priority);
 
     /**
      * 에스컬레이션 대상 목록 (ESCALATED 상태)

@@ -52,7 +52,7 @@ public interface ManageAdminRequestUseCase {
     /**
      * 에스컬레이션 승인 
      */
-    void escalateRequest(Long id);
+    void escalateRequest(Long id, String departmentId, String priority);
 
     /**
      * 관리자 수동 요청 생성
