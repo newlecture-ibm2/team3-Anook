@@ -181,15 +181,22 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     # STEP 3-c: CLARIFICATION → 되묻기
     # ──────────────────────────────────────────────
     if primary.mode == "CLARIFICATION":
+        clarification_msg = getattr(primary, "clarification_message", None)
+        if not clarification_msg:
+            clarification_msg = "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다."
+            
+        clarification_opts = getattr(primary, "clarification_options", [])
+            
         response = {
-            "guest_reply": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
+            "guest_reply": clarification_msg,
             "summary": "추가 확인 필요",
             "domain_code": None,
             "priority": "NORMAL",
             "entities": {},
             "confidence": primary.confidence,
+            "clarification_options": clarification_opts,
         }
-        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
+        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}, options: {clarification_opts}")
         print(f"[Analyze] 응답: {response}\n")
         return response
 
