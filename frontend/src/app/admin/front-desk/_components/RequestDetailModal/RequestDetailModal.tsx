@@ -8,10 +8,9 @@ import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { CancelIcon } from '@/components/icons';
 
-interface StaffMember {
-  id: number;
+interface Department {
+  id: string;
   name: string;
-  departmentId: string;
 }
 
 interface RequestDetail {
@@ -36,9 +35,8 @@ interface RequestDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   detail: RequestDetail | null;
-  staffList: StaffMember[];
   onChangePriority: (id: number, priority: string) => Promise<boolean>;
-  onAssignStaff: (id: number, staffId: number) => Promise<boolean>;
+  onChangeDepartment: (id: number, departmentId: string) => Promise<boolean>;
   onCancel: (id: number) => Promise<boolean>;
   onUpdate: () => void;
   loading?: boolean;
@@ -64,23 +62,31 @@ export default function RequestDetailModal({
   isOpen,
   onClose,
   detail,
-  staffList,
   onChangePriority,
-  onAssignStaff,
+  onChangeDepartment,
   onCancel,
   onUpdate,
   loading = false,
 }: RequestDetailModalProps) {
   const [editPriority, setEditPriority] = useState('');
-  const [editStaffId, setEditStaffId] = useState<number | ''>('');
+  const [editDeptId, setEditDeptId] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (detail) {
       setEditPriority(detail.priority);
-      setEditStaffId(detail.assignedStaffId ?? '');
+      setEditDeptId(detail.departmentId);
     }
   }, [detail]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/admin/departments')
+      .then(res => res.json())
+      .then(data => setDepartments(data))
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!detail) return null;
 
@@ -88,7 +94,7 @@ export default function RequestDetailModal({
 
   const hasChanges =
     editPriority !== detail.priority ||
-    editStaffId !== (detail.assignedStaffId ?? '');
+    editDeptId !== detail.departmentId;
 
   const handleSave = async () => {
     setSaving(true);
@@ -99,8 +105,8 @@ export default function RequestDetailModal({
       if (ok) changed = true;
     }
 
-    if (editStaffId !== '' && editStaffId !== (detail.assignedStaffId ?? '')) {
-      const ok = await onAssignStaff(detail.id, editStaffId as number);
+    if (editDeptId !== detail.departmentId) {
+      const ok = await onChangeDepartment(detail.id, editDeptId);
       if (ok) changed = true;
     }
 
@@ -147,7 +153,7 @@ export default function RequestDetailModal({
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
             <div className={styles.gridItem}>
-              <span className={styles.label}>부서</span>
+              <span className={styles.label}>현재 부서</span>
               <span className={styles.value}>{detail.departmentName}</span>
             </div>
             <div className={styles.gridItem}>
@@ -191,7 +197,7 @@ export default function RequestDetailModal({
           </div>
         )}
 
-        {/* 수정 가능 영역 */}
+        {/* 배정 관리 */}
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>배정 관리</h3>
           <div className={styles.editRow}>
@@ -209,16 +215,15 @@ export default function RequestDetailModal({
               </select>
             </div>
             <div className={styles.editField}>
-              <label className={styles.label} htmlFor="detail-staff">담당자</label>
+              <label className={styles.label} htmlFor="detail-dept">배정 부서</label>
               <select
-                id="detail-staff"
+                id="detail-dept"
                 className={styles.select}
-                value={editStaffId}
-                onChange={(e) => setEditStaffId(e.target.value ? Number(e.target.value) : '')}
+                value={editDeptId}
+                onChange={(e) => setEditDeptId(e.target.value)}
               >
-                <option value="">미배정</option>
-                {staffList.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
             </div>

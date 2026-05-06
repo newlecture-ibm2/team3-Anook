@@ -40,6 +40,11 @@ public interface ManageAdminRequestUseCase {
     void cancelRequest(Long id);
 
     /**
+     * 부서 변경 (관리자 수동 배정)
+     */
+    void changeDepartment(Long id, String departmentId);
+
+    /**
      * 에스컬레이션 대상 목록 조회 
      */
     List<AdminRequestListResult> getEscalations();

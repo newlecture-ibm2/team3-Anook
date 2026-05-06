@@ -83,5 +83,20 @@ export default function useRequestDetail() {
     }
   };
 
-  return { detail, fetchDetail, changePriority, assignStaff, cancelRequest, loading, error };
+  const changeDepartment = async (id: number, departmentId: string) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${id}/department`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departmentId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err: any) {
+      setError(err.message || '부서 변경 실패');
+      return false;
+    }
+  };
+
+  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, cancelRequest, loading, error };
 }

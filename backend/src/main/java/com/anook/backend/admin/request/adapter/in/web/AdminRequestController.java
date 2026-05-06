@@ -89,6 +89,23 @@ public class AdminRequestController {
     }
 
     /**
+     * 부서 변경 (관리자 수동 배정)
+     *
+     * PATCH /admin/requests/{id}/department
+     */
+    @PatchMapping("/{id}/department")
+    public ResponseEntity<Void> changeDepartment(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String departmentId = body.get("departmentId");
+        if (departmentId == null || departmentId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.changeDepartment(id, departmentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 에스컬레이션 대기열 조회
      *
      * GET /admin/requests/escalations

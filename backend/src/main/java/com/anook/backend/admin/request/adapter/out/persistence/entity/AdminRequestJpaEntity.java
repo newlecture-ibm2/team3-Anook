@@ -98,6 +98,15 @@ public class AdminRequestJpaEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void changeDepartment(String departmentId) {
+        this.departmentId = departmentId;
+        this.assignedStaffId = null;
+        if ("ASSIGNED".equals(this.status) || "IN_PROGRESS".equals(this.status)) {
+            this.status = "PENDING";
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void cancel() {
         this.status = "CANCELLED";
         this.updatedAt = LocalDateTime.now();

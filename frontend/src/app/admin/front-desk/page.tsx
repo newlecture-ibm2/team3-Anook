@@ -5,11 +5,9 @@ import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import Button from '@/components/ui/Button/Button';
 import useAdminRequests from '../useAdminRequests';
-import useAssignRequest from './useAssignRequest';
 import useCreateRequest from './useCreateRequest';
 import useRequestDetail from './useRequestDetail';
 import useEscalations from './useEscalations';
-import AssignModal from './_components/AssignModal/AssignModal';
 import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
 import RequestDetailModal from './_components/RequestDetailModal/RequestDetailModal';
 import styles from './page.module.css';
@@ -17,13 +15,10 @@ import styles from './page.module.css';
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, pending, inProgress, loading, error, refetch } = useAdminRequests('FRONT');
-  const { staffList, assignRequest, loading: assigning } = useAssignRequest();
   const { createRequest, loading: creating } = useCreateRequest();
-  const { detail, fetchDetail, changePriority, assignStaff, cancelRequest } = useRequestDetail();
+  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest } = useRequestDetail();
   const { escalations, approveEscalation, rejectEscalation } = useEscalations();
 
-  // 수동 배정 모달 상태
-  const [assignTarget, setAssignTarget] = useState<{ id: number; summary: string; roomNo: string } | null>(null);
   // 요청 생성 모달 상태
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   // 상세 모달 상태
@@ -53,13 +48,6 @@ export default function FrontDeskPage() {
     return pending;
   };
   const filteredRequests = getFilteredRequests();
-
-  const handleAssign = async (staffId: number) => {
-    if (!assignTarget) return false;
-    const success = await assignRequest(assignTarget.id, staffId);
-    if (success && refetch) refetch();
-    return success;
-  };
 
   const handleCreate = async (payload: any) => {
     const success = await createRequest(payload);
@@ -124,7 +112,7 @@ export default function FrontDeskPage() {
                 onSecondaryAction={
                   activeTab === 'escalation'
                     ? () => rejectEscalation(req.id)
-                    : () => setAssignTarget({ id: req.id, summary: req.summary, roomNo: req.roomNo })
+                    : () => handleCardClick(req.id)
                 }
                 onCardClick={() => handleCardClick(req.id)}
               />
@@ -132,17 +120,6 @@ export default function FrontDeskPage() {
           </div>
         )}
       </div>
-
-      {/* 수동 배정 모달 */}
-      <AssignModal
-        isOpen={assignTarget !== null}
-        onClose={() => setAssignTarget(null)}
-        onAssign={handleAssign}
-        staffList={staffList}
-        requestSummary={assignTarget?.summary ?? ''}
-        roomNo={assignTarget?.roomNo ?? ''}
-        loading={assigning}
-      />
 
       {/* 요청 생성 모달 */}
       <CreateRequestModal
@@ -152,14 +129,13 @@ export default function FrontDeskPage() {
         loading={creating}
       />
 
-      {/* 요청 상세 모달 */}
+      {/* 요청 상세 모달 (우선순위 + 부서 배정 관리) */}
       <RequestDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         detail={detail}
-        staffList={staffList}
         onChangePriority={changePriority}
-        onAssignStaff={assignStaff}
+        onChangeDepartment={changeDepartment}
         onCancel={cancelRequest}
         onUpdate={() => refetch && refetch()}
       />

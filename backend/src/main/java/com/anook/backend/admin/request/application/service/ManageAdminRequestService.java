@@ -101,6 +101,15 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     }
 
     @Override
+    @Transactional
+    public void changeDepartment(Long id, String departmentId) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.changeDepartment(id, departmentId);
+    }
+
+    @Override
     public List<AdminRequestListResult> getEscalations() {
         List<AdminRequest> escalations = adminRequestQueryPort.findEscalations();
 

@@ -43,6 +43,11 @@ public interface AdminRequestQueryPort {
     void cancel(Long requestId);
 
     /**
+     * 부서 변경 (관리자 수동 배정)
+     */
+    void changeDepartment(Long requestId, String departmentId);
+
+    /**
      * 에스컬레이션 승인
      */
     void escalate(Long requestId);
