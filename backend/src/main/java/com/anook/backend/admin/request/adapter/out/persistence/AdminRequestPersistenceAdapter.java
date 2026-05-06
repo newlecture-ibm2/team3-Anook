@@ -68,16 +68,15 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     public void escalate(Long requestId) {
         AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
-        entity.escalate();
+        entity.approveEscalation();
         jpaRepository.save(entity);
     }
 
     @Override
-    public List<AdminRequest> findOverdue() {
-        List<AdminRequestJpaEntity> all = jpaRepository.findAllWithFilters(null, null, null);
-        return all.stream()
+    public List<AdminRequest> findEscalations() {
+        List<AdminRequestJpaEntity> escalated = jpaRepository.findByStatusOrderByCreatedAtDesc("ESCALATED");
+        return escalated.stream()
                 .map(AdminRequestJpaEntity::toDomain)
-                .filter(AdminRequest::isOverdue)
                 .toList();
     }
 

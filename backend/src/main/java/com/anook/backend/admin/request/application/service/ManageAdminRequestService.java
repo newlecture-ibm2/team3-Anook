@@ -98,12 +98,12 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     public List<AdminRequestListResult> getEscalations() {
-        List<AdminRequest> overdue = adminRequestQueryPort.findOverdue();
+        List<AdminRequest> escalations = adminRequestQueryPort.findEscalations();
 
         Map<String, String> deptNameMap = buildDeptNameMap();
         Map<Long, String> staffNameMap = buildStaffNameMap();
 
-        return overdue.stream()
+        return escalations.stream()
                 .map(r -> toListResult(r, deptNameMap, staffNameMap))
                 .toList();
     }
@@ -143,7 +143,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         Map<String, Long> byDept = toMap(adminRequestQueryPort.countByDepartment());
         Map<String, Long> byPriority = toMap(adminRequestQueryPort.countByPriority());
 
-        long overdueCount = adminRequestQueryPort.findOverdue().size();
+        long overdueCount = adminRequestQueryPort.findEscalations().size();
 
         // 전체 데이터 조회하여 실제 통계 계산
         List<com.anook.backend.admin.request.domain.model.AdminRequest> allRequests = 

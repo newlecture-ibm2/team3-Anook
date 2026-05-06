@@ -47,11 +47,10 @@ export default function FrontDeskPage() {
 
   // 탭에 따른 필터링
   const getFilteredRequests = () => {
-    if (activeTab === 'all') return requests;
     if (activeTab === 'unhandled') return pending;
+    if (activeTab === 'inProgress') return inProgress;
     if (activeTab === 'escalation') return escalations;
-    if (activeTab === 'exception') return inProgress;
-    return requests;
+    return pending;
   };
   const filteredRequests = getFilteredRequests();
 
@@ -90,10 +89,9 @@ export default function FrontDeskPage() {
       <div className={styles.tabSection}>
         <Tabs 
           options={[
-            { label: '전체 요청', value: 'all' },
             { label: '미처리 대기', value: 'unhandled', count: pending.length },
-            { label: '승인 대기', value: 'escalation', count: escalations.length },
-            { label: '예외 발생', value: 'exception', count: inProgress.length }
+            { label: '처리 중', value: 'inProgress', count: inProgress.length },
+            { label: '승인 대기', value: 'escalation', count: escalations.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}

@@ -124,7 +124,8 @@ INSERT INTO request (status, priority, department_id, summary, raw_text, confide
     ('COMPLETED',   'NORMAL', 'CONCIERGE', '택시 호출 요청',          '공항까지 택시 하나 불러주세요',        0.97, '707', 1,    0, NOW() - INTERVAL '3 hours',      NOW() - INTERVAL '1 hour',       '{"REQ_ITEM": ["택시"]}'),
     ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),
     ('PENDING',     'HIGH',   'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes',   '{"REQ_ITEM": ["체크아웃"]}'),
-    ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["객실 키"]}')
+    ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["객실 키"]}'),
+    ('ESCALATED',   'HIGH',   'FRONT',     '특수 와인잔 요청',        '리델 와인잔 좀 가져다주세요',        0.90, '801', NULL, 0, NOW() - INTERVAL '30 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["와인잔"]}')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

@@ -48,9 +48,9 @@ public interface AdminRequestQueryPort {
     void escalate(Long requestId);
 
     /**
-     * 에스컬레이션 대상 목록 (초과 시간 요청)
+     * 에스컬레이션 대상 목록 (ESCALATED 상태)
      */
-    List<AdminRequest> findOverdue();
+    List<AdminRequest> findEscalations();
 
     /**
      * 요청 저장 — 수동 생성
