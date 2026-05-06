@@ -37,12 +37,13 @@ class AnalyzeRequest(BaseModel):
 from app.core.facility_engine import run_facility_agent
 from app.core.hk_engine import run_hk_agent
 from app.core.concierge_engine import run_concierge_agent
+from app.core.fb_engine import run_fb_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
-    # "FB": run_fb_agent,
+    "FB": run_fb_agent,
     # "CONCIERGE": run_concierge_agent,
     # "FRONT": run_front_agent,
     # "EMERGENCY": run_emergency_agent,
