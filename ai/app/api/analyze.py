@@ -108,13 +108,26 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
                     room_no=request.room_no, 
                     chat_history=request.chat_history
                 )
+                agent_confidence = agent_result.get("confidence", primary.confidence)
+                final_domain_code = agent_result.get("domain_code", domain)
+                final_entities = agent_result.get("entities", {})
+                final_guest_reply = agent_result.get("guest_reply", "요청을 접수하였습니다.")
+                final_summary = agent_result.get("summary", f"{domain} 요청")
+
+                # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
+                if agent_confidence < 0.4:
+                    final_domain_code = "FRONT"
+                    final_entities["intent"] = "ESCALATION"
+                    if "직원" not in final_guest_reply:
+                        final_guest_reply = "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다."
+
                 response = {
-                    "guest_reply": agent_result.get("guest_reply", "요청을 접수하였습니다."),
-                    "summary": agent_result.get("summary", f"{domain} 요청"),
-                    "domain_code": agent_result.get("domain_code", domain),
+                    "guest_reply": final_guest_reply,
+                    "summary": final_summary,
+                    "domain_code": final_domain_code,
                     "priority": agent_result.get("priority", "NORMAL"),
-                    "entities": agent_result.get("entities", {}),
-                    "confidence": primary.confidence,
+                    "entities": final_entities,
+                    "confidence": agent_confidence,
                 }
                 print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
                 print(f"[Analyze] 응답: {response}\n")
