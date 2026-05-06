@@ -14,6 +14,7 @@ public record LoginResponse(
     String role,       // 권한 (ADMIN, STAFF, GUEST)
     String name,       // 사용자 이름
     String department, // 소속 부서명 (투숙객은 null 처리하여 제외)
+    String departmentId, // 부서 코드 (예: HK)
     String roomNo      // 객실 번호 (투숙객 전용)
 ) {
 }

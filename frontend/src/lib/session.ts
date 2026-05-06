@@ -8,6 +8,7 @@ export interface SessionData {
   role?: string;
   name?: string;
   department?: string;
+  departmentId?: string;
   roomNo?: string;
   isLoggedIn: boolean;
 }
@@ -16,7 +17,7 @@ export interface SessionData {
  * iron-session 설정 옵션
  */
 export const sessionOptions: SessionOptions = {
-  password: "complex_password_at_least_32_characters_long",
+  password: "complex_password_at_least_32_characters_long_v2",
   cookieName: "anook_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
