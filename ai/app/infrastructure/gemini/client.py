@@ -37,9 +37,18 @@ def call_gemini(
     Raises:
         ValueError: Gemini 응답이 유효한 JSON이 아닐 경우
     """
+    
+    # [백엔드 아키텍처 해킹]: 다국어 룰 강제 주입
+    global_i18n_rule = """
+[GLOBAL SYSTEM RULE FOR MULTILINGUAL UX]
+CRITICAL: You MUST write guest-facing fields (e.g., 'clarification_question', 'guest_reply', 'fallback_message') in the EXACT SAME LANGUAGE as the guest's input. Do NOT translate these to Korean if the guest speaks another language.
+However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reasoning', 'item', 'menu') STRICTLY in KOREAN.
+"""
+    final_system_instruction = system_instruction + "\n" + global_i18n_rule
+
     model = genai.GenerativeModel(
         model_name=model_name,
-        system_instruction=system_instruction,
+        system_instruction=final_system_instruction,
         generation_config=genai.GenerationConfig(
             response_mime_type="application/json",
             temperature=temperature,
