@@ -76,6 +76,21 @@ public class MockAiAdapter implements MessageAiPort {
         );
     }
 
+    @Override
+    public String translate(String text, String targetLanguage) {
+        log.info("[MockAI] 번역 요청 — text: {}, targetLang: {}", text, targetLanguage);
+        
+        // 1초 딜레이 (AI 처리 시간 시뮬레이션)
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // 목업: 단순히 (Translated) 접두사만 붙여서 반환
+        return "(Translated to " + targetLanguage + ") " + text;
+    }
+
     private boolean containsAny(String text, String... keywords) {
         for (String keyword : keywords) {
             if (text.contains(keyword)) return true;

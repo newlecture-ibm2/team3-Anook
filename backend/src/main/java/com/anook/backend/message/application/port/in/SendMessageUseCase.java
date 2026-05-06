@@ -19,4 +19,11 @@ public interface SendMessageUseCase {
      * @return 전송 결과 (guestMessageId, aiMessageId, aiReply)
      */
     SendMessageResult send(SendMessageCommand command);
+
+    /**
+     * 직원이 투숙객에게 메시지를 전송한다. (AI 자동 번역 포함)
+     *
+     * @param command 전송 커맨드 (roomNo, content)
+     */
+    void sendStaffMessage(com.anook.backend.message.application.dto.request.SendStaffMessageCommand command);
 }

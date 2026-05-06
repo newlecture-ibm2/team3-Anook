@@ -158,4 +158,26 @@ public class SendMessageService implements SendMessageUseCase {
 
         lastSendTimeMap.put(roomNo, now);
     }
+
+    @Override
+    @Transactional
+    public void sendStaffMessage(com.anook.backend.message.application.dto.request.SendStaffMessageCommand command) {
+        // 1. 번역 수행
+        String translatedContent = aiPort.translate(command.content(), command.targetLanguage());
+
+        // 2. 메시지 도메인 생성 및 저장
+        Message staffMsg = Message.createStaffMessage(command.roomNo(), command.guestId(), command.content());
+        staffMsg.setTranslation(translatedContent);
+        
+        staffMsg = messagePort.save(staffMsg);
+        log.info("[Message] Staff 메시지 저장 완료 — id: {}, room: {}", staffMsg.getId(), command.roomNo());
+
+        // 3. WebSocket Push (투숙객에게 번역본 전달)
+        dispatchPort.sendToRoom(command.roomNo(), Map.of(
+                "type", "STAFF_MESSAGE",
+                "messageId", staffMsg.getId(),
+                "content", translatedContent,
+                "originalContent", command.content()
+        ));
+    }
 }

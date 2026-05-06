@@ -128,7 +128,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
             com.anook.backend.request.domain.model.DomainCode.from(toDepartmentId);
 
         // 부서 이관
-        request.transferDepartment(newDomainCode);
+        request.transferDepartment(newDomainCode, reason);
 
         // 저장. Domain Model의 상태 변경 메서드를 호출했으므로 객체 자체가 변경됨
         // 단, 기존 save 방식(reconstitute)을 맞추기 위해 새로 재구성

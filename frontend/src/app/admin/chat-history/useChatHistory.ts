@@ -73,6 +73,6 @@ export default function useChatHistory() {
   return {
     rooms, messages, selectedRoom,
     loadingRooms, loadingMessages, error,
-    selectRoom,
+    selectRoom, fetchMessages,
   };
 }

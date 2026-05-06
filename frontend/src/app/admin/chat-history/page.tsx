@@ -12,7 +12,37 @@ import styles from './page.module.css';
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom } = useChatHistory();
+  const [inputText, setInputText] = useState('');
+  const [targetLang, setTargetLang] = useState('en');
+  const [isSending, setIsSending] = useState(false);
+  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages } = useChatHistory();
+
+  const handleSend = async () => {
+    if (!inputText.trim() || !selectedRoom) return;
+    setIsSending(true);
+    try {
+      const res = await fetch('/api/staff/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomNo: selectedRoom,
+          content: inputText,
+          targetLanguage: targetLang,
+        }),
+      });
+      if (res.ok) {
+        setInputText('');
+        fetchMessages(selectedRoom);
+      } else {
+        alert('메시지 전송에 실패했습니다.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   // API 데이터를 ChatHistory 컴포넌트 형식으로 매핑
   const chatRooms: ChatHistoryData[] = rooms.map(r => ({
@@ -104,6 +134,38 @@ export default function ChatHistoryPage() {
               </div>
             )}
           </div>
+
+          {/* Chat Input Area */}
+          {selectedRoom && (
+            <div className={styles.chatInputContainer} style={{ padding: '20px', borderTop: '1px solid var(--color-gray-200)', display: 'flex', gap: '10px' }}>
+              <select 
+                value={targetLang} 
+                onChange={(e) => setTargetLang(e.target.value)}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
+              >
+                <option value="en">🇺🇸 영어</option>
+                <option value="ja">🇯🇵 일본어</option>
+                <option value="zh">🇨🇳 중국어</option>
+                <option value="ko">🇰🇷 한국어</option>
+              </select>
+              <input 
+                type="text" 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="투숙객에게 보낼 메시지를 입력하세요 (자동 번역됩니다)..."
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
+                disabled={isSending}
+              />
+              <button 
+                onClick={handleSend}
+                disabled={isSending || !inputText.trim()}
+                style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer' }}
+              >
+                {isSending ? '전송중...' : '전송'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
