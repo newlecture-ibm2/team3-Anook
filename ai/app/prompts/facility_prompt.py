@@ -57,7 +57,4 @@ RULES:
   - HIGH: 전기/수도 전면 고장, 도어락 잠김
   - NORMAL: 일반 가전/설비 고장
   - LOW: 소음, 미세 불편 (리모컨 배터리 등)
-
-[Graceful Surrender Rule]
-- If the guest requests something completely unrelated to Facility Management (e.g., ordering food, extra towels, billing), DO NOT attempt to answer. Set `confidence` to 0.2 so the global system can escalate it.
 """.strip()
