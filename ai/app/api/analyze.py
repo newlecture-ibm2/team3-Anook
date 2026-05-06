@@ -99,6 +99,14 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     # ──────────────────────────────────────────────
     if primary.mode == "TASK" and primary.domain:
         domain = primary.domain
+        
+        final_domain_code = domain
+        final_entities = {}
+        final_guest_reply = "네, 알겠습니다. 담당 부서에 요청을 전달하겠습니다. 잠시만 기다려 주세요."
+        final_summary = f"{domain} 부서 요청 접수"
+        final_priority = "NORMAL"
+        final_confidence = primary.confidence
+        final_clarification_options = []
 
         # 부서별 에이전트가 등록되어 있으면 호출 (플러그 앤 플레이)
         if domain in DOMAIN_AGENTS:
@@ -108,46 +116,36 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
                     room_no=request.room_no, 
                     chat_history=request.chat_history
                 )
-                agent_confidence = agent_result.get("confidence", primary.confidence)
+                final_confidence = agent_result.get("confidence", primary.confidence)
                 final_domain_code = agent_result.get("domain_code", domain)
                 final_entities = agent_result.get("entities", {})
                 final_guest_reply = agent_result.get("guest_reply", "요청을 접수하였습니다.")
                 final_summary = agent_result.get("summary", f"{domain} 요청")
-
-                # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
-                if agent_confidence < 0.4:
-                    final_domain_code = "FRONT"
-                    final_entities["intent"] = "ESCALATION"
-                    if "직원" not in final_guest_reply:
-                        final_guest_reply = "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다."
-
+                final_priority = agent_result.get("priority", "NORMAL")
                 final_clarification_options = agent_result.get("clarification_options", [])
-
-                response = {
-                    "guest_reply": final_guest_reply,
-                    "summary": final_summary,
-                    "domain_code": final_domain_code,
-                    "priority": agent_result.get("priority", "NORMAL"),
-                    "entities": final_entities,
-                    "confidence": agent_confidence,
-                    "clarification_options": final_clarification_options,
-                }
                 print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
-                print(f"[Analyze] 응답: {response}\n")
-                return response
             except Exception as e:
                 print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {e}")
+        else:
+            print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
 
-        # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
+        # 🚨 [글로벌 이관 로직] 최종 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
+        if final_confidence < 0.4:
+            final_domain_code = "FRONT"
+            final_entities["intent"] = "ESCALATION"
+            if "직원" not in final_guest_reply:
+                final_guest_reply = "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다."
+            print(f"[Analyze] 🚨 확신도 0.4 미만 ({final_confidence}) → FRONT 강제 이관 발동!")
+
         response = {
-            "guest_reply": "네, 알겠습니다. 담당 부서에 요청을 전달하겠습니다. 잠시만 기다려 주세요.",
-            "summary": f"{domain} 부서 요청 접수",
-            "domain_code": domain,
-            "priority": "NORMAL",
-            "entities": {},
-            "confidence": primary.confidence,
+            "guest_reply": final_guest_reply,
+            "summary": final_summary,
+            "domain_code": final_domain_code,
+            "priority": final_priority,
+            "entities": final_entities,
+            "confidence": final_confidence,
+            "clarification_options": final_clarification_options,
         }
-        print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
         print(f"[Analyze] 응답: {response}\n")
         return response
 
