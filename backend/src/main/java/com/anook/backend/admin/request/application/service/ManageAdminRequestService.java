@@ -10,6 +10,7 @@ import com.anook.backend.admin.request.application.dto.response.AdminRequestList
 import com.anook.backend.admin.request.application.dto.response.AdminRequestStatsResult;
 import com.anook.backend.admin.request.application.port.in.ManageAdminRequestUseCase;
 import com.anook.backend.admin.request.application.port.out.AdminRequestQueryPort;
+import com.anook.backend.admin.request.application.port.out.AdminRequestMessagePort;
 import com.anook.backend.admin.request.domain.model.AdminRequest;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     private final AdminRequestQueryPort adminRequestQueryPort;
+    private final AdminRequestMessagePort adminRequestMessagePort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
 
@@ -89,7 +91,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void cancelRequest(Long id) {
+    public void cancelRequest(Long id, String rejectionReason) {
         AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
@@ -98,6 +100,12 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         }
 
         adminRequestQueryPort.cancel(id);
+
+        // 반려 사유가 있으면 해당 객실의 대화 내역에 STAFF 메시지로 저장
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            String formattedMessage = "[요청 반려] " + rejectionReason;
+            adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), formattedMessage);
+        }
     }
 
     @Override

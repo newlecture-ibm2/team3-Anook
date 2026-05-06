@@ -40,4 +40,18 @@ public class AdminMessageJpaEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "guest_id")
+    private Long guestId;
+
+    // === 팩토리 메서드: 관리자/직원 메시지 생성 ===
+
+    public static AdminMessageJpaEntity createStaffMessage(String roomNo, String content) {
+        AdminMessageJpaEntity entity = new AdminMessageJpaEntity();
+        entity.senderType = "STAFF";
+        entity.content = content;
+        entity.roomNo = roomNo;
+        entity.createdAt = LocalDateTime.now();
+        return entity;
+    }
 }

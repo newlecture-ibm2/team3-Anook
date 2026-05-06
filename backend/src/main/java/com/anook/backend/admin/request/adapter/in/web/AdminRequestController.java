@@ -87,10 +87,7 @@ public class AdminRequestController {
             @PathVariable Long id,
             @RequestBody(required = false) java.util.Map<String, String> body) {
         String reason = body != null ? body.get("rejectionReason") : null;
-        manageAdminRequestUseCase.cancelRequest(id);
-        if (reason != null && !reason.isBlank()) {
-            System.out.println(">>> 반려 사유 로깅 (추후 DB 연동 예정): " + reason);
-        }
+        manageAdminRequestUseCase.cancelRequest(id, reason);
         return ResponseEntity.noContent().build();
     }
 

@@ -36,8 +36,10 @@ public interface ManageAdminRequestUseCase {
 
     /**
      * 요청 취소 (관리자 권한)
+     * @param id 요청 ID
+     * @param rejectionReason 반려 사유 (널 가능 — 에스컬레이션 반려 시만 사용)
      */
-    void cancelRequest(Long id);
+    void cancelRequest(Long id, String rejectionReason);
 
     /**
      * 부서 변경 (관리자 수동 배정)
