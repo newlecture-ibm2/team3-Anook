@@ -7,8 +7,10 @@
 
 .header {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-8); /* 제목과 설명 사이 간격 */
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-8);
 }
 
 .subtitle {

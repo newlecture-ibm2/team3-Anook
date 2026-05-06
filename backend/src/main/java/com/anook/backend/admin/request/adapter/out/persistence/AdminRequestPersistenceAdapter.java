@@ -41,10 +41,10 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     }
 
     @Override
-    public void assignStaff(Long requestId, Long staffId) {
+    public void assignStaff(Long requestId, Long staffId, String staffDepartmentId) {
         AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
-        entity.updateAssignedStaff(staffId);
+        entity.updateAssignedStaff(staffId, staffDepartmentId);
         jpaRepository.save(entity);
     }
 
@@ -65,19 +65,26 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     }
 
     @Override
-    public void escalate(Long requestId) {
+    public void changeDepartment(Long requestId, String departmentId) {
         AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
-        entity.escalate();
+        entity.changeDepartment(departmentId);
         jpaRepository.save(entity);
     }
 
     @Override
-    public List<AdminRequest> findOverdue() {
-        List<AdminRequestJpaEntity> all = jpaRepository.findAllWithFilters(null, null, null);
-        return all.stream()
+    public void escalate(Long requestId, String departmentId, String priority) {
+        AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
+        entity.approveEscalation(departmentId, priority);
+        jpaRepository.save(entity);
+    }
+
+    @Override
+    public List<AdminRequest> findEscalations() {
+        List<AdminRequestJpaEntity> escalated = jpaRepository.findByStatusOrderByCreatedAtDesc("ESCALATED");
+        return escalated.stream()
                 .map(AdminRequestJpaEntity::toDomain)
-                .filter(AdminRequest::isOverdue)
                 .toList();
     }
 
