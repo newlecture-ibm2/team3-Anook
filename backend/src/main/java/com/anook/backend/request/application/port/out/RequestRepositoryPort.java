@@ -45,6 +45,11 @@ public interface RequestRepositoryPort {
     Optional<Request> findById(Long id);
 
     /**
+     * 특정 객실, 투숙객의 가장 최근 생성된 취소 가능(PENDING, ASSIGNED) 상태의 요청 1건 조회
+     */
+    Optional<Request> findLatestCancellableByRoomNoAndGuestId(String roomNo, Long guestId);
+
+    /**
      * 상태 조회 DTO (Port 레벨에서 사용하는 경량 DTO)
      */
     record RequestStatusDto(

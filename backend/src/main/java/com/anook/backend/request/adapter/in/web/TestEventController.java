@@ -1,6 +1,6 @@
 package com.anook.backend.request.adapter.in.web;
 
-import com.anook.backend.infrastructure.event.RequestDetectedEvent;
+import com.anook.backend.message.application.event.RequestDetectedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

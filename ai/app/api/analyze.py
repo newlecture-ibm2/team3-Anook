@@ -167,17 +167,70 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     # ──────────────────────────────────────────────
     # STEP 3-c: CLARIFICATION → 되묻기
     # ──────────────────────────────────────────────
-    response = {
-        "guest_reply": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
-        "summary": "추가 확인 필요",
-        "domain_code": None,
-        "priority": "NORMAL",
-        "entities": {},
-        "confidence": primary.confidence,
-    }
-    print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
-    print(f"[Analyze] 응답: {response}\n")
-    return response
+    if primary.mode == "CLARIFICATION":
+        response = {
+            "guest_reply": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
+            "summary": "추가 확인 필요",
+            "domain_code": None,
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": primary.confidence,
+        }
+        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
+        print(f"[Analyze] 응답: {response}\n")
+        return response
+
+    # ──────────────────────────────────────────────
+    # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
+    # ──────────────────────────────────────────────
+    if primary.mode == "INFO":
+        domain = primary.domain or "FRONT"
+        try:
+            rag_results = rag_service.search_similar(request.text, domain_code=domain, top_k=3, threshold=0.5)
+            if rag_results:
+                knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
+                info_prompt = f"고객 질문: {request.text}\n\n아래 호텔 지식을 참고하여 친절하게 한국어로 답변해주세요.\n{knowledge}"
+                raw = call_gemini(
+                    prompt=info_prompt, 
+                    system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
+                )
+                guest_reply = raw.get("reply", "해당 정보를 확인 중입니다.")
+            else:
+                guest_reply = "죄송합니다, 해당 정보를 찾지 못했습니다. 프론트 데스크(내선 0번)로 문의해 주세요."
+        except Exception as e:
+            print(f"[Analyze] ⚠️ INFO RAG 검색/생성 실패: {e}")
+            guest_reply = "죄송합니다, 해당 정보를 찾지 못했습니다. 프론트 데스크(내선 0번)로 문의해 주세요."
+
+        response = {
+            "guest_reply": guest_reply,
+            "summary": "정보 문의",
+            "domain_code": None,  # ← 요청 미생성
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": primary.confidence,
+        }
+        print(f"[Analyze] ℹ️ INFO 응답")
+        print(f"[Analyze] 응답: {response}\n")
+        return response
+
+    # ──────────────────────────────────────────────
+    # STEP 3-e: CANCEL → 요청 취소
+    # ──────────────────────────────────────────────
+    if primary.mode == "CANCEL":
+        response = {
+            "guest_reply": "네, 가장 최근 요청을 취소 처리하겠습니다.",
+            "summary": "요청 취소",
+            "domain_code": None,
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": primary.confidence,
+            "action": "CANCEL_REQUEST",
+        }
+        print(f"[Analyze] 🚫 CANCEL 응답")
+        print(f"[Analyze] 응답: {response}\n")
+        return response
+
+    return _fallback_response("요청을 처리하는 중 문제가 발생했습니다.")
 
 
 def _fallback_response(message: str) -> Dict[str, Any]:

@@ -28,7 +28,10 @@ public record MessageAiResult(
         Map<String, Object> entities,
 
         /** AI 확신도 (0.0 ~ 1.0) */
-        double confidence
+        double confidence,
+
+        /** AI가 지시하는 특수 액션 (예: "CANCEL_REQUEST"). 일반 흐름이면 null */
+        String action
 ) {
 }
 
