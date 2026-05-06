@@ -26,7 +26,43 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
     result = HotelRequestSchema(**raw)
     
     # 기본 응답 메시지 생성 (intent별 상세화는 단계 1에서 수행)
-    default_reply = f"요청하신 컨시어지 서비스({result.entities.get('intent', '문의사항')})를 확인하였습니다. 담당 직원이 곧 안내해 드리겠습니다."
+    intent = result.entities.get('intent')
+    entities = result.entities
+    
+    if intent == 'TAXI':
+        dest = entities.get('destination', '목적지')
+        time = entities.get('time', '지금 바로')
+        count = entities.get('passenger_count', '1')
+        default_reply = f"{time}에 {dest}(으)로 가시는 택시({count}분)를 예약해 드릴까요? 배차 확인 후 안내해 드리겠습니다."
+    elif intent == 'LUGGAGE_STORAGE':
+        count = entities.get('count', '짐')
+        action = "보관" if entities.get('action') == 'store' else "찾기"
+        default_reply = f"짐 {count}개를 {action}하시겠습니까? 담당 직원이 곧 도움을 드리러 가겠습니다."
+    elif intent == 'RESTAURANT':
+        cuisine = entities.get('cuisine_type', '맛집')
+        time = entities.get('time', '정해진 시간')
+        default_reply = f"{time}에 주변의 괜찮은 {cuisine} 레스토랑 예약을 도와드릴까요? 추천 리스트를 뽑아보겠습니다."
+    elif intent == 'TOUR_INFO':
+        category = entities.get('category', '관광지')
+        default_reply = f"멋진 {category} 장소들을 찾고 계시군요! 아늑이 엄선한 추천 명소를 안내해 드리겠습니다."
+    elif intent == 'RESERVATION':
+        target = entities.get('target', '요청하신 항목')
+        time = entities.get('time', '정해진 시간')
+        default_reply = f"{time}에 {target} 예약을 진행해 드릴까요? 확인 후 다시 연락드리겠습니다."
+    elif intent == 'DELIVERY':
+        item = entities.get('item', '물품')
+        default_reply = f"요청하신 {item} 배달/전달 건을 확인했습니다. 도착 시 객실로 안내해 드리겠습니다."
+    elif intent == 'WAKE_UP_CALL':
+        time = entities.get('time', '정해진 시간')
+        default_reply = f"네, {time}에 모닝콜을 예약해 드렸습니다. 편안한 밤 되세요!"
+    elif intent == 'MEDICAL_INFO':
+        m_type = "병원" if entities.get('type') == 'Hospital' else "약국"
+        default_reply = f"근처에서 가장 가까운 {m_type}을(를) 안내해 드리겠습니다. 몸 상태가 많이 안 좋으시면 직원 호출을 눌러주세요."
+    elif intent == 'POSTAL_SERVICE':
+        item = entities.get('item', '우편물')
+        default_reply = f"요청하신 {item} 발송 대행 업무를 도와드리겠습니다. 1층 컨시어지 데스크로 방문해 주시겠어요?"
+    else:
+        default_reply = f"요청하신 컨시어지 서비스({intent or '문의사항'})를 확인하였습니다. 담당 직원이 곧 안내해 드리겠습니다."
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     return {
