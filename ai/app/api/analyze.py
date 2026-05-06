@@ -121,6 +121,8 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
                     if "직원" not in final_guest_reply:
                         final_guest_reply = "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다."
 
+                final_clarification_options = agent_result.get("clarification_options", [])
+
                 response = {
                     "guest_reply": final_guest_reply,
                     "summary": final_summary,
@@ -128,6 +130,7 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
                     "priority": agent_result.get("priority", "NORMAL"),
                     "entities": final_entities,
                     "confidence": agent_confidence,
+                    "clarification_options": final_clarification_options,
                 }
                 print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
                 print(f"[Analyze] 응답: {response}\n")
