@@ -99,12 +99,20 @@ export function useChat() {
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
               setIsTyping(false);
 
+              let msgType = payload.uiType || 'TEXT';
+              let meta = payload.meta || {};
+
+              if (payload.clarificationOptions && payload.clarificationOptions.length > 0) {
+                msgType = 'QUICK_REPLY';
+                meta.options = payload.clarificationOptions;
+              }
+
               const newAiMsg: ChatMessage = {
                 id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
                 variant: 'received',
                 content: payload.content,
-                type: payload.uiType || 'TEXT',
-                meta: payload.meta || {},
+                type: msgType,
+                meta: meta,
               };
 
               setMessages(prev => [...prev, newAiMsg]);

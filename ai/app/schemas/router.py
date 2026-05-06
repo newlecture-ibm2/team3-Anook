@@ -18,3 +18,11 @@ class RouterOutputSchema(BaseModel):
     reasoning: str = Field(
         description="이 도메인/모드로 분류한 논리적 이유 (개발자 디버깅 및 로깅용)"
     )
+    clarification_message: Optional[str] = Field(
+        default=None,
+        description="고객에게 되물어볼 정중한 질문 (mode가 CLARIFICATION일 때만 사용)"
+    )
+    clarification_options: Optional[list[str]] = Field(
+        default_factory=list,
+        description="고객이 누를 수 있는 선택지 배열 (mode가 CLARIFICATION일 때만 사용, 예: ['생수병', '얼음물'])"
+    )
