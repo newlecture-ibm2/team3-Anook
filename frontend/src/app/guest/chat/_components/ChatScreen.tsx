@@ -49,7 +49,11 @@ export default function ChatScreen({ messages, isTyping, onSendMessage }: ChatSc
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
                 {msg.content && <ChatBubble variant="received">{msg.content}</ChatBubble>}
-                <StatusCard progress={msg.meta?.progress || 0} steps={msg.meta?.steps} />
+                <StatusCard 
+                  progress={msg.meta?.progress || 0} 
+                  steps={msg.meta?.steps} 
+                  cancelled={msg.meta?.cancelled || false}
+                />
               </div>
             );
           }

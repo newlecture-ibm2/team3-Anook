@@ -110,14 +110,18 @@ export function useChat() {
               setMessages(prev => [...prev, newAiMsg]);
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
-                'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100
+                'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100, 'CANCELLED': 0
               };
+              const isCancelled = payload.status === 'CANCELLED';
               const statusMsg: ChatMessage = {
                 id: `request-${payload.requestId}`,
                 variant: 'received',
                 type: 'STATUS_CARD',
-                content: payload.summary,
-                meta: { progress: progressMap[payload.status] || 0 }
+                content: isCancelled ? '요청이 취소되었습니다' : payload.summary,
+                meta: { 
+                  progress: progressMap[payload.status] || 0,
+                  cancelled: isCancelled,
+                }
               };
 
               setMessages(prev => {

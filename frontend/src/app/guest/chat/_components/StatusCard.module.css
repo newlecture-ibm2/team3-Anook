@@ -49,3 +49,17 @@
   font: var(--text-caption-medium);
   color: var(--color-primary);
 }
+
+.barCancelled {
+  height: 100%;
+  background-color: var(--color-error, #ef4444);
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease-in-out;
+}
+
+.cancelledText {
+  font: var(--text-caption-medium);
+  color: var(--color-error, #ef4444);
+  text-align: center;
+  margin-top: var(--space-4);
+}
