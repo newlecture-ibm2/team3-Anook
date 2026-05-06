@@ -49,7 +49,7 @@ export default function RequestCard({
 
   return (
     <>
-      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''}`} onClick={onCardClick} style={onCardClick ? { cursor: 'pointer' } : undefined}>
+      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''} ${onCardClick ? styles.clickable : ''}`} onClick={onCardClick}>
         <div className={`${styles.roomBox} ${isWarning ? styles.roomBoxWarning : ''}`}>
           <span className={`${styles.roomType} ${isWarning ? styles.textWhite : ''}`}>{roomType}</span>
           <span className={`${styles.roomNumber} ${isWarning ? styles.textWhite : ''}`}>{roomNumber}</span>
