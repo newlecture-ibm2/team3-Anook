@@ -29,34 +29,116 @@ const sampleHandoverBriefing = {
 
 export default function HandoverPage() {
   const [searchValue, setSearchValue] = useState('');
+  const [targetDate, setTargetDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [shiftType, setShiftType] = useState<string>('DAY');
+  const [managerName, setManagerName] = useState<string>('관리자');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [briefingData, setBriefingData] = useState<any>(null);
+  const [itemsData, setItemsData] = useState<any[]>([]);
+
+  // 세션 정보 확인
+  React.useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.isLoggedIn && data.name) {
+          setManagerName(data.name);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // 백엔드 API 연동
+  React.useEffect(() => {
+    setLoading(true);
+    setError(null);
+    fetch(`/api/admin/handover?date=${targetDate}&shiftType=${shiftType}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('데이터를 불러오지 못했습니다.');
+        return res.json();
+      })
+      .then((data) => {
+        const [start, end] = data.shiftTimeLabel ? data.shiftTimeLabel.split(' - ') : ['-', '-'];
+        
+        setBriefingData({
+          id: '-',
+          shiftStart: start,
+          shiftEnd: end,
+          totalRequestCount: data.totalRequestCount,
+          pendingCount: data.pendingCount,
+          escalatedCount: 0,
+          summary: '자동 생성된 인수인계 브리핑입니다.',
+          createdAt: new Date().toLocaleString()
+        });
+
+        const mappedItems = data.tasks.map((task: any, index: number) => ({
+          id: index + 1,
+          roomNumber: task.roomNo,
+          guestName: task.guestName || '-',
+          requestDetails: `[${task.category}] ${task.summary}`
+        }));
+        setItemsData(mappedItems);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [targetDate, shiftType]);
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>인수인계</h1>
         <div className={styles.headerActions}>
-          <InputField 
-            variant="search" 
-            placeholder="검색어를 입력하세요..." 
+          <input 
+            type="date" 
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+          />
+          <select 
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            value={shiftType}
+            onChange={(e) => setShiftType(e.target.value)}
+          >
+            <option value="DAY">주간 (07:00 - 15:00)</option>
+            <option value="EVENING">야간 (15:00 - 23:00)</option>
+            <option value="NIGHT">심야 (23:00 - 07:00)</option>
+          </select>
+          <InputField
+            variant="search"
+            placeholder="검색어를 입력하세요..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
-          <FilterButton 
+          <FilterButton
             filterOptions={[
-              { label: '전체', value: 'all' }, 
+              { label: '전체', value: 'all' },
               { label: '최신순', value: 'latest' }
             ]}
             selectedFilter="all"
-            onFilterSelect={() => {}}
+            onFilterSelect={() => { }}
           />
         </div>
       </div>
 
-      <HandoverRecord
-        managerName="박단희"
-        briefing={sampleHandoverBriefing}
-        items={sampleHandoverItems}
-      />
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center' }}>데이터를 불러오는 중입니다...</div>
+      ) : error ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>{error}</div>
+      ) : (
+        <HandoverRecord
+          managerName={managerName}
+          briefing={briefingData}
+          items={itemsData}
+        />
+      )}
     </div>
   );
 }
