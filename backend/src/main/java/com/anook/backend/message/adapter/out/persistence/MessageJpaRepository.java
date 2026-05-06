@@ -13,7 +13,12 @@ import java.util.List;
 public interface MessageJpaRepository extends JpaRepository<MessageJpaEntity, Long> {
 
     /**
-     * 특정 객실의 메시지를 시간순으로 조회
+     * 특정 객실 및 투숙객의 메시지를 시간순으로 조회 (격리 조회)
      */
-    List<MessageJpaEntity> findByRoomNoOrderByCreatedAtAsc(String roomNo);
+    List<MessageJpaEntity> findByRoomNoAndGuestIdOrderByCreatedAtAsc(String roomNo, Long guestId);
+
+    /**
+     * 특정 객실과 투숙객의 최근 메시지 조회 (Pageable 이용)
+     */
+    List<MessageJpaEntity> findByRoomNoAndGuestIdOrderByCreatedAtDesc(String roomNo, Long guestId, org.springframework.data.domain.Pageable pageable);
 }

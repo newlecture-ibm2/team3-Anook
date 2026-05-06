@@ -12,5 +12,6 @@ public record StaffTaskResult(
         String roomNumber,
         String assignedStaffName,
         Float confidence,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Integer version
 ) {}

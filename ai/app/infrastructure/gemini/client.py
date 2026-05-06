@@ -48,16 +48,18 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
 
     model = genai.GenerativeModel(
         model_name=model_name,
-        system_instruction=final_system_instruction,
         generation_config=genai.GenerationConfig(
-            response_mime_type="application/json",
             temperature=temperature,
         ),
     )
 
-    response = model.generate_content(prompt)
+    # 시스템 프롬프트(system_instruction)를 지원하지 않는 버전을 위해 프롬프트 텍스트에 결합
+    combined_prompt = f"System Instruction (MUST FOLLOW):\n{final_system_instruction}\n\n---\n\nUser Input:\n{prompt}"
+    response = model.generate_content(combined_prompt)
     raw_text = response.text.strip()
-
+    if raw_text.startswith("```"):
+        raw_text = raw_text.strip("`").lstrip("json").strip()
+    
     try:
         return json.loads(raw_text)
     except json.JSONDecodeError as e:

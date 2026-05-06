@@ -20,8 +20,13 @@ public interface MessageRepositoryPort {
     Message save(Message message);
 
     /**
-     * 특정 객실의 대화 내역 조회 (시간순 정렬)
+     * 특정 객실 및 투숙객의 대화 내역 조회 (시간순 정렬)
      */
-    List<Message> findByRoomNo(String roomNo);
+    List<Message> findByRoomNoAndGuestId(String roomNo, Long guestId);
+
+    /**
+     * 특정 객실과 투숙객의 최근 대화 내역 조회 (시간순 정렬, limit)
+     */
+    List<Message> findRecentByRoomNoAndGuestId(String roomNo, Long guestId, int limit);
 }
 

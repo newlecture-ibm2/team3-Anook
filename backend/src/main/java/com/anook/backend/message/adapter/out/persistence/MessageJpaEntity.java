@@ -39,6 +39,9 @@ public class MessageJpaEntity {
     @Column(name = "request_id")
     private Long requestId;
 
+    @Column(name = "guest_id")
+    private Long guestId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -51,6 +54,7 @@ public class MessageJpaEntity {
         entity.content = domain.getContent();
         entity.translatedContent = domain.getTranslatedContent();
         entity.roomNo = domain.getRoomNo();
+        entity.guestId = domain.getGuestId();
         entity.requestId = domain.getRequestId();
         entity.createdAt = domain.getCreatedAt();
         return entity;
@@ -66,6 +70,7 @@ public class MessageJpaEntity {
                         this.content,
                         this.translatedContent,
                         this.roomNo,
+                        this.guestId,
                         this.requestId,
                         this.createdAt
                 );

@@ -19,7 +19,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
     @Override
     public List<StaffTaskResult> findRequests(String departmentId, String status, String priority) {
         StringBuilder sql = new StringBuilder(
-                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at " +
+                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at, r.version " +
                 "FROM request r WHERE 1=1"
         );
         
@@ -50,6 +50,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
             String rRoomNo = rs.getString("room_no");
             Float rConfidence = rs.getObject("confidence") != null ? rs.getFloat("confidence") : null;
             LocalDateTime rCreatedAt = rs.getTimestamp("created_at").toLocalDateTime();
+            Integer rVersion = rs.getInt("version");
 
             return new StaffTaskResult(
                 rId,
@@ -61,7 +62,8 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                 rRoomNo,
                 null, // assignedStaffName
                 rConfidence,
-                rCreatedAt
+                rCreatedAt,
+                rVersion
             );
         }, params.toArray());
     }

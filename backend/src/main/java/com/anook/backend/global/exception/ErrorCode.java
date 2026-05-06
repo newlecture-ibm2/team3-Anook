@@ -78,7 +78,15 @@ public enum ErrorCode {
 
         DUPLICATE_LOGIN(HttpStatus.UNAUTHORIZED,
                         "다른 기기에서 로그인되었습니다.",
-                        "동일한 PIN으로 다른 곳에서 로그인이 감지되어 현재 세션을 종료합니다.");
+                        "동일한 PIN으로 다른 곳에서 로그인이 감지되어 현재 세션을 종료합니다."),
+
+        ACCESS_DENIED(HttpStatus.FORBIDDEN,
+                        "접근 권한이 없습니다.",
+                        "본인 객실의 정보만 조회할 수 있습니다."),
+
+        DEBOUNCE_ERROR(HttpStatus.BAD_REQUEST,
+                        "메시지를 너무 빨리 보냈습니다.",
+                        "연속된 메시지 발송은 1초 이상의 간격이 필요합니다.");
 
         private final HttpStatus status;
         private final String message;

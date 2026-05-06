@@ -34,13 +34,15 @@ export async function POST(request: NextRequest) {
     session.token = data.token;
     session.role = data.role;
     session.name = data.name;
+    session.roomNo = data.roomNo;
     session.isLoggedIn = true;
 
     await session.save();
 
     return NextResponse.json({
       name: data.name,
-      role: data.role
+      role: data.role,
+      roomNo: data.roomNo
     });
 
   } catch (error) {

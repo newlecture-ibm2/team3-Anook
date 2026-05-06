@@ -52,6 +52,10 @@ public class RequestJpaEntity {
     @Column(name = "assigned_staff_id")
     private Long assignedStaffId;
 
+    @Column(name = "guest_id")
+    private Long guestId;
+
+    @Version
     @Column(nullable = false)
     private Integer version;
 
@@ -74,6 +78,7 @@ public class RequestJpaEntity {
         entity.summary = request.getSummary();
         entity.confidence = (float) request.getConfidence();
         entity.roomNo = request.getRoomNo();
+        entity.guestId = request.getGuestId();
         entity.assignedStaffId = request.getAssignedStaffId();
         entity.version = request.getVersion();
         entity.createdAt = request.getCreatedAt();
@@ -94,6 +99,7 @@ public class RequestJpaEntity {
                 this.rawText,
                 this.summary,
                 this.roomNo,
+                this.guestId,
                 this.assignedStaffId,
                 this.version,
                 this.createdAt,

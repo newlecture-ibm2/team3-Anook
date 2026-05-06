@@ -16,31 +16,46 @@ export const useLoginForm = () => {
     setIsLoading(true);
     setError(null);
 
-    // 판별 로직: 숫자로만 된 6자리면 직원(Staff), 그 외에는 투숙객(Guest)
-    const isStaffPin = /^\d{6}$/.test(code);
-    const endpoint = isStaffPin ? "/api/auth/staff" : "/api/auth/guest";
-    const body = isStaffPin ? { pin: code } : { accessCode: code };
+    // 1단계: 직원 로그인 시도 (6자리 숫자일 경우 우선 시도)
+    if (/^\d{6}$/.test(code)) {
+      try {
+        const staffResponse = await fetch("/api/auth/staff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: code }),
+        });
 
+        if (staffResponse.ok) {
+          const data = await staffResponse.json();
+          if (data.role === "ADMIN") {
+            router.push("/admin/dashboard");
+          } else {
+            router.push("/staff");
+          }
+          setIsLoading(false);
+          return; // 직원 로그인 성공 시 종료
+        }
+      } catch (err) {
+        console.log("Staff auth failed, trying guest auth...");
+      }
+    }
+
+    // 2단계: 게스트 로그인 시도 (직원 로그인이 아니거나 실패한 경우)
     try {
-      const response = await fetch(endpoint, {
+      const guestResponse = await fetch("/api/auth/guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ accessCode: code }),
       });
 
-      const data = await response.json();
+      const data = await guestResponse.json();
 
-      if (!response.ok) throw new Error(data.message || "인증에 실패했습니다.");
+      if (!guestResponse.ok) throw new Error(data.message || "인증에 실패했습니다.");
 
-      // 역할별 리다이렉트
-      if (data.role === "ADMIN") {
-        router.push("/admin/dashboard");
-      } else if (data.role === "STAFF") {
-        router.push("/staff");
-      } else if (data.role === "GUEST") {
+      // 게스트 리다이렉트
+      if (data.role === "GUEST") {
         router.push("/guest/chat");
       }
-      
     } catch (err: any) {
       setError(err.message);
     } finally {

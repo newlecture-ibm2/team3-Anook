@@ -20,4 +20,14 @@ public class GlobalExceptionHandler {
                                                 e.getMessage(),
                                                 code.getDetail()));
         }
+
+        @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+        public ResponseEntity<String> handleOptimisticLocking(org.springframework.dao.OptimisticLockingFailureException e) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(e.getMessage());
+        }
+
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
 }

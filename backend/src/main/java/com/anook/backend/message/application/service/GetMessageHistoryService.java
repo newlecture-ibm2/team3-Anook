@@ -26,8 +26,8 @@ public class GetMessageHistoryService implements GetMessageHistoryUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MessageDto> getHistory(String roomNo) {
-        return messagePort.findByRoomNo(roomNo)
+    public List<MessageDto> getHistory(String roomNo, Long guestId) {
+        return messagePort.findByRoomNoAndGuestId(roomNo, guestId)
                 .stream()
                 .map(MessageDto::from)
                 .toList();

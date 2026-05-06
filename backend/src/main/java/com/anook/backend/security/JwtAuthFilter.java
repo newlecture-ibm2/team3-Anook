@@ -66,6 +66,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 var authority = new SimpleGrantedAuthority("ROLE_" + role);
                 var authentication = new UsernamePasswordAuthenticationToken(
                         identifier, null, Collections.singletonList(authority));
+                
+                // 클레임 정보를 details에 저장하여 컨트롤러에서 접근 가능하게 함
+                authentication.setDetails(claims);
+                
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }

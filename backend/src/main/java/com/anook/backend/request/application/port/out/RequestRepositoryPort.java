@@ -30,9 +30,14 @@ public interface RequestRepositoryPort {
     Request save(Request request);
 
     /**
-     * 방번호로 해당 객실의 모든 요청 조회
+     * 방번호로 해당 객실의 모든 요청 조회 (직원용)
      */
     List<Request> findByRoomNo(String roomNo);
+
+    /**
+     * 방번호와 투숙객 ID로 해당 객실의 모든 요청 조회 (고객용 격리 조회)
+     */
+    List<Request> findByRoomNoAndGuestId(String roomNo, Long guestId);
 
     /**
      * ID로 Request 도메인 모델 조회

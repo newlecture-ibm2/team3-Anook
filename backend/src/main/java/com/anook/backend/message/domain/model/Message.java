@@ -17,6 +17,7 @@ public class Message {
     private String content;
     private String translatedContent;
     private String roomNo;
+    private Long guestId;
     private Long requestId;
     private LocalDateTime createdAt;
 
@@ -25,11 +26,12 @@ public class Message {
     /**
      * 고객 메시지 생성
      */
-    public static Message createGuestMessage(String roomNo, String content) {
+    public static Message createGuestMessage(String roomNo, Long guestId, String content) {
         Message msg = new Message();
         msg.senderType = SenderType.GUEST;
         msg.content = content;
         msg.roomNo = roomNo;
+        msg.guestId = guestId;
         msg.createdAt = LocalDateTime.now();
         return msg;
     }
@@ -37,11 +39,12 @@ public class Message {
     /**
      * AI 응답 메시지 생성
      */
-    public static Message createAiReply(String roomNo, String content) {
+    public static Message createAiReply(String roomNo, Long guestId, String content) {
         Message msg = new Message();
         msg.senderType = SenderType.AI;
         msg.content = content;
         msg.roomNo = roomNo;
+        msg.guestId = guestId;
         msg.createdAt = LocalDateTime.now();
         return msg;
     }
@@ -49,11 +52,12 @@ public class Message {
     /**
      * 직원 메시지 생성 (에스컬레이션 시)
      */
-    public static Message createStaffMessage(String roomNo, String content) {
+    public static Message createStaffMessage(String roomNo, Long guestId, String content) {
         Message msg = new Message();
         msg.senderType = SenderType.STAFF;
         msg.content = content;
         msg.roomNo = roomNo;
+        msg.guestId = guestId;
         msg.createdAt = LocalDateTime.now();
         return msg;
     }
@@ -95,6 +99,7 @@ public class Message {
     public String getContent() { return content; }
     public String getTranslatedContent() { return translatedContent; }
     public String getRoomNo() { return roomNo; }
+    public Long getGuestId() { return guestId; }
     public Long getRequestId() { return requestId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
@@ -105,7 +110,7 @@ public class Message {
      * ⚠️ PersistenceAdapter 내부에서만 사용할 것
      */
     public static Message reconstruct(Long id, SenderType senderType, String content,
-                                       String translatedContent, String roomNo,
+                                       String translatedContent, String roomNo, Long guestId,
                                        Long requestId, LocalDateTime createdAt) {
         Message msg = new Message();
         msg.id = id;
@@ -113,6 +118,7 @@ public class Message {
         msg.content = content;
         msg.translatedContent = translatedContent;
         msg.roomNo = roomNo;
+        msg.guestId = guestId;
         msg.requestId = requestId;
         msg.createdAt = createdAt;
         return msg;

@@ -29,15 +29,18 @@ class AnalyzeRequest(BaseModel):
     text: str
     room_no: str
     language: Optional[str] = "ko"
+    chat_history: List[dict] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
 # 팀원이 에이전트를 완성하면 여기에 등록합니다.
-# 예) "HK": run_hk_agent  (from app.core.hk_engine import run_hk_agent)
+from app.core.facility_engine import run_facility_agent
+from app.core.hk_engine import run_hk_agent
+
 DOMAIN_AGENTS: Dict[str, Any] = {
-    # "HK": run_hk_agent,
+    "FACILITY": run_facility_agent,
+    "HK": run_hk_agent,
     # "FB": run_fb_agent,
-    # "FACILITY": run_facility_agent,
     # "CONCIERGE": run_concierge_agent,
     # "FRONT": run_front_agent,
     # "EMERGENCY": run_emergency_agent,
@@ -49,6 +52,11 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     """
     백엔드 PythonAiHttpAdapter가 호출하는 단일 분석 엔드포인트.
     """
+    print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
+    if request.chat_history:
+        print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
+    else:
+        print("[Analyze] 📚 수신된 대화 맥락: 없음 (첫 대화 또는 DB 조회 실패)")
 
     # ──────────────────────────────────────────────
     # STEP 1: RAG 지식 검색 (COMMON 도메인 우선)
@@ -77,7 +85,7 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text)
+        router_results = route(request.text, request.chat_history)
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'mode': r.mode, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -95,11 +103,15 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
         # 부서별 에이전트가 등록되어 있으면 호출 (플러그 앤 플레이)
         if domain in DOMAIN_AGENTS:
             try:
-                agent_result = DOMAIN_AGENTS[domain](request.text)
+                agent_result = DOMAIN_AGENTS[domain](
+                    user_message=request.text, 
+                    room_no=request.room_no, 
+                    chat_history=request.chat_history
+                )
                 response = {
                     "guest_reply": agent_result.get("guest_reply", "요청을 접수하였습니다."),
                     "summary": agent_result.get("summary", f"{domain} 요청"),
-                    "domain_code": domain,
+                    "domain_code": agent_result.get("domain_code", domain),
                     "priority": agent_result.get("priority", "NORMAL"),
                     "entities": agent_result.get("entities", {}),
                     "confidence": primary.confidence,
