@@ -44,3 +44,7 @@ class HotelRequestSchema(BaseModel):
         default="", 
         description="고객에게 되물을 구체적 질문 (예: '수건을 몇 개 가져다드릴까요?')"
     )
+    clarification_options: List[str] = Field(
+        default_factory=list,
+        description="채팅창 UI에 띄워줄 선택지 칩(Pill Tab) 텍스트 배열 (예: ['생수병', '얼음물'])"
+    )
