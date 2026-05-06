@@ -72,12 +72,12 @@ export default function RequestCard({
 
         <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`} onClick={(e) => e.stopPropagation()}>
           {primaryActionText && (
-            <Button variant="primary" style={{ width: '100%', padding: 'var(--space-8)' }} onClick={handlePrimaryClick}>
+            <Button variant="primary" className={styles.actionButton} onClick={handlePrimaryClick}>
               {primaryActionText}
             </Button>
           )}
           {secondaryActionText && (
-            <Button variant="secondary" style={{ width: '100%', padding: 'var(--space-8)' }} onClick={onSecondaryAction}>
+            <Button variant="secondary" className={styles.actionButton} onClick={onSecondaryAction}>
               {secondaryActionText}
             </Button>
           )}
