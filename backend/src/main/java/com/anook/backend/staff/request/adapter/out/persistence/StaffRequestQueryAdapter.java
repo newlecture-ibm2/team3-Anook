@@ -48,6 +48,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
             String rSummary = rs.getString("summary");
             String rRawText = rs.getString("raw_text");
             String rRoomNo = rs.getString("room_no");
+            Long rAssignedStaffId = rs.getObject("assigned_staff_id") != null ? rs.getLong("assigned_staff_id") : null;
             Float rConfidence = rs.getObject("confidence") != null ? rs.getFloat("confidence") : null;
             LocalDateTime rCreatedAt = rs.getTimestamp("created_at").toLocalDateTime();
             Integer rVersion = rs.getInt("version");
@@ -60,7 +61,7 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                 rSummary,
                 rRawText,
                 rRoomNo,
-                null, // assignedStaffName
+                rAssignedStaffId,
                 rConfidence,
                 rCreatedAt,
                 rVersion

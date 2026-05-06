@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, Suspense } from 'react';
+import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
@@ -41,12 +41,44 @@ export default function StaffDashboardPage() {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
-  const { tasks, loading, error, acceptTask, completeTask, transferTask } = useTasks(view === 'my' ? 'HK' : undefined);
+  const { tasks, loading, error, acceptTask, completeTask, transferTask } = useTasks(view === 'my' ? 'my' : 'dept');
 
   // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [selectedTask, setSelectedTask] = useState<StaffTask | null>(null);
+
+  const [departmentName, setDepartmentName] = useState('부서');
+  const [departmentRole, setDepartmentRole] = useState<any>('housekeeping');
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.departmentId) {
+          // Sidebar Role 매핑
+          const roleMap: Record<string, string> = {
+            'HK': 'housekeeping',
+            'FACILITY': 'facility',
+            'FB': 'fb',
+            'CONCIERGE': 'concierge'
+          };
+          setDepartmentRole(roleMap[data.departmentId] || 'housekeeping');
+
+          // 화면 타이틀 이름 매핑 (요청하신 정확한 명칭으로 고정)
+          const nameMap: Record<string, string> = {
+            'HK': '하우스키핑',
+            'FACILITY': 'Facility',
+            'FB': 'FB',
+            'CONCIERGE': '컨시어지'
+          };
+          setDepartmentName(nameMap[data.departmentId] || data.department || '부서');
+        } else if (data.department) {
+          setDepartmentName(data.department);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
@@ -68,13 +100,13 @@ function DashboardContent() {
 
   return (
     <div className={styles.container}>
-      <Sidebar role="housekeeping" fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
+      <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
 
       <main className={styles.mainContent}>
         <div className={styles.headerContainer}>
           <header className={styles.header}>
-            <h1 className={styles.title}>하우스키핑 관리</h1>
-            <p className={styles.subtitle}>하우스키핑 전용 채널</p>
+            <h1 className={styles.title}>{departmentName} 관리</h1>
+            <p className={styles.subtitle}>{departmentName} 전용 채널</p>
           </header>
 
           <div className={styles.toolbar}>
@@ -121,6 +153,14 @@ function DashboardContent() {
                           description={task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||')[0] : ''}
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
+                          onAccept={col.status === 'TODO' ? (e) => {
+                            e.stopPropagation();
+                            acceptTask(task.id, task.version);
+                          } : undefined}
+                          onComplete={col.status === 'IN_PROGRESS' ? (e) => {
+                            e.stopPropagation();
+                            completeTask(task.id, task.version);
+                          } : undefined}
                         />
                       </div>
                     ))}

@@ -25,19 +25,25 @@ export async function GET(request: NextRequest) {
 
     if (action === "requests") {
       let role = session.role;
-      if (!role && session.token) {
+      let staffId: number | null = null;
+      if (session.token) {
         try {
           const payloadBase64 = session.token.split('.')[1];
           const decodedJson = Buffer.from(payloadBase64, 'base64').toString();
-          role = JSON.parse(decodedJson).role;
+          const parsed = JSON.parse(decodedJson);
+          if (!role) role = parsed.role;
+          staffId = Number(parsed.sub);
         } catch (e) {
           console.error("Token decode error:", e);
         }
       }
 
+      const view = searchParams.get("view");
+      const targetDeptId = departmentId || session.departmentId;
+
       const backendEndpoint = role === "ADMIN"
-        ? (departmentId ? `${BACKEND_URL}/admin/requests?dept=${departmentId}` : `${BACKEND_URL}/admin/requests`)
-        : (departmentId ? `${BACKEND_URL}/staff/requests?departmentId=${departmentId}` : `${BACKEND_URL}/staff/requests`);
+        ? (targetDeptId ? `${BACKEND_URL}/admin/requests?dept=${targetDeptId}` : `${BACKEND_URL}/admin/requests`)
+        : (targetDeptId ? `${BACKEND_URL}/staff/requests?departmentId=${targetDeptId}` : `${BACKEND_URL}/staff/requests`);
 
       const response = await fetch(backendEndpoint, {
         method: "GET",
@@ -81,7 +87,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(mappedData);
       }
 
-      return NextResponse.json(data);
+      let finalData = data;
+      if (role !== "ADMIN" && view === "my" && staffId) {
+        finalData = data.filter((item: any) => {
+          return item.status === "PENDING" || item.assignedStaffId === staffId;
+        });
+      }
+
+      return NextResponse.json(finalData);
     }
 
     return NextResponse.json({ message: "잘못된 요청입니다." }, { status: 400 });

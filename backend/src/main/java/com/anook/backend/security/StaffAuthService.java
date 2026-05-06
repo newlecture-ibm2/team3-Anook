@@ -63,6 +63,7 @@ public class StaffAuthService {
                 .role(role)
                 .name(staff.getName())
                 .department(staff.getDepartment().getName())
+                .departmentId(staff.getDepartment().getId())
                 .build();
     }
 }
