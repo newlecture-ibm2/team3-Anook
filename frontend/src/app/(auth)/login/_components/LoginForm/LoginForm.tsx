@@ -6,7 +6,6 @@ import { useUiStore } from '@/stores/useUiStore';
 import { SecurityIcon } from '@/components/icons';
 import { useLoginForm } from '../useLoginForm';
 import CommonLoginForm from '@/components/ui/LoginForm/LoginForm';
-import Toast from '@/components/ui/Modal/Toast';
 import styles from '../../login.module.css';
 
 /**
@@ -50,9 +49,6 @@ export default function LoginForm() {
           </>
         }
       />
-
-      {/* 전역 토스트 모달 */}
-      <Toast />
     </div>
   );
 }

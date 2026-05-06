@@ -122,7 +122,7 @@ export default function ChatHistoryPage() {
                 {messages.map(msg => (
                   <ChatBubble
                     key={msg.id}
-                    variant={msg.sender === 'GUEST' ? 'sent' : 'received'}
+                    variant={msg.senderType === 'GUEST' ? 'received' : 'sent'}
                   >
                     {msg.content}
                   </ChatBubble>

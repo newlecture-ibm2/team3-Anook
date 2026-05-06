@@ -36,10 +36,12 @@ class AnalyzeRequest(BaseModel):
 # 팀원이 에이전트를 완성하면 여기에 등록합니다.
 from app.core.facility_engine import run_facility_agent
 from app.core.hk_engine import run_hk_agent
+from app.core.concierge_engine import run_concierge_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
+    "CONCIERGE": run_concierge_agent,
     # "FB": run_fb_agent,
     # "CONCIERGE": run_concierge_agent,
     # "FRONT": run_front_agent,

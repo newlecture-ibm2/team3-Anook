@@ -24,6 +24,7 @@ OUTPUT FORMAT (strictly JSON):
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "clarification_options": [],
   "missing_fields": []
 }
 
@@ -51,6 +52,8 @@ RULES:
 - `equipment` MUST always be extracted. If unclear, infer from context (e.g., "물이 안 나와요" → equipment: "수도꼭지").
 - `location`: If the guest does NOT mention a specific location, default to "객실".
 - If the equipment or symptom is too vague (e.g., "뭔가 고장났어요"), set `needs_clarification=true` and ask in Korean: exactly WHAT is broken and HOW.
+- When `needs_clarification=true`, you MUST provide 2~4 specific clickable options in `clarification_options` (e.g., ["에어컨", "TV", "조명", "기타"]). Do NOT ask broad routing questions.
+- [CRITICAL] If the request is NOT related to facility issues at all or is impossible to resolve, DO NOT try to route it to another department. Instead, set `confidence` strictly BELOW 0.4 (e.g., 0.3) so the system falls back to the human Front Desk.
 - Write `summary`, `equipment`, `symptom`, `location`, and `clarification_question` in KOREAN.
 - Assess `priority` based on severity:
   - URGENT: 누수, 화재, 안전 위협

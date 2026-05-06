@@ -67,3 +67,12 @@
   border-top: 1px solid var(--color-surface);
   background-color: var(--color-white);
 }
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--color-gray-400);
+  font: var(--text-body-medium);
+}

@@ -30,7 +30,7 @@ public interface AdminRequestQueryPort {
     /**
      * 담당자 배정/재배정
      */
-    void assignStaff(Long requestId, Long staffId);
+    void assignStaff(Long requestId, Long staffId, String staffDepartmentId);
 
     /**
      * 우선순위 변경
@@ -43,14 +43,19 @@ public interface AdminRequestQueryPort {
     void cancel(Long requestId);
 
     /**
-     * 에스컬레이션 승인
+     * 부서 변경 (관리자 수동 배정)
      */
-    void escalate(Long requestId);
+    void changeDepartment(Long requestId, String departmentId);
 
     /**
-     * 에스컬레이션 대상 목록 (초과 시간 요청)
+     * 에스컬레이션 승인
      */
-    List<AdminRequest> findOverdue();
+    void escalate(Long requestId, String departmentId, String priority);
+
+    /**
+     * 에스컬레이션 대상 목록 (ESCALATED 상태)
+     */
+    List<AdminRequest> findEscalations();
 
     /**
      * 요청 저장 — 수동 생성
