@@ -5,6 +5,7 @@ import ModalCard from './ModalCard';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
+import { useWebSocket } from '@/app/useWebSocket';
 
 export interface ChatMessage {
   id: string;
@@ -22,6 +23,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const { subscribe } = useWebSocket();
 
   // 모달 열릴 때 실제 대화 내역 로드
   useEffect(() => {
@@ -50,6 +52,43 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
 
     fetchMessages();
   }, [isOpen, roomNumber]);
+
+  // WebSocket 구독: 고객 메시지 및 AI 응답 실시간 수신
+  useEffect(() => {
+    if (!isOpen || !roomNumber) return;
+
+    const unsubscribe = subscribe(`/topic/room/${roomNumber}`, (data: unknown) => {
+      const payload = data as Record<string, unknown>;
+      const type = payload.type as string;
+      const content = payload.content as string;
+      const messageId = payload.messageId as number | undefined;
+
+      if (type === 'AI_RESPONSE' || type === 'STAFF_MESSAGE') {
+        // AI 응답 및 직원 메시지 → staff 관점에서 'sent' (직원/AI 쪽)
+        setMessages(prev => {
+          // 중복 방지: 같은 messageId가 이미 있으면 추가하지 않음
+          if (messageId && prev.some(m => m.id === String(messageId))) return prev;
+          return [...prev, {
+            id: messageId ? String(messageId) : Date.now().toString(),
+            variant: 'sent',
+            content,
+          }];
+        });
+      } else if (type === 'GUEST_MESSAGE') {
+        // 고객이 보낸 새 메시지 → staff 관점에서 'received'
+        setMessages(prev => {
+          if (messageId && prev.some(m => m.id === String(messageId))) return prev;
+          return [...prev, {
+            id: messageId ? String(messageId) : Date.now().toString(),
+            variant: 'received',
+            content,
+          }];
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isOpen, roomNumber, subscribe]);
 
   // 메시지 목록 스크롤 하단 유지
   useEffect(() => {
