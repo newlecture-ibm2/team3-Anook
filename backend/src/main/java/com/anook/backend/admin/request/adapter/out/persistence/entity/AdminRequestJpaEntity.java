@@ -121,12 +121,14 @@ public class AdminRequestJpaEntity {
     }
 
     /**
-     * 에스컬레이션 승인 — 우선순위를 URGENT로 올리고 상태를 PENDING으로 변경 (재배정 대기)
+     * 에스컬레이션 승인 — 관리자가 부서·우선순위를 지정하여 승인
      */
-    public void approveEscalation(String newDepartmentId, String newPriority) {
-        this.priority = newPriority != null && !newPriority.isBlank() ? newPriority : "URGENT";
+    public void approveEscalation(String departmentId, String priority) {
+        if (departmentId != null && !departmentId.isBlank()) {
+            this.departmentId = departmentId;
+        }
+        this.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "URGENT";
         this.status = "PENDING";
-        this.departmentId = newDepartmentId;
         this.assignedStaffId = null;
         this.updatedAt = LocalDateTime.now();
     }
