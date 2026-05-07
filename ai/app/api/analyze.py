@@ -334,14 +334,27 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
             print(f"[Analyze] ⚠️ INFO 처리 중 에러 발생 (RAG/Fallback): {e}")
             guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
 
-        response = {
-            "guest_reply": guest_reply,
-            "summary": "정보 문의",
-            "domain_code": None,  # ← 요청 미생성
-            "priority": "NORMAL",
-            "entities": {},
-            "confidence": primary.confidence,
-        }
+        info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
+        if guest_reply == info_not_found_msg:
+            # AI가 답을 모르는 정보성 질문일 경우, 0번 전화 안내로 끝내지 않고 프론트데스크로 이관
+            response = {
+                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "summary": "AI 미학습 정보 (직원 연결)",
+                "domain_code": "FRONT",
+                "priority": "NORMAL",
+                "entities": {"intent": "ESCALATION"},
+                "confidence": 0.0,
+            }
+        else:
+            response = {
+                "guest_reply": guest_reply,
+                "summary": "정보 문의",
+                "domain_code": None,  # 정상적인 지식 기반 답변일 때는 요청 미생성
+                "priority": "NORMAL",
+                "entities": {},
+                "confidence": primary.confidence,
+            }
+            
         print(f"[Analyze] ℹ️ INFO 응답")
         print(f"[Analyze] 응답: {response}\n")
         return response

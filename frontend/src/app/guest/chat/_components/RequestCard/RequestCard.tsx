@@ -40,6 +40,7 @@ export default function RequestCard({
 }: RequestCardProps) {
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
+  const isEscalatedChat = entities?.intent === 'ESCALATION';
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   
   // Timer state
@@ -93,7 +94,7 @@ export default function RequestCard({
           {domainInfo.icon} {domainInfo.label}
         </div>
         <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isUrgent ? '긴급 접수' : '대기 중'}
+          {isCancelled ? '취소됨' : isEscalatedChat ? '상담 대기 중' : isUrgent ? '긴급 접수' : '대기 중'}
         </div>
       </div>
 
@@ -132,7 +133,11 @@ export default function RequestCard({
       {/* Expiry Message or Progress */}
       {!showButtons && !isCancelled && (
         <>
-          {isUrgent ? (
+          {isEscalatedChat ? (
+            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
+              💬 프론트 직원이 채팅으로 응대할 예정입니다.
+            </div>
+          ) : isUrgent ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-error)' }}>
               🔴 즉시 대응팀에 전달되었습니다
             </div>
@@ -142,17 +147,19 @@ export default function RequestCard({
             </div>
           )}
           
-          {/* Progress bar after grace period expires */}
-          <div className={styles.progressContainer}>
-            <div className={styles.progressBarBg}>
-              <div className={styles.progressBarFill} style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
+          {/* Progress bar after grace period expires (Hide for Escalated Chat) */}
+          {!isEscalatedChat && (
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBarBg}>
+                <div className={styles.progressBarFill} style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
+              </div>
+              <div className={styles.steps}>
+                <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>접수 완료</span>
+                <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>처리 중</span>
+                <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>완료</span>
+              </div>
             </div>
-            <div className={styles.steps}>
-              <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>접수 완료</span>
-              <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>처리 중</span>
-              <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>완료</span>
-            </div>
-          </div>
+          )}
         </>
       )}
     </div>
