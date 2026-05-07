@@ -12,7 +12,8 @@ public enum RequestStatus {
     IN_PROGRESS,
     COMPLETED,
     SETTLED,
-    CANCELLED;
+    CANCELLED,
+    ESCALATED;
 
     /**
      * 문자열 → RequestStatus 변환 (대소문자 무시)
