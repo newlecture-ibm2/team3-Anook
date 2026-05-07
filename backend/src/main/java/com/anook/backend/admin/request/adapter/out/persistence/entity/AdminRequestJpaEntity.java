@@ -113,6 +113,14 @@ public class AdminRequestJpaEntity {
     }
 
     /**
+     * 에스컬레이션 요청 — 직원이 처리 불가로 판단하여 관리자 승인 대기 상태로 변경
+     */
+    public void requestEscalation() {
+        this.status = "ESCALATED";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
      * 에스컬레이션 승인 — 관리자가 부서·우선순위를 지정하여 승인
      */
     public void approveEscalation(String departmentId, String priority) {
