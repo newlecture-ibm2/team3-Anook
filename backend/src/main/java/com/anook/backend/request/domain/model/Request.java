@@ -125,7 +125,7 @@ public class Request {
     public void transferDepartment(DomainCode newDomainCode, String reason) {
         this.domainCode = newDomainCode;
         this.assignedStaffId = null;
-        this.status = RequestStatus.PENDING;
+        this.status = RequestStatus.ESCALATED;
         if (reason != null && !reason.isBlank()) {
             this.rawText = this.rawText + "\n|||TRANSFER_REASON|||" + reason;
         }
@@ -146,10 +146,11 @@ public class Request {
 
     private void validateTransition(RequestStatus from, RequestStatus to) {
         boolean valid = switch (to) {
-            case IN_PROGRESS -> from == RequestStatus.PENDING;
+            case IN_PROGRESS -> from == RequestStatus.PENDING || from == RequestStatus.ESCALATED;
             case COMPLETED -> from == RequestStatus.IN_PROGRESS;
             case SETTLED -> from == RequestStatus.COMPLETED;
             case CANCELLED -> from != RequestStatus.SETTLED && from != RequestStatus.CANCELLED;
+            case ESCALATED -> from == RequestStatus.PENDING || from == RequestStatus.IN_PROGRESS;
             default -> false;
         };
         if (!valid) {
