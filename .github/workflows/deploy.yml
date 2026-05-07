@@ -24,6 +24,8 @@ jobs:
       # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       DB_PORT: ${{ vars.DB_PORT }}
       FRONTEND_PORT: ${{ vars.FRONTEND_PORT }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      
       # 추가로 필요한 환경변수가 생기면 여기에 계속 추가하세요.
 
     steps:
@@ -47,6 +49,7 @@ jobs:
           POSTGRES_DB=${{ vars.POSTGRES_DB }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
           DB_PORT=${{ vars.DB_PORT }}
           FRONTEND_PORT=${{ vars.FRONTEND_PORT }}
           SPRING_PROFILE=prod

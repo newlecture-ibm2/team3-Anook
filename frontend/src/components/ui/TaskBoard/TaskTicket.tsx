@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './TaskTicket.module.css';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
+import Button from '@/components/ui/Button/Button';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
@@ -10,6 +11,8 @@ export interface TaskTicketProps {
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
   createdAt: string | Date;
   updatedAt?: string | Date;
+  onAccept?: (e: React.MouseEvent) => void;
+  onComplete?: (e: React.MouseEvent) => void;
 }
 
 export default function TaskTicket({
@@ -19,7 +22,9 @@ export default function TaskTicket({
   description,
   status = 'TODO',
   createdAt,
-  updatedAt
+  updatedAt,
+  onAccept,
+  onComplete
 }: TaskTicketProps) {
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
   if (priority === 'HIGH' || priority === 'URGENT') {
@@ -69,6 +74,24 @@ export default function TaskTicket({
           </svg>
           {timeDisplay}
         </span>
+        {status === 'TODO' && onAccept && (
+          <Button 
+            variant="primary"
+            onClick={onAccept}
+            style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+          >
+            수락하기
+          </Button>
+        )}
+        {status === 'IN_PROGRESS' && onComplete && (
+          <Button 
+            variant="primary"
+            onClick={onComplete}
+            style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+          >
+            업무 완료
+          </Button>
+        )}
       </div>
     </div>
   );

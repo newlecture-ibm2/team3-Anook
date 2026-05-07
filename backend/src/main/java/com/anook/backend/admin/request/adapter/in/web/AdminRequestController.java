@@ -83,8 +83,28 @@ public class AdminRequestController {
      * PATCH /admin/requests/{id}/cancel
      */
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<Void> cancelRequest(@PathVariable Long id) {
-        manageAdminRequestUseCase.cancelRequest(id);
+    public ResponseEntity<Void> cancelRequest(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("rejectionReason") : null;
+        manageAdminRequestUseCase.cancelRequest(id, reason);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 부서 변경 (관리자 수동 배정)
+     *
+     * PATCH /admin/requests/{id}/department
+     */
+    @PatchMapping("/{id}/department")
+    public ResponseEntity<Void> changeDepartment(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String departmentId = body.get("departmentId");
+        if (departmentId == null || departmentId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.changeDepartment(id, departmentId);
         return ResponseEntity.noContent().build();
     }
 
@@ -104,8 +124,15 @@ public class AdminRequestController {
      * PATCH /admin/requests/{id}/escalate
      */
     @PatchMapping("/{id}/escalate")
-    public ResponseEntity<Void> escalateRequest(@PathVariable Long id) {
-        manageAdminRequestUseCase.escalateRequest(id);
+    public ResponseEntity<Void> escalateRequest(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String departmentId = body.get("departmentId");
+        String priority = body.get("priority");
+        if (departmentId == null || departmentId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.escalateRequest(id, departmentId, priority);
         return ResponseEntity.noContent().build();
     }
 

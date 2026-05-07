@@ -16,6 +16,7 @@ export interface RequestCardProps {
   secondaryActionText?: string;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  onCardClick?: () => void;
   variant?: 'default' | 'warning';
 }
 
@@ -31,6 +32,7 @@ export default function RequestCard({
   secondaryActionText = '무시하기',
   onPrimaryAction,
   onSecondaryAction,
+  onCardClick,
   variant = 'default'
 }: RequestCardProps) {
   const isWarning = variant === 'warning';
@@ -47,7 +49,7 @@ export default function RequestCard({
 
   return (
     <>
-      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''}`}>
+      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''} ${onCardClick ? styles.clickable : ''}`} onClick={onCardClick}>
         <div className={`${styles.roomBox} ${isWarning ? styles.roomBoxWarning : ''}`}>
           <span className={`${styles.roomType} ${isWarning ? styles.textWhite : ''}`}>{roomType}</span>
           <span className={`${styles.roomNumber} ${isWarning ? styles.textWhite : ''}`}>{roomNumber}</span>
@@ -68,14 +70,14 @@ export default function RequestCard({
           {description && <p className={styles.description}>{description}</p>}
         </div>
 
-        <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`}>
+        <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`} onClick={(e) => e.stopPropagation()}>
           {primaryActionText && (
-            <Button variant="primary" style={{ width: '100%', padding: 'var(--space-8)' }} onClick={handlePrimaryClick}>
+            <Button variant="primary" className={styles.actionButton} onClick={handlePrimaryClick}>
               {primaryActionText}
             </Button>
           )}
           {secondaryActionText && (
-            <Button variant="secondary" style={{ width: '100%', padding: 'var(--space-8)' }} onClick={onSecondaryAction}>
+            <Button variant="secondary" className={styles.actionButton} onClick={onSecondaryAction}>
               {secondaryActionText}
             </Button>
           )}

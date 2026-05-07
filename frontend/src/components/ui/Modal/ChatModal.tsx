@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './ChatModal.module.css';
 import ModalOverlay from './ModalOverlay';
 import ModalCard from './ModalCard';
@@ -16,38 +16,65 @@ export interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   roomNumber?: string;
-  initialMessages?: ChatMessage[];
 }
 
-const defaultStaffMessages: ChatMessage[] = [
-  {
-    id: '1',
-    variant: 'sent',
-    content: '안녕하세요! 그랜드 호텔 AI 서비스입니다. 무엇을 도와드릴까요?'
-  },
-  {
-    id: '2',
-    variant: 'received',
-    content: '에어컨이 작동하지 않아요. 그리고 수건에서 하얀 실밥이 떨어져요. 수건 좀 교체해주세요.'
-  },
-  {
-    id: '3',
-    variant: 'sent',
-    content: '안녕하세요! 수건 상태로 인해 불편을 드려 죄송합니다. 하우스키핑 담당자가 즉시 새 수건을 객실로 가져다 드릴 수 있도록 조치했습니다.'
-  },
-  {
-    id: '4',
-    variant: 'sent',
-    content: '에어컨 작동 문제에 대해서도 확인했습니다. 현재 에어컨 시스템에 기술적인 결함이 있는 것으로 파악되어, 엔지니어링 수리팀이 즉시 객실로 방문하여 점검 및 수리를 진행해 드릴 예정입니다. 최대한 빨리 조치해 드리겠습니다.'
-  }
-];
+export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: ChatModalProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
-export default function ChatModal({ isOpen, onClose, roomNumber = '1204', initialMessages = defaultStaffMessages }: ChatModalProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  // 모달 열릴 때 실제 대화 내역 로드
+  useEffect(() => {
+    if (!isOpen || !roomNumber) return;
 
-  const handleSend = (text: string) => {
-    const newUserMsg: ChatMessage = { id: Date.now().toString(), variant: 'sent', content: text };
-    setMessages(prev => [...prev, newUserMsg]);
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const mapped: ChatMessage[] = data.map((msg: any) => ({
+          id: String(msg.id),
+          variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
+          content: msg.content,
+        }));
+
+        setMessages(mapped);
+      } catch {
+        setMessages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, [isOpen, roomNumber]);
+
+  // 메시지 목록 스크롤 하단 유지
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async (text: string) => {
+    // 1. 낙관적 업데이트 (즉시 화면에 표시)
+    const tempId = Date.now().toString();
+    const newMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
+    setMessages(prev => [...prev, newMsg]);
+
+    // 2. 백엔드로 전송
+    try {
+      const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch {
+      // 전송 실패 시에도 화면에는 유지 (나중에 재시도 로직 추가 가능)
+    }
   };
 
   return (
@@ -64,12 +91,18 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', initia
             </button>
           </div>
           
-          <div className={styles.messageList}>
-            {messages.map((msg) => (
-              <ChatBubble key={msg.id} variant={msg.variant}>
-                {msg.content}
-              </ChatBubble>
-            ))}
+          <div className={styles.messageList} ref={messageListRef}>
+            {loading ? (
+              <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
+            ) : messages.length === 0 ? (
+              <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
+            ) : (
+              messages.map((msg) => (
+                <ChatBubble key={msg.id} variant={msg.variant}>
+                  {msg.content}
+                </ChatBubble>
+              ))
+            )}
           </div>
           
           <div className={styles.footer}>

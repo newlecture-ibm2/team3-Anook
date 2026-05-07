@@ -18,6 +18,8 @@ export async function GET() {
     isLoggedIn: true,
     name: session.name,
     role: session.role,
+    department: session.department,
+    departmentId: session.departmentId,
     roomNo: session.roomNo
   });
 }

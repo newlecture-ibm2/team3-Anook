@@ -54,7 +54,7 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
         )
 
 
-def run_facility_agent(user_message: str, room_no: str = "", chat_history: list = None) -> dict:
+def run_facility_agent(user_message: str, room_no: str, chat_history: list = None) -> dict:
     """시설관리 에이전트: 고객 메시지에서 시설/수리 관련 정보를 추출"""
     
     if chat_history:
@@ -62,12 +62,16 @@ def run_facility_agent(user_message: str, room_no: str = "", chat_history: list 
             f"{'고객' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
             for m in chat_history[-5:]
         ])
-        prompt = f"[대화 맥락]\n{context}\n\n[현재 요청]\n고객: {user_message}"
+        prompt = f"[대화 맥락]\n{context}\n\n[현재 요청]\n고객(객실 {room_no}): {user_message}"
     else:
         prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
     
     raw = call_gemini(prompt=prompt, system_instruction=FACILITY_SYSTEM_PROMPT)
     
+    # AI가 룸넘버를 누락할 경우를 대비한 안전 장치 (백엔드에서 받은 room_no 강제 주입)
+    if "room_no" not in raw or raw["room_no"] in ["unknown", "", "from input"]:
+        raw["room_no"] = room_no
+
     # Pydantic 검증
     result = HotelRequestSchema(**raw)
     
@@ -79,8 +83,9 @@ def run_facility_agent(user_message: str, room_no: str = "", chat_history: list 
     return {
         "guest_reply": _build_guest_reply(result),
         "summary": result.summary,
-        "domain_code": "FACILITY",
+        "domain_code": None if result.needs_clarification else "FACILITY",
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
+        "clarification_options": result.clarification_options,
     }

@@ -25,4 +25,12 @@ public interface AdminMessageQueryPort {
      * @return 메시지 맵 리스트 [ { id, senderType, content, translatedContent, createdAt } ]
      */
     List<Map<String, Object>> findMessagesByRoomNo(String roomNo);
+
+    /**
+     * 관리자/직원 메시지 저장
+     *
+     * @param roomNo 객실 번호
+     * @param content 메시지 내용
+     */
+    void saveStaffMessage(String roomNo, String content);
 }
