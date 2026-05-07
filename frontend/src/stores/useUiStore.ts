@@ -19,6 +19,10 @@ interface UiState {
   // Toast actions
   showToast: (message: string, type?: 'success' | 'error', subtitle?: string) => void;
   hideToast: () => void;
+
+  // i18n
+  language: 'ko' | 'en';
+  setLanguage: (lang: 'ko' | 'en') => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -43,4 +47,7 @@ export const useUiStore = create<UiState>((set) => ({
     }, 3000); // 3초 뒤 자동 닫힘
   },
   hideToast: () => set({ isToastOpen: false }),
+
+  language: 'ko',
+  setLanguage: (lang) => set({ language: lang }),
 }));

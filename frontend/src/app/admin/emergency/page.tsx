@@ -6,10 +6,12 @@ import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function EmergencyPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const { t } = useTranslation();
   const { requests, loading, error } = useAdminRequests('', searchValue, selectedFilter); // 전체 부서 요청 가져오기
 
   // 우선순위가 URGENT(긴급)이거나 HIGH(높음)인 것만 필터링
@@ -17,9 +19,8 @@ export default function EmergencyPage() {
 
   const mapStatusText = (status: string): string => {
     if (status === 'PENDING') return '대기 중';
-    if (status === 'ASSIGNED') return '배정됨';
-    if (status === 'IN_PROGRESS') return '처리 중';
-    if (status === 'COMPLETED') return '완료';
+    if (status === 'IN_PROGRESS') return '진행중';
+    if (status === 'COMPLETED' || status === 'CANCELLED') return '완료';
     return status;
   };
 
@@ -28,20 +29,20 @@ export default function EmergencyPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>긴급 대응</h1>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.emergency}</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' },
-              { label: '오래된순', value: 'oldest' }
+              { label: t.adminPage.taskBoard.filterAll, value: 'all' }, 
+              { label: t.adminPage.taskBoard.filterLatest, value: 'latest' },
+              { label: t.adminPage.taskBoard.filterOldest, value: 'oldest' }
             ]}
             selectedFilter={selectedFilter}
             onFilterSelect={(val) => setSelectedFilter(val)}
@@ -52,7 +53,7 @@ export default function EmergencyPage() {
       {/* Content Section */}
       <div className={styles.cardList}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
         ) : emergencyRequests.length === 0 ? (

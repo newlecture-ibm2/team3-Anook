@@ -23,5 +23,148 @@
     "close": "닫기",
     "loading": "로딩 중...",
     "error": "오류가 발생했습니다"
+  },
+  "adminPage": {
+    "sidebar": {
+      "categories": {
+        "requestManagement": "요청 관리",
+        "aiSystem": "AI 시스템",
+        "operations": "운영 관리"
+      },
+      "menus": {
+        "dashboard": "대시보드",
+        "frontDesk": "프론트 데스크",
+        "housekeeping": "하우스키핑",
+        "fb": "식음료",
+        "facility": "시설",
+        "concierge": "컨시어지",
+        "emergency": "긴급 대응",
+        "allRequests": "전체 요청",
+        "chatHistory": "채팅 히스토리",
+        "aiTraining": "학습 관리",
+        "rag": "지식 라이브러리",
+        "aiRouting": "AI 라우팅 로그",
+        "handover": "인수인계",
+        "staffManagement": "직원 관리"
+      }
+    },
+    "dashboard": {
+      "title": "대시보드",
+      "searchPlaceholder": "검색어를 입력하세요...",
+      "filters": {
+        "today": "오늘",
+        "last7Days": "최근 7일",
+        "last30Days": "최근 30일"
+      },
+      "charts": {
+        "avgResTime": "부서별 평균 처리 시간",
+        "frequentReqs": "최다 요청 항목"
+      },
+      "summaries": {
+        "totalToday": "오늘 총 요청",
+        "avgResponseTime": "평균 응답 시간",
+        "resolutionRate": "해결률",
+        "csat": "고객 만족도"
+      },
+      "departments": {
+        "HK": "하우스키핑",
+        "FB": "식음료",
+        "FACILITY": "시설",
+        "CONCIERGE": "컨시어지",
+        "FRONT": "긴급 대응"
+      }
+    },
+    "taskBoard": {
+      "searchPlaceholder": "검색어를 입력하세요...",
+      "filterAll": "전체",
+      "filterLatest": "최신순",
+      "filterOldest": "오래된순",
+      "columns": {
+        "pending": "대기 중",
+        "inProgress": "진행 중",
+        "completed": "완료됨"
+      },
+      "titles": {
+        "housekeeping": "하우스키핑",
+        "fb": "식음료",
+        "facility": "시설 관리",
+        "concierge": "컨시어지",
+        "emergency": "긴급 대응",
+        "allRequests": "전체 요청",
+        "aiTraining": "학습 관리",
+        "rag": "지식 라이브러리",
+        "aiRouting": "AI 라우팅 로그",
+        "handover": "인수인계"
+      }
+    },
+    "rag": {
+      "title": "지식 라이브러리",
+      "addKnowledge": "+ 지식 정보 추가",
+      "searchPlaceholder": "검색어를 입력하세요...",
+      "filterAll": "전체",
+      "filterLatest": "최신순",
+      "empty": "등록된 지식이 없습니다.",
+      "deleteConfirm": "정말로 이 지식을 삭제하시겠습니까?",
+      "tabs": {
+        "ALL": "전체",
+        "HK": "하우스키핑",
+        "FB": "F&B",
+        "FACILITY": "시설",
+        "CONCIERGE": "컨시어지",
+        "FRONT": "프론트 데스크",
+        "EMERGENCY": "긴급 대응",
+        "COMMON": "공통 (호텔 전반)"
+      }
+    },
+    "aiTraining": {
+      "filterAll": "전체",
+      "filterMissing": "지식 없음",
+      "filterUnclear": "의도 불명"
+    },
+    "frontDesk": {
+      "title": "프론트 데스크",
+      "createRequest": "+ 요청 생성",
+      "tabs": {
+        "unhandled": "미처리 대기",
+        "inProgress": "처리 중",
+        "escalation": "승인 대기"
+      },
+      "sections": {
+        "unhandled": "미처리 / 예외 요청",
+        "escalation": "승인 대기 요청"
+      },
+      "empty": "요청이 없습니다.",
+      "actions": {
+        "approve": "승인",
+        "reject": "반려",
+        "startChat": "상담 시작",
+        "manualAssign": "수동 배정"
+      },
+      "status": {
+        "pending": "프론트 대기",
+        "assigned": "배정됨",
+        "inProgress": "처리 중",
+        "completed": "완료",
+        "escalated": "승인 대기"
+      }
+    },
+    "chatHistory": {
+      "title": "채팅 히스토리",
+      "searchPlaceholder": "검색어를 입력하세요...",
+      "filterAll": "전체",
+      "filterLatest": "최신순",
+      "activeChat": "활성 대화",
+      "archived": "보관됨",
+      "selectRoom": "객실을 선택하세요",
+      "roomLog": "호 채팅 기록",
+      "fullLog": "전체 대화 로그",
+      "delete": "삭제",
+      "loadingMessages": "메시지 로딩 중...",
+      "noHistory": "대화 기록이 없습니다.",
+      "sendPlaceholder": "투숙객에게 보낼 메시지를 입력하세요 (자동 번역됩니다)...",
+      "sending": "전송중...",
+      "send": "전송",
+      "sendFail": "메시지 전송에 실패했습니다."
+    }
   }
 }

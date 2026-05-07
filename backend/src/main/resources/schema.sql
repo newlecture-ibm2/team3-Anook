@@ -120,6 +120,20 @@ CREATE TABLE IF NOT EXISTS fewshot_example (
 -- 5. 운영/감사 테이블
 -- ============================================================
 
+-- AI 통신 및 성능 기록 로그 (비즈니스 로직과 분리)
+CREATE TABLE IF NOT EXISTS ai_log (
+    id                  BIGSERIAL    PRIMARY KEY,
+    request_id          BIGINT       REFERENCES request(id),
+    model_name          VARCHAR(100),
+    raw_prompt          TEXT,
+    raw_response        TEXT,
+    prompt_tokens       INT,
+    completion_tokens   INT,
+    latency_ms          INT,
+    is_fallback         BOOLEAN,
+    created_at          TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
 -- 교대 인수인계 브리핑 (AI 자동 생성)
 CREATE TABLE IF NOT EXISTS handover_briefing (
     id                      BIGSERIAL    PRIMARY KEY,
@@ -212,6 +226,7 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_domain ON knowledge_entry(domain_code);
 CREATE INDEX IF NOT EXISTS idx_knowledge_status ON knowledge_entry(status);
 CREATE INDEX IF NOT EXISTS idx_unanswered_status ON unanswered_question(status);
 CREATE INDEX IF NOT EXISTS idx_dispatch_sent_at ON dispatch_log(sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_log_request_id ON ai_log(request_id);
 
 -- PMS 영수증 조회 성능
 CREATE INDEX IF NOT EXISTS idx_receipt_room_no ON pms_receipt(room_no);

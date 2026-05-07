@@ -6,13 +6,14 @@ import { handleResponse } from '@/lib/api';
 
 export interface StaffTask {
   id: number;
-  status: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
   departmentId: string;
   summary: string;
   rawText: string;
   roomNumber: string;
   assignedStaffName: string | null;
+  assignedStaffId: number | null;
   confidence: number | null;
   createdAt: string;
   version: number;
@@ -28,7 +29,7 @@ interface UseTasksReturn {
   transferTask: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
 }
 
-export function useTasks(departmentId?: string): UseTasksReturn {
+export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const [tasks, setTasks] = useState<StaffTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +42,8 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     }
     setError(null);
     try {
-      const url = departmentId
-        ? `/api/staff?action=requests&departmentId=${departmentId}`
+      const url = view
+        ? `/api/staff?action=requests&view=${view}`
         : '/api/staff?action=requests';
 
       const res = await fetch(url);
@@ -55,7 +56,7 @@ export function useTasks(departmentId?: string): UseTasksReturn {
         setLoading(false);
       }
     }
-  }, [departmentId]);
+  }, [view]);
 
   const acceptTask = useCallback(async (id: number, version: number) => {
     try {
@@ -109,6 +110,7 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     fetchTasks();
   }, [fetchTasks]);
 
+  const derivedDepartmentId = tasks.length > 0 ? tasks[0].departmentId : 'HK';
   useEffect(() => {
     const handleEvent = (data: unknown) => {
       const event = data as { type?: string };
@@ -120,14 +122,14 @@ export function useTasks(departmentId?: string): UseTasksReturn {
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
-    const deptChannel = `/topic/dept/${departmentId || 'HK'}`;
+    const deptChannel = `/topic/dept/${derivedDepartmentId}`;
     const unsubscribeDept = subscribe(deptChannel, handleEvent);
 
     return () => {
       unsubscribeAdmin();
       unsubscribeDept();
     };
-  }, [subscribe, departmentId]);
+  }, [subscribe, fetchTasks, derivedDepartmentId]);
 
   return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask };
 }

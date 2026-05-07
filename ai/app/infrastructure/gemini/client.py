@@ -6,9 +6,13 @@ Gemini API 공통 클라이언트
 """
 
 import json
+import time
 import google.generativeai as genai
+from contextvars import ContextVar
 from app.core.config import settings
 
+# 로깅용 메타데이터 전역 컨텍스트 변수 (스레드/비동기 안전)
+ai_log_meta_ctx: ContextVar[dict] = ContextVar("ai_log_meta", default={})
 
 # ── 모듈 로드 시 1회만 API 키 설정 ──
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -55,10 +59,28 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
 
     # 시스템 프롬프트(system_instruction)를 지원하지 않는 버전을 위해 프롬프트 텍스트에 결합
     combined_prompt = f"System Instruction (MUST FOLLOW):\n{final_system_instruction}\n\n---\n\nUser Input:\n{prompt}"
+    start_time = time.time()
     response = model.generate_content(combined_prompt)
+    latency_ms = int((time.time() - start_time) * 1000)
+    
     raw_text = response.text.strip()
     if raw_text.startswith("```"):
         raw_text = raw_text.strip("`").lstrip("json").strip()
+        
+    prompt_tokens = 0
+    completion_tokens = 0
+    if hasattr(response, "usage_metadata") and response.usage_metadata:
+        prompt_tokens = response.usage_metadata.prompt_token_count
+        completion_tokens = response.usage_metadata.candidates_token_count
+        
+    ai_log_meta_ctx.set({
+        "model_name": model_name,
+        "raw_prompt": combined_prompt,
+        "raw_response": raw_text,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "latency_ms": latency_ms
+    })
     
     try:
         return json.loads(raw_text)
