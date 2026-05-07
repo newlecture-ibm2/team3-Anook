@@ -118,7 +118,7 @@ export function useChat() {
                 variant: 'received',
                 type: 'STATUS_CARD',
                 content: isCancelled ? '요청이 취소되었습니다' : payload.summary,
-                meta: { 
+                meta: {
                   progress: progressMap[payload.status] || 0,
                   cancelled: isCancelled,
                 }
