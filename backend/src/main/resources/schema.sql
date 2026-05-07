@@ -240,3 +240,6 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 
 -- 예시:
 
+-- [2026-05-06] 고객 취소 요청 승인 워크플로우
+ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested_at TIMESTAMP;

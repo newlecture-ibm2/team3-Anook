@@ -16,6 +16,8 @@ interface RequestDetail {
   version: number;
   createdAt: string;
   updatedAt: string;
+  cancelRequested: boolean;
+  cancelRequestedAt: string | null;
 }
 
 export default function useRequestDetail() {
@@ -98,5 +100,31 @@ export default function useRequestDetail() {
     }
   };
 
-  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, cancelRequest, loading, error };
+  const approveCancellation = async (id: number) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${id}/cancellation/approve`, {
+        method: 'PATCH',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err: any) {
+      setError(err.message || '취소 승인 실패');
+      return false;
+    }
+  };
+
+  const rejectCancellation = async (id: number) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${id}/cancellation/reject`, {
+        method: 'PATCH',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err: any) {
+      setError(err.message || '취소 반려 실패');
+      return false;
+    }
+  };
+
+  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, cancelRequest, approveCancellation, rejectCancellation, loading, error };
 }

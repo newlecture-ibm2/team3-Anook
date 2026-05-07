@@ -26,6 +26,8 @@ public class AdminRequest {
     private final String roomNo;
     private final Long assignedStaffId;
     private final int version;
+    private final boolean cancelRequested;
+    private final LocalDateTime cancelRequestedAt;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
 
@@ -34,7 +36,8 @@ public class AdminRequest {
                         Map<String, Object> entities, String rawText,
                         String summary, double confidence, String roomNo,
                         Long assignedStaffId,
-                        int version, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                        int version, boolean cancelRequested, LocalDateTime cancelRequestedAt,
+                        LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.status = status;
         this.priority = priority;
@@ -46,6 +49,8 @@ public class AdminRequest {
         this.roomNo = roomNo;
         this.assignedStaffId = assignedStaffId;
         this.version = version;
+        this.cancelRequested = cancelRequested;
+        this.cancelRequestedAt = cancelRequestedAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -97,6 +102,8 @@ public class AdminRequest {
     public String getRoomNo() { return roomNo; }
     public Long getAssignedStaffId() { return assignedStaffId; }
     public int getVersion() { return version; }
+    public boolean isCancelRequested() { return cancelRequested; }
+    public LocalDateTime getCancelRequestedAt() { return cancelRequestedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

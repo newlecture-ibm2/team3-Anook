@@ -72,7 +72,7 @@ public class RequestPersistenceAdapter implements RequestRepositoryPort {
     @Override
     public Optional<Request> findLatestCancellableByRoomNoAndGuestId(String roomNo, Long guestId) {
         return jpaRepository.findFirstByRoomNoAndGuestIdAndStatusInOrderByCreatedAtDesc(
-                roomNo, guestId, List.of("PENDING", "ASSIGNED")
+                roomNo, guestId, List.of("PENDING", "ASSIGNED", "IN_PROGRESS")
         ).map(RequestJpaEntity::toDomain);
     }
 }

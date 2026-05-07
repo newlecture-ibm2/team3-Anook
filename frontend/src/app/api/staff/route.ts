@@ -83,6 +83,8 @@ export async function GET(request: NextRequest) {
           assignedStaffName: item.assignedStaffName,
           confidence: null,
           createdAt: item.createdAt,
+          cancelRequested: item.cancelRequested ?? false,
+          cancelRequestedAt: item.cancelRequestedAt ?? null,
         }));
         return NextResponse.json(mappedData);
       }
@@ -126,7 +128,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
 
-    if (action === "accept" || action === "complete" || action === "transfer") {
+    if (action === "accept" || action === "complete" || action === "transfer" || action === "approveCancellation" || action === "rejectCancellation") {
       let staffId = null;
       try {
         const payloadBase64 = session.token.split('.')[1];
@@ -137,7 +139,11 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ message: "토큰 해독에 실패했습니다." }, { status: 401 });
       }
 
-      const backendEndpoint = `${BACKEND_URL}/staff/requests/${id}/${action}`;
+      let backendActionPath = action;
+      if (action === "approveCancellation") backendActionPath = "cancellation/approve";
+      if (action === "rejectCancellation") backendActionPath = "cancellation/reject";
+
+      const backendEndpoint = `${BACKEND_URL}/staff/requests/${id}/${backendActionPath}`;
       
       const payload: any = { staffId: Number(staffId) };
       if (body.version !== undefined) payload.version = body.version;

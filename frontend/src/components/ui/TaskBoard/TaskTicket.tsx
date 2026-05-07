@@ -11,6 +11,7 @@ export interface TaskTicketProps {
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
   createdAt: string | Date;
   updatedAt?: string | Date;
+  cancelRequested?: boolean;
   onAccept?: (e: React.MouseEvent) => void;
   onComplete?: (e: React.MouseEvent) => void;
 }
@@ -23,6 +24,7 @@ export default function TaskTicket({
   status = 'TODO',
   createdAt,
   updatedAt,
+  cancelRequested = false,
   onAccept,
   onComplete
 }: TaskTicketProps) {
@@ -54,9 +56,16 @@ export default function TaskTicket({
     <div className={styles.taskTicket}>
       <div className={styles.header}>
         {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
-        <StatusBadge variant={badgeVariant}>
-          {priority}
-        </StatusBadge>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {cancelRequested && (
+            <StatusBadge variant="red">
+              취소 대기
+            </StatusBadge>
+          )}
+          <StatusBadge variant={badgeVariant}>
+            {priority}
+          </StatusBadge>
+        </div>
       </div>
       
       <div className={styles.content}>

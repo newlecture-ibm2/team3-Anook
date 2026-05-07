@@ -15,6 +15,8 @@ public record AdminRequestListResult(
         String roomNo,
         Long assignedStaffId,
         String assignedStaffName,
+        boolean cancelRequested,
+        LocalDateTime cancelRequestedAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

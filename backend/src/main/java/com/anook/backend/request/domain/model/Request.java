@@ -25,6 +25,8 @@ public class Request {
     private int version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean cancelRequested;
+    private LocalDateTime cancelRequestedAt;
 
     // === 생성자 (팩토리 메서드 + 재구성용) ===
 
@@ -52,6 +54,7 @@ public class Request {
         request.rawText = rawText;
         request.summary = summary;
         request.version = 0;
+        request.cancelRequested = false;
         request.createdAt = LocalDateTime.now();
         request.updatedAt = LocalDateTime.now();
         return request;
@@ -72,6 +75,8 @@ public class Request {
                                         Long guestId,
                                         Long assignedStaffId,
                                         int version,
+                                        boolean cancelRequested,
+                                        LocalDateTime cancelRequestedAt,
                                         LocalDateTime createdAt,
                                         LocalDateTime updatedAt) {
         Request request = new Request();
@@ -87,6 +92,8 @@ public class Request {
         request.guestId = guestId;
         request.assignedStaffId = assignedStaffId;
         request.version = version;
+        request.cancelRequested = cancelRequested;
+        request.cancelRequestedAt = cancelRequestedAt;
         request.createdAt = createdAt;
         request.updatedAt = updatedAt;
         return request;
@@ -133,6 +140,42 @@ public class Request {
     }
 
     /**
+     * 고객의 취소 요청 — IN_PROGRESS 상태에서만 가능
+     */
+    public void requestCancellation() {
+        if (this.status != RequestStatus.IN_PROGRESS) {
+            throw new IllegalStateException("IN_PROGRESS 상태에서만 취소 요청이 가능합니다: " + this.status);
+        }
+        this.cancelRequested = true;
+        this.cancelRequestedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 스태프/어드민의 취소 승인 — cancelRequested가 true일 때만 가능
+     */
+    public void approveCancellation() {
+        if (!this.cancelRequested) {
+            throw new IllegalStateException("취소 요청이 없는 상태에서 취소 승인할 수 없습니다.");
+        }
+        this.status = RequestStatus.CANCELLED;
+        this.cancelRequested = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 스태프/어드민의 취소 반려 — cancelRequested가 true일 때만 가능
+     */
+    public void rejectCancellation() {
+        if (!this.cancelRequested) {
+            throw new IllegalStateException("취소 요청이 없는 상태에서 취소 반려할 수 없습니다.");
+        }
+        this.cancelRequested = false;
+        this.cancelRequestedAt = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
      * 초과 시간 여부 (30분 기준)
      */
     public boolean isOverdue() {
@@ -173,6 +216,8 @@ public class Request {
     public Long getGuestId() { return guestId; }
     public Long getAssignedStaffId() { return assignedStaffId; }
     public int getVersion() { return version; }
+    public boolean isCancelRequested() { return cancelRequested; }
+    public LocalDateTime getCancelRequestedAt() { return cancelRequestedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 

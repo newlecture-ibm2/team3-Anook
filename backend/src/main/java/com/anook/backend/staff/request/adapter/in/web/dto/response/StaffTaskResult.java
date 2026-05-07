@@ -13,5 +13,7 @@ public record StaffTaskResult(
         Long assignedStaffId,
         Float confidence,
         LocalDateTime createdAt,
-        Integer version
+        Integer version,
+        boolean cancelRequested,
+        LocalDateTime cancelRequestedAt
 ) {}

@@ -28,5 +28,17 @@ public record RequestWebSocketPayload(
     public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode, String summary, String roomNo) {
         return new RequestWebSocketPayload("STATUS_CHANGED", id, status, domainCode, summary, roomNo);
     }
+
+    public static RequestWebSocketPayload cancelRequestReceived(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary, roomNo);
+    }
+
+    public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo);
+    }
+
+    public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo);
+    }
 }
 

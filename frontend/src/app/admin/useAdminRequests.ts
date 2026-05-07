@@ -12,6 +12,8 @@ interface AdminRequest {
   assignedStaffName: string | null;
   createdAt: string;
   updatedAt: string;
+  cancelRequested: boolean;
+  cancelRequestedAt: string | null;
 }
 
 export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all') {
@@ -59,8 +61,9 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   }
 
   const pending = filteredRequests.filter(r => r.status === 'PENDING');
-  const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  const inProgress = filteredRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
+  const cancelPending = filteredRequests.filter(r => r.cancelRequested);
   const completed = filteredRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
-  return { requests: filteredRequests, pending, inProgress, completed, loading, error, refetch: fetchRequests };
+  return { requests: filteredRequests, pending, inProgress, cancelPending, completed, loading, error, refetch: fetchRequests };
 }

@@ -108,19 +108,26 @@ export function useChat() {
               };
 
               setMessages(prev => [...prev, newAiMsg]);
-            } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
+            } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(payload.type)) {
               const progressMap: Record<string, number> = {
                 'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
+              const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
+
+              let contentText = payload.summary;
+              if (isCancelled) contentText = '요청이 취소되었습니다';
+              if (isCancelPending) contentText = `${payload.summary} (취소 승인 대기 중)`;
+
               const statusMsg: ChatMessage = {
                 id: `request-${payload.requestId}`,
                 variant: 'received',
                 type: 'STATUS_CARD',
-                content: isCancelled ? '요청이 취소되었습니다' : payload.summary,
+                content: contentText,
                 meta: {
                   progress: progressMap[payload.status] || 0,
                   cancelled: isCancelled,
+                  cancelPending: isCancelPending,
                 }
               };
 

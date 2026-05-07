@@ -45,6 +45,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getGuestId(),
                 staffId,
                 request.getVersion(),
+                request.isCancelRequested(),
+                request.getCancelRequestedAt(),
                 request.getCreatedAt(),
                 LocalDateTime.now()
         );
@@ -90,6 +92,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getGuestId(),
                 request.getAssignedStaffId(),
                 request.getVersion(),
+                request.isCancelRequested(),
+                request.getCancelRequestedAt(),
                 request.getCreatedAt(),
                 LocalDateTime.now()
         );
@@ -145,6 +149,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getGuestId(),
                 request.getAssignedStaffId(),
                 request.getVersion(),
+                request.isCancelRequested(),
+                request.getCancelRequestedAt(),
                 request.getCreatedAt(),
                 request.getUpdatedAt()
         );
@@ -171,6 +177,98 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         // 이전 부서에도 상태 업데이트 알림 (태스크 보드에서 사라지도록)
         if (oldDepartmentId != null && !oldDepartmentId.equals(toDepartmentId)) {
             dispatchPort.dispatchToDepartment(oldDepartmentId, payload);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void approveCancellation(Long requestId, Long staffId, Integer version) {
+        Request request = requestRepositoryPort.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
+
+        if (request.getVersion() != version) {
+            throw new org.springframework.dao.OptimisticLockingFailureException("이미 상태가 변경된 요청입니다.");
+        }
+
+        request.approveCancellation();
+
+        Request updatedRequest = Request.reconstitute(
+                request.getId(),
+                request.getStatus(),
+                request.getPriority(),
+                request.getDomainCode(),
+                request.getEntities(),
+                request.getConfidence(),
+                request.getRawText(),
+                request.getSummary(),
+                request.getRoomNo(),
+                request.getGuestId(),
+                request.getAssignedStaffId(),
+                request.getVersion(),
+                request.isCancelRequested(),
+                request.getCancelRequestedAt(),
+                request.getCreatedAt(),
+                LocalDateTime.now()
+        );
+
+        requestRepositoryPort.save(updatedRequest);
+        log.info("요청 취소 승인 완료: requestId={}, staffId={}", requestId, staffId);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelApproved(
+                updatedRequest.getId(),
+                updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
+                updatedRequest.getSummary(),
+                updatedRequest.getRoomNo()
+        );
+        dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
+        if (updatedRequest.getDomainCode() != null) {
+            dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void rejectCancellation(Long requestId, Long staffId, Integer version) {
+        Request request = requestRepositoryPort.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
+
+        if (request.getVersion() != version) {
+            throw new org.springframework.dao.OptimisticLockingFailureException("이미 상태가 변경된 요청입니다.");
+        }
+
+        request.rejectCancellation();
+
+        Request updatedRequest = Request.reconstitute(
+                request.getId(),
+                request.getStatus(),
+                request.getPriority(),
+                request.getDomainCode(),
+                request.getEntities(),
+                request.getConfidence(),
+                request.getRawText(),
+                request.getSummary(),
+                request.getRoomNo(),
+                request.getGuestId(),
+                request.getAssignedStaffId(),
+                request.getVersion(),
+                request.isCancelRequested(),
+                request.getCancelRequestedAt(),
+                request.getCreatedAt(),
+                LocalDateTime.now()
+        );
+
+        requestRepositoryPort.save(updatedRequest);
+        log.info("요청 취소 반려 완료: requestId={}, staffId={}", requestId, staffId);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRejected(
+                updatedRequest.getId(),
+                updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
+                updatedRequest.getSummary(),
+                updatedRequest.getRoomNo()
+        );
+        dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
+        if (updatedRequest.getDomainCode() != null) {
+            dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
         }
     }
 }
