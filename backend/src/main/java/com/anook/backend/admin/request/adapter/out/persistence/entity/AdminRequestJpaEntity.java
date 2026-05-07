@@ -88,7 +88,7 @@ public class AdminRequestJpaEntity {
             this.departmentId = staffDepartmentId;
         }
         if ("PENDING".equals(this.status)) {
-            this.status = "ASSIGNED";
+            this.status = "IN_PROGRESS";
         }
         this.updatedAt = LocalDateTime.now();
     }
@@ -115,19 +115,12 @@ public class AdminRequestJpaEntity {
     /**
      * 에스컬레이션 요청 — 직원이 처리 불가로 판단하여 관리자 승인 대기 상태로 변경
      */
-    public void requestEscalation() {
-        this.status = "ESCALATED";
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 에스컬레이션 승인 — 우선순위를 URGENT로 올리고 상태를 PENDING으로 변경 (재배정 대기)
-     */
-    public void approveEscalation(String newDepartmentId, String newPriority) {
-        this.priority = newPriority != null && !newPriority.isBlank() ? newPriority : "URGENT";
-        this.status = "PENDING";
-        this.departmentId = newDepartmentId;
-        this.assignedStaffId = null;
+    public void escalate() {
+        this.priority = "URGENT";
+        if ("IN_PROGRESS".equals(this.status)) {
+            this.status = "PENDING";
+            this.assignedStaffId = null;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -143,7 +136,7 @@ public class AdminRequestJpaEntity {
         entity.rawText = rawText;
         entity.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "NORMAL";
         entity.assignedStaffId = assignedStaffId;
-        entity.status = (assignedStaffId != null) ? "ASSIGNED" : "PENDING";
+        entity.status = (assignedStaffId != null) ? "IN_PROGRESS" : "PENDING";
         entity.confidence = 1.0f;
         entity.version = 0;
         entity.createdAt = LocalDateTime.now();
