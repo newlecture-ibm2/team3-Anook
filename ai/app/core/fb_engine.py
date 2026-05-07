@@ -16,14 +16,24 @@ def _fetch_menu_context() -> str:
             
         if resp.status_code == 200:
             menus = resp.json()
-            menu_lines = []
+            # 중복 메뉴 제거 (name 기준)
+            seen = set()
+            unique_menus = []
             for m in menus:
+                if m.get("name") not in seen:
+                    seen.add(m.get("name"))
+                    unique_menus.append(m)
+
+            menu_lines = []
+            for m in unique_menus:
                 name = m.get("name")
                 price = m.get("price")
                 category = m.get("category")
                 allergens = m.get("allergens")
+                options = m.get("options")
                 allergy_str = f" (알러지: {allergens})" if allergens else ""
-                menu_lines.append(f"- [{category}] {name}: {price:,}원{allergy_str}")
+                option_str = f" [선택옵션: {options}]" if options else ""
+                menu_lines.append(f"- [{category}] {name}: {price:,}원{allergy_str}{option_str}")
             return "\n".join(menu_lines)
         else:
             print(f"[FB Agent] 메뉴 조회 API 실패: HTTP {resp.status_code}")
