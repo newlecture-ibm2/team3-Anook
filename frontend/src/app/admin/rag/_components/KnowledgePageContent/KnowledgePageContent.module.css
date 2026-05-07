@@ -1,14 +1,14 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-32);
   padding: var(--space-48) var(--space-32);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  margin-bottom: var(--space-32);
 }
 
 .headerLeft {
@@ -34,10 +34,33 @@
   align-items: center;
 }
 
+.searchInput {
+  height: 36px !important;
+}
+
+/* filterBtn overrides the container, we need to target the internal button too */
+.filterBtn {
+  height: 36px !important;
+  width: 36px !important;
+}
+.filterBtn > button {
+  height: 36px !important;
+  width: 36px !important;
+}
+
+.tabSection {
+  margin-bottom: var(--space-24);
+}
+
 .contentSection {
   display: flex;
   flex-direction: column;
-  gap: var(--space-24);
+  gap: var(--space-12);
+}
+
+.buttonWrapper {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .filterSection {

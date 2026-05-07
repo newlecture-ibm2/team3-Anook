@@ -5,6 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 const sampleHandoverItems = [
   { id: 1, roomNumber: '1204', guestName: '김민수', requestDetails: '[에어컨 수리] 에어컨 작동 안 됨' },
@@ -28,23 +29,24 @@ const sampleHandoverBriefing = {
 };
 
 export default function HandoverPage() {
+  const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>인수인계</h1>
+        <h1 className={styles.title}>{t.adminPage.taskBoard.titles.handover}</h1>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: t.adminPage.taskBoard.filterAll, value: 'all' }, 
+              { label: t.adminPage.taskBoard.filterLatest, value: 'latest' }
             ]}
             selectedFilter="all"
             onFilterSelect={() => {}}

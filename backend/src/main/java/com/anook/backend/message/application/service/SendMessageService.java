@@ -76,17 +76,18 @@ public class SendMessageService implements SendMessageUseCase {
      * AI 호출 + 응답 저장 + WebSocket Push + 이벤트 발행 (비동기)
      *
      * @Async → aiTaskExecutor 스레드풀에서 실행
-     * ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않지만,
-     *    여기서는 self-invocation이므로 별도 빈 분리 대신
-     *    Spring의 프록시 우회 없이 직접 @Async를 적용합니다.
-     *    (프로젝트 규모에서 충분한 구조)
+     *        ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않지만,
+     *        여기서는 self-invocation이므로 별도 빈 분리 대신
+     *        Spring의 프록시 우회 없이 직접 @Async를 적용합니다.
+     *        (프로젝트 규모에서 충분한 구조)
      */
     @Async("aiTaskExecutor")
     @Transactional
     public void processAiAsync(String roomNo, Long guestId, String content, String language) {
         try {
             // 3. AI 호출을 위해 최근 10개 메시지 조회 (대화 맥락 확장)
-            java.util.List<Message> recentMessages = new java.util.ArrayList<>(messagePort.findRecentByRoomNoAndGuestId(roomNo, guestId, 10));
+            java.util.List<Message> recentMessages = new java.util.ArrayList<>(
+                    messagePort.findRecentByRoomNoAndGuestId(roomNo, guestId, 10));
 
             // 방금 저장한 현재 메시지는 AI가 'Current Request'로 중복 인식하지 않도록 제외
             if (!recentMessages.isEmpty() && recentMessages.get(0).getContent().equals(content)) {
@@ -98,9 +99,10 @@ public class SendMessageService implements SendMessageUseCase {
 
             java.util.List<Map<String, String>> chatHistory = recentMessages.stream()
                     .map(m -> Map.of(
-                            "role", m.getSenderType().equals(com.anook.backend.message.domain.model.SenderType.GUEST) ? "user" : "ai",
-                            "content", m.getContent()
-                    ))
+                            "role",
+                            m.getSenderType().equals(com.anook.backend.message.domain.model.SenderType.GUEST) ? "user"
+                                    : "ai",
+                            "content", m.getContent()))
                     .toList();
 
             // AI 호출
@@ -115,8 +117,7 @@ public class SendMessageService implements SendMessageUseCase {
             dispatchPort.sendToRoom(roomNo, Map.of(
                     "type", "AI_RESPONSE",
                     "messageId", aiMsg.getId(),
-                    "content", analysis.guestReply()
-            ));
+                    "content", analysis.guestReply()));
 
             // 6. 태스크형 요청 감지 시 이벤트 발행 (여기서 message 책임 끝!)
             if (analysis.domainCode() != null) {
@@ -132,8 +133,7 @@ public class SendMessageService implements SendMessageUseCase {
                         analysis.confidence(),
                         content,
                         analysis.summary(),
-                        escalated
-                ));
+                        escalated));
                 log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}",
                         analysis.domainCode(), escalated);
             } else if ("CANCEL_REQUEST".equals(analysis.action())) {
@@ -164,8 +164,7 @@ public class SendMessageService implements SendMessageUseCase {
             // AI 실패 시에도 고객에게 안내 메시지 전달
             dispatchPort.sendToRoom(roomNo, Map.of(
                     "type", "AI_ERROR",
-                    "content", "죄송합니다. 잠시 후 다시 시도해 주세요."
-            ));
+                    "content", "죄송합니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -194,7 +193,7 @@ public class SendMessageService implements SendMessageUseCase {
         // 2. 메시지 도메인 생성 및 저장
         Message staffMsg = Message.createStaffMessage(command.roomNo(), command.guestId(), command.content());
         staffMsg.setTranslation(translatedContent);
-        
+
         staffMsg = messagePort.save(staffMsg);
         log.info("[Message] Staff 메시지 저장 완료 — id: {}, room: {}", staffMsg.getId(), command.roomNo());
 
@@ -203,7 +202,6 @@ public class SendMessageService implements SendMessageUseCase {
                 "type", "STAFF_MESSAGE",
                 "messageId", staffMsg.getId(),
                 "content", translatedContent,
-                "originalContent", command.content()
-        ));
+                "originalContent", command.content()));
     }
 }

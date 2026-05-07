@@ -7,11 +7,7 @@ import ChartCard from '@/components/ui/Card/ChartCard';
 import SummaryCard from '@/components/ui/Card/SummaryCard';
 import useAdminStats from './useAdminStats';
 import styles from './page.module.css';
-
-const DEPT_NAMES: Record<string, string> = {
-  HK: '하우스키핑', FB: '식음료', FACILITY: '시설',
-  CONCIERGE: '컨시어지', FRONT: '긴급 대응'
-};
+import { useTranslation } from '@/app/useTranslation';
 
 const PRIORITY_NAMES: Record<string, string> = {
   URGENT: '긴급', HIGH: '높음', NORMAL: '보통', LOW: '낮음'
@@ -107,9 +103,13 @@ export default function DashboardPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('7d');
   const { stats, loading, error } = useAdminStats();
+  const { t } = useTranslation();
 
   const deptData = stats
-    ? Object.entries(stats.byDepartment).map(([k, v]) => ({ label: DEPT_NAMES[k] || k, value: v }))
+    ? Object.entries(stats.byDepartment).map(([k, v]) => ({ 
+        label: t.adminPage.dashboard.departments[k as keyof typeof t.adminPage.dashboard.departments] || k, 
+        value: v 
+      }))
     : [];
 
   const frequentRequestsList = stats && stats.frequentRequests
@@ -130,20 +130,20 @@ export default function DashboardPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>대시보드</h1>
+          <h1 className={styles.title}>{t.adminPage.dashboard.title}</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.dashboard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '오늘', value: '1d' }, 
-              { label: '최근 7일', value: '7d' }, 
-              { label: '최근 30일', value: '30d' }
+              { label: t.adminPage.dashboard.filters.today, value: '1d' }, 
+              { label: t.adminPage.dashboard.filters.last7Days, value: '7d' }, 
+              { label: t.adminPage.dashboard.filters.last30Days, value: '30d' }
             ]}
             selectedFilter={selectedFilter}
             onFilterSelect={(val) => setSelectedFilter(val)}
@@ -153,15 +153,15 @@ export default function DashboardPage() {
 
       {/* Main Content Section (Charts) */}
       <div className={styles.chartsGrid}>
-        <ChartCard title="부서별 평균 처리 시간" subtitle="AVERAGE RESOLUTION TIME (MINUTES)">
+        <ChartCard title={t.adminPage.dashboard.charts.avgResTime} subtitle="AVERAGE RESOLUTION TIME (MINUTES)">
            <div className={styles.chartPlaceholder}>
-              {loading ? '로딩 중...' : error ? error : <BarChart data={deptData} />}
+              {loading ? t.common.loading : error ? error : <BarChart data={deptData} />}
            </div>
         </ChartCard>
         
-        <ChartCard title="최다 요청 항목" subtitle="MOST FREQUENT REQUESTS (%)">
+        <ChartCard title={t.adminPage.dashboard.charts.frequentReqs} subtitle="MOST FREQUENT REQUESTS (%)">
            <div className={styles.chartPlaceholder}>
-              {loading ? '로딩 중...' : error ? error : (
+              {loading ? t.common.loading : error ? error : (
                 <DonutChart data={frequentRequestsData} colors={DONUT_COLORS} />
               )}
            </div>
@@ -171,28 +171,28 @@ export default function DashboardPage() {
       {/* Bottom Content Section (Summaries) */}
       <div className={styles.summaryGrid}>
         <SummaryCard 
-          title="오늘 총 요청" 
+          title={t.adminPage.dashboard.summaries.totalToday} 
           value={loading ? '-' : stats?.total ?? 0} 
           changeValue={stats?.totalChange ?? '+0%'} 
           changeType={(stats?.totalChange?.startsWith('-') || stats?.totalChange === '+0%') ? 'negative' : 'positive'} 
           size="md" 
         />
         <SummaryCard 
-          title="평균 응답 시간" 
+          title={t.adminPage.dashboard.summaries.avgResponseTime} 
           value={loading ? '-' : `${stats?.avgResolutionTimeMins ?? 0}m`} 
           changeValue={stats?.avgResolutionTimeChange ?? '-0.0m'} 
           changeType={(stats?.avgResolutionTimeChange?.startsWith('-') || stats?.avgResolutionTimeChange === '+0.0m') ? 'positive' : 'negative'} 
           size="md" 
         />
         <SummaryCard 
-          title="해결률" 
+          title={t.adminPage.dashboard.summaries.resolutionRate} 
           value={loading ? '-' : `${stats?.resolutionRatePct ?? 0}%`} 
           changeValue={stats?.resolutionRateChange ?? '+0.0%'} 
           changeType={(stats?.resolutionRateChange?.startsWith('-') || stats?.resolutionRateChange === '+0.0%') ? 'negative' : 'positive'} 
           size="md" 
         />
         <SummaryCard 
-          title="고객 만족도" 
+          title={t.adminPage.dashboard.summaries.csat} 
           value={loading ? '-' : stats?.customerSatisfaction ?? 0} 
           changeValue={stats?.customerSatisfactionChange ?? '+0.0'} 
           changeType={(stats?.customerSatisfactionChange?.startsWith('-') || stats?.customerSatisfactionChange === '+0.0') ? 'negative' : 'positive'} 

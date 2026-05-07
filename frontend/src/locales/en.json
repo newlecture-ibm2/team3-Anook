@@ -23,5 +23,148 @@
     "close": "Close",
     "loading": "Loading...",
     "error": "An error occurred"
+  },
+  "adminPage": {
+    "sidebar": {
+      "categories": {
+        "requestManagement": "Request Management",
+        "aiSystem": "AI System",
+        "operations": "Operations"
+      },
+      "menus": {
+        "dashboard": "Dashboard",
+        "frontDesk": "Front Desk",
+        "housekeeping": "Housekeeping",
+        "fb": "F&B",
+        "facility": "Facility",
+        "concierge": "Concierge",
+        "emergency": "Emergency",
+        "allRequests": "All Requests",
+        "chatHistory": "Chat History",
+        "aiTraining": "AI Training",
+        "rag": "Knowledge Base",
+        "aiRouting": "AI Routing Logs",
+        "handover": "Handover",
+        "staffManagement": "Staff Management"
+      }
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "searchPlaceholder": "Enter search term...",
+      "filters": {
+        "today": "Today",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days"
+      },
+      "charts": {
+        "avgResTime": "Average Resolution Time",
+        "frequentReqs": "Most Frequent Requests"
+      },
+      "summaries": {
+        "totalToday": "Total Requests Today",
+        "avgResponseTime": "Avg Response Time",
+        "resolutionRate": "Resolution Rate",
+        "csat": "Customer Satisfaction"
+      },
+      "departments": {
+        "HK": "Housekeeping",
+        "FB": "F&B",
+        "FACILITY": "Facility",
+        "CONCIERGE": "Concierge",
+        "FRONT": "Emergency"
+      }
+    },
+    "taskBoard": {
+      "searchPlaceholder": "Enter search term...",
+      "filterAll": "All",
+      "filterLatest": "Latest",
+      "filterOldest": "Oldest",
+      "columns": {
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "completed": "Completed"
+      },
+      "titles": {
+        "housekeeping": "Housekeeping",
+        "fb": "F&B",
+        "facility": "Facility Management",
+        "concierge": "Concierge",
+        "emergency": "Emergency Response",
+        "allRequests": "All Requests",
+        "aiTraining": "AI Training",
+        "rag": "Knowledge Base",
+        "aiRouting": "AI Routing Logs",
+        "handover": "Handover"
+      }
+    },
+    "rag": {
+      "title": "Knowledge Base",
+      "addKnowledge": "+ Add Knowledge",
+      "searchPlaceholder": "Enter search term...",
+      "filterAll": "All",
+      "filterLatest": "Latest",
+      "empty": "No knowledge registered.",
+      "deleteConfirm": "Are you sure you want to delete this knowledge?",
+      "tabs": {
+        "ALL": "All",
+        "HK": "Housekeeping",
+        "FB": "F&B",
+        "FACILITY": "Facility",
+        "CONCIERGE": "Concierge",
+        "FRONT": "Front Desk",
+        "EMERGENCY": "Emergency",
+        "COMMON": "Common"
+      }
+    },
+    "aiTraining": {
+      "filterAll": "All",
+      "filterMissing": "Missing",
+      "filterUnclear": "Unclear Intent"
+    },
+    "frontDesk": {
+      "title": "Front Desk",
+      "createRequest": "+ Create Request",
+      "tabs": {
+        "unhandled": "Pending",
+        "inProgress": "In Progress",
+        "escalation": "Escalated"
+      },
+      "sections": {
+        "unhandled": "Unhandled / Exception Requests",
+        "escalation": "Requests Pending Approval"
+      },
+      "empty": "No requests found.",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "startChat": "Start Chat",
+        "manualAssign": "Assign"
+      },
+      "status": {
+        "pending": "Pending",
+        "assigned": "Assigned",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "escalated": "Escalated"
+      }
+    },
+    "chatHistory": {
+      "title": "Chat History",
+      "searchPlaceholder": "Enter search term...",
+      "filterAll": "All",
+      "filterLatest": "Latest",
+      "activeChat": "Active Chat",
+      "archived": "Archived",
+      "selectRoom": "Select a room",
+      "roomLog": " Chat Log",
+      "fullLog": "Full chat log",
+      "delete": "Delete",
+      "loadingMessages": "Loading messages...",
+      "noHistory": "No chat history.",
+      "sendPlaceholder": "Enter message for guest (auto-translated)...",
+      "sending": "Sending...",
+      "send": "Send",
+      "sendFail": "Failed to send message."
+    }
   }
 }
