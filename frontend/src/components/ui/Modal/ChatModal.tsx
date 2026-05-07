@@ -3,7 +3,6 @@ import styles from './ChatModal.module.css';
 import ModalOverlay from './ModalOverlay';
 import ModalCard from './ModalCard';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
-import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
 
 export interface ChatMessage {
@@ -21,33 +20,36 @@ export interface ChatModalProps {
 export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: ChatModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [targetLang, setTargetLang] = useState('en');
+  const [isSending, setIsSending] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
+
+  const fetchMessages = async () => {
+    if (!roomNumber) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const mapped: ChatMessage[] = data.map((msg: any) => ({
+        id: String(msg.id),
+        variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
+        content: msg.content,
+      }));
+
+      setMessages(mapped);
+    } catch {
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 모달 열릴 때 실제 대화 내역 로드
   useEffect(() => {
-    if (!isOpen || !roomNumber) return;
-
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        const mapped: ChatMessage[] = data.map((msg: any) => ({
-          id: String(msg.id),
-          variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
-          content: msg.content,
-        }));
-
-        setMessages(mapped);
-      } catch {
-        setMessages([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    if (!isOpen) return;
     fetchMessages();
   }, [isOpen, roomNumber]);
 
@@ -58,22 +60,29 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
     }
   }, [messages]);
 
-  const handleSend = async (text: string) => {
-    // 1. 낙관적 업데이트 (즉시 화면에 표시)
-    const tempId = Date.now().toString();
-    const newMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
-    setMessages(prev => [...prev, newMsg]);
-
-    // 2. 백엔드로 전송
+  const handleSend = async () => {
+    if (!inputText.trim()) return;
+    setIsSending(true);
     try {
-      const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`, {
+      const res = await fetch('/api/staff/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({
+          roomNo: roomNumber,
+          content: inputText,
+          targetLanguage: targetLang,
+        }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (res.ok) {
+        setInputText('');
+        fetchMessages();
+      } else {
+        alert('메시지 전송에 실패했습니다.');
+      }
     } catch {
-      // 전송 실패 시에도 화면에는 유지 (나중에 재시도 로직 추가 가능)
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -105,8 +114,33 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
             )}
           </div>
 
-          <div className={styles.footer}>
-            <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+          <div className={styles.footer} style={{ padding: '20px', borderTop: '1px solid var(--color-gray-200)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <select
+              value={targetLang}
+              onChange={(e) => setTargetLang(e.target.value)}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
+            >
+              <option value="en">🇺🇸 영어</option>
+              <option value="ja">🇯🇵 일본어</option>
+              <option value="zh">🇨🇳 중국어</option>
+              <option value="ko">🇰🇷 한국어</option>
+            </select>
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="투숙객에게 보낼 메시지 (자동 번역됨)..."
+              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
+              disabled={isSending}
+            />
+            <button
+              onClick={handleSend}
+              disabled={isSending || !inputText.trim()}
+              style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              {isSending ? '전송중...' : '전송'}
+            </button>
           </div>
         </div>
       </ModalCard>

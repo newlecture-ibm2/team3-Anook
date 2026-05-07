@@ -195,18 +195,46 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         return response
 
     # ──────────────────────────────────────────────
-    # STEP 3-c: CLARIFICATION → 되묻기
+    # STEP 3-c: CLARIFICATION → 되묻기 (최대 3회, 4회째부터 FRONT 강제 이관)
     # ──────────────────────────────────────────────
     if primary.mode == "CLARIFICATION":
+        CLARIFICATION_MSG = "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다."
+        
+        # 이전 대화에서 AI가 '연속으로' 되묻기 메시지를 몇 번 보냈는지 카운트
+        clarification_count = 0
+        for msg in reversed(request.chat_history):
+            if msg.get("role") == "ai":
+                if msg.get("content") == CLARIFICATION_MSG:
+                    clarification_count += 1
+                else:
+                    # AI가 되묻기가 아닌 다른 정상 답변(요청 접수 등)을 한 기록이 나오면,
+                    # 그 이전에 있었던 되묻기는 이번 요청과 무관하므로 카운트를 중단합니다.
+                    break
+                
+        # 이미 3번 연속으로 되물었다면 (이번이 4번째라면) 더 묻지 않고 강제 이관
+        if clarification_count >= 3:
+            response = {
+                "guest_reply": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
+                "summary": "추가 확인 실패 (강제 이관)",
+                "domain_code": "FRONT",
+                "priority": "NORMAL",
+                "entities": {"intent": "ESCALATION"},
+                "confidence": 0.0,
+            }
+            print(f"[Analyze] 🚨 CLARIFICATION 누적 {clarification_count}회로 FRONT 강제 이관")
+            print(f"[Analyze] 응답: {response}\n")
+            return response
+
+        # 아직 3번째가 아니라면 정상적으로 되묻기
         response = {
-            "guest_reply": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
+            "guest_reply": CLARIFICATION_MSG,
             "summary": "추가 확인 필요",
             "domain_code": None,
             "priority": "NORMAL",
             "entities": {},
             "confidence": primary.confidence,
         }
-        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
+        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning} (누적 {clarification_count}회)")
         print(f"[Analyze] 응답: {response}\n")
         return response
 
