@@ -88,7 +88,7 @@ public class AdminRequestJpaEntity {
             this.departmentId = staffDepartmentId;
         }
         if ("PENDING".equals(this.status)) {
-            this.status = "IN_PROGRESS";
+            this.status = "ASSIGNED";
         }
         this.updatedAt = LocalDateTime.now();
     }
@@ -145,7 +145,7 @@ public class AdminRequestJpaEntity {
         entity.rawText = rawText;
         entity.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "NORMAL";
         entity.assignedStaffId = assignedStaffId;
-        entity.status = (assignedStaffId != null) ? "IN_PROGRESS" : "PENDING";
+        entity.status = (assignedStaffId != null) ? "ASSIGNED" : "PENDING";
         entity.confidence = 1.0f;
         entity.version = 0;
         entity.createdAt = LocalDateTime.now();

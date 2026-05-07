@@ -18,7 +18,7 @@ const mapPriority = (p: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' => {
 
 const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
   if (s === 'COMPLETED' || s === 'CANCELLED') return 'DONE';
-  if (s === 'IN_PROGRESS') return 'IN_PROGRESS';
+  if (s === 'ASSIGNED' || s === 'IN_PROGRESS') return 'IN_PROGRESS';
   return 'TODO';
 };
 
