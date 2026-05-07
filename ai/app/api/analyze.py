@@ -318,9 +318,20 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
                 )
                 guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language))
             else:
-                guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
+                # 💡 [Smart Fallback] 지식 검색 결과가 없지만 컨시어지 관련 질문인 경우
+                # 에이전트(Gemini)가 대화 맥락을 통해 직접 판단하여 응답하도록 처리
+                if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
+                    print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
+                    agent_result = DOMAIN_AGENTS["CONCIERGE"](
+                        user_message=request.text,
+                        room_no=request.room_no,
+                        chat_history=request.chat_history
+                    )
+                    guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language))
+                else:
+                    guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
         except Exception as e:
-            print(f"[Analyze] ⚠️ INFO RAG 검색/생성 실패: {e}")
+            print(f"[Analyze] ⚠️ INFO 처리 중 에러 발생 (RAG/Fallback): {e}")
             guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
 
         response = {
