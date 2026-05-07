@@ -113,14 +113,15 @@ public class AdminRequestJpaEntity {
     }
 
     /**
-     * 에스컬레이션 요청 — 직원이 처리 불가로 판단하여 관리자 승인 대기 상태로 변경
+     * 에스컬레이션 승인 — 관리자가 부서·우선순위를 지정하여 승인
      */
-    public void escalate() {
-        this.priority = "URGENT";
-        if ("IN_PROGRESS".equals(this.status)) {
-            this.status = "PENDING";
-            this.assignedStaffId = null;
+    public void approveEscalation(String departmentId, String priority) {
+        if (departmentId != null && !departmentId.isBlank()) {
+            this.departmentId = departmentId;
         }
+        this.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "URGENT";
+        this.status = "PENDING";
+        this.assignedStaffId = null;
         this.updatedAt = LocalDateTime.now();
     }
 
