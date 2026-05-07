@@ -22,11 +22,11 @@ public class HandoverRequestPersistenceAdapter implements HandoverRequestQueryPo
     @Override
     public List<HandoverTask> findTasksByTimeRange(LocalDateTime start, LocalDateTime end) {
         String sql = "SELECT r.room_no, g.name as guest_name, r.entities, r.summary, r.status, r.created_at " +
-                     "FROM request r " +
-                     "LEFT JOIN pms_guest g ON r.room_no = g.room_no " +
-                     "WHERE r.created_at >= ? AND r.created_at < ? " +
-                     "  AND ( (r.status != 'COMPLETED' AND r.department_id = 'FRONT') OR r.confidence < 0.7 OR r.priority IN ('URGENT', 'HIGH') ) " +
-                     "ORDER BY r.created_at DESC";
+                "FROM request r " +
+                "LEFT JOIN pms_guest g ON r.room_no = g.room_no " +
+                "WHERE r.created_at >= ? AND r.created_at < ? " +
+                "  AND ( r.status = 'ESCALATED' OR r.priority IN ('CRITICAL', 'URGENT') ) " +
+                "ORDER BY r.created_at DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             String entitiesJson = rs.getString("entities");
@@ -45,13 +45,12 @@ public class HandoverRequestPersistenceAdapter implements HandoverRequestQueryPo
             Timestamp createdAtTs = rs.getTimestamp("created_at");
 
             return new HandoverTask(
-                rs.getString("room_no"),
-                rs.getString("guest_name"),
-                category,
-                rs.getString("summary"),
-                rs.getString("status"),
-                createdAtTs != null ? createdAtTs.toLocalDateTime() : null
-            );
+                    rs.getString("room_no"),
+                    rs.getString("guest_name"),
+                    category,
+                    rs.getString("summary"),
+                    rs.getString("status"),
+                    createdAtTs != null ? createdAtTs.toLocalDateTime() : null);
         }, start, end);
     }
 }
