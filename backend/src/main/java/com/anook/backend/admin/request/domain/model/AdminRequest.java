@@ -73,15 +73,14 @@ public class AdminRequest {
      * 배정 가능 여부
      */
     public boolean isAssignable() {
-        return "PENDING".equals(status) || "ASSIGNED".equals(status)
-                || "IN_PROGRESS".equals(status) || "ESCALATED".equals(status);
+        return "PENDING".equals(status);
     }
 
     /**
      * 에스컬레이션 가능 여부 — 직원이 처리 불가 판단 시
      */
     public boolean isEscalatable() {
-        return "ASSIGNED".equals(status) || "IN_PROGRESS".equals(status);
+        return "IN_PROGRESS".equals(status);
     }
 
     // === Getter ===
