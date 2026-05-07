@@ -3,7 +3,7 @@ import { useWebSocket } from '@/app/useWebSocket';
 
 export interface RequestStatusItem {
   id: number;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SETTLED' | 'CANCELLED';
+  status: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'SETTLED' | 'CANCELLED';
   domainCode: string;
   summary: string;
   createdAt: string;

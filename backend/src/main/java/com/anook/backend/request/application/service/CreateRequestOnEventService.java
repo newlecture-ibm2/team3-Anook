@@ -5,9 +5,7 @@ import com.anook.backend.request.application.dto.response.RequestWebSocketPayloa
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.DomainCode;
-import com.anook.backend.request.domain.model.Priority;
 import com.anook.backend.request.domain.model.Request;
-import com.anook.backend.request.domain.model.RequestStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,19 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.List;
-
 /**
  * Message 도메인에서 발행한 RequestDetectedEvent를 수신하여 Request 생성
- *
- * [AN-252] Grace Period + Generative UI 적용:
- *   - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
- *   - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
- *   - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
- *
- * [Cancel & Replace] 대화형 수정 패턴:
- *   - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
- *   - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
  */
 @Slf4j
 @Service
@@ -37,7 +24,6 @@ public class CreateRequestOnEventService {
 
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
-    private final GracePeriodScheduler gracePeriodScheduler;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -47,9 +33,6 @@ public class CreateRequestOnEventService {
 
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
-
-        // [Cancel & Replace] 같은 객실+게스트+부서의 PENDING 요청이 있으면 자동 취소
-        cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
 
         // Request 도메인 객체 생성
         Request request = Request.create(
@@ -64,8 +47,7 @@ public class CreateRequestOnEventService {
         );
 
         // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
-        boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
-        if (isEscalated) {
+        if (event.isEscalated() || event.getConfidence() < 0.7) {
             log.warn("에스컬레이션 발생! 확신도: {}", event.getConfidence());
             request.escalate("AI 확신도 부족: " + event.getConfidence());
         }
@@ -74,79 +56,31 @@ public class CreateRequestOnEventService {
         Request savedRequest = requestRepositoryPort.save(request);
         log.info("Request 생성 완료: id={}", savedRequest.getId());
 
-        // [AN-252] URGENT 판별: priority가 URGENT이거나 에스컬레이션된 경우
-        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT;
-        String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
-        int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
-
-        // [AN-252] Generative UI: entities 포함 WebSocket payload 생성
+        // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
                 savedRequest.getId(),
                 savedRequest.getStatus().name(),
-                deptCode,
+                savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN",
                 savedRequest.getSummary(),
-                savedRequest.getRoomNo(),
-                savedRequest.getEntities(),
-                graceRemaining,
-                savedRequest.getPriority().name()
+                savedRequest.getRoomNo()
         );
 
-        // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
-
-        if (isUrgent) {
-            // URGENT: 즉시 직원/관리자 알림 (Grace Period 없음)
-            log.info("[GracePeriod] URGENT 요청 → 즉시 직원 알림 발송 — id: {}", savedRequest.getId());
-            if (savedRequest.getDomainCode() != null) {
-                dispatchPort.dispatchToDepartment(deptCode, payload);
-            }
-            dispatchPort.dispatchToAdmin(payload);
-        } else {
-            // 일반: Grace Period 적용 — 10초 후 직원 알림
-            log.info("[GracePeriod] 일반 요청 → {}초 후 직원 알림 예정 — id: {}", graceRemaining, savedRequest.getId());
-            gracePeriodScheduler.scheduleGraceExpiry(
-                    savedRequest.getId(),
-                    savedRequest.getRoomNo(),
-                    deptCode,
-                    payload
-            );
+        
+        if (savedRequest.getDomainCode() != null) {
+            dispatchPort.dispatchToDepartment(savedRequest.getDomainCode().name(), payload);
         }
-    }
 
-    /**
-     * [Cancel & Replace] 같은 객실+게스트+부서의 PENDING 요청을 자동 취소
-     *
-     * 고객이 "수건 2장 줘" 후 "아니 3장으로 바꿔줘"라고 하면,
-     * AI 라우터가 새 TASK(HK, 수건 3장)를 생성하는데,
-     * 이때 기존 PENDING(HK, 수건 2장) 요청을 자동 취소하여
-     * 중복 요청이 직원에게 전달되지 않도록 합니다.
-     */
-    private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
-        String deptId = domainCode.getDeptId();
-        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo, guestId, deptId);
-
-        for (Request existing : existingPending) {
-            try {
-                existing.changeStatus(RequestStatus.CANCELLED);
-                requestRepositoryPort.save(existing);
-
-                log.info("[Cancel&Replace] 기존 PENDING 요청 자동 취소 — id: {}, summary: {}",
-                        existing.getId(), existing.getSummary());
-
-                // 고객 UI에 기존 카드 취소 반영
-                RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
-                        existing.getId(),
-                        RequestStatus.CANCELLED.name(),
-                        existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
-                        existing.getSummary(),
-                        existing.getRoomNo()
-                );
-                dispatchPort.dispatchToRoom(roomNo, cancelPayload);
-
-            } catch (IllegalStateException e) {
-                log.warn("[Cancel&Replace] 기존 요청 취소 실패 (이미 상태 변경됨) — id: {}, reason: {}",
-                        existing.getId(), e.getMessage());
-            }
+        // 에스컬레이션(긴급) 건인 경우 관리자에게도 알림
+        if (event.isEscalated() || event.getConfidence() < 0.7) {
+            RequestWebSocketPayload escalationPayload = RequestWebSocketPayload.statusChanged(
+                savedRequest.getId(),
+                savedRequest.getStatus().name(),
+                savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN",
+                "[긴급] " + savedRequest.getSummary(),
+                savedRequest.getRoomNo()
+            );
+            dispatchPort.dispatchToAdmin(escalationPayload);
         }
     }
 }

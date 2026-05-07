@@ -39,7 +39,7 @@ public class CancelRequestOnEventService {
         if (latestRequest.isPresent()) {
             Request request = latestRequest.get();
             try {
-                // 도메인 로직: 상태 변경 (PENDING -> CANCELLED)
+                // 도메인 로직: 상태 변경 (PENDING/ASSIGNED -> CANCELLED)
                 request.changeStatus(RequestStatus.CANCELLED);
                 requestPort.save(request);
 

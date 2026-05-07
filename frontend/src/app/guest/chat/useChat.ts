@@ -10,20 +10,10 @@ interface BackendMessage {
   createdAt: string;
 }
 
-export interface ActiveRequest {
-  requestId: number;
-  domainCode: string;
-  summary: string;
-  status: string;
-  entities?: Record<string, any>;
-  progress: number;
-}
-
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
-  const [activeRequest, setActiveRequest] = useState<ActiveRequest | null>(null);
   const stompClientRef = useRef<Client | null>(null);
 
   // 0. 세션 정보 가져오기
@@ -120,35 +110,17 @@ export function useChat() {
               setMessages(prev => [...prev, newAiMsg]);
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
-                'PENDING': 10, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
-              
-              // Set Active Request for Status Bar
-              setActiveRequest({
-                requestId: payload.requestId,
-                domainCode: payload.domainCode || 'UNKNOWN',
-                summary: payload.summary,
-                status: payload.status,
-                entities: payload.entities,
-                progress: progressMap[payload.status] || 0
-              });
-
-              // Add/Update Request Card in Chat Stream
-              const requestMsg: ChatMessage = {
+              const statusMsg: ChatMessage = {
                 id: `request-${payload.requestId}`,
                 variant: 'received',
-                type: 'REQUEST_CARD',
-                content: '', // No text content needed, UI is rendered via RequestCard
+                type: 'STATUS_CARD',
+                content: isCancelled ? '요청이 취소되었습니다' : payload.summary,
                 meta: {
-                  requestId: payload.requestId,
-                  domainCode: payload.domainCode || 'UNKNOWN',
-                  summary: payload.summary,
-                  status: payload.status,
-                  entities: payload.entities,
                   progress: progressMap[payload.status] || 0,
-                  graceRemaining: payload.graceRemaining || 0,
-                  priority: payload.priority || 'NORMAL'
+                  cancelled: isCancelled,
                 }
               };
 
@@ -156,21 +128,10 @@ export function useChat() {
                 const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
                 if (existingIdx >= 0) {
                   const updated = [...prev];
-                  // STATUS_CHANGED일 때 Grace Remaining 유지 (0으로 내려왔어도 기존 카드에서 타이머가 돌고 있을 것임)
-                  // payload.graceRemaining은 NEW_REQUEST일때만 10, STATUS_CHANGED일때 0으로 옴
-                  const existingGrace = updated[existingIdx].meta?.graceRemaining || 0;
-                  
-                  updated[existingIdx] = {
-                    ...requestMsg,
-                    meta: {
-                      ...requestMsg.meta,
-                      // STATUS_CHANGED시에는 graceRemaining을 갱신하지 않고 기존 값을 유지하거나 0 처리
-                      graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (isCancelled ? 0 : existingGrace)
-                    }
-                  };
+                  updated[existingIdx] = statusMsg;
                   return updated;
                 }
-                return [...prev, requestMsg];
+                return [...prev, statusMsg];
               });
 
               if (payload.status === 'COMPLETED') {
@@ -182,23 +143,6 @@ export function useChat() {
                   }]);
                 }, 1000);
               }
-            } else if (payload.type === 'GRACE_EXPIRED') {
-              // Hide the buttons on the specific card by forcing graceRemaining to 0
-              setMessages(prev => {
-                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
-                if (existingIdx >= 0) {
-                  const updated = [...prev];
-                  updated[existingIdx] = {
-                    ...updated[existingIdx],
-                    meta: {
-                      ...updated[existingIdx].meta,
-                      graceRemaining: 0
-                    }
-                  };
-                  return updated;
-                }
-                return prev;
-              });
             }
           }
         });
@@ -261,26 +205,9 @@ export function useChat() {
     }
   };
 
-  // 4. Cancel Request Action
-  const cancelRequest = async (requestId: number) => {
-    if (!roomNo) return;
-    try {
-      const response = await fetch(`/api/chat/${roomNo}/requests/${requestId}/cancel`, {
-        method: 'POST'
-      });
-      if (!response.ok) {
-        console.error('Failed to cancel request');
-      }
-    } catch (error) {
-      console.error('Error cancelling request:', error);
-    }
-  };
-
   return {
     messages,
     isTyping,
-    sendMessage,
-    activeRequest,
-    cancelRequest
+    sendMessage
   };
 }
