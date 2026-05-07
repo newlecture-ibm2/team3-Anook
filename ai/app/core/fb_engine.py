@@ -93,11 +93,8 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
     if result.needs_clarification:
         guest_reply = result.clarification_question
     else:
-        # 주문 확정 시 자연스러운 응답
-        if result.entities.get("intent") == "ROOM_SERVICE":
-            guest_reply = "룸서비스 주문이 최종 접수되었습니다. 객실로 정성껏 준비하여 가져다 드리겠습니다."
-        else:
-            guest_reply = "요청하신 사항을 접수하였습니다. 담당 부서에서 확인 후 도와드리겠습니다."
+        # 주문 확정 시 AI가 고객 언어로 작성한 final_reply 사용 (다국어 미러링)
+        guest_reply = result.final_reply or "룸서비스 주문이 접수되었습니다."
 
     # 7. analyze.py 응답 포맷 반환 (needs_clarification 이면 domain_code=None으로 request 생성 방지)
     return {

@@ -139,4 +139,14 @@ JSON Output:
     "clarification_question": "룸서비스는 오전 11시부터 오후 10시까지 이용 가능합니다.",
     "missing_fields": []
 }
+
+[Final Reply Rule]
+- If `needs_clarification` is false (i.e., the order is finalized), you MUST write a polished final confirmation message in the `final_reply` field.
+- The `final_reply` MUST be written in the EXACT SAME LANGUAGE as the guest's input. If the guest spoke English, write in English. If Korean, write in Korean.
+- Example (Korean guest): "클래식 치즈버거 1개 주문이 접수되었습니다. 객실로 정성껏 준비하여 가져다 드리겠습니다."
+- Example (English guest): "Your order of 1 Classic Cheeseburger has been placed. We will prepare it with care and deliver it to your room."
+
+[Graceful Surrender Rule]
+- If the guest requests something completely unrelated to F&B (e.g., housekeeping items like towels or pillows, taxi booking, facility repair, room key issues), DO NOT attempt to route it to another department or answer it.
+- Simply set `confidence` to 0.2. The global system will automatically catch this and safely escalate it to the Front Desk staff.
 """
