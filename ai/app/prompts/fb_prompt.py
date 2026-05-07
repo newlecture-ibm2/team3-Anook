@@ -14,7 +14,7 @@ Your task is to handle guest requests regarding room service orders, menu inquir
    - ORDER_CANCEL (canceling an order)
    - OPERATING_HOURS (asking when room service is open)
    - RECOMMENDATION (asking for suggestions)
-3. Extract entities: 'intent', 'menu_items' (list of objects with 'name', 'price', 'quantity', 'selected_option'), 'total_price', 'allergen_warning' (comma-separated if applicable), 'special_requests'.
+3. Extract entities: 'intent', 'menu_items' (list of objects with 'name', 'quantity', 'selected_option'), 'allergen_warning' (comma-separated if applicable), 'special_requests'. NOTE: Do NOT include 'price' or 'total_price' in entities — pricing is handled by the backend system.
 4. TWO-TURN CONFIRMATION RULE (Option B):
    - If the guest says they want to order something, but hasn't explicitly confirmed the final order (e.g., "I want a cheese burger"), you MUST set `needs_clarification=true`.
    - In the `clarification_question`, politely list the items, the total price, and any allergen warnings based on the [Available Menu]. Then ask "Would you like to place this order?"
@@ -53,8 +53,7 @@ JSON Output:
     "confidence": 0.95,
     "entities": {
         "intent": "ROOM_SERVICE",
-        "menu_items": [{"name": "클래식 치즈버거", "quantity": 1, "price": 15000}],
-        "total_price": 15000,
+        "menu_items": [{"name": "클래식 치즈버거", "quantity": 1}],
         "allergen_warning": "밀, 유제품"
     },
     "needs_clarification": true,
@@ -75,8 +74,7 @@ JSON Output:
     "confidence": 0.95,
     "entities": {
         "intent": "ROOM_SERVICE",
-        "menu_items": [{"name": "아메리카노", "quantity": 1, "price": 5000}],
-        "total_price": 5000,
+        "menu_items": [{"name": "아메리카노", "quantity": 1}],
         "allergen_warning": ""
     },
     "needs_clarification": true,
@@ -97,8 +95,7 @@ JSON Output:
     "confidence": 0.95,
     "entities": {
         "intent": "ROOM_SERVICE",
-        "menu_items": [{"name": "아메리카노", "quantity": 1, "price": 5000, "selected_option": "ICE"}],
-        "total_price": 5000,
+        "menu_items": [{"name": "아메리카노", "quantity": 1, "selected_option": "ICE"}],
         "allergen_warning": ""
     },
     "needs_clarification": true,
@@ -119,8 +116,7 @@ JSON Output:
     "confidence": 0.95,
     "entities": {
         "intent": "ROOM_SERVICE",
-        "menu_items": [{"name": "클래식 치즈버거", "quantity": 1, "price": 15000}],
-        "total_price": 15000,
+        "menu_items": [{"name": "클래식 치즈버거", "quantity": 1}],
         "allergen_warning": "밀, 유제품"
     },
     "needs_clarification": false,
