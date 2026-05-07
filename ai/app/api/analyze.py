@@ -59,6 +59,36 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     
     response = await _analyze_message_core(request)
     
+    # ── [전역 무한 되묻기 방어 로직 (Global Clarification Counter)] ──
+    # 라우터의 고정된 되묻기 뿐만 아니라, 부서별 에이전트가 던지는 동적 질문("수건 몇장?")까지 모두 포함하여
+    # AI가 3번 연속으로 질문만 하고 요청(domain_code)을 확정짓지 못하는 경우 프론트로 강제 이관합니다.
+    guest_reply = response.get("guest_reply", "").strip()
+    is_clarification = (response.get("domain_code") is None) and ("?" in guest_reply)
+    
+    if is_clarification:
+        consecutive_questions = 0
+        for msg in reversed(request.chat_history):
+            if msg.get("role") == "ai":
+                content = msg.get("content", "").strip()
+                # 과거 대화에서도 AI가 질문(?)을 던졌는지 확인
+                if "?" in content:
+                    consecutive_questions += 1
+                else:
+                    # 질문이 아닌 일반 안내문이나 요청 접수 완료 메시지라면 사이클 리셋
+                    break
+        
+        # 이미 3번 연속으로 질문했다면 (이번이 4번째라면) 강제 이관
+        if consecutive_questions >= 3:
+            print(f"\n[Analyze] 🚨 연속 질문(되묻기) {consecutive_questions}회 누적으로 인한 FRONT 강제 이관 발동")
+            response = {
+                "guest_reply": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
+                "summary": "추가 확인 실패 (강제 이관)",
+                "domain_code": "FRONT",
+                "priority": "NORMAL",
+                "entities": {"intent": "ESCALATION"},
+                "confidence": 0.0,
+            }
+    
     # ── [비동기 로깅 메타데이터 주입] ──
     meta = ai_log_meta_ctx.get()
     if meta:
@@ -195,46 +225,18 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         return response
 
     # ──────────────────────────────────────────────
-    # STEP 3-c: CLARIFICATION → 되묻기 (최대 3회, 4회째부터 FRONT 강제 이관)
+    # STEP 3-c: CLARIFICATION → 되묻기
     # ──────────────────────────────────────────────
     if primary.mode == "CLARIFICATION":
-        CLARIFICATION_MSG = "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다."
-        
-        # 이전 대화에서 AI가 '연속으로' 되묻기 메시지를 몇 번 보냈는지 카운트
-        clarification_count = 0
-        for msg in reversed(request.chat_history):
-            if msg.get("role") == "ai":
-                if msg.get("content") == CLARIFICATION_MSG:
-                    clarification_count += 1
-                else:
-                    # AI가 되묻기가 아닌 다른 정상 답변(요청 접수 등)을 한 기록이 나오면,
-                    # 그 이전에 있었던 되묻기는 이번 요청과 무관하므로 카운트를 중단합니다.
-                    break
-                
-        # 이미 3번 연속으로 되물었다면 (이번이 4번째라면) 더 묻지 않고 강제 이관
-        if clarification_count >= 3:
-            response = {
-                "guest_reply": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
-                "summary": "추가 확인 실패 (강제 이관)",
-                "domain_code": "FRONT",
-                "priority": "NORMAL",
-                "entities": {"intent": "ESCALATION"},
-                "confidence": 0.0,
-            }
-            print(f"[Analyze] 🚨 CLARIFICATION 누적 {clarification_count}회로 FRONT 강제 이관")
-            print(f"[Analyze] 응답: {response}\n")
-            return response
-
-        # 아직 3번째가 아니라면 정상적으로 되묻기
         response = {
-            "guest_reply": CLARIFICATION_MSG,
+            "guest_reply": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
             "summary": "추가 확인 필요",
             "domain_code": None,
             "priority": "NORMAL",
             "entities": {},
             "confidence": primary.confidence,
         }
-        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning} (누적 {clarification_count}회)")
+        print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
         print(f"[Analyze] 응답: {response}\n")
         return response
 
@@ -247,7 +249,13 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
             rag_results = rag_service.search_similar(request.text, domain_code=domain, top_k=3, threshold=0.5)
             if rag_results:
                 knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
-                info_prompt = f"고객 질문: {request.text}\n\n아래 호텔 지식을 참고하여 친절하게 한국어로 답변해주세요.\n{knowledge}"
+                info_prompt = (
+                    f"고객 질문: {request.text}\n\n"
+                    f"아래 제공된 [호텔 지식]만을 바탕으로 친절하게 한국어로 답변하세요. "
+                    f"만약 [호텔 지식]에 고객의 질문에 대한 명확한 답이 없다면, 절대 유추하거나 지어내지 말고 "
+                    f"'해당 정보는 프론트 데스크(내선 0번)로 문의해 주시기 바랍니다.'라고 답변하세요.\n\n"
+                    f"[호텔 지식]\n{knowledge}"
+                )
                 raw = call_gemini(
                     prompt=info_prompt, 
                     system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
