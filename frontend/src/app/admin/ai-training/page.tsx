@@ -6,8 +6,10 @@ import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function AiTrainingPage() {
+  const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedKnowledge, setSelectedKnowledge] = useState<any>(null);
@@ -17,20 +19,20 @@ export default function AiTrainingPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>AI 학습 관리</h1>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.aiTraining}</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '지식 없음', value: 'missing' },
-              { label: '의도 불명', value: 'unclear' }
+              { label: t.adminPage.aiTraining.filterAll, value: 'all' }, 
+              { label: t.adminPage.aiTraining.filterMissing, value: 'missing' },
+              { label: t.adminPage.aiTraining.filterUnclear, value: 'unclear' }
             ]}
             selectedFilter="all"
             onFilterSelect={() => {}}

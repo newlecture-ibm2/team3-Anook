@@ -120,7 +120,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO request (status, priority, department_id, summary, raw_text, confidence, room_no, assigned_staff_id, version, created_at, updated_at, entities) VALUES
     ('PENDING',     'NORMAL', 'HK',        '수건 2장 추가 요청',      '수건 두 장만 더 주세요',              0.95, '707', NULL, 0, NOW() - INTERVAL '2 hours',      NOW() - INTERVAL '2 hours',      '{"REQ_ITEM": ["수건"]}'),
-    ('ASSIGNED',    'HIGH',   'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes',   '{"REQ_ITEM": ["룸서비스", "스테이크"]}'),
+    ('IN_PROGRESS', 'HIGH',   'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes',   '{"REQ_ITEM": ["룸서비스", "스테이크"]}'),
     ('IN_PROGRESS', 'URGENT', 'FACILITY',  '에어컨 고장 수리 요청',    '에어컨이 안 켜져요',                 0.92, '707', 1,    0, NOW() - INTERVAL '45 minutes',   NOW() - INTERVAL '10 minutes',   '{"REQ_ITEM": ["에어컨"]}'),
     ('COMPLETED',   'NORMAL', 'CONCIERGE', '택시 호출 요청',          '공항까지 택시 하나 불러주세요',        0.97, '707', 1,    0, NOW() - INTERVAL '3 hours',      NOW() - INTERVAL '1 hour',       '{"REQ_ITEM": ["택시"]}'),
     ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),

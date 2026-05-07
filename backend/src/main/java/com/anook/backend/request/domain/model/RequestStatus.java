@@ -3,12 +3,11 @@ package com.anook.backend.request.domain.model;
 /**
  * 요청 상태 Enum
  *
- * PENDING → ASSIGNED → IN_PROGRESS → COMPLETED → SETTLED / CANCELLED
+ * PENDING → IN_PROGRESS → COMPLETED → SETTLED / CANCELLED
  */
 public enum RequestStatus {
 
     PENDING,
-    ASSIGNED,
     IN_PROGRESS,
     COMPLETED,
     SETTLED,

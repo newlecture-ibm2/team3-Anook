@@ -1,0 +1,210 @@
+.statusBarContainer {
+  position: absolute;
+  top: 72px; /* 헤더 아래쪽 여백 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - var(--space-32));
+  max-width: 448px;
+  z-index: 20;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-xl);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.statusBarContainer.hidden {
+  height: 0;
+  border-bottom: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.compactView {
+  padding: var(--space-12) var(--space-16);
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  cursor: pointer;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: #EFF6FF; /* 연한 파란색 배경 */
+  color: var(--color-info);
+}
+
+.icon {
+  font-size: 1.25rem;
+}
+
+.progressSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.inlineProgressBarContainer {
+  position: relative;
+  width: 100%;
+  height: 16px; /* 동그라미가 위치할 높이 확보 */
+  display: flex;
+  align-items: center;
+}
+
+.inlineProgressBarBg {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 4px; /* 기존 6px에서 얇게 변경 */
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.inlineProgressBarFill {
+  height: 100%;
+  background-color: var(--color-info);
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease-in-out;
+}
+
+.progressDotsOverlay {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+
+.progressDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-gray-300);
+  transition: all 0.3s ease;
+  z-index: 3;
+  box-sizing: border-box;
+}
+
+.dotActive {
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+}
+
+.statusSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  white-space: nowrap;
+}
+
+.summary {
+  font: var(--text-body-bold);
+  color: var(--color-info);
+}
+
+
+
+.arrow {
+  color: var(--color-gray-500);
+  transition: transform 0.3s ease;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+.expandedView {
+  padding: 0 var(--space-16) var(--space-16);
+  border-top: 1px solid var(--color-surface);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.progressContainer {
+  margin-top: var(--space-16);
+}
+
+.progressBarBg {
+  width: 100%;
+  height: 6px;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-8);
+}
+
+.progressBarFill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease-in-out;
+}
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-8);
+}
+
+.stepInactive {
+  font: var(--text-caption-medium);
+  color: var(--color-gray-400);
+}
+
+.stepActive {
+  font: var(--text-caption-medium);
+  color: var(--color-primary);
+}
+
+.detailsContainer {
+  margin-top: var(--space-16);
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-12);
+}
+
+.detailsTitle {
+  font: var(--text-caption-medium);
+  color: var(--color-gray-700);
+  margin-bottom: var(--space-8);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.detailItem {
+  font: var(--text-caption-regular);
+  color: var(--color-gray-600);
+  margin-bottom: var(--space-4);
+  display: flex;
+}
+
+.detailLabel {
+  width: 60px;
+  color: var(--color-gray-500);
+}
+
+.detailValue {
+  color: var(--color-gray-900);
+  font-weight: 500;
+}

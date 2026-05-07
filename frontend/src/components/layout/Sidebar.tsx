@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 import {
   LayoutDashboard,
@@ -66,6 +67,7 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
 export default function Sidebar({ role = 'admin', className = '', fakePathname, onMenuClick }: SidebarProps) {
   const actualPathname = usePathname() || '';
   const pathname = fakePathname || actualPathname;
+  const { t } = useTranslation();
 
   // 부서별 (하우스키핑, 식음료, 시설, 컨시어지) 메뉴 리스트
   const deptMenus = [
@@ -82,35 +84,35 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
     {
       category: '',
       items: [
-        { label: '대시보드', href: '/admin/dashboard', icon: LayoutDashboard },
-        { label: '프론트 데스크', href: '/admin/front-desk', icon: Monitor },
-        { label: '하우스키핑', href: '/admin/housekeeping', icon: Home },
-        { label: '식음료', href: '/admin/fb', icon: Utensils },
-        { label: '시설', href: '/admin/facility', icon: Wrench },
-        { label: '컨시어지', href: '/admin/concierge', icon: MessageSquare },
-        { label: '긴급 대응', href: '/admin/emergency', icon: AlertTriangle },
+        { label: t.adminPage.sidebar.menus.dashboard, href: '/admin/dashboard', icon: LayoutDashboard },
+        { label: t.adminPage.sidebar.menus.frontDesk, href: '/admin/front-desk', icon: Monitor },
+        { label: t.adminPage.sidebar.menus.housekeeping, href: '/admin/housekeeping', icon: Home },
+        { label: t.adminPage.sidebar.menus.fb, href: '/admin/fb', icon: Utensils },
+        { label: t.adminPage.sidebar.menus.facility, href: '/admin/facility', icon: Wrench },
+        { label: t.adminPage.sidebar.menus.concierge, href: '/admin/concierge', icon: MessageSquare },
+        { label: t.adminPage.sidebar.menus.emergency, href: '/admin/emergency', icon: AlertTriangle },
       ]
     },
     {
-      category: '요청 관리',
+      category: t.adminPage.sidebar.categories.requestManagement,
       items: [
-        { label: '전체 요청', href: '/admin/all-requests', icon: Layers },
-        { label: '채팅 히스토리', href: '/admin/chat-history', icon: History },
+        { label: t.adminPage.sidebar.menus.allRequests, href: '/admin/all-requests', icon: Layers },
+        { label: t.adminPage.sidebar.menus.chatHistory, href: '/admin/chat-history', icon: History },
       ]
     },
     {
-      category: 'AI 시스템',
+      category: t.adminPage.sidebar.categories.aiSystem,
       items: [
-        { label: '학습 관리', href: '/admin/ai-training', icon: Target },
-        { label: '지식 라이브러리', href: '/admin/rag', icon: Database },
-        { label: 'AI 라우팅 로그', href: '/admin/ai-routing', icon: FileSearch },
+        { label: t.adminPage.sidebar.menus.aiTraining, href: '/admin/ai-training', icon: Target },
+        { label: t.adminPage.sidebar.menus.rag, href: '/admin/rag', icon: Database },
+        { label: t.adminPage.sidebar.menus.aiRouting, href: '/admin/ai-routing', icon: FileSearch },
       ]
     },
     {
-      category: '운영 관리',
+      category: t.adminPage.sidebar.categories.operations,
       items: [
-        { label: '인수인계', href: '/admin/handover', icon: FileText },
-        { label: '직원 관리', href: '/admin/staff-management', icon: Users },
+        { label: t.adminPage.sidebar.menus.handover, href: '/admin/handover', icon: FileText },
+        { label: t.adminPage.sidebar.menus.staffManagement, href: '/admin/staff-management', icon: Users },
       ]
     }
   ];

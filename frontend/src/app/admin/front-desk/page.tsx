@@ -13,6 +13,7 @@ import RequestDetailModal from './_components/RequestDetailModal/RequestDetailMo
 import ApproveEscalationModal from './_components/ApproveEscalationModal/ApproveEscalationModal';
 import RejectEscalationModal from './_components/RejectEscalationModal/RejectEscalationModal';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
@@ -20,6 +21,7 @@ export default function FrontDeskPage() {
   const { createRequest, loading: creating } = useCreateRequest();
   const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest } = useRequestDetail();
   const { escalations, approveEscalation, rejectEscalation } = useEscalations();
+  const { t } = useTranslation();
 
   // 요청 생성 모달 상태
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -31,17 +33,15 @@ export default function FrontDeskPage() {
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
-    if (status === 'ASSIGNED') return 'purple';
     if (status === 'IN_PROGRESS') return 'green';
     return 'gray';
   };
 
   const mapStatusText = (status: string): string => {
-    if (status === 'PENDING') return '프론트 대기';
-    if (status === 'ASSIGNED') return '배정됨';
-    if (status === 'IN_PROGRESS') return '처리 중';
-    if (status === 'COMPLETED') return '완료';
-    if (status === 'ESCALATED') return '승인 대기';
+    if (status === 'PENDING') return t.adminPage.frontDesk.status.pending;
+    if (status === 'IN_PROGRESS') return t.adminPage.frontDesk.status.inProgress;
+    if (status === 'COMPLETED') return t.adminPage.frontDesk.status.completed;
+    if (status === 'ESCALATED') return t.adminPage.frontDesk.status.escalated;
     return status;
   };
 
@@ -86,15 +86,15 @@ export default function FrontDeskPage() {
   };
 
   // 탭에 따른 섹션 제목
-  const sectionTitle = activeTab === 'escalation' ? '승인 대기 요청' : '미처리 / 예외 요청';
+  const sectionTitle = activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation : t.adminPage.frontDesk.sections.unhandled;
 
   return (
     <div className={styles.container}>
       {/* Header Section */}
       <div className={styles.header}>
-        <h1 className={styles.title}>프론트 데스크</h1>
+        <h1 className={styles.title}>{t.adminPage.frontDesk.title}</h1>
         <Button variant="primary" onClick={() => setIsCreateOpen(true)}>
-          + 요청 생성
+          {t.adminPage.frontDesk.createRequest}
         </Button>
       </div>
 
@@ -102,9 +102,9 @@ export default function FrontDeskPage() {
       <div className={styles.tabSection}>
         <Tabs 
           options={[
-            { label: '미처리 대기', value: 'unhandled', count: pending.length },
-            { label: '처리 중', value: 'inProgress', count: inProgress.length },
-            { label: '승인 대기', value: 'escalation', count: escalations.length }
+            { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
+            { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
+            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}
@@ -116,11 +116,11 @@ export default function FrontDeskPage() {
         <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
         
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
         ) : error ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
         ) : filteredRequests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>요청이 없습니다.</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.adminPage.frontDesk.empty}</div>
         ) : (
           <div className={styles.cardGrid}>
             {filteredRequests.map(req => (
@@ -131,8 +131,8 @@ export default function FrontDeskPage() {
                 statusText={mapStatusText(req.status)}
                 statusVariant={mapStatusVariant(req.status)}
                 createdAt={req.createdAt}
-                primaryActionText={activeTab === 'escalation' ? '승인' : '상담 시작'}
-                secondaryActionText={activeTab === 'escalation' ? '반려' : '수동 배정'}
+                primaryActionText={activeTab === 'escalation' ? t.adminPage.frontDesk.actions.approve : t.adminPage.frontDesk.actions.startChat}
+                secondaryActionText={activeTab === 'escalation' ? t.adminPage.frontDesk.actions.reject : t.adminPage.frontDesk.actions.manualAssign}
                 onPrimaryAction={activeTab === 'escalation' ? () => setApproveTarget(req.id) : undefined}
                 onSecondaryAction={
                   activeTab === 'escalation'

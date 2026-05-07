@@ -117,7 +117,7 @@ public class Request {
     public void assignStaff(Long staffId) {
         this.assignedStaffId = staffId;
         if (this.status == RequestStatus.PENDING) {
-            this.status = RequestStatus.ASSIGNED;
+            this.status = RequestStatus.IN_PROGRESS;
         }
         this.updatedAt = LocalDateTime.now();
     }
@@ -146,12 +146,11 @@ public class Request {
 
     private void validateTransition(RequestStatus from, RequestStatus to) {
         boolean valid = switch (to) {
-            case ASSIGNED -> from == RequestStatus.PENDING || from == RequestStatus.ESCALATED;
-            case IN_PROGRESS -> from == RequestStatus.ASSIGNED || from == RequestStatus.ESCALATED;
-            case COMPLETED -> from == RequestStatus.ASSIGNED || from == RequestStatus.IN_PROGRESS;
+            case IN_PROGRESS -> from == RequestStatus.PENDING || from == RequestStatus.ESCALATED;
+            case COMPLETED -> from == RequestStatus.IN_PROGRESS;
             case SETTLED -> from == RequestStatus.COMPLETED;
             case CANCELLED -> from != RequestStatus.SETTLED && from != RequestStatus.CANCELLED;
-            case ESCALATED -> from == RequestStatus.PENDING || from == RequestStatus.ASSIGNED || from == RequestStatus.IN_PROGRESS;
+            case ESCALATED -> from == RequestStatus.PENDING || from == RequestStatus.IN_PROGRESS;
             default -> false;
         };
         if (!valid) {

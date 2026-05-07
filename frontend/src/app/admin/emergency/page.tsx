@@ -7,6 +7,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import Tabs from '@/components/ui/Tab/Tabs';
 import { useUiStore } from '@/stores/useUiStore';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function EmergencyPage() {
   const { showToast } = useUiStore();
@@ -14,6 +15,7 @@ export default function EmergencyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
+  const { t } = useTranslation();
   
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [callingId, setCallingId] = useState<number | null>(null);
@@ -91,7 +93,7 @@ export default function EmergencyPage() {
 
   const [activeTab, setActiveTab] = useState('unhandled');
 
-  const pendingTasks = filteredTasks.filter(task => task.status === 'PENDING' || task.status === 'ASSIGNED');
+  const pendingTasks = filteredTasks.filter(task => task.status === 'PENDING');
   const inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS' || task.status === 'ESCALATED');
   const completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED');
 
@@ -110,19 +112,19 @@ export default function EmergencyPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.titleArea}>
-          <span className={styles.subtitle}>긴급 대응 전용 채널</span>
-          <h1 className={styles.title}>긴급 요청</h1>
+          <span className={styles.subtitle}>{t.adminPage.taskBoard.titles.emergency} 전용 채널</span>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.emergency}</h1>
         </div>
         <div className={styles.actions}>
           <InputField
             variant="search"
-            placeholder="객실번호 또는 내용 검색..."
+            placeholder={t.adminPage.taskBoard.searchPlaceholder}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton
             filterOptions={[
-              { label: '전체', value: 'all' },
+              { label: t.adminPage.taskBoard.filterAll, value: 'all' },
               { label: 'CRITICAL', value: 'critical' },
               { label: 'URGENT', value: 'urgent' }
             ]}
@@ -150,7 +152,7 @@ export default function EmergencyPage() {
         <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
         
         {loading ? (
-          <div className={styles.loading}>긴급 대응 데이터를 불러오는 중입니다...</div>
+          <div className={styles.loading}>{t.common.loading}</div>
         ) : requestsToShow.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyStateIcon}>✅</div>
@@ -177,7 +179,7 @@ export default function EmergencyPage() {
                 }
                 secondaryActionText=""
                 onPrimaryAction={() => {
-                  if ((task.status === 'PENDING' || task.status === 'ASSIGNED') && processingId !== task.id) {
+                  if (task.status === 'PENDING' && processingId !== task.id) {
                     handleStartResponse(task.id);
                   } else if ((task.status === 'IN_PROGRESS' || task.status === 'ESCALATED') && completingId !== task.id) {
                     handleCompleteResponse(task.id);
