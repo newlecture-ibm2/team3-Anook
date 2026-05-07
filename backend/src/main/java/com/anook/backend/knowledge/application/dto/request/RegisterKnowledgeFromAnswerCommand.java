@@ -9,11 +9,13 @@ package com.anook.backend.knowledge.application.dto.request;
  * @param answer     직원이 입력한 답변 내용
  * @param domainCode 부서 코드 (nullable → null이면 "COMMON"으로 기본 설정)
  * @param roomNo     어떤 객실의 대화에서 발생한 건지 (로깅/감사용)
+ * @param status     등록 상태 (nullable → null이면 "APPROVED", "PENDING"이면 나중에 검토)
  */
 public record RegisterKnowledgeFromAnswerCommand(
         String question,
         String answer,
         String domainCode,
-        String roomNo
+        String roomNo,
+        String status
 ) {
 }
