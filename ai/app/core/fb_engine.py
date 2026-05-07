@@ -4,12 +4,15 @@ from app.prompts.fb_prompt import FB_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
+import os
+
 def _fetch_menu_context() -> str:
     """백엔드 PMS API를 호출하여 메뉴 데이터를 가져와 프롬프트 컨텍스트로 변환"""
     try:
-        # 백엔드 서버가 로컬 8080에서 실행 중이라고 가정
+        # 환경 변수에 BACKEND_URL이 있으면 사용하고 (배포용), 없으면 로컬 도커 환경의 호스트 접근 주소를 사용
+        base_url = os.getenv("BACKEND_URL", "http://host.docker.internal:8080")
         with httpx.Client(timeout=3.0) as client:
-            resp = client.get("http://localhost:8080/pms/menus")
+            resp = client.get(f"{base_url}/pms/menus")
             
         if resp.status_code == 200:
             menus = resp.json()
