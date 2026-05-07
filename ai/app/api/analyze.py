@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 from app.domains.rag import service as rag_service
 from app.core.router_engine import route
-from app.infrastructure.gemini.client import call_gemini
+from app.infrastructure.gemini.client import call_gemini, ai_log_meta_ctx
 
 router = APIRouter()
 
@@ -54,6 +54,21 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
     """
     백엔드 PythonAiHttpAdapter가 호출하는 단일 분석 엔드포인트.
     """
+    # 요청마다 컨텍스트 초기화
+    ai_log_meta_ctx.set({})
+    
+    response = await _analyze_message_core(request)
+    
+    # ── [비동기 로깅 메타데이터 주입] ──
+    meta = ai_log_meta_ctx.get()
+    if meta:
+        meta["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
+        response["ai_log_meta"] = meta
+        
+    return response
+
+
+async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
     print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
     if request.chat_history:
         print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
