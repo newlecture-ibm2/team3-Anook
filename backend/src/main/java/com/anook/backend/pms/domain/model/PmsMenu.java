@@ -9,5 +9,6 @@ public record PmsMenu(
         int price,
         String category,
         String allergens,
+        String options,
         boolean available
 ) {}

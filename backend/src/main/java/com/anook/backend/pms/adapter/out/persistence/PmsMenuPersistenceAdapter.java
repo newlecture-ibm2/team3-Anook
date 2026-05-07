@@ -27,13 +27,14 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
             rs.getInt("price"),
             rs.getString("category"),
             rs.getString("allergens"),
+            rs.getString("options"),
             rs.getBoolean("available")
     );
 
     @Override
     public List<PmsMenu> findAllAvailable() {
         return jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, available FROM pms_menu WHERE available = TRUE ORDER BY category, name",
+                "SELECT id, name, price, category, allergens, options, available FROM pms_menu WHERE available = TRUE ORDER BY category, name",
                 MENU_ROW_MAPPER
         );
     }
@@ -41,7 +42,7 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
     @Override
     public List<PmsMenu> findAll() {
         return jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, available FROM pms_menu ORDER BY category, name",
+                "SELECT id, name, price, category, allergens, options, available FROM pms_menu ORDER BY category, name",
                 MENU_ROW_MAPPER
         );
     }
@@ -49,7 +50,7 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
     @Override
     public Optional<PmsMenu> findById(Long id) {
         List<PmsMenu> results = jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, available FROM pms_menu WHERE id = ?",
+                "SELECT id, name, price, category, allergens, options, available FROM pms_menu WHERE id = ?",
                 MENU_ROW_MAPPER,
                 id
         );
