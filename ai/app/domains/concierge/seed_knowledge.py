@@ -1,0 +1,46 @@
+import sys
+import os
+
+# ai 디렉토리를 파이썬 경로에 추가하여 app 모듈을 임포트할 수 있게 함
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+from app.infrastructure.database.connection import get_db_connection
+from app.domains.rag.service import embed_text
+from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
+
+def seed_concierge_knowledge():
+    print("🚀 컨시어지(CONCIERGE) RAG 지식 시딩을 시작합니다...")
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            # 기존 데이터 중복 방지를 위해 삭제 (개발 편의성)
+            # cur.execute("DELETE FROM knowledge_entry WHERE domain_code = 'CONCIERGE'")
+            
+            for item in CONCIERGE_KNOWLEDGE:
+                question = item["question"]
+                answer = item["answer"]
+                
+                print(f"⏳ 임베딩 생성 중: {question[:20]}...")
+                # 질문과 답변을 합쳐서 임베딩 텍스트로 사용 (검색 품질 향상)
+                embed_text_input = f"질문: {question}\n답변: {answer}"
+                embedding_vector = embed_text(embed_text_input)
+                
+                # DB에 INSERT
+                sql = """
+                    INSERT INTO knowledge_entry (question, answer, domain_code, status, embedding)
+                    VALUES (%s, %s, %s, %s, %s::vector)
+                """
+                cur.execute(sql, (question, answer, "CONCIERGE", "APPROVED", embedding_vector))
+                print(f"✅ 삽입 완료: {question[:20]}...")
+                
+        conn.commit()
+        print("\n🎉 모든 컨시어지 지식이 성공적으로 DB에 저장되었습니다!")
+    except Exception as e:
+        print(f"❌ 시딩 중 오류 발생: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    seed_concierge_knowledge()
