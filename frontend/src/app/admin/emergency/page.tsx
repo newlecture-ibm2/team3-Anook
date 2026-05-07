@@ -19,9 +19,8 @@ export default function EmergencyPage() {
 
   const mapStatusText = (status: string): string => {
     if (status === 'PENDING') return '대기 중';
-    if (status === 'ASSIGNED') return '배정됨';
-    if (status === 'IN_PROGRESS') return '처리 중';
-    if (status === 'COMPLETED') return '완료';
+    if (status === 'IN_PROGRESS') return '진행중';
+    if (status === 'COMPLETED' || status === 'CANCELLED') return '완료';
     return status;
   };
 

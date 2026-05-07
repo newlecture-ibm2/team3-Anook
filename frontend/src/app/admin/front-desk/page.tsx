@@ -33,14 +33,12 @@ export default function FrontDeskPage() {
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
-    if (status === 'ASSIGNED') return 'purple';
     if (status === 'IN_PROGRESS') return 'green';
     return 'gray';
   };
 
   const mapStatusText = (status: string): string => {
     if (status === 'PENDING') return t.adminPage.frontDesk.status.pending;
-    if (status === 'ASSIGNED') return t.adminPage.frontDesk.status.assigned;
     if (status === 'IN_PROGRESS') return t.adminPage.frontDesk.status.inProgress;
     if (status === 'COMPLETED') return t.adminPage.frontDesk.status.completed;
     if (status === 'ESCALATED') return t.adminPage.frontDesk.status.escalated;
