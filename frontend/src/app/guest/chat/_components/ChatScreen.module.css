@@ -9,7 +9,6 @@
   background-color: var(--color-bg);
   margin: 0 auto;
   box-shadow: 0 0 20px rgba(0,0,0,0.05);
-  position: relative;
 }
 
 .header {
