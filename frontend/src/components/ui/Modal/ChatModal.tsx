@@ -6,6 +6,8 @@ import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
 import { useWebSocket } from '@/app/useWebSocket';
+import { ConfirmModal } from '@/components/ui/Modal';
+import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 
 export interface ChatMessage {
   id: string;
@@ -24,6 +26,10 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const { subscribe } = useWebSocket();
+
+  // RAG 등록 플로우 상태
+  const [isRagConfirmOpen, setIsRagConfirmOpen] = useState(false);
+  const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
 
   // 모달 열릴 때 실제 대화 내역 로드
   useEffect(() => {
@@ -64,9 +70,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
       const messageId = payload.messageId as number | undefined;
 
       if (type === 'AI_RESPONSE' || type === 'STAFF_MESSAGE') {
-        // AI 응답 및 직원 메시지 → staff 관점에서 'sent' (직원/AI 쪽)
         setMessages(prev => {
-          // 중복 방지: 같은 messageId가 이미 있으면 추가하지 않음
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
@@ -75,7 +79,6 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
           }];
         });
       } else if (type === 'GUEST_MESSAGE') {
-        // 고객이 보낸 새 메시지 → staff 관점에서 'received'
         setMessages(prev => {
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
           return [...prev, {
@@ -112,43 +115,131 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
-      // 전송 실패 시에도 화면에는 유지 (나중에 재시도 로직 추가 가능)
+      // 전송 실패 시에도 화면에는 유지
     }
   };
 
+  // 상담 종료 (닫기 버튼) → 직원이 메시지를 보낸 적이 있으면 RAG 등록 확인
+  const handleClose = () => {
+    const staffMessages = messages.filter(m => m.variant === 'sent');
+    if (staffMessages.length > 0) {
+      setIsRagConfirmOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
+  // ConfirmModal에서 "등록" 선택 시 → KnowledgeEditModal 오픈
+  const handleRagConfirm = () => {
+    setIsRagConfirmOpen(false);
+    setIsKnowledgeModalOpen(true);
+  };
+
+  // ConfirmModal에서 "건너뛰기" 선택 시 → 바로 닫기
+  const handleRagSkip = () => {
+    setIsRagConfirmOpen(false);
+    onClose();
+  };
+
+  // 상담 내용에서 초기 질문/답변 추출
+  const extractInitialContent = () => {
+    // 고객(received) 메시지 → 질문으로 사용
+    const guestMessages = messages
+      .filter(m => m.variant === 'received')
+      .map(m => m.content);
+    // 직원/AI(sent) 메시지 → 답변으로 사용
+    const staffMessages = messages
+      .filter(m => m.variant === 'sent')
+      .map(m => m.content);
+
+    return {
+      question: guestMessages.join('\n'),
+      answer: staffMessages.join('\n'),
+    };
+  };
+
+  // KnowledgeEditModal에서 저장 → 백엔드 API 호출
+  const handleKnowledgeSave = async (data: { domainCode: string; question: string; answer: string }) => {
+    try {
+      const res = await fetch('/api/staff/knowledge/register-from-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: data.question,
+          answer: data.answer,
+          domainCode: data.domainCode || 'COMMON',
+          roomNo: roomNumber,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('[ChatModal] RAG 지식 등록 실패:', err);
+    }
+    setIsKnowledgeModalOpen(false);
+    onClose();
+  };
+
+  const { question: initialQuestion, answer: initialAnswer } = extractInitialContent();
+
   return (
-    <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="md" padding={0}>
-        <div className={styles.chatModalContainer}>
-          <div className={styles.header}>
-            <div className={styles.headerInfo}>
-              <span className={styles.roomBadge}>객실 {roomNumber}</span>
-              <h3 className={styles.title}>고객 상담</h3>
+    <>
+      <ModalOverlay isOpen={isOpen} onClose={handleClose}>
+        <ModalCard size="md" padding={0}>
+          <div className={styles.chatModalContainer}>
+            <div className={styles.header}>
+              <div className={styles.headerInfo}>
+                <span className={styles.roomBadge}>객실 {roomNumber}</span>
+                <h3 className={styles.title}>고객 상담</h3>
+              </div>
+              <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
+                <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
+              </button>
             </div>
-            <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
-              <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
-            </button>
-          </div>
 
-          <div className={styles.messageList} ref={messageListRef}>
-            {loading ? (
-              <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
-            ) : messages.length === 0 ? (
-              <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
-            ) : (
-              messages.map((msg) => (
-                <ChatBubble key={msg.id} variant={msg.variant}>
-                  {msg.content}
-                </ChatBubble>
-              ))
-            )}
-          </div>
+            <div className={styles.messageList} ref={messageListRef}>
+              {loading ? (
+                <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
+              ) : messages.length === 0 ? (
+                <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
+              ) : (
+                messages.map((msg) => (
+                  <ChatBubble key={msg.id} variant={msg.variant}>
+                    {msg.content}
+                  </ChatBubble>
+                ))
+              )}
+            </div>
 
-          <div className={styles.footer}>
-            <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+            <div className={styles.footer}>
+              <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+            </div>
           </div>
-        </div>
-      </ModalCard>
-    </ModalOverlay>
+        </ModalCard>
+      </ModalOverlay>
+
+      {/* RAG 등록 확인 모달 */}
+      <ConfirmModal
+        isOpen={isRagConfirmOpen}
+        onClose={handleRagSkip}
+        onConfirm={handleRagConfirm}
+        title="AI 지식 등록"
+        subtitle="이 상담 내용을 AI 지식 데이터로 등록하시겠습니까? 등록하면 AI가 동일한 질문에 자동으로 답변할 수 있습니다."
+        confirmText="등록하기"
+        cancelText="건너뛰기"
+      />
+
+      {/* 지식 등록/편집 모달 (상담 내용 프리필) */}
+      <KnowledgeEditModal
+        isOpen={isKnowledgeModalOpen}
+        onClose={() => {
+          setIsKnowledgeModalOpen(false);
+          onClose();
+        }}
+        initialDomainCode="COMMON"
+        initialQuestion={initialQuestion}
+        initialAnswer={initialAnswer}
+        onSave={handleKnowledgeSave}
+      />
+    </>
   );
 }
