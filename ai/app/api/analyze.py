@@ -21,6 +21,7 @@ from typing import Dict, Any, Optional, List
 from app.domains.rag import service as rag_service
 from app.core.router_engine import route
 from app.infrastructure.gemini.client import call_gemini, ai_log_meta_ctx
+from app.utils.pii_masking import mask_pii, has_pii
 
 router = APIRouter()
 
@@ -146,6 +147,14 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
 
 async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
     print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
+
+    # ── [PII 마스킹] 개인정보 선제 방어 ──
+    # Gemini로 보내기 전에 전화번호, 이메일, 여권 등 민감 정보를 마스킹
+    original_text = request.text
+    if has_pii(request.text):
+        request.text = mask_pii(request.text)
+        print(f"[Analyze] 🛡️ PII 마스킹 적용: '{original_text}' → '{request.text}'")
+
     if request.chat_history:
         print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
     else:
