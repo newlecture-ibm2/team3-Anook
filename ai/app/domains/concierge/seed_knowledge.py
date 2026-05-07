@@ -42,5 +42,6 @@ def seed_concierge_knowledge():
     finally:
         conn.close()
 
+# seed_all 코드 머지되면 이부분 삭제해도 됨!!
 if __name__ == "__main__":
     seed_concierge_knowledge()
