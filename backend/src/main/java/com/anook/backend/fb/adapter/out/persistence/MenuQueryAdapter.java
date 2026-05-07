@@ -21,18 +21,19 @@ public class MenuQueryAdapter implements MenuQueryPort {
             rs.getString("name"),
             rs.getInt("price"),
             rs.getString("category"),
-            rs.getString("allergens")
+            rs.getString("allergens"),
+            rs.getString("options")
     );
 
     @Override
     public List<MenuInfo> findAvailableMenus() {
-        String sql = "SELECT id, name, price, category, allergens FROM pms_menu WHERE available = TRUE";
+        String sql = "SELECT id, name, price, category, allergens, options FROM pms_menu WHERE available = TRUE";
         return jdbcTemplate.query(sql, menuInfoRowMapper);
     }
 
     @Override
     public Optional<MenuInfo> findById(Long menuId) {
-        String sql = "SELECT id, name, price, category, allergens FROM pms_menu WHERE id = ?";
+        String sql = "SELECT id, name, price, category, allergens, options FROM pms_menu WHERE id = ?";
         List<MenuInfo> results = jdbcTemplate.query(sql, menuInfoRowMapper, menuId);
         return results.stream().findFirst();
     }

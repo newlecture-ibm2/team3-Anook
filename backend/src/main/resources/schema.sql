@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS pms_menu (
     price       INTEGER      NOT NULL,
     category    VARCHAR(30)  NOT NULL,
     allergens   VARCHAR(200),
+    options     VARCHAR(500),
     available   BOOLEAN      NOT NULL DEFAULT TRUE
 );
 
@@ -243,3 +244,5 @@ CREATE INDEX IF NOT EXISTS idx_receipt_status ON pms_receipt(status);
 -- [2026-05-06] 고객 취소 요청 승인 워크플로우
 ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested_at TIMESTAMP;
+-- [2026-05-07] F&B 메뉴 선택옵션(options) 컬럼 추가 (혜연)
+ALTER TABLE pms_menu ADD COLUMN IF NOT EXISTS options VARCHAR(500);

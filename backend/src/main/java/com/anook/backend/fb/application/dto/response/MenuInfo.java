@@ -5,5 +5,6 @@ public record MenuInfo(
     String name,
     int price,
     String category,
-    String allergens
+    String allergens,
+    String options
 ) {}
