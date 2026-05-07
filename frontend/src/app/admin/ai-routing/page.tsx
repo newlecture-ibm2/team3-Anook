@@ -8,8 +8,10 @@ import { Table, TableHeader, TableRow, TableCell } from '@/components/ui/Table/T
 import Button from '@/components/ui/Button/Button';
 import LogDataModal from '@/components/ui/Modal/LogDataModal';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function AiRoutingPage() {
+  const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
@@ -17,18 +19,18 @@ export default function AiRoutingPage() {
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <h1 className={styles.title}>AI 라우팅 로그</h1>
+        <h1 className={styles.title}>{t.adminPage.taskBoard.titles.aiRouting}</h1>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: t.adminPage.taskBoard.filterAll, value: 'all' }, 
+              { label: t.adminPage.taskBoard.filterLatest, value: 'latest' }
             ]}
             selectedFilter="all"
             onFilterSelect={() => {}}

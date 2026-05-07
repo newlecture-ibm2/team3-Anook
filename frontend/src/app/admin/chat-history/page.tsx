@@ -8,6 +8,7 @@ import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import { MoreVertical } from 'lucide-react';
 import useChatHistory from './useChatHistory';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
@@ -16,6 +17,7 @@ export default function ChatHistoryPage() {
   const [targetLang, setTargetLang] = useState('en');
   const [isSending, setIsSending] = useState(false);
   const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages } = useChatHistory();
+  const { t } = useTranslation();
 
   const handleSend = async () => {
     if (!inputText.trim() || !selectedRoom) return;
@@ -34,11 +36,11 @@ export default function ChatHistoryPage() {
         setInputText('');
         fetchMessages(selectedRoom);
       } else {
-        alert('메시지 전송에 실패했습니다.');
+        alert(t.adminPage.chatHistory.sendFail);
       }
     } catch (e) {
       console.error(e);
-      alert('오류가 발생했습니다.');
+      alert(t.common.error);
     } finally {
       setIsSending(false);
     }
@@ -48,7 +50,7 @@ export default function ChatHistoryPage() {
   const chatRooms: ChatHistoryData[] = rooms.map(r => ({
     id: r.roomNo,
     roomNumber: r.roomNo,
-    statusText: r.lastMessage ? '활성 대화' : '보관됨',
+    statusText: r.lastMessage ? t.adminPage.chatHistory.activeChat : t.adminPage.chatHistory.archived,
   }));
 
   return (
@@ -56,22 +58,22 @@ export default function ChatHistoryPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>채팅 히스토리</h1>
+          <h1 className={styles.title}>{t.adminPage.chatHistory.title}</h1>
         </div>
         <div className={styles.headerActions}>
-          <InputField 
-            variant="search" 
-            placeholder="검색어를 입력하세요..." 
+          <InputField
+            variant="search"
+            placeholder={t.adminPage.chatHistory.searchPlaceholder}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
-          <FilterButton 
+          <FilterButton
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' }
+              { label: t.adminPage.chatHistory.filterAll, value: 'all' },
+              { label: t.adminPage.chatHistory.filterLatest, value: 'latest' }
             ]}
             selectedFilter="all"
-            onFilterSelect={() => {}}
+            onFilterSelect={() => { }}
           />
         </div>
       </div>
@@ -81,14 +83,14 @@ export default function ChatHistoryPage() {
         {/* Left Sidebar: Room List */}
         <div className={styles.sidebar}>
           {loadingRooms ? (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
           ) : error ? (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>오류: {error}</div>
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
           ) : (
-            <ChatHistory 
-              rooms={chatRooms} 
-              activeRoomId={selectedRoom || undefined} 
-              onRoomSelect={(id) => selectRoom(String(id))} 
+            <ChatHistory
+              rooms={chatRooms}
+              activeRoomId={selectedRoom || undefined}
+              onRoomSelect={(id) => selectRoom(String(id))}
             />
           )}
         </div>
@@ -98,15 +100,15 @@ export default function ChatHistoryPage() {
           {/* Chat Header */}
           <div className={styles.chatHeader}>
             <div className={styles.chatHeaderLeft}>
-              <h2 className={styles.chatTitle}>{selectedRoom ? `${selectedRoom}호 채팅 기록` : '객실을 선택하세요'}</h2>
-              <span className={styles.chatSubtitle}>전체 대화 로그</span>
+              <h2 className={styles.chatTitle}>{selectedRoom ? `${selectedRoom}${t.adminPage.chatHistory.roomLog}` : t.adminPage.chatHistory.selectRoom}</h2>
+              <span className={styles.chatSubtitle}>{t.adminPage.chatHistory.fullLog}</span>
             </div>
             <div className={styles.chatHeaderActions} onClick={() => setIsPopoverOpen(!isPopoverOpen)}>
               <MoreVertical size={24} />
               {isPopoverOpen && (
                 <div className={styles.popoverMenu}>
                   <div className={styles.popoverItem}>
-                    삭제
+                    {t.adminPage.chatHistory.delete}
                   </div>
                 </div>
               )}
@@ -116,7 +118,7 @@ export default function ChatHistoryPage() {
           {/* Chat Body */}
           <div className={styles.chatBody}>
             {loadingMessages ? (
-              <div style={{ textAlign: 'center', color: 'var(--color-gray-400)', marginTop: '40px' }}>메시지 로딩 중...</div>
+              <div style={{ textAlign: 'center', color: 'var(--color-gray-400)', marginTop: '40px' }}>{t.adminPage.chatHistory.loadingMessages}</div>
             ) : messages.length > 0 ? (
               <>
                 {messages.map(msg => (
@@ -130,7 +132,7 @@ export default function ChatHistoryPage() {
               </>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--color-gray-400)', marginTop: '40px' }}>
-                대화 기록이 없습니다.
+                {t.adminPage.chatHistory.noHistory}
               </div>
             )}
           </div>
@@ -138,8 +140,8 @@ export default function ChatHistoryPage() {
           {/* Chat Input Area */}
           {selectedRoom && (
             <div className={styles.chatInputContainer} style={{ padding: '20px', borderTop: '1px solid var(--color-gray-200)', display: 'flex', gap: '10px' }}>
-              <select 
-                value={targetLang} 
+              <select
+                value={targetLang}
                 onChange={(e) => setTargetLang(e.target.value)}
                 style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
               >
@@ -148,21 +150,21 @@ export default function ChatHistoryPage() {
                 <option value="zh">🇨🇳 중국어</option>
                 <option value="ko">🇰🇷 한국어</option>
               </select>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="투숙객에게 보낼 메시지를 입력하세요 (자동 번역됩니다)..."
+                placeholder={t.adminPage.chatHistory.sendPlaceholder}
                 style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
                 disabled={isSending}
               />
-              <button 
+              <button
                 onClick={handleSend}
                 disabled={isSending || !inputText.trim()}
                 style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer' }}
               >
-                {isSending ? '전송중...' : '전송'}
+                {isSending ? t.adminPage.chatHistory.sending : t.adminPage.chatHistory.send}
               </button>
             </div>
           )}

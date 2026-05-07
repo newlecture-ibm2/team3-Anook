@@ -7,6 +7,7 @@ import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
 
 const mapPriority = (p: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' => {
   const map: Record<string, 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'> = {
@@ -24,6 +25,7 @@ const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
 export default function FacilityPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const { t } = useTranslation();
   const { pending, inProgress, completed, loading, error } = useAdminRequests('FACILITY', searchValue, selectedFilter);
 
   if (error) return <div className={styles.container}><p>오류: {error}</p></div>;
@@ -33,20 +35,20 @@ export default function FacilityPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>시설 관리</h1>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.facility}</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요..." 
+            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           <FilterButton 
             filterOptions={[
-              { label: '전체', value: 'all' }, 
-              { label: '최신순', value: 'latest' },
-              { label: '오래된순', value: 'oldest' }
+              { label: t.adminPage.taskBoard.filterAll, value: 'all' }, 
+              { label: t.adminPage.taskBoard.filterLatest, value: 'latest' },
+              { label: t.adminPage.taskBoard.filterOldest, value: 'oldest' }
             ]}
             selectedFilter={selectedFilter}
             onFilterSelect={(val) => setSelectedFilter(val)}
@@ -56,12 +58,12 @@ export default function FacilityPage() {
 
       {/* Task Board Section */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>로딩 중...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
       ) : (
         <div className={styles.board}>
           {/* Column 1: 대기 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title="대기 중" count={pending.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length}>
               {pending.map(req => (
                 <TaskTicket 
                   key={req.id}
@@ -78,7 +80,7 @@ export default function FacilityPage() {
 
           {/* Column 2: 진행 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title="진행 중" count={inProgress.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length}>
               {inProgress.map(req => (
                 <TaskTicket 
                   key={req.id}
@@ -96,7 +98,7 @@ export default function FacilityPage() {
 
           {/* Column 3: 완료됨 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title="완료됨" count={completed.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length}>
               {completed.map(req => (
                 <TaskTicket 
                   key={req.id}

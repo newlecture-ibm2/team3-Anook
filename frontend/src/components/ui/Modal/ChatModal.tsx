@@ -90,7 +90,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
               <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
             </button>
           </div>
-          
+
           <div className={styles.messageList} ref={messageListRef}>
             {loading ? (
               <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
@@ -104,7 +104,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
               ))
             )}
           </div>
-          
+
           <div className={styles.footer}>
             <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
           </div>
