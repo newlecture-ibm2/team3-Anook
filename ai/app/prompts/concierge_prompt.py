@@ -29,9 +29,9 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
    - If 'count' is missing: ask "How many pieces of luggage?".
 
 4. RESTAURANT
-   - Required: cuisine_type (Korean/Italian/Japanese/etc), party_size (number), time (string)
-   - Optional: budget (string)
-   - If 'cuisine_type' is missing: ask "What kind of food are you looking for?" with options.
+   - Required: restaurant_name (string), party_size (number), time (string)
+   - Optional: cuisine_type (string), budget (string)
+   - If 'restaurant_name' is missing: ask "What is the name of the restaurant you would like to reserve?".
    - If 'party_size' is missing: ask "How many people is the reservation for?".
    - If 'time' is missing: ask "What time would you like to make a reservation?".
 

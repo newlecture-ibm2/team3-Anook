@@ -23,8 +23,16 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
         # Gemini 호출
         raw = call_gemini(prompt=prompt, system_instruction=CONCIERGE_SYSTEM_PROMPT)
         
+        # AI가 null을 반환할 경우를 대비해 데이터 세척 (Pydantic 검증 오류 방지)
+        # 문자열 필드에 null이 들어오면 빈 문자열("")로 대체
+        clean_fields = ["clarification_question", "summary", "request_id", "room_no"]
+        cleaned_raw = {k: (v if v is not None else ("" if k in clean_fields else ([] if k in ["clarification_options", "missing_fields"] else v))) for k, v in raw.items()}
+        
+        # room_no는 AI의 응답보다 우리가 인자로 받은 값이 더 정확하므로 강제 주입
+        cleaned_raw["room_no"] = room_no if room_no else cleaned_raw.get("room_no", "")
+        
         # Pydantic 스키마 검증
-        result = HotelRequestSchema(**raw)
+        result = HotelRequestSchema(**cleaned_raw)
     except Exception as e:
         print(f"[Concierge] ⚠️ 에러 발생: {e}")
         # 에러 발생 시 안전한 Fallback 응답 반환
@@ -57,9 +65,10 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
         action = "보관" if entities.get('action') == 'store' else "찾기"
         default_reply = f"짐 {count}개를 {action}하시겠습니까? 담당 직원이 곧 도움을 드리러 가겠습니다."
     elif intent == 'RESTAURANT':
-        cuisine = entities.get('cuisine_type', '맛집')
-        time = entities.get('time', '정해진 시간')
-        default_reply = f"{time}에 주변의 괜찮은 {cuisine} 레스토랑 예약을 도와드릴까요? 추천 리스트를 뽑아보겠습니다."
+        res_name = entities.get('restaurant_name', '식당')
+        cuisine = entities.get('cuisine_type')
+        cuisine_str = f"({cuisine})" if cuisine else ""
+        default_reply = f"요청하신 {res_name}{cuisine_str} 예약을 확인 중입니다."
     elif intent == 'TOUR_INFO':
         category = entities.get('category', '관광지')
         default_reply = f"멋진 {category} 장소들을 찾고 계시군요! 아늑이 엄선한 추천 명소를 안내해 드리겠습니다."
