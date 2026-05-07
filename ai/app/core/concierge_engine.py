@@ -19,11 +19,29 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
     else:
         prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
     
-    # Gemini 호출                                                                                                                                                                                                                                         
-    raw = call_gemini(prompt=prompt, system_instruction=CONCIERGE_SYSTEM_PROMPT)
-    
-    # Pydantic 스키마 검증
-    result = HotelRequestSchema(**raw)
+    try:
+        # Gemini 호출
+        raw = call_gemini(prompt=prompt, system_instruction=CONCIERGE_SYSTEM_PROMPT)
+        
+        # Pydantic 스키마 검증
+        result = HotelRequestSchema(**raw)
+    except Exception as e:
+        print(f"[Concierge] ⚠️ 에러 발생: {e}")
+        # 에러 발생 시 안전한 Fallback 응답 반환
+        return {
+            "request_id": "REQ_ERR",
+            "room_no": room_no,
+            "domain": "FRONT", # 에러 시 프론트로 이관
+            "summary": "AI 처리 오류 (Fallback)",
+            "priority": "NORMAL",
+            "entities": {"intent": "OTHER", "error": str(e)},
+            "confidence": 0.0,
+            "guest_reply": "죄송합니다. 요청을 처리하는 중에 잠시 문제가 발생했습니다. 잠시 후 다시 말씀해 주시거나 프론트 데스크(내선 0번)로 연락 부탁드립니다.",
+            "needs_clarification": False,
+            "clarification_question": "",
+            "clarification_options": [],
+            "missing_fields": []
+        }
     
     # 기본 응답 메시지 생성 (intent별 상세화는 단계 1에서 수행)
     intent = result.entities.get('intent')
@@ -33,7 +51,7 @@ def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list
         dest = entities.get('destination', '목적지')
         time = entities.get('time', '지금 바로')
         count = entities.get('passenger_count', '1')
-        default_reply = f"{time}에 {dest}(으)로 가시는 택시({count}분)를 예약해 드릴까요? 배차 확인 후 안내해 드리겠습니다."
+        default_reply = f"{time}에 {dest}(으)로 가시는 택시({count}명)를 예약해 드릴까요? 배차 확인 후 안내해 드리겠습니다."
     elif intent == 'LUGGAGE_STORAGE':
         count = entities.get('count', '짐')
         action = "보관" if entities.get('action') == 'store' else "찾기"
