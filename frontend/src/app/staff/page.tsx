@@ -95,7 +95,7 @@ function DashboardContent() {
   const boardData = useMemo(() => ({
     TODO: filteredTasks.filter(t => t.status === 'PENDING'),
     IN_PROGRESS: filteredTasks.filter(t => t.status === 'IN_PROGRESS'),
-    DONE: filteredTasks.filter(t => t.status === 'COMPLETED'),
+    DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
   }), [filteredTasks]);
 
   return (
@@ -154,6 +154,7 @@ function DashboardContent() {
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
                           cancelRequested={task.cancelRequested}
+                          isCancelled={task.status === 'CANCELLED'}
                           onAccept={col.status === 'TODO' ? (e) => {
                             e.stopPropagation();
                             acceptTask(task.id, task.version);

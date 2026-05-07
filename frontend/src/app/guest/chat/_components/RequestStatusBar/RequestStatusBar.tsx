@@ -26,6 +26,7 @@ const STATUS_TEXT: Record<string, string> = {
   IN_PROGRESS: '처리 중',
   COMPLETED: '처리 완료',
   CANCELLED: '취소됨',
+  CANCEL_PENDING: '취소 대기 중',
 };
 
 export default function RequestStatusBar({

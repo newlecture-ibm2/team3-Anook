@@ -10,10 +10,20 @@ interface BackendMessage {
   createdAt: string;
 }
 
+export interface ActiveRequest {
+  requestId: number;
+  domainCode: string;
+  summary: string;
+  status: string;
+  entities?: Record<string, unknown>;
+  progress: number;
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
+  const [activeRequest, setActiveRequest] = useState<ActiveRequest | null>(null);
   const stompClientRef = useRef<Client | null>(null);
 
   // 0. 세션 정보 가져오기
@@ -110,36 +120,76 @@ export function useChat() {
               setMessages(prev => [...prev, newAiMsg]);
             } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(payload.type)) {
               const progressMap: Record<string, number> = {
-                'PENDING': 33, 'ASSIGNED': 50, 'IN_PROGRESS': 66, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
               const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
 
-              let contentText = payload.summary;
-              if (isCancelled) contentText = '요청이 취소되었습니다';
-              if (isCancelPending) contentText = `${payload.summary} (취소 승인 대기 중)`;
+              // Set Active Request for Status Bar
+              setActiveRequest({
+                requestId: payload.requestId,
+                domainCode: payload.domainCode || 'UNKNOWN',
+                summary: payload.summary,
+                status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
+                entities: payload.entities,
+                progress: progressMap[payload.status] || 0
+              });
 
-              const statusMsg: ChatMessage = {
+              // Add/Update Request Card in Chat Stream
+              const requestMsg: ChatMessage = {
                 id: `request-${payload.requestId}`,
                 variant: 'received',
-                type: 'STATUS_CARD',
-                content: contentText,
+                type: 'REQUEST_CARD',
+                content: '', // No text content needed, UI is rendered via RequestCard
                 meta: {
+                  requestId: payload.requestId,
+                  domainCode: payload.domainCode || 'UNKNOWN',
+                  summary: payload.summary,
+                  status: payload.status,
+                  entities: payload.entities,
                   progress: progressMap[payload.status] || 0,
-                  cancelled: isCancelled,
-                  cancelPending: isCancelPending,
+                  graceRemaining: payload.graceRemaining || 0,
+                  priority: payload.priority || 'NORMAL',
+                  cancelPending: isCancelPending
                 }
               };
 
               setMessages(prev => {
-                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
-                if (existingIdx >= 0) {
-                  const updated = [...prev];
-                  updated[existingIdx] = statusMsg;
-                  return updated;
-                }
-                return [...prev, statusMsg];
+                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
+                const existingGrace = existingIdx >= 0 ? (prev[existingIdx].meta?.graceRemaining || 0) : 0;
+                
+                // Remove the existing card from the list
+                const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
+                
+                // Append the updated card at the bottom
+                return [...filtered, {
+                  ...requestMsg,
+                  id: `request-${payload.requestId}-${Date.now()}`, // Force re-render at the bottom
+                  meta: {
+                    ...requestMsg.meta,
+                    graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
+                  }
+                }];
               });
+
+              // --- System messages for cancel flow ---
+              if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
+                setMessages(prev => [...prev, {
+                  id: `system-cancel-success-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 요청이 정상적으로 취소되었습니다.',
+                }]);
+              }
+
+              if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
+                setMessages(prev => [...prev, {
+                  id: `system-cancel-pending-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
+                }]);
+              }
 
               if (payload.status === 'COMPLETED') {
                 setTimeout(() => {
@@ -150,6 +200,32 @@ export function useChat() {
                   }]);
                 }, 1000);
               }
+
+              if (payload.type === 'CANCEL_REJECTED') {
+                setMessages(prev => [...prev, {
+                  id: `system-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
+                }]);
+              }
+            } else if (payload.type === 'GRACE_EXPIRED') {
+              // Hide the buttons on the specific card by forcing graceRemaining to 0
+              setMessages(prev => {
+                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
+                if (existingIdx >= 0) {
+                  const updated = [...prev];
+                  updated[existingIdx] = {
+                    ...updated[existingIdx],
+                    meta: {
+                      ...updated[existingIdx].meta,
+                      graceRemaining: 0
+                    }
+                  };
+                  return updated;
+                }
+                return prev;
+              });
             }
           }
         });
@@ -212,9 +288,42 @@ export function useChat() {
     }
   };
 
+  // 4. Cancel Request Action
+  const cancelRequest = async (requestId: number) => {
+    if (!roomNo) return;
+    try {
+      const response = await fetch(`/api/chat/${roomNo}/requests/${requestId}/cancel`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        console.error('Failed to cancel request');
+      }
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+    }
+  };
+
+  // 5. Confirm Request Action
+  const confirmRequest = async (requestId: number) => {
+    if (!roomNo) return;
+    try {
+      const response = await fetch(`/api/chat/${roomNo}/requests/${requestId}/confirm`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        console.error('Failed to confirm request');
+      }
+    } catch (error) {
+      console.error('Error confirming request:', error);
+    }
+  };
+
   return {
     messages,
     isTyping,
-    sendMessage
+    sendMessage,
+    activeRequest,
+    cancelRequest,
+    confirmRequest
   };
 }

@@ -342,7 +342,8 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
                 r.isCancelRequested(),
                 r.getCancelRequestedAt(),
-                r.getCreatedAt(), r.getUpdatedAt()
+                r.getCreatedAt(), r.getUpdatedAt(),
+                r.getVersion()
         );
     }
 

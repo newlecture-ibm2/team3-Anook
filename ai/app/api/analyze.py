@@ -248,7 +248,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
     # ──────────────────────────────────────────────
     if primary.mode == "CANCEL":
         response = {
-            "guest_reply": "네, 가장 최근 요청을 취소 처리하겠습니다.",
+            "guest_reply": "가장 최근 요청의 상태를 확인하여 취소를 진행하겠습니다.",
             "summary": "요청 취소",
             "domain_code": None,
             "priority": "NORMAL",

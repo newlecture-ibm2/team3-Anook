@@ -18,5 +18,6 @@ public record AdminRequestListResult(
         boolean cancelRequested,
         LocalDateTime cancelRequestedAt,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        Integer version
 ) {}

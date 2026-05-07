@@ -14,6 +14,7 @@ export interface TaskTicketProps {
   cancelRequested?: boolean;
   onAccept?: (e: React.MouseEvent) => void;
   onComplete?: (e: React.MouseEvent) => void;
+  isCancelled?: boolean;
 }
 
 export default function TaskTicket({
@@ -26,7 +27,8 @@ export default function TaskTicket({
   updatedAt,
   cancelRequested = false,
   onAccept,
-  onComplete
+  onComplete,
+  isCancelled = false
 }: TaskTicketProps) {
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
   if (priority === 'HIGH' || priority === 'URGENT') {
@@ -57,6 +59,11 @@ export default function TaskTicket({
       <div className={styles.header}>
         {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
         <div style={{ display: 'flex', gap: '8px' }}>
+          {isCancelled && (
+            <StatusBadge variant="gray">
+              취소됨
+            </StatusBadge>
+          )}
           {cancelRequested && (
             <StatusBadge variant="red">
               취소 대기

@@ -39,7 +39,7 @@ public class CancelRequestOnEventService {
         if (latestRequest.isPresent()) {
             Request request = latestRequest.get();
             try {
-                if (request.getStatus() == RequestStatus.PENDING || request.getStatus() == RequestStatus.ASSIGNED) {
+                if (request.getStatus() == RequestStatus.PENDING) {
                     request.changeStatus(RequestStatus.CANCELLED);
                     requestPort.save(request);
 
