@@ -50,6 +50,11 @@ public interface RequestRepositoryPort {
     Optional<Request> findLatestCancellableByRoomNoAndGuestId(String roomNo, Long guestId);
 
     /**
+     * 특정 객실, 투숙객의 가장 최근 생성된 요청 1건 조회 (상태 무관)
+     */
+    Optional<Request> findLatestByRoomNoAndGuestId(String roomNo, Long guestId);
+
+    /**
      * [Cancel & Replace] 같은 객실, 투숙객, 부서의 PENDING 상태 요청 목록 조회
      */
     List<Request> findPendingByRoomNoAndGuestIdAndDepartmentId(String roomNo, Long guestId, String departmentId);

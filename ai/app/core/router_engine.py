@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 CONFIDENCE_THRESHOLD = 0.7
 FALLBACK_DOMAIN = "FRONT"
 VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "EMERGENCY"}
-VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL"}
+VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL", "STATUS_CHECK"}
 
 
 from typing import List
@@ -95,8 +95,8 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
                 result.domain = FALLBACK_DOMAIN
                 result.reasoning += f" (confidence {result.confidence:.2f} 미달로 FRONT Fallback 적용)"
 
-        # ── 5) CHITCHAT/CLARIFICATION/CANCEL일 때 domain은 반드시 null ──
-        if result.mode in ("CHITCHAT", "CLARIFICATION", "CANCEL"):
+        # ── 5) CHITCHAT/CLARIFICATION/CANCEL/STATUS_CHECK일 때 domain은 반드시 null ──
+        if result.mode in ("CHITCHAT", "CLARIFICATION", "CANCEL", "STATUS_CHECK"):
             result.domain = None
 
         logger.info(

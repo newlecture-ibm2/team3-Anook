@@ -2,6 +2,7 @@ package com.anook.backend.message.application.service;
 
 import com.anook.backend.message.application.port.out.MessageDispatchPort;
 import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
+import com.anook.backend.message.application.event.RequestStatusCheckByGuestEvent;
 import com.anook.backend.message.application.event.RequestDetectedEvent;
 import com.anook.backend.message.application.dto.request.SendMessageCommand;
 import com.anook.backend.message.application.dto.response.SendMessageResult;
@@ -146,6 +147,9 @@ public class SendMessageService implements SendMessageUseCase {
             } else if ("CANCEL_REQUEST".equals(analysis.action())) {
                 eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
                 log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);
+            } else if ("STATUS_CHECK".equals(analysis.action())) {
+                eventPublisher.publishEvent(new RequestStatusCheckByGuestEvent(this, roomNo, guestId, content));
+                log.info("[Message] RequestStatusCheckByGuestEvent 발행 — room: {}", roomNo);
             }
 
             // 7. AI 로그 비동기 분리 저장

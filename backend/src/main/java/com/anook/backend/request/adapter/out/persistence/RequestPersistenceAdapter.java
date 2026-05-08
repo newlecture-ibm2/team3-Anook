@@ -77,6 +77,12 @@ public class RequestPersistenceAdapter implements RequestRepositoryPort {
     }
 
     @Override
+    public Optional<Request> findLatestByRoomNoAndGuestId(String roomNo, Long guestId) {
+        return jpaRepository.findFirstByRoomNoAndGuestIdOrderByCreatedAtDesc(roomNo, guestId)
+                .map(RequestJpaEntity::toDomain);
+    }
+
+    @Override
     public List<Request> findPendingByRoomNoAndGuestIdAndDepartmentId(String roomNo, Long guestId, String departmentId) {
         return jpaRepository.findByRoomNoAndGuestIdAndDepartmentIdAndStatus(roomNo, guestId, departmentId, "PENDING")
                 .stream()

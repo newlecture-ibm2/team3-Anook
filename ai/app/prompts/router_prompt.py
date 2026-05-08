@@ -20,6 +20,8 @@ Read the customer's chat message and strictly output a **JSON Array** according 
                    Examples: "슬리퍼 있어요?", "조식 몇시에요?", "와이파이 비번이 뭐에요?", "수건 몇 장까지 가능해요?"
   - "CANCEL"     : The guest wants to cancel or withdraw a previously made request.
                    Examples: "취소할래요", "아까 거 안 할래요", "됐어요", "never mind", "방금 요청 없던 걸로"
+  - "STATUS_CHECK": The guest wants to know the current status, progress, or estimated time of arrival for a previously made request.
+                   Examples: "언제 와요?", "수건 아직 안왔어요", "처리중이라면서요", "얼마나 걸려요?"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ STEP 2: Assign a Domain (Only if mode is "TASK" or "INFO")
@@ -59,7 +61,7 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
 
 [
   {
-    "mode": "TASK | CHITCHAT | CLARIFICATION | INFO | CANCEL",
+    "mode": "TASK | CHITCHAT | CLARIFICATION | INFO | CANCEL | STATUS_CHECK",
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "Write a short logical reason in KOREAN",
@@ -72,7 +74,7 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
 - If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CANCEL" so no actionable ticket is created and recent request is cancelled.
-- If mode is "CHITCHAT", "CLARIFICATION", or "CANCEL", the domain MUST be `null`.
+- If mode is "CHITCHAT", "CLARIFICATION", "CANCEL", or "STATUS_CHECK", the domain MUST be `null`.
 - If mode is "INFO", assign the relevant domain so the system can search the correct RAG knowledge base.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
 - Regardless of the input language (English, Japanese, Chinese, etc.), classify it uniformly based on meaning.
