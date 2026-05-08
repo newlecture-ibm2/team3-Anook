@@ -10,9 +10,9 @@ class HotelRequestSchema(BaseModel):
     request_id: str = Field(description="요청 고유 ID (예: REQ_1029)")
     room_no: str = Field(description="객실 번호 (예: 101)")
     
-    domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY)")
+    domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, COMMON)")
     
-    summary: str = Field(description="직원용 Jira 대시보드 카드 제목으로 렌더링될 세 줄 요약")
+    summary: str = Field(description="어떤 요청/문의인지 프론트데스크 직원이 바로 이해할 수 있도록 3줄 요약 (반드시 한국어)")
     priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: NORMAL, URGENT)")
     status: str = Field(default="PENDING", description="티켓 상태 (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED 등)")
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")
@@ -26,8 +26,7 @@ class HotelRequestSchema(BaseModel):
     #   FB:        {'intent': 'ROOM_SERVICE', 'menu': '콜라', 'price': 5000}
     #   FACILITY:  {'intent': 'AC_REPAIR', 'symptom': '안 켜짐', 'location': '침실'}
     #   CONCIERGE: {'intent': 'TAXI', 'destination': '인천공항', 'time': '14:00'}
-    #   FRONT:     {'intent': 'CHECKOUT', 'requested_time': '11:00'}
-    #   EMERGENCY: {'intent': 'FIRE', 'floor': '3층'}
+    #   FRONT: {'intent': 'LATE_CHECKOUT', 'time': '14:00'}
     entities: Dict[str, Any] = Field(
         default_factory=dict, 
         description="부서마다 달라지는 동적 데이터 (대시보드 통계용 'intent' 키 필수 포함)"

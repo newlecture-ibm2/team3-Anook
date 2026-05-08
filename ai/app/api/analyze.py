@@ -45,9 +45,6 @@ DOMAIN_AGENTS: Dict[str, Any] = {
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
     "FB": run_fb_agent,
-    # "CONCIERGE": run_concierge_agent,
-    # "FRONT": run_front_agent,
-    # "EMERGENCY": run_emergency_agent,
 }
 
 # ── 다국어 정적 멘트 딕셔너리 ──

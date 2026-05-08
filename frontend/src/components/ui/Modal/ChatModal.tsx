@@ -19,9 +19,13 @@ export interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   roomNumber?: string;
+  requestId?: number;
+  status?: string;
+  onStatusChange?: (id: number, newStatus: string) => Promise<void>;
+  autoComplete?: boolean;
 }
 
-export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: ChatModalProps) {
+export default function ChatModal({ isOpen, onClose, roomNumber = '1204', requestId, status, onStatusChange, autoComplete }: ChatModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -49,6 +53,10 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
         }));
 
         setMessages(mapped);
+
+        if (autoComplete && isOpen) {
+          handleCompleteConsultation();
+        }
       } catch {
         setMessages([]);
       } finally {
@@ -57,7 +65,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
     };
 
     fetchMessages();
-  }, [isOpen, roomNumber]);
+  }, [isOpen, roomNumber, autoComplete]);
 
   // WebSocket 구독: 고객 메시지 및 AI 응답 실시간 수신
   useEffect(() => {
@@ -126,16 +134,29 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
     } catch {
       // 전송 실패 시에도 화면에는 유지
     }
+
+    // 3. PENDING 상태면 IN_PROGRESS로 변경
+    if (status === 'PENDING' && requestId && onStatusChange) {
+      await onStatusChange(requestId, 'IN_PROGRESS');
+    }
   };
 
-  // 상담 종료 (닫기 버튼) → 직원이 메시지를 보낸 적이 있으면 RAG 등록 확인
-  const handleClose = () => {
+  // 상담 완료 버튼 클릭 시
+  const handleCompleteConsultation = async () => {
+    if (requestId && onStatusChange && status !== 'COMPLETED') {
+      await onStatusChange(requestId, 'COMPLETED');
+    }
     const staffMessages = messages.filter(m => m.variant === 'sent');
     if (staffMessages.length > 0) {
       setIsRagConfirmOpen(true);
     } else {
       onClose();
     }
+  };
+
+  // 그냥 닫기 (상담 완료 아님)
+  const handleClose = () => {
+    onClose();
   };
 
   // "등록하기" → KnowledgeEditModal 오픈
@@ -211,6 +232,8 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
 
   const { question: initialQuestion, answer: initialAnswer } = extractInitialContent();
 
+  const isReadOnly = status === 'COMPLETED' || status === 'CANCELLED';
+
   return (
     <>
       <ModalOverlay isOpen={isOpen} onClose={handleClose}>
@@ -221,9 +244,16 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
                 <span className={styles.roomBadge}>객실 {roomNumber}</span>
                 <h3 className={styles.title}>고객 상담</h3>
               </div>
-              <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
-                <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {!isReadOnly && (
+                  <Button variant="primary" onClick={handleCompleteConsultation} style={{ padding: '6px 12px', fontSize: '13px' }}>
+                    상담 완료
+                  </Button>
+                )}
+                <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
+                  <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
+                </button>
+              </div>
             </div>
 
             <div className={styles.messageList} ref={messageListRef}>
@@ -240,9 +270,11 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
               )}
             </div>
 
-            <div className={styles.footer}>
-              <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
-            </div>
+            {!isReadOnly && (
+              <div className={styles.footer}>
+                <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+              </div>
+            )}
           </div>
         </ModalCard>
       </ModalOverlay>
@@ -275,24 +307,26 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
                 padding: '4px 0',
               }}
             >
-              건너뛰기
+              등록하지 않고 삭제
             </button>
           </div>
         </ModalCard>
       </ModalOverlay>
 
       {/* 지식 등록/편집 모달 (상담 내용 프리필) */}
-      <KnowledgeEditModal
-        isOpen={isKnowledgeModalOpen}
-        onClose={() => {
-          setIsKnowledgeModalOpen(false);
-          onClose();
-        }}
-        initialDomainCode="COMMON"
-        initialQuestion={initialQuestion}
-        initialAnswer={initialAnswer}
-        onSave={handleKnowledgeSave}
-      />
+      {isKnowledgeModalOpen && (
+        <KnowledgeEditModal
+          isOpen={isKnowledgeModalOpen}
+          onClose={() => {
+            setIsKnowledgeModalOpen(false);
+            onClose();
+          }}
+          initialDomainCode="COMMON"
+          initialQuestion={initialQuestion}
+          initialAnswer={initialAnswer}
+          onSave={handleKnowledgeSave}
+        />
+      )}
     </>
   );
 }

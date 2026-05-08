@@ -30,10 +30,10 @@ Assign ONE of the 6 department codes below. For "INFO" mode, assign the domain s
 |------------|---------------|-----------------------------|
 | HK         | Housekeeping  | Towels, amenities, cleaning, beddings, minibar |
 | FB         | Food & Bev    | Room service, breakfast, drinks, restaurant reservation |
-| FACILITY   | Facility Mgt  | Broken AC/TV/lights, noise complaints, Wi-Fi issues |
-| CONCIERGE  | Concierge     | Taxi, tourist recommendations, luggage, external reservations |
-| FRONT      | Front Office  | Check-in/out, room change, billing inquiries, key cards |
-| EMERGENCY  | Emergency     | Fire, medical emergencies, crime, critical safety threats |
+| FACILITY   | Facility Mgt  | Broken AC/TV/lights, noise complaints |
+| CONCIERGE  | Concierge     | Taxi, luggage, external reservations (actionable tasks only) |
+| FRONT      | Front Office  | Check-in/out, room change, billing inquiries, key cards, emergencies (fire, medical) |
+| COMMON     | Common Info   | Tourist recommendations, Wi-Fi password, general hotel policy, simple Q&A |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ STEP 3: Determine Action Type (ADD or REPLACE)
@@ -50,7 +50,7 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
-- If it is related to an EMERGENCY, you MUST route to "EMERGENCY" regardless of confidence. Safety first.
+- If it is related to an emergency (fire, medical), you MUST route to "FRONT" mode "TASK" regardless of confidence. Safety first.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT FORMAT (STRICTLY JSON ARRAY)
@@ -60,7 +60,7 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
 [
   {
     "mode": "TASK | CHITCHAT | CLARIFICATION | INFO | CANCEL",
-    "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | EMERGENCY | null",
+    "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "Write a short logical reason in KOREAN",
     "action_type": "ADD | REPLACE"
