@@ -70,6 +70,12 @@ STATIC_REPLIES = {
         "ja": "はい、直近のリクエストをキャンセルいたします。",
         "zh": "好的，我将取消您最近的请求。"
     },
+    "STATUS_CHECK": {
+        "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
+        "en": "I will check the status of your most recent request right now.",
+        "ja": "現在の直近のリクエストの進捗状況を確認いたします。",
+        "zh": "我现在将为您查询最近一次请求的处理状态。"
+    },
     "TARGETED_CANCEL": {
         "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
         "en": "Okay, I will cancel the specific request you mentioned.",
@@ -426,6 +432,22 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "action": "CANCEL_REQUEST",
                 }
             print(f"[Analyze] 🚫 CANCEL 응답 (is_all={is_all})")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+
+        # STEP 3-f: STATUS_CHECK → 진행 상태 확인
+        if primary.mode == "STATUS_CHECK":
+            response = {
+                "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
+                "summary": "진행 상태 확인",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {},
+                "confidence": primary.confidence,
+                "action": "STATUS_CHECK",
+            }
+            print(f"[Analyze] 🔍 STATUS_CHECK 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
             continue
