@@ -66,6 +66,12 @@ public class SendMessageService implements SendMessageUseCase {
         guestMsg = messagePort.save(guestMsg);
         log.info("[Message] Guest 메시지 저장 완료 — id: {}, room: {}", guestMsg.getId(), cmd.roomNo());
 
+        // 2-1. WebSocket Push → 직원 ChatModal에 고객 메시지 실시간 전달
+        dispatchPort.sendToRoom(cmd.roomNo(), Map.of(
+                "type", "GUEST_MESSAGE",
+                "messageId", guestMsg.getId(),
+                "content", cmd.content()));
+
         // 3. AI 처리는 비동기로 위임
         processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
 
@@ -133,9 +139,10 @@ public class SendMessageService implements SendMessageUseCase {
                         analysis.confidence(),
                         content,
                         analysis.summary(),
-                        escalated));
-                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}",
-                        analysis.domainCode(), escalated);
+                        escalated,
+                        analysis.actionType()));
+                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
+                        analysis.domainCode(), escalated, analysis.actionType());
             } else if ("CANCEL_REQUEST".equals(analysis.action())) {
                 eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
                 log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);

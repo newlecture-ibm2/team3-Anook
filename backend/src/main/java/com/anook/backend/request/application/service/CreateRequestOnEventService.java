@@ -22,13 +22,13 @@ import java.util.List;
  * Message 도메인에서 발행한 RequestDetectedEvent를 수신하여 Request 생성
  *
  * [AN-252] Grace Period + Generative UI 적용:
- *   - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
- *   - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
- *   - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
+ * - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
+ * - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
+ * - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
  *
  * [Cancel & Replace] 대화형 수정 패턴:
- *   - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
- *   - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
+ * - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
+ * - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
  */
 @Slf4j
 @Service
@@ -42,14 +42,18 @@ public class CreateRequestOnEventService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onRequestDetected(RequestDetectedEvent event) {
-        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}", 
-                 event.getRoomNo(), event.getDomainCode(), event.getSummary());
+        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}",
+                event.getRoomNo(), event.getDomainCode(), event.getSummary());
 
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
 
-        // [Cancel & Replace] 같은 객실+게스트+부서의 PENDING 요청이 있으면 자동 취소
-        cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+        // [Cancel & Replace] AI가 기존 요청을 '수정(REPLACE)'하는 문맥이라고 판단했을 때만 자동 취소
+        // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
+        // "수건 줘" → "물도 줘" = ADD (기존 요청 유지)
+        if ("REPLACE".equalsIgnoreCase(event.getActionType())) {
+            cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+        }
 
         // Request 도메인 객체 생성
         Request request = Request.create(
@@ -60,8 +64,7 @@ public class CreateRequestOnEventService {
                 event.getEntities(),
                 event.getConfidence(),
                 event.getRawText(),
-                event.getSummary()
-        );
+                event.getSummary());
 
         // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
         boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
@@ -88,8 +91,7 @@ public class CreateRequestOnEventService {
                 savedRequest.getRoomNo(),
                 savedRequest.getEntities(),
                 graceRemaining,
-                savedRequest.getPriority().name()
-        );
+                savedRequest.getPriority().name());
 
         // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
@@ -108,8 +110,7 @@ public class CreateRequestOnEventService {
                     savedRequest.getId(),
                     savedRequest.getRoomNo(),
                     deptCode,
-                    payload
-            );
+                    payload);
         }
     }
 
@@ -123,7 +124,8 @@ public class CreateRequestOnEventService {
      */
     private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
         String deptId = domainCode.getDeptId();
-        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo, guestId, deptId);
+        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo,
+                guestId, deptId);
 
         for (Request existing : existingPending) {
             try {
@@ -139,8 +141,7 @@ public class CreateRequestOnEventService {
                         RequestStatus.CANCELLED.name(),
                         existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                         existing.getSummary(),
-                        existing.getRoomNo()
-                );
+                        existing.getRoomNo());
                 dispatchPort.dispatchToRoom(roomNo, cancelPayload);
 
             } catch (IllegalStateException e) {
