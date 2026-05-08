@@ -9,14 +9,15 @@ import SummaryCard from '@/components/ui/Card/SummaryCard';
 import Button from '@/components/ui/Button/Button';
 import styles from './LogDataModal.module.css';
 
+import { AiLogDetail } from '@/app/admin/ai-routing/useAiLogs';
+
 interface LogDataModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // In a real implementation, we would pass log data as props
-  // For now, we use the static data from the design
+  log?: AiLogDetail | null;
 }
 
-export default function LogDataModal({ isOpen, onClose }: LogDataModalProps) {
+export default function LogDataModal({ isOpen, onClose, log }: LogDataModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -35,7 +36,7 @@ export default function LogDataModal({ isOpen, onClose }: LogDataModalProps) {
                   <Tag variant="gray">RAW DATA</Tag>
                 </div>
                 <p className={styles.subtitle}>
-                  연결된 티켓 번호: <span className={styles.ticketId}>request_id: #1029</span>
+                  연결된 티켓 번호: <span className={styles.ticketId}>request_id: #{log?.id}</span>
                 </p>
               </div>
             </div>
@@ -46,63 +47,25 @@ export default function LogDataModal({ isOpen, onClose }: LogDataModalProps) {
 
           {/* Stats Grid */}
           <div className={styles.statsGrid}>
-            <SummaryCard title="입력 토큰" value="1,200" size="sm" />
-            <SummaryCard title="출력 토큰" value="320" size="sm" />
-            <SummaryCard title="처리 시간" value="850ms" size="sm" />
-            <SummaryCard title="사용 모델" value="gemini-1.5-flash" size="sm" />
+            <SummaryCard title="총 토큰" value={log?.totalTokens?.toLocaleString() || "0"} size="sm" />
+            <SummaryCard title="Fallback 여부" value={log?.isFallback ? "YES" : "NO"} size="sm" />
+            <SummaryCard title="처리 시간" value={`${log?.latencyMs || 0}ms`} size="sm" />
+            <SummaryCard title="사용 모델" value={log?.modelName || "N/A"} size="sm" />
           </div>
 
           {/* Prompt Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>입력 프롬프트 원문 (RAW PROMPT)</h3>
             <div className={styles.promptText}>
-              당신은 일류 호텔의 컨시어지 AI입니다. 고객의 요청을 분석하여 부서를 할당하세요.<br />
-              고객 요청: &quot;수건 2장 더 가져다주세요. 그리고 가습기가 있으면 좋겠어요.&quot;
+              {log?.rawPrompt || "No prompt data."}
             </div>
           </div>
 
           {/* Response Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>AI 출력 JSON 원문 (RAW RESPONSE)</h3>
-            <div className={styles.jsonContainer}>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>1</span>
-                <span><span className={styles.jsonSyntax}>{'{'}</span></span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>2</span>
-                <span>
-                  &nbsp;&nbsp;<span className={styles.jsonKey}>&quot;domain&quot;</span><span className={styles.jsonSyntax}>: </span><span className={styles.jsonString}>&quot;HK&quot;</span><span className={styles.jsonSyntax}>,</span>
-                </span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>3</span>
-                <span>
-                  &nbsp;&nbsp;<span className={styles.jsonKey}>&quot;intent&quot;</span><span className={styles.jsonSyntax}>: </span><span className={styles.jsonString}>&quot;request_items&quot;</span><span className={styles.jsonSyntax}>,</span>
-                </span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>4</span>
-                <span>
-                  &nbsp;&nbsp;<span className={styles.jsonKey}>&quot;items&quot;</span><span className={styles.jsonSyntax}>: [</span><span className={styles.jsonString}>&quot;towel&quot;</span><span className={styles.jsonSyntax}>, </span><span className={styles.jsonString}>&quot;humidifier&quot;</span><span className={styles.jsonSyntax}>],</span>
-                </span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>5</span>
-                <span>
-                  &nbsp;&nbsp;<span className={styles.jsonKey}>&quot;quantity&quot;</span><span className={styles.jsonSyntax}>: [</span><span className={styles.jsonNumber}>2</span><span className={styles.jsonSyntax}>, </span><span className={styles.jsonNumber}>1</span><span className={styles.jsonSyntax}>],</span>
-                </span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>6</span>
-                <span>
-                  &nbsp;&nbsp;<span className={styles.jsonKey}>&quot;priority&quot;</span><span className={styles.jsonSyntax}>: </span><span className={styles.jsonString}>&quot;medium&quot;</span>
-                </span>
-              </div>
-              <div className={styles.jsonLine}>
-                <span className={styles.lineNumber}>7</span>
-                <span><span className={styles.jsonSyntax}>{'}'}</span></span>
-              </div>
+            <div className={styles.jsonContainer} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {log?.rawResponse || "No response data."}
             </div>
           </div>
 

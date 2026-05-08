@@ -42,22 +42,32 @@ public class RegisterKnowledgeFromAnswerService implements RegisterKnowledgeFrom
                 : "COMMON";
         DomainCode domainCode = DomainCode.from(domainCodeStr);
 
-        // 2. 임베딩 생성 (질문 + 답변 조합 → Python AI 서비스 호출)
-        String contentToEmbed = "Q: " + command.question() + "\nA: " + command.answer();
-        float[] embedding = embeddingPort.generateEmbedding(contentToEmbed);
+        // 2. status 결정 — "PENDING"이면 나중에 검토, 그 외 즉시 APPROVED
+        boolean isPending = "PENDING".equalsIgnoreCase(command.status());
+        KnowledgeStatus status = isPending ? KnowledgeStatus.PENDING : KnowledgeStatus.APPROVED;
 
-        // 3. 도메인 모델 생성 (직원이 직접 답변 → 즉시 APPROVED)
+        // 3. 임베딩 생성 (PENDING이면 스킵 — 승인 시 생성)
+        float[] embedding = null;
+        if (!isPending) {
+            String contentToEmbed = "Q: " + command.question() + "\nA: " + command.answer();
+            embedding = embeddingPort.generateEmbedding(contentToEmbed);
+        }
+
+        // 4. 도메인 모델 생성
         KnowledgeEntry entry = KnowledgeEntry.builder()
                 .question(command.question())
                 .answer(command.answer())
                 .domainCode(domainCode)
-                .status(KnowledgeStatus.APPROVED)
+                .status(status)
                 .build();
 
-        // 4. 저장 (임베딩 포함)
-        KnowledgeEntry saved = knowledgeRepositoryPort.save(entry, embedding);
+        // 5. 저장 (PENDING은 임베딩 없이 저장)
+        KnowledgeEntry saved = isPending
+                ? knowledgeRepositoryPort.save(entry, new float[0])
+                : knowledgeRepositoryPort.save(entry, embedding);
 
-        log.info("[Knowledge] 직원 답변 기반 RAG 등록 완료 — id: {}, room: {}, domain: {}, Q: {}",
+        log.info("[Knowledge] 직원 답변 기반 RAG {} — id: {}, room: {}, domain: {}, Q: {}",
+                isPending ? "후보 등록 (PENDING)" : "즉시 등록 (APPROVED)",
                 saved.getId(), command.roomNo(), domainCode, command.question());
 
         return new CreateKnowledgeResult(saved.getId());

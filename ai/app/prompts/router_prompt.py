@@ -36,6 +36,17 @@ Assign ONE of the 6 department codes below. For "INFO" mode, assign the domain s
 | EMERGENCY  | Emergency     | Fire, medical emergencies, crime, critical safety threats |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ STEP 3: Determine Action Type (ADD or REPLACE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW request or a MODIFICATION of a previous one.
+  - "ADD"     : This is a brand-new, additional request (default).
+  - "REPLACE" : The guest is changing/correcting a previous request of the SAME type.
+               Keywords: "아니", "아니요", "아니다", "바꿔", "변경", "대신", "말고", "instead", "change", "actually", "never mind the previous"
+               Example: "수건 2장 줘" → "아니 3장으로 줘" = REPLACE
+               Example: "수건 줘" → "물도 줘" = ADD (different item)
+- If mode is NOT "TASK", action_type should always be "ADD".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
@@ -51,7 +62,8 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
     "mode": "TASK | CHITCHAT | CLARIFICATION | INFO | CANCEL",
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
-    "reasoning": "Write a short logical reason in KOREAN"
+    "reasoning": "Write a short logical reason in KOREAN",
+    "action_type": "ADD | REPLACE"
   }
 ]
 

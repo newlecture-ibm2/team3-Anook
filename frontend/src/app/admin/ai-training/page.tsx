@@ -2,17 +2,77 @@
 
 import React, { useState } from 'react';
 import InputField from '@/components/ui/Inputfield/InputField';
-import FilterButton from '@/components/ui/FilterButton/FilterButton';
-import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
+import Button from '@/components/ui/Button/Button';
+import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
+import { useKnowledge, KnowledgeEntry } from '../rag/useKnowledge';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
+import { handleResponse } from '@/lib/api';
 
 export default function AiTrainingPage() {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
+  const { data, loading, error, deleteEntry, refresh } = useKnowledge();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedKnowledge, setSelectedKnowledge] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<KnowledgeEntry | null>(null);
+
+  // PENDING 상태만 필터링
+  const pendingItems = data.filter(item => item.status === 'PENDING');
+
+  // 검색 필터
+  const filteredItems = pendingItems.filter(item =>
+    item.question.toLowerCase().includes(searchValue.toLowerCase()) ||
+    item.answer.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
+  // RAG 등록 (APPROVED로 전환) — register-from-answer API 재사용
+  const handleApprove = async (formData: { domainCode: string; question: string; answer: string }) => {
+    if (!selectedItem) return;
+    try {
+      // 1. 기존 PENDING 항목 삭제
+      await deleteEntry(selectedItem.id);
+      // 2. APPROVED 상태로 새로 등록 (임베딩 생성 포함)
+      const res = await fetch('/api/staff/knowledge/register-from-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: formData.question,
+          answer: formData.answer,
+          domainCode: formData.domainCode || 'COMMON',
+          roomNo: '',
+        }),
+      });
+      await handleResponse(res);
+      await refresh();
+    } catch (err) {
+      console.error('[AiTraining] 승인 실패:', err);
+    }
+    setIsEditModalOpen(false);
+    setSelectedItem(null);
+  };
+
+  // 제외 (삭제)
+  const handleReject = async (id: number) => {
+    try {
+      await deleteEntry(id);
+    } catch (err) {
+      console.error('[AiTraining] 제외 실패:', err);
+    }
+  };
+
+  const getDomainLabel = (code: string) => {
+    const map: Record<string, string> = {
+      HK: '하우스키핑',
+      FB: 'F&B',
+      FACILITY: '시설',
+      CONCIERGE: '컨시어지',
+      FRONT: '프론트데스크',
+      EMERGENCY: '긴급',
+      COMMON: '공통',
+    };
+    return map[code] || code;
+  };
 
   return (
     <div className={styles.container}>
@@ -28,75 +88,72 @@ export default function AiTrainingPage() {
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
-          <FilterButton 
-            filterOptions={[
-              { label: t.adminPage.aiTraining.filterAll, value: 'all' }, 
-              { label: t.adminPage.aiTraining.filterMissing, value: 'missing' },
-              { label: t.adminPage.aiTraining.filterUnclear, value: 'unclear' }
-            ]}
-            selectedFilter="all"
-            onFilterSelect={() => {}}
-          />
         </div>
       </div>
 
       {/* Content Section */}
       <div className={styles.cardList}>
-        <RagCandidateCard 
-          department="프론트 데스크"
-          aiReason="RAG_MISSING"
-          roomNumber="1001"
-          consultationContent="직원: 고객님, 레이트 체크아웃은 오후 2시까지 가능하며 5만원의 추가 요금이 발생합니다."
-          timestamp="10:30 AM"
-          onAddRag={(content) => {
-            setSelectedKnowledge({
-              domainCode: "FRONT",
-              question: "",
-              answer: content,
-              updatedAt: "방금 전",
-              isNew: true
-            });
-            setIsEditModalOpen(true);
-          }}
-          onReject={() => console.log('Rejected')}
-        />
-        <RagCandidateCard 
-          department="하우스키핑"
-          aiReason="INTENT_UNCLEAR"
-          roomNumber="204"
-          consultationContent="직원: 고객님, 엑스트라 베드 설치는 무료로 진행해 드리겠습니다."
-          timestamp="11:45 AM"
-          onAddRag={(content) => {
-            setSelectedKnowledge({
-              domainCode: "HK",
-              question: "",
-              answer: content,
-              updatedAt: "방금 전",
-              isNew: true
-            });
-            setIsEditModalOpen(true);
-          }}
-          onReject={() => console.log('Rejected')}
-        />
+        {loading ? (
+          <div className={styles.emptyState}>{t.common.loading}</div>
+        ) : error ? (
+          <div className={styles.emptyState}>{error}</div>
+        ) : filteredItems.length === 0 ? (
+          <div className={styles.emptyState}>검토 대기 중인 항목이 없습니다.</div>
+        ) : (
+          filteredItems.map(item => (
+            <div key={item.id} className={styles.candidateCard}>
+              <div className={styles.candidateContent}>
+                <div className={styles.candidateHeader}>
+                  <StatusBadge variant="purple">
+                    검토 대기 ({getDomainLabel(item.domainCode)})
+                  </StatusBadge>
+                  <span className={styles.candidateTime}>
+                    {new Date(item.updatedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className={styles.candidateQuestion}>
+                  <strong>Q:</strong> {item.question || '(질문 없음)'}
+                </div>
+                <div className={styles.candidateAnswer}>
+                  <strong>A:</strong> {item.answer || '(답변 없음)'}
+                </div>
+              </div>
+              <div className={styles.candidateActions}>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setSelectedItem(item);
+                    setIsEditModalOpen(true);
+                  }}
+                  style={{ width: '100%', padding: 'var(--space-8)' }}
+                >
+                  RAG 등록
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleReject(item.id)}
+                  style={{ width: '100%', padding: 'var(--space-8)' }}
+                >
+                  제외
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      {selectedKnowledge && isEditModalOpen && (
+      {/* 지식 편집 모달 */}
+      {selectedItem && isEditModalOpen && (
         <KnowledgeEditModal
           isOpen={isEditModalOpen}
           onClose={() => {
             setIsEditModalOpen(false);
-            if (selectedKnowledge.isNew) {
-              setSelectedKnowledge(null);
-            }
+            setSelectedItem(null);
           }}
-          initialDomainCode={selectedKnowledge.domainCode}
-          initialQuestion={selectedKnowledge.question}
-          initialAnswer={selectedKnowledge.answer}
-          onSave={(data) => {
-            console.log('Saved knowledge:', data);
-            setIsEditModalOpen(false);
-            setSelectedKnowledge(null);
-          }}
+          initialDomainCode={selectedItem.domainCode}
+          initialQuestion={selectedItem.question}
+          initialAnswer={selectedItem.answer}
+          onSave={handleApprove}
         />
       )}
     </div>

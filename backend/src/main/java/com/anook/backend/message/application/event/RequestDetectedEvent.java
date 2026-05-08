@@ -46,6 +46,9 @@ public class RequestDetectedEvent extends ApplicationEvent {
     /** 에스컬레이션 여부 (confidence < 0.7이면 true) */
     private final boolean escalated;
 
+    /** 요청 유형: "ADD"(새 요청 추가) 또는 "REPLACE"(기존 요청 수정) */
+    private final String actionType;
+
     public RequestDetectedEvent(Object source,
                                  String roomNo,
                                  Long guestId,
@@ -55,7 +58,8 @@ public class RequestDetectedEvent extends ApplicationEvent {
                                  double confidence,
                                  String rawText,
                                  String summary,
-                                 boolean escalated) {
+                                 boolean escalated,
+                                 String actionType) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
@@ -66,6 +70,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
         this.rawText = rawText;
         this.summary = summary;
         this.escalated = escalated;
+        this.actionType = actionType;
     }
 }
 
