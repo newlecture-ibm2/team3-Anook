@@ -42,19 +42,26 @@ export default function EmergencyBanner({ alert, onDismiss, onClick }: Emergency
       oscillator.connect(gain);
       gain.connect(ctx.destination);
 
-      oscillator.type = 'square';
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-
-      // 짧은 비프음 3회
-      oscillator.start(ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.setValueAtTime(0, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0, ctx.currentTime + 0.45);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + 0.6);
-      gain.gain.setValueAtTime(0, ctx.currentTime + 0.75);
-      oscillator.stop(ctx.currentTime + 0.8);
+      oscillator.type = 'sawtooth'; // 날카롭고 긴급한 느낌의 톱니파
+      
+      let time = ctx.currentTime;
+      oscillator.start(time);
+      
+      // 고음과 저음이 빠르게 교차하는 '삐-뽀-삐-뽀' 화재 경보기 패턴 (총 6주기, 1.8초)
+      for (let i = 0; i < 6; i++) {
+        // 강하고 높은 음 (1200Hz)
+        oscillator.frequency.setValueAtTime(1200, time);
+        gain.gain.setValueAtTime(0.2, time);
+        
+        // 날카로운 낮은 음 (800Hz)
+        oscillator.frequency.setValueAtTime(800, time + 0.15);
+        gain.gain.setValueAtTime(0.2, time + 0.15);
+        
+        time += 0.3;
+      }
+      
+      gain.gain.setValueAtTime(0, time);
+      oscillator.stop(time);
     } catch {
       // AudioContext 미지원 환경 무시
     }
