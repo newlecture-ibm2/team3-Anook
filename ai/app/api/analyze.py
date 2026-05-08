@@ -53,6 +53,42 @@ DOMAIN_AGENTS: Dict[str, Any] = {
 # ── 다국어 정적 멘트 딕셔너리 ──
 STATIC_REPLIES = {
     "ESCALATION": {
+<<<<<<< danhee/fix/AN-269
+        "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
+        "ja": "私ではすぐにお答えするのが難しいため、すぐにフロントデスクのスタッフにお繋ぎいたしますね。少々お待ちくださいませ！",
+        "zh": "这个问题我马上为您连接前台工作人员，请您稍等片刻！"
+    },
+    "CLARIFICATION": {
+        "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
+        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!",
+        "ja": "もう少し詳しく教えていただけますでしょうか？お伺いでき次第、すぐに対応させていただきます！",
+        "zh": "您能再稍微详细地告诉我一下吗？了解后我会立刻为您处理的！"
+    },
+    "CANCEL": {
+        "ko": "네, 방금 말씀하신 요청은 바로 취소해 드릴게요.",
+        "en": "Sure, I'll go ahead and cancel your most recent request.",
+        "ja": "はい、先ほどのリクエストはすぐにキャンセルさせていただきますね。",
+        "zh": "好的，我马上为您取消刚才的请求。"
+    },
+    "TASK_WAIT": {
+        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
+        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment.",
+        "ja": "かしこまりました！担当部署にすぐお伝えいたしますね。少々お待ちくださいませ。",
+        "zh": "明白了！我会立刻帮您转交到相关部门，请您稍等一下哦。"
+    },
+    "INFO_NOT_FOUND": {
+        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
+        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
+        "ja": "あっと、その件については私ではすぐにお答えが難しいため、フロントデスクのスタッフに申し伝えました！確認次第こちらで回答いたしますので、少々お待ちくださいませ。",
+        "zh": "哎呀，这个问题我马上无法给出准确答复，我已经将您的问题转达给前台工作人员了！他们确认后会很快在这里回复您，请稍等片刻。"
+    },
+    "ERROR": {
+        "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
+        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
+        "ja": "少しシステムに問題が発生しているようです。少し経ってからもう一度お話しいただけますでしょうか？",
+        "zh": "哎呀，系统似乎出了点小问题。能麻烦您稍后再试一下吗？"
+=======
         "ko": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
         "en": "I apologize, but I am having trouble understanding. I will connect you to the front desk immediately.",
         "ja": "申し訳ありません。正確な把握が難しいため、すぐにフロントデスクのスタッフにお繋ぎいたします。",
@@ -87,6 +123,7 @@ STATIC_REPLIES = {
         "en": "A problem occurred while processing your request. Please try again later.",
         "ja": "リクエストの処理中に問題が発生しました。しばらくしてからもう一度お試しください。",
         "zh": "处理您的请求时出现问题。请稍后再试。"
+>>>>>>> dev
     }
 }
 
@@ -96,6 +133,41 @@ def _get_static_reply(key: str, lang: str) -> str:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES[key]["en"])
 
+<<<<<<< danhee/fix/AN-269
+
+def _summarize_from_context(current_text: str, chat_history: List[dict], fallback: str) -> str:
+    """
+    대화 맥락(chat_history)을 활용해 Gemini에게 한줄 요약을 요청합니다.
+    실패 시 fallback 문자열을 그대로 반환합니다.
+    """
+    try:
+        # 최근 6개 메시지만 사용 (토큰 절약)
+        recent = chat_history[-6:] if len(chat_history) > 6 else chat_history
+        context_lines = []
+        for msg in recent:
+            role = "고객" if msg.get("role") == "user" else "AI"
+            context_lines.append(f"{role}: {msg.get('content', '')}")
+        context_lines.append(f"고객: {current_text}")
+        context_str = "\n".join(context_lines)
+
+        raw = call_gemini(
+            prompt=(
+                f"아래 호텔 고객과 AI 컨시어지의 대화를 읽고, "
+                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.\n\n"
+                f"[대화]\n{context_str}"
+            ),
+            system_instruction='반드시 {"summary": "요약내용"} 형식의 JSON으로만 출력하세요. 예: {"summary": "아기 침대 객실 배치 요청"}'
+        )
+        summary = raw.get("summary", "").strip()
+        if summary:
+            print(f"[Analyze] 📝 맥락 기반 요약 생성: '{summary}'")
+            return summary
+    except Exception as e:
+        print(f"[Analyze] ⚠️ 맥락 요약 생성 실패 (폴백 사용): {e}")
+    return fallback
+
+=======
+>>>>>>> dev
 
 @router.post("/analyze")
 async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
@@ -241,9 +313,14 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
                 print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {e}")
 
         # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
+        context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
         response = {
             "guest_reply": _get_static_reply("TASK_WAIT", request.language),
+<<<<<<< danhee/fix/AN-269
+            "summary": context_summary,
+=======
             "summary": f"{domain} 부서 요청 접수",
+>>>>>>> dev
             "domain_code": domain,
             "priority": "NORMAL",
             "entities": {},
@@ -363,9 +440,16 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
         if guest_reply == info_not_found_msg:
             # AI가 답을 모르는 정보성 질문일 경우, 0번 전화 안내로 끝내지 않고 프론트데스크로 이관
+<<<<<<< danhee/fix/AN-269
+            escalation_summary = _summarize_from_context(request.text, request.chat_history, "AI 미학습 정보 (직원 연결)")
+            response = {
+                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "summary": escalation_summary,
+=======
             response = {
                 "guest_reply": _get_static_reply("ESCALATION", request.language),
                 "summary": "AI 미학습 정보 (직원 연결)",
+>>>>>>> dev
                 "domain_code": "FRONT",
                 "priority": "NORMAL",
                 "entities": {"intent": "ESCALATION"},
