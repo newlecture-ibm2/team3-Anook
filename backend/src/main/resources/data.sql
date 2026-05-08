@@ -105,10 +105,10 @@ INSERT INTO pms_menu (name, price, category, allergens, options, available) VALU
     ('시즌 과일 플레이트',   12000, 'SIDE',    NULL,               NULL,                          TRUE),
     ('모짜렐라 스틱',        10000, 'SIDE',    '밀,유제품',        NULL,                          TRUE),
     -- DRINK (음료)
-    ('콜라',                 4000,  'DRINK',   NULL,               '온도:일반|제로',               TRUE),
+    ('콜라',                 4000,  'DRINK',   NULL,               '종류:일반|제로',               TRUE),
     ('오렌지 주스',          6000,  'DRINK',   NULL,               NULL,                          TRUE),
     ('아메리카노',           5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
-    ('캐모마일 티',          5000,  'DRINK',   NULL,               NULL,                          TRUE),
+    ('캐모마일 티',          5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
     -- DESSERT (디저트)
     ('뉴욕 치즈케이크',      12000, 'DESSERT', '밀,유제품,계란',        NULL,                    TRUE),
     ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', NULL,                    TRUE),
