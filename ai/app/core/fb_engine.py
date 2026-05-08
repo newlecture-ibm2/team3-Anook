@@ -32,7 +32,14 @@ def _fetch_menu_context() -> str:
                 allergens = m.get("allergens")
                 options = m.get("options")
                 allergy_str = f" (알러지: {allergens})" if allergens else ""
-                option_str = f" [선택옵션: {options}]" if options else ""
+                
+                # 옵션 형식을 "굽기:레어|미디엄|웰던" -> "(옵션: 굽기 - 레어/미디엄/웰던)"으로 변환
+                if options:
+                    formatted_options = options.replace(":", " - ").replace("|", "/")
+                    option_str = f" (옵션: {formatted_options})"
+                else:
+                    option_str = ""
+                    
                 menu_lines.append(f"- [{category}] {name}: {price:,}원{allergy_str}{option_str}")
             return "\n".join(menu_lines)
         else:
