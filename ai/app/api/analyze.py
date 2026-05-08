@@ -15,7 +15,11 @@
   entities는 빈 객체({})로 내려보냅니다.
 """
 
+import random
+import re
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 from app.domains.rag import service as rag_service
@@ -326,6 +330,127 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         if primary.mode == "INFO":
             domain = primary.domain or "FRONT"
 
+    # ──────────────────────────────────────────────
+    # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
+    # ──────────────────────────────────────────────
+    if primary.mode == "INFO":
+        domain = primary.domain or "FRONT"
+        try:
+            # 🧠 [지능형 쿼리 확장] - 피드백 반영: 히스토리 기반 장르 다양화
+            rewrite_prompt = f"다음 손님의 질문을 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성해줘: '{request.text}'"
+            search_query_raw = call_gemini(
+                prompt=rewrite_prompt,
+                system_instruction=(
+                    "당신은 호텔 검색 엔진 최적화 전문가입니다. "
+                    "사용자의 질문을 호텔 지식 베이스 검색에 가장 적합한 문장으로 확장하세요. "
+                    "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름(삼겹살, 파스타 등)이나 카테고리를 재작성된 문장에 절대로 포함하지 마세요. "
+                    "질문의 의도만 자연스럽게 살려 구체화하세요. "
+                    "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
+                )
+            )
+            search_query = search_query_raw.get("reply", request.text) if isinstance(search_query_raw, dict) else request.text
+            print(f"[Analyze] 🔍 검색어 확장: '{request.text}' → '{search_query}'")
+
+            # 🛠️ [검색 엔진 고도화] - 컨시어지 한정 Pool 확대 및 스마트 필터링
+            top_k = 10 if domain == "CONCIERGE" else 3
+            threshold = 0.3 if domain == "CONCIERGE" else 0.5
+            
+            rag_results = rag_service.search_similar(search_query, domain_code=domain, top_k=top_k, threshold=threshold)
+            
+            # 🎨 [컨시어지 전용 리랭킹/셔플/네거티브 필터링]
+            additional_instructions = ""
+            if domain == "CONCIERGE" and rag_results:
+                # 1. 품질 하한선 필터링 (0.3 이상만 유지)
+                rag_results = [r for r in rag_results if r.get('similarity', 1.0) >= 0.3]
+                
+                # 2. [네거티브 필터링] 최근 대화(최근 4개 메시지)에서 언급된 식당 추출
+                mentioned_places = []
+                if request.chat_history:
+                    # 최근 2턴(사용자/AI 한 쌍씩 4개)의 AI 답변 탐색
+                    for msg in request.chat_history[-4:]:
+                        if msg.get('role') == 'ai':
+                            content = msg.get('content', '')
+                            # [자동화] DB의 모든 답변에서 작은따옴표('') 안의 명칭 자동 추출
+                            all_answers = rag_service.get_all_answers_by_domain("CONCIERGE")
+                            all_places = set()
+                            for ans in all_answers:
+                                found = re.findall(r"'([^']+)'", ans)
+                                for f in found:
+                                    all_places.add(f)
+                            
+                            for place in all_places:
+                                if place in content:
+                                    mentioned_places.append(place)
+                
+                # 3. 중복 제외 로직: 이미 언급된 장소는 리스트의 맨 뒤로 이동
+                fresh_results = [r for r in rag_results if not any(p in r['answer'] for p in mentioned_places)]
+                already_said = [r for r in rag_results if any(p in r['answer'] for p in mentioned_places)]
+                
+                # 4. [카테고리 분리 셔플] fact는 유사도 순서 유지, recommendation만 셔플
+                fact_results = [r for r in fresh_results if "[fact]" in r['question'] and r.get('similarity', 0) >= 0.7]
+                rec_results = [r for r in fresh_results if "[recommendation]" in r['question']]
+                other_results = [r for r in fresh_results if "[fact]" not in r['question'] and "[recommendation]" not in r['question']]
+                
+                is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
+                if not is_reconfirm:
+                    random.shuffle(rec_results)  # 추천 데이터만 셔플 (다양성 확보)
+                
+                # fact 우선 → 셔플된 recommendation → 기타 → 이미 언급된 것
+                rag_results = fact_results + rec_results + other_results + already_said
+                print(f"[Analyze] 🚫 필터링 적용 (fact: {len(fact_results)}개, rec: {len(rec_results)}개, 언급됨: {mentioned_places})")
+                
+                # 6. [카테고리 유지 및 자연스러운 대화] 직전 언급된 장소와 카테고리 파악
+                last_place = mentioned_places[-1] if mentioned_places else None
+                is_another_request = any(word in request.text for word in ["다른", "또", "더", "다음에", "더보기"])
+                
+                # 직전 언급 장소의 카테고리 찾기 (지식 데이터와 대조)
+                last_category = None
+                if last_place:
+                    from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
+                    for k in CONCIERGE_KNOWLEDGE:
+                        if last_place in k['answer']:
+                            last_category = k.get('category')
+                            break
+                
+                # "다른 데" 요청 시 동일 카테고리 우선 배치
+                if is_another_request and last_category:
+                    rag_results.sort(key=lambda x: 0 if x.get('category') == last_category else 1)
+
+                # 7. [Fact 인지 강화 및 대화 흐름 최적화]
+                is_fact_included = any("[fact]" in r['question'] for r in rag_results)
+                fact_instruction = ""
+                if is_fact_included:
+                    fact_instruction = "\n- **중요**: [fact] 태그 정보는 질문에 대한 확정적 답변이므로 즉시 활용하세요."
+
+                last_mention_instruction = f"방금 '{last_place}'를 추천했음을 인지하고, " if last_place else ""
+                additional_instructions = (
+                    f"\n- 답변 시 마크다운 강조(**)를 사용하지 말고 평문으로 작성하세요. {fact_instruction}"
+                    f"\n- {last_mention_instruction}사용자의 요청 흐름에 맞춰 자연스럽게 대화를 이어가세요. "
+                    f"\n- 안내한 내용이 택시 호출, 꽃배달, 짐 보관 등 '요청이나 예약'이 가능한 서비스라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스로 이어지는 질문을 포함하세요."
+                    f"\n- 예: '파스타 외에 다른 맛집을 찾으신다면 ~는 어떠세요?', '택시는 정문에서 이용 가능합니다. 지금 바로 호출해 드릴까요?' 등"
+                    "\n- 이전 대화와 중복되는 장소 추천은 절대 피하세요."
+                )
+
+            if rag_results:
+                knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
+                info_prompt = (
+                    f"고객 질문: {request.text}\n\n"
+                    f"아래 제공된 [호텔 지식]만을 바탕으로, 반드시 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
+                    f"만약 [호텔 지식]에 고객의 질문에 대한 명확한 답이 없다면, 절대 유추하거나 지어내지 말고 "
+                    f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
+                    f"[호텔 지식]\n{knowledge}"
+                )
+                raw = call_gemini(
+                    prompt=info_prompt, 
+                    system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
+                )
+                guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language))
+            else:
+                # 💡 [Smart Fallback] 지식 검색 결과가 없지만 컨시어지 관련 질문인 경우
+                # 에이전트(Gemini)가 대화 맥락을 통해 직접 판단하여 응답하도록 처리
+                if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
+                    print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
+                    agent_result = DOMAIN_AGENTS["CONCIERGE"](
             # ── FB 도메인 INFO는 에이전트에게 위임 (메뉴 기반 알러지 추천 등) ──
             if domain == "FB" and "FB" in DOMAIN_AGENTS:
                 try:
