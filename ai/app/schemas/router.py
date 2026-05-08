@@ -10,7 +10,7 @@ class RouterOutputSchema(BaseModel):
     )
     domain: Optional[str] = Field(
         default=None, 
-        description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY). mode가 TASK 또는 INFO일 때 값이 존재함."
+        description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY). mode가 TASK 또는 INFO일 때, 혹은 특정 부서를 지목한 CANCEL일 때 값이 존재함."
     )
     confidence: float = Field(
         description="도메인 및 모드 분류 확신도 (0.0 ~ 1.0)"

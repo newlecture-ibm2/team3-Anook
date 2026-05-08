@@ -95,8 +95,8 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
                 result.domain = FALLBACK_DOMAIN
                 result.reasoning += f" (confidence {result.confidence:.2f} 미달로 FRONT Fallback 적용)"
 
-        # ── 5) CHITCHAT/CLARIFICATION/CANCEL/STATUS_CHECK일 때 domain은 반드시 null ──
-        if result.mode in ("CHITCHAT", "CLARIFICATION", "CANCEL", "STATUS_CHECK"):
+        # ── 5) CHITCHAT/CLARIFICATION/STATUS_CHECK일 때 domain은 반드시 null ──
+        if result.mode in ("CHITCHAT", "CLARIFICATION", "STATUS_CHECK"):
             result.domain = None
 
         logger.info(

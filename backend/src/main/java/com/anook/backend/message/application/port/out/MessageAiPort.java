@@ -15,15 +15,15 @@ import java.util.Map;
 public interface MessageAiPort {
 
     /**
-     * 고객 메시지를 분석하여 AI 응답 + 요청 감지 결과 반환
+     * 고객 메시지를 분석하여 다중 AI 응답 + 다중 요청 감지 결과 반환
      *
      * @param text        고객 발화 원문
      * @param roomNo      객실 번호
      * @param language    고객 언어 코드 (예: "ko", "en")
      * @param chatHistory 최근 대화 맥락
-     * @return AI 분석 결과
+     * @return AI 분석 결과 (다중 인텐트 대응을 위해 List 반환)
      */
-    MessageAiResult analyze(String text, String roomNo, String language, List<Map<String, String>> chatHistory);
+    List<MessageAiResult> analyze(String text, String roomNo, String language, List<Map<String, String>> chatHistory);
 
     /**
      * 한국어(또는 원본 언어) 텍스트를 대상 언어로 번역

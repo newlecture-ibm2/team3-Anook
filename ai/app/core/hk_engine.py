@@ -53,8 +53,7 @@ def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list
     # 6. analyze.py 응답 형태로 변환
     # 되묻기(needs_clarification)일 때는 domain_code=None → 백엔드가 request를 생성하지 않음
     return {
-        "guest_reply": result.clarification_question if result.needs_clarification
-                       else f"네, {result.entities.get('item', '요청하신 물품')}을(를) 객실로 보내드리겠습니다.",
+        "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
         "domain_code": None if result.needs_clarification else "HK",
         "priority": result.priority,
