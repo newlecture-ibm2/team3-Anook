@@ -49,11 +49,43 @@ public class CreateRequestOnEventService {
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
 
+        boolean forceEscalate = false;
         // [Cancel & Replace] AI가 기존 요청을 '수정(REPLACE)'하는 문맥이라고 판단했을 때만 자동 취소
         // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
         // "수건 줘" → "물도 줘" = ADD (기존 요청 유지)
         if ("REPLACE".equalsIgnoreCase(event.getActionType())) {
-            cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+            boolean cancelled = cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+            if (!cancelled) {
+                // PENDING이 없어서 취소되지 않았다면, IN_PROGRESS 상태인 요청이 있는지 확인
+                List<Request> cancellableList = requestRepositoryPort.findAllCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+                List<Request> inProgressList = cancellableList.stream()
+                        .filter(r -> r.getDomainCode() == domainCode && r.getStatus() == RequestStatus.IN_PROGRESS).toList();
+                        
+                if (!inProgressList.isEmpty()) {
+                    forceEscalate = true; // 처리 중인 건이 있으므로 새 요청은 강제 에스컬레이션 (직원 개입 필요)
+                    
+                    for (Request inProgressReq : inProgressList) {
+                        try {
+                            inProgressReq.requestCancellation();
+                            requestRepositoryPort.save(inProgressReq);
+                            
+                            log.info("[Cancel&Replace] 기존 IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", inProgressReq.getId());
+                            
+                            RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.cancelRequestReceived(
+                                    inProgressReq.getId(),
+                                    inProgressReq.getDomainCode() != null ? inProgressReq.getDomainCode().name() : null,
+                                    inProgressReq.getSummary(), 
+                                    inProgressReq.getRoomNo());
+                            dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
+                            if (inProgressReq.getDepartmentId() != null) {
+                                dispatchPort.dispatchToDepartment(inProgressReq.getDepartmentId(), cancelPayload);
+                            }
+                        } catch (Exception e) {
+                            log.warn("[Cancel&Replace] 기존 요청 취소 대기 실패 — id: {}, reason: {}", inProgressReq.getId(), e.getMessage());
+                        }
+                    }
+                }
+            }
         }
 
         // [AN-125] 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
@@ -82,7 +114,8 @@ public class CreateRequestOnEventService {
         boolean isEmergencyDetected = event.getEntities() != null
                 && event.getEntities().containsKey("emergency_category");
 
-        boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
+        // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우, 또는 forceEscalate 가 true인 경우
+        boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7 || forceEscalate;
 
         if (isEmergencyDetected) {
             log.warn("🚨 [EMERGENCY] 긴급 상황 자동 에스컬레이션 — category: {}",
@@ -142,11 +175,12 @@ public class CreateRequestOnEventService {
      * 이때 기존 PENDING(HK, 수건 2장) 요청을 자동 취소하여
      * 중복 요청이 직원에게 전달되지 않도록 합니다.
      */
-    private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
+    private boolean cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
         String deptId = domainCode.getDeptId();
         List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo,
                 guestId, deptId);
 
+        boolean cancelledAny = false;
         for (Request existing : existingPending) {
             try {
                 existing.changeStatus(RequestStatus.CANCELLED);
@@ -163,12 +197,14 @@ public class CreateRequestOnEventService {
                         existing.getSummary(),
                         existing.getRoomNo());
                 dispatchPort.dispatchToRoom(roomNo, cancelPayload);
+                cancelledAny = true;
 
             } catch (IllegalStateException e) {
                 log.warn("[Cancel&Replace] 기존 요청 취소 실패 (이미 상태 변경됨) — id: {}, reason: {}",
                         existing.getId(), e.getMessage());
             }
         }
+        return cancelledAny;
     }
 
     private String formatEntities(Map<String, Object> entities) {
