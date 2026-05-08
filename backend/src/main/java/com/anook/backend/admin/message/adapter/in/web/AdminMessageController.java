@@ -14,12 +14,16 @@ import java.util.Map;
  * admin/message 모듈의 자체 Port를 통해 message 테이블을 조회합니다.
  * message 모듈의 UseCase/Port를 import하지 않고 독립적으로 동작합니다.
  */
+import com.anook.backend.message.application.port.in.SendMessageUseCase;
+import com.anook.backend.message.application.dto.request.SendStaffMessageCommand;
+
 @RestController
 @RequestMapping("/admin/messages")
 @RequiredArgsConstructor
 public class AdminMessageController {
 
     private final AdminMessageQueryPort adminMessageQueryPort;
+    private final SendMessageUseCase sendMessageUseCase;
 
     /**
      * 메시지가 있는 객실 목록 조회
@@ -56,7 +60,13 @@ public class AdminMessageController {
         if (content == null || content.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        adminMessageQueryPort.saveStaffMessage(roomNo, content);
+        
+        Long guestId = adminMessageQueryPort.getLatestGuestId(roomNo);
+        // 번역 대상 언어는 현재 DB에 없으므로 기본값(en) 또는 ko 사용
+        sendMessageUseCase.sendStaffMessage(
+                new SendStaffMessageCommand(content, roomNo, guestId, "ko")
+        );
+        
         return ResponseEntity.ok().build();
     }
 }

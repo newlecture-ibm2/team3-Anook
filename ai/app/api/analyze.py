@@ -53,10 +53,10 @@ DOMAIN_AGENTS: Dict[str, Any] = {
 # ── 다국어 정적 멘트 딕셔너리 ──
 STATIC_REPLIES = {
     "ESCALATION": {
-        "ko": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
-        "en": "I apologize, but I am having trouble understanding. I will connect you to the front desk immediately.",
-        "ja": "申し訳ありません。正確な把握が難しいため、すぐにフロントデスクのスタッフにお繋ぎいたします。",
-        "zh": "很抱歉，我很难准确理解您的需求。我将立即为您连接前台工作人员。"
+        "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
+        "ja": "私ではすぐにお答えするのが難しいため、すぐにフロントデスクのスタッフにお繋ぎいたしますね。少々お待ちくださいませ！",
+        "zh": "这个问题我马上为您连接前台工作人员，请您稍等片刻！"
     },
     "CLARIFICATION": {
         "ko": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",

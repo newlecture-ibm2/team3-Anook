@@ -136,8 +136,12 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   });
 
   const rawTextParts = task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||') : [];
-  const originalRawText = rawTextParts[0] || '';
-  const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n') : null;
+  const mainText = rawTextParts[0] || '';
+  const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n').trim() : null;
+
+  const detailParts = mainText.split('[주문 상세]');
+  const customerText = detailParts[0].trim();
+  const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
@@ -175,12 +179,23 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
-            <div className={styles.descriptionSection}>
-              <h3 className={styles.descriptionTitle}>요청 상세 내용</h3>
-              <div className={styles.descriptionBox}>
-                {originalRawText}
+            {customerText && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>고객 원문</h3>
+                <div className={styles.descriptionBox}>
+                  {customerText}
+                </div>
               </div>
-            </div>
+            )}
+
+            {orderDetail && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>주문/요청 상세</h3>
+                <div className={styles.orderDetailBox}>
+                  {orderDetail}
+                </div>
+              </div>
+            )}
 
             {task.entities && ((task.entities.items?.length ?? 0) > 0 || (task.entities.tasks?.length ?? 0) > 0) && (
               <div className={styles.descriptionSection}>
@@ -213,7 +228,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             {transferReasonText && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>
-                <div className={styles.descriptionBox}>
+                <div className={styles.transferReasonBox}>
                   {transferReasonText}
                 </div>
               </div>
