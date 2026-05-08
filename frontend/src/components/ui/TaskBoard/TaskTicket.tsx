@@ -41,7 +41,11 @@ export default function TaskTicket({
 
   let timeDisplay = '';
   if (status === 'DONE') {
-    const date = new Date(createdAt);
+    let parsedString = createdAt;
+    if (typeof createdAt === 'string' && !createdAt.endsWith('Z') && !createdAt.includes('+')) {
+      parsedString = createdAt + 'Z';
+    }
+    const date = new Date(parsedString);
     const hours = date.getHours();
     const mins = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -114,7 +118,11 @@ export default function TaskTicket({
 }
 
 function getRelativeTime(dateString: string | Date): string {
-  const date = new Date(dateString);
+  let parsedString = dateString;
+  if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+    parsedString = dateString + 'Z';
+  }
+  const date = new Date(parsedString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
