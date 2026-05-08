@@ -124,7 +124,11 @@ export function useChat() {
               setMessages(prev => {
                 // 중복 방지
                 if (prev.some(m => m.id === staffMsgId)) return prev;
-                return [...prev, {
+
+                // 직원이 채팅으로 응대하기 시작하면 기존 'AI 미학습 정보(직원 연결)' 카드는 삭제
+                const filtered = prev.filter(m => !(m.type === 'REQUEST_CARD' && m.meta?.domainCode === 'FRONT'));
+
+                return [...filtered, {
                   id: staffMsgId,
                   variant: 'received',
                   content: payload.content,
@@ -187,40 +191,57 @@ export function useChat() {
 
               // --- System messages for cancel flow ---
               if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
-                setMessages(prev => [...prev, {
-                  id: `system-cancel-success-${Date.now()}`,
-                  variant: 'received',
-                  type: 'TEXT',
-                  content: '안내: 요청이 정상적으로 취소되었습니다.',
-                }]);
+                setMessages(prev => {
+                  const msgId = `system-cancel-success-${payload.requestId}`;
+                  if (prev.some(m => m.id === msgId)) return prev;
+                  return [...prev, {
+                    id: msgId,
+                    variant: 'received',
+                    type: 'TEXT',
+                    content: '안내: 요청이 정상적으로 취소되었습니다.',
+                  }];
+                });
               }
 
               if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
-                setMessages(prev => [...prev, {
-                  id: `system-cancel-pending-${Date.now()}`,
-                  variant: 'received',
-                  type: 'TEXT',
-                  content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
-                }]);
+                setMessages(prev => {
+                  const msgId = `system-cancel-pending-${payload.requestId}`;
+                  if (prev.some(m => m.id === msgId)) return prev;
+                  return [...prev, {
+                    id: msgId,
+                    variant: 'received',
+                    type: 'TEXT',
+                    content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
+                  }];
+                });
               }
 
               if (payload.status === 'COMPLETED') {
                 setTimeout(() => {
-                  setMessages(prev => [...prev, {
-                    id: `feedback-${Date.now()}`,
-                    variant: 'received',
-                    type: 'FEEDBACK',
-                  }]);
+                  setMessages(prev => {
+                    const msgId = `system-feedback-${payload.requestId}`;
+                    if (prev.some(m => m.id === msgId)) return prev;
+                    return [...prev, {
+                      id: msgId,
+                      variant: 'received',
+                      type: 'FEEDBACK',
+                      meta: { requestId: payload.requestId }
+                    }];
+                  });
                 }, 1000);
               }
 
               if (payload.type === 'CANCEL_REJECTED') {
-                setMessages(prev => [...prev, {
-                  id: `system-${Date.now()}`,
-                  variant: 'received',
-                  type: 'TEXT',
-                  content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
-                }]);
+                setMessages(prev => {
+                  const msgId = `system-cancel-reject-${payload.requestId}`;
+                  if (prev.some(m => m.id === msgId)) return prev;
+                  return [...prev, {
+                    id: msgId,
+                    variant: 'received',
+                    type: 'TEXT',
+                    content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
+                  }];
+                });
               }
             } else if (payload.type === 'GRACE_EXPIRED') {
               // Hide the buttons on the specific card by forcing graceRemaining to 0
