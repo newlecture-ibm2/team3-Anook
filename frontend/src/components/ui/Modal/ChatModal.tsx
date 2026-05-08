@@ -196,15 +196,12 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
 
   // 상담 내용에서 초기 질문/답변 추출
   const extractInitialContent = () => {
-    const guestMessages = messages
-      .filter(m => m.variant === 'received')
-      .map(m => m.content);
     const staffMessages = messages
       .filter(m => m.variant === 'sent')
       .map(m => m.content);
 
     return {
-      question: guestMessages.join('\n'),
+      question: '',
       answer: staffMessages.join('\n'),
     };
   };

@@ -138,6 +138,11 @@ public class AdminRequestJpaEntity {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void updateStatus(String status) {
+        this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     /**
      * 에스컬레이션 요청 — 직원이 처리 불가로 판단하여 관리자 승인 대기 상태로 변경
      */
