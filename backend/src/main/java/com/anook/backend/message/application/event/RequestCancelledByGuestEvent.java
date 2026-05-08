@@ -12,10 +12,12 @@ public class RequestCancelledByGuestEvent extends ApplicationEvent {
 
     private final String roomNo;
     private final Long guestId;
+    private final String domainCode;
 
-    public RequestCancelledByGuestEvent(Object source, String roomNo, Long guestId) {
+    public RequestCancelledByGuestEvent(Object source, String roomNo, Long guestId, String domainCode) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
+        this.domainCode = domainCode;
     }
 }

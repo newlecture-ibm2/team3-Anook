@@ -112,57 +112,72 @@ public class SendMessageService implements SendMessageUseCase {
                     .toList();
 
             // AI 호출
-            MessageAiResult analysis = aiPort.analyze(content, roomNo, language, chatHistory);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory);
 
             // 4. AI 응답 메시지 저장
-            Message aiMsg = Message.createAiReply(roomNo, guestId, analysis.guestReply());
+            String combinedReply = analyses.stream()
+                    .map(MessageAiResult::guestReply)
+                    .filter(reply -> reply != null && !reply.isBlank())
+                    .distinct()
+                    .collect(java.util.stream.Collectors.joining("\n\n"));
+            
+            if (combinedReply.isEmpty()) {
+                combinedReply = "알겠습니다.";
+            }
+
+            Message aiMsg = Message.createAiReply(roomNo, guestId, combinedReply);
             aiMsg = messagePort.save(aiMsg);
-            log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), analysis.guestReply());
+            log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), combinedReply);
 
             // 5. WebSocket Push → 고객 채팅 화면에 AI 응답 실시간 전달
             dispatchPort.sendToRoom(roomNo, Map.of(
                     "type", "AI_RESPONSE",
                     "messageId", aiMsg.getId(),
-                    "content", analysis.guestReply()));
+                    "content", combinedReply));
 
             // 6. 태스크형 요청 감지 시 이벤트 발행 (여기서 message 책임 끝!)
-            if (analysis.domainCode() != null) {
-                boolean escalated = analysis.confidence() < 0.7;
+            for (MessageAiResult analysis : analyses) {
+                if ("CANCEL_ALL_REQUESTS".equals(analysis.action())) {
+                    eventPublisher.publishEvent(new com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent(this, roomNo, guestId));
+                    log.info("[Message] AllRequestsCancelledByGuestEvent 발행 — room: {}", roomNo);
+                } else if ("CANCEL_REQUEST".equals(analysis.action())) {
+                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode()));
+                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}", roomNo, analysis.domainCode());
+                } else if (analysis.domainCode() != null) {
+                    boolean escalated = analysis.confidence() < 0.7;
 
-                eventPublisher.publishEvent(new RequestDetectedEvent(
-                        this,
-                        roomNo,
-                        guestId,
-                        analysis.domainCode(),
-                        analysis.priority(),
-                        analysis.entities(),
-                        analysis.confidence(),
-                        content,
-                        analysis.summary(),
-                        escalated,
-                        analysis.actionType()));
-                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
-                        analysis.domainCode(), escalated, analysis.actionType());
-            } else if ("CANCEL_REQUEST".equals(analysis.action())) {
-                eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
-                log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);
-            }
+                    eventPublisher.publishEvent(new RequestDetectedEvent(
+                            this,
+                            roomNo,
+                            guestId,
+                            analysis.domainCode(),
+                            analysis.priority(),
+                            analysis.entities(),
+                            analysis.confidence(),
+                            content,
+                            analysis.summary(),
+                            escalated,
+                            analysis.actionType()));
+                    log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
+                            analysis.domainCode(), escalated, analysis.actionType());
+                }
 
-            // 7. AI 로그 비동기 분리 저장
-            if (analysis.aiLogMeta() != null) {
-                Map<String, Object> meta = analysis.aiLogMeta();
-                AiLog aiLog = AiLog.builder()
-                        .requestId(null) // 요청 ID는 나중에 동기화하거나 null로 허용 (비즈니스 요구사항에 따라 다름)
-                        .modelName((String) meta.get("model_name"))
-                        .rawPrompt((String) meta.get("raw_prompt"))
-                        .rawResponse((String) meta.get("raw_response"))
-                        .promptTokens(meta.get("prompt_tokens") != null ? ((Number) meta.get("prompt_tokens")).intValue() : 0)
-                        .completionTokens(meta.get("completion_tokens") != null ? ((Number) meta.get("completion_tokens")).intValue() : 0)
-                        .latencyMs(meta.get("latency_ms") != null ? ((Number) meta.get("latency_ms")).intValue() : 0)
-                        .isFallback(meta.get("is_fallback") != null && (Boolean) meta.get("is_fallback"))
-                        .build();
-                        
-                asyncAiLoggingService.saveAiLogAsync(aiLog);
+                // 7. AI 로그 비동기 분리 저장
+                if (analysis.aiLogMeta() != null) {
+                    Map<String, Object> meta = analysis.aiLogMeta();
+                    AiLog aiLog = AiLog.builder()
+                            .requestId(null)
+                            .modelName((String) meta.get("model_name"))
+                            .rawPrompt((String) meta.get("raw_prompt"))
+                            .rawResponse((String) meta.get("raw_response"))
+                            .promptTokens(meta.get("prompt_tokens") != null ? ((Number) meta.get("prompt_tokens")).intValue() : 0)
+                            .completionTokens(meta.get("completion_tokens") != null ? ((Number) meta.get("completion_tokens")).intValue() : 0)
+                            .latencyMs(meta.get("latency_ms") != null ? ((Number) meta.get("latency_ms")).intValue() : 0)
+                            .isFallback(meta.get("is_fallback") != null && (Boolean) meta.get("is_fallback"))
+                            .build();
+                            
+                    asyncAiLoggingService.saveAiLogAsync(aiLog);
+                }
             }
             
         } catch (Exception e) {
