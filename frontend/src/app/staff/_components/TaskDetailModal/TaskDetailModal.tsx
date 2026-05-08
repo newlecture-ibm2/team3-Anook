@@ -123,7 +123,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   };
 
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
-  if (task.priority === 'HIGH' || task.priority === 'URGENT') {
+  if (task.priority === 'URGENT') {
     badgeVariant = 'red';
   }
 

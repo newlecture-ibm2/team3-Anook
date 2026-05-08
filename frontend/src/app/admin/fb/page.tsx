@@ -9,11 +9,11 @@ import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
-const mapPriority = (p: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' => {
-  const map: Record<string, 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'> = {
-    LOW: 'LOW', NORMAL: 'MEDIUM', HIGH: 'HIGH', URGENT: 'URGENT'
-  };
-  return map[p] || 'MEDIUM';
+const mapPriority = (p: string): 'NORMAL' | 'URGENT' => {
+  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') {
+    return 'URGENT';
+  }
+  return 'NORMAL';
 };
 
 const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {

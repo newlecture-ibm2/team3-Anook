@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button/Button';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  priority?: 'NORMAL' | 'URGENT';
   title: string;
   description: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
@@ -19,7 +19,7 @@ export interface TaskTicketProps {
 
 export default function TaskTicket({
   ticketId,
-  priority = 'MEDIUM',
+  priority = 'NORMAL',
   title,
   description,
   status = 'TODO',
@@ -31,10 +31,8 @@ export default function TaskTicket({
   isCancelled = false
 }: TaskTicketProps) {
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
-  if (priority === 'HIGH' || priority === 'URGENT') {
+  if (priority === 'URGENT') {
     badgeVariant = 'red';
-  } else if (priority === 'LOW') {
-    badgeVariant = 'gray';
   } else {
     badgeVariant = 'gray';
   }

@@ -13,7 +13,7 @@ class HotelRequestSchema(BaseModel):
     domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY)")
     
     summary: str = Field(description="직원용 Jira 대시보드 카드 제목으로 렌더링될 세 줄 요약")
-    priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: LOW, NORMAL, HIGH, URGENT)")
+    priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: NORMAL, URGENT)")
     status: str = Field(default="PENDING", description="티켓 상태 (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED 등)")
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")
     

@@ -20,9 +20,7 @@ const COLUMN_CONFIG = [
 const PRIORITY_OPTIONS = [
   { label: '전체 우선순위', value: 'ALL' },
   { label: '긴급 (URGENT)', value: 'URGENT' },
-  { label: '높음 (HIGH)', value: 'HIGH' },
   { label: '일반 (NORMAL)', value: 'NORMAL' },
-  { label: '낮음 (LOW)', value: 'LOW' },
 ];
 
 /**
@@ -191,11 +189,7 @@ function DashboardContent() {
   );
 }
 
-function mapPriority(p: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' {
-  switch (p) {
-    case 'URGENT': return 'URGENT';
-    case 'HIGH': return 'HIGH';
-    case 'LOW': return 'LOW';
-    default: return 'MEDIUM';
-  }
+function mapPriority(p: string): 'NORMAL' | 'URGENT' {
+  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') return 'URGENT';
+  return 'NORMAL';
 }

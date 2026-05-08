@@ -13,7 +13,7 @@ OUTPUT FORMAT (strictly JSON):
   "room_no": "from input",
   "domain": "FACILITY",
   "summary": "3줄 요약 (Korean)",
-  "priority": "LOW | NORMAL | HIGH | URGENT",
+  "priority": "NORMAL | URGENT",
   "status": "PENDING",
   "confidence": 0.0~1.0,
   "entities": {
@@ -55,11 +55,7 @@ RULES:
 - If the equipment or symptom is too vague (e.g., "뭔가 고장났어요"), set `needs_clarification=true` and ask in Korean: exactly WHAT is broken and HOW.
 - When `needs_clarification=true`, you MUST provide 2~4 specific clickable options in `clarification_options` (e.g., ["에어컨", "TV", "조명", "기타"]). Do NOT ask broad routing questions.
 - Write `summary`, `equipment`, `symptom`, `location`, and `clarification_question` in KOREAN.
-- Assess `priority` based on severity:
-  - URGENT: 누수, 화재, 안전 위협
-  - HIGH: 전기/수도 전면 고장, 도어락 잠김
-  - NORMAL: 일반 가전/설비 고장
-  - LOW: 소음, 미세 불편 (리모컨 배터리 등)
+- Assess `priority` based on severity: NORMAL or URGENT
 
 [Graceful Surrender Rule]
 - If the guest requests something completely unrelated to your department (Facility Management) (e.g., the guest asks for Room Service or Taxi), DO NOT attempt to route it to another department or answer it.

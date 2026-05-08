@@ -7,7 +7,7 @@ import { handleResponse } from '@/lib/api';
 export interface StaffTask {
   id: number;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  priority: 'NORMAL' | 'URGENT';
   departmentId: string;
   summary: string;
   rawText: string;
