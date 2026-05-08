@@ -17,7 +17,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
-
+import java.util.Map;
+import java.util.ArrayList;
 /**
  * Message 도메인에서 발행한 RequestDetectedEvent를 수신하여 Request 생성
  *
@@ -55,6 +56,17 @@ public class CreateRequestOnEventService {
             cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
         }
 
+        // [AN-125] 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
+        // 긴 문장일 경우에는 원문과 AI가 추출한 상세 내역을 모두 표시하여 직원의 가독성을 높임.
+        String finalRawText = event.getRawText();
+        String formattedEntities = formatEntities(event.getEntities());
+        
+        if (finalRawText != null && finalRawText.length() <= 3) {
+            finalRawText = formattedEntities.trim(); // "응"은 버리고 상세 내역만 사용
+        } else if (formattedEntities != null && !formattedEntities.isEmpty()) {
+            finalRawText = finalRawText + "\n\n" + formattedEntities.trim();
+        }
+
         // Request 도메인 객체 생성
         Request request = Request.create(
                 event.getRoomNo(),
@@ -63,7 +75,7 @@ public class CreateRequestOnEventService {
                 event.getPriority(),
                 event.getEntities(),
                 event.getConfidence(),
-                event.getRawText(),
+                finalRawText,
                 event.getSummary());
 
         // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
@@ -149,5 +161,51 @@ public class CreateRequestOnEventService {
                         existing.getId(), e.getMessage());
             }
         }
+    }
+
+    private String formatEntities(Map<String, Object> entities) {
+        if (entities == null || entities.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder("[주문 상세]");
+        
+        // 특별 취급: FB 메뉴 (menu_items 배열 구조)
+        if (entities.containsKey("menu_items")) {
+            Object menuItems = entities.get("menu_items");
+            if (menuItems instanceof List<?> items) {
+                sb.append("\n- 메뉴: ");
+                List<String> menuStrs = new ArrayList<>();
+                for (Object itemObj : items) {
+                    if (itemObj instanceof Map<?,?> item) {
+                        String name = (String) item.get("name");
+                        Object qty = item.get("quantity");
+                        String opt = (String) item.get("selected_option");
+                        String menuStr = name + " " + qty + "개";
+                        if (opt != null && !opt.isBlank() && !"없음".equals(opt)) {
+                            menuStr += "(" + opt + ")";
+                        }
+                        menuStrs.add(menuStr);
+                    }
+                }
+                sb.append(String.join(", ", menuStrs));
+            }
+        } else {
+            // 다른 부서는 key-value 순차 출력 (intent, allergen_warning 제외)
+            for (Map.Entry<String, Object> entry : entities.entrySet()) {
+                if ("intent".equals(entry.getKey())) continue;
+                if ("allergen_warning".equals(entry.getKey())) continue;
+                if ("special_requests".equals(entry.getKey())) continue; // 아래에서 별도 처리
+                
+                sb.append("\n- ").append(entry.getKey()).append(": ").append(entry.getValue());
+            }
+        }
+        
+        // 추가 요청 사항이 있으면 표시
+        if (entities.containsKey("special_requests")) {
+            Object specialReq = entities.get("special_requests");
+            if (specialReq != null && !specialReq.toString().isBlank() && !"없음".equals(specialReq.toString())) {
+                sb.append("\n- 추가 요청: ").append(specialReq);
+            }
+        }
+        
+        return sb.toString();
     }
 }

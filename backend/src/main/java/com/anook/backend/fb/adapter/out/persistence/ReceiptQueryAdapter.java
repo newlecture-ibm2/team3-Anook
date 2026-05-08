@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * pms_receipt + pms_menu 조인으로 영수증 항목 조회 (읽기 전용)
  */
-@Repository
+@Repository("fbReceiptQueryAdapter")
 @RequiredArgsConstructor
 public class ReceiptQueryAdapter implements ReceiptQueryPort {
 
