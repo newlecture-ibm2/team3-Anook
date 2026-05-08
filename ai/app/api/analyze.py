@@ -37,12 +37,13 @@ class AnalyzeRequest(BaseModel):
 from app.core.facility_engine import run_facility_agent
 from app.core.hk_engine import run_hk_agent
 from app.core.concierge_engine import run_concierge_agent
+from app.core.fb_engine import run_fb_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
-    # "FB": run_fb_agent,
+    "FB": run_fb_agent,
     # "CONCIERGE": run_concierge_agent,
     # "FRONT": run_front_agent,
     # "EMERGENCY": run_emergency_agent,
@@ -215,6 +216,29 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
     # ──────────────────────────────────────────────
     if primary.mode == "INFO":
         domain = primary.domain or "FRONT"
+
+        # ── FB 도메인 INFO는 에이전트에게 위임 (메뉴 기반 알러지 추천 등) ──
+        if domain == "FB" and "FB" in DOMAIN_AGENTS:
+            try:
+                agent_result = DOMAIN_AGENTS["FB"](
+                    user_message=request.text,
+                    room_no=request.room_no,
+                    chat_history=request.chat_history,
+                )
+                response = {
+                    "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
+                    "summary": agent_result.get("summary", "FB 정보 문의"),
+                    "domain_code": None,  # INFO이므로 요청 미생성
+                    "priority": "NORMAL",
+                    "entities": agent_result.get("entities", {}),
+                    "confidence": agent_result.get("confidence", primary.confidence),
+                }
+                print(f"[Analyze] ℹ️ INFO+FB → FB 에이전트 위임 처리")
+                print(f"[Analyze] 응답: {response}\n")
+                return response
+            except Exception as e:
+                print(f"[Analyze] ⚠️ FB 에이전트 INFO 위임 실패, RAG 폴백: {e}")
+
         try:
             rag_results = rag_service.search_similar(request.text, domain_code=domain, top_k=3, threshold=0.5)
             if rag_results:

@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(mappedData);
       }
 
-      let finalData = data.map((item: any) => ({...item, roomNumber: item.roomNo}));
+      let finalData = data;
       if (role !== "ADMIN" && view === "my" && staffId) {
         finalData = finalData.filter((item: any) => {
           return item.status === "PENDING" || item.assignedStaffId === staffId;
