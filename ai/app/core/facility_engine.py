@@ -28,33 +28,8 @@ def _normalize_equipment(equipment: str) -> str:
 
 
 def _build_guest_reply(result: HotelRequestSchema) -> str:
-    """priority와 추출된 entity를 활용하여 자연스러운 고객 응답 메시지 생성"""
-    if result.needs_clarification:
-        return result.clarification_question
-
-    if getattr(result, "final_reply", ""):
-        return result.final_reply
-
-    equipment = result.entities.get('equipment', '해당 시설')
-    symptom = result.entities.get('symptom', '불편 사항')
-    location = result.entities.get('location', '객실')
-    priority = result.priority
-
-    if priority == "URGENT":
-        return (
-            f"긴급 접수되었습니다! {location}의 {equipment} 문제({symptom})로 "
-            f"시설팀이 즉시 출동합니다. 안전에 유의해 주세요."
-        )
-    elif priority == "HIGH":
-        return (
-            f"접수되었습니다. {location}의 {equipment} {symptom} 문제를 "
-            f"시설팀이 우선적으로 방문하여 조치하겠습니다."
-        )
-    else:
-        return (
-            f"접수되었습니다. {location}의 {equipment} {symptom} 건으로 "
-            f"시설팀이 방문하여 확인해 드리겠습니다."
-        )
+    """다국어 지원을 위해 프롬프트에서 생성된 final_reply를 직접 매핑"""
+    return result.clarification_question if result.needs_clarification else getattr(result, "final_reply", "접수되었습니다.")
 
 
 def run_facility_agent(user_message: str, room_no: str, chat_history: list = None) -> dict:

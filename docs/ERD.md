@@ -45,12 +45,14 @@ erDiagram
     request {
         bigint id PK
         varchar status "PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, SETTLED, CANCELLED"
-        varchar priority "LOW, NORMAL, HIGH, URGENT"
+        varchar priority "NORMAL, URGENT"
         varchar department_id FK "HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY"
         jsonb entities "부서별 가변 데이터 (품목/수량/증상/목적지 등)"
         text raw_text "고객 발화 원문"
         text summary "AI 요약 (직원 대시보드 카드 제목)"
         float confidence "AI 확신도 0.0~1.0"
+        boolean cancel_requested "고객 취소 요청 여부"
+        timestamp cancel_requested_at "취소 요청 시각"
         bigint room_id FK
         bigint assigned_staff_id FK "nullable"
         int version "낙관적 락"
