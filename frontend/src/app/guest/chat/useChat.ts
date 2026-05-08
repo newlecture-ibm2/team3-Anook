@@ -4,7 +4,7 @@ import { ChatMessage } from './_components/ChatScreen';
 
 interface BackendMessage {
   id: number;
-  senderType: 'GUEST' | 'AI';
+  senderType: 'GUEST' | 'AI' | 'STAFF';
   content: string;
   translatedContent: string | null;
   createdAt: string;
@@ -118,6 +118,19 @@ export function useChat() {
               };
 
               setMessages(prev => [...prev, newAiMsg]);
+            } else if (payload.type === 'STAFF_MESSAGE') {
+              // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
+              const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
+              setMessages(prev => {
+                // 중복 방지
+                if (prev.some(m => m.id === staffMsgId)) return prev;
+                return [...prev, {
+                  id: staffMsgId,
+                  variant: 'received',
+                  content: payload.content,
+                  type: 'TEXT',
+                }];
+              });
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
                 'PENDING': 10, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
