@@ -13,9 +13,9 @@ EMERGENCY_KEYWORDS: Dict[str, Dict[str, Any]] = {
     "MEDICAL_ASSIST": {
         "keywords": [
             # 한국어
-            "피 나", "피가 나", "베었", "다쳤", "열 나", "열이 나", "해열제", "구급 상자", "반창고", "약 좀",
+            "피 나", "피가 나", "베었", "다쳤", "해열제", "구급 상자", "반창고", "배 아파", "배가 아파", "복통", "고열", "응급실",
             # English
-            "bleeding", "cut my", "injured", "fever", "medicine", "first aid", "band aid",
+            "bleeding", "cut my", "injured", "fever", "medicine", "first aid", "band aid", "stomachache", "stomach ache",
         ],
         "severity": 8,
     },
@@ -31,7 +31,7 @@ EMERGENCY_KEYWORDS: Dict[str, Dict[str, Any]] = {
     "WATER_LEAK": {
         "keywords": [
             # 한국어
-            "물 넘쳐", "물 넘치", "물 쏟아져", "천장에서 물", "방이 물바다", "변기 터졌", "물바다",
+            "천장에서 물", "방이 물바다", "변기 터졌", "홍수", "침수",
             # English
             "flooded", "flooding", "water pouring", "pipe burst", "overflowing",
         ],
@@ -91,11 +91,24 @@ def emergency_pre_filter(text: str) -> Optional[Dict[str, Any]]:
                 }
                 
             # 2. 키워드에 공백이 포함된 경우, 유연한 정규식 매칭
-            # 예: "물 넘쳐" -> "물.*넘쳐" 로 변환되어 "물이 넘쳐요", "물이 너무 많이 넘쳐요" 모두 매칭
+            # 예: "물 넘쳐" -> "물(은|는|이|가|을|를|도|에|에서|로|으로)?.*넘쳐" 로 변환
             if " " in keyword_lower:
+                # 각 단어 뒤에 한국어 조사가 붙을 수 있음을 명시적으로 허용
+                words = keyword_lower.split()
+                regex_words = [re.escape(w) + r"(?:은|는|이|가|을|를|도|에|에서|로|으로)?" for w in words]
+                
                 # 단어 사이사이에 '최대 10글자 이내의 어떤 문자열'이 와도 매칭되도록 허용
-                # (너무 멀리 떨어진 단어가 우연히 매칭되는 오작동 방지)
-                pattern = r".{0,10}".join(re.escape(word) for word in keyword_lower.split())
+                pattern = r".{0,10}".join(regex_words)
+                if re.search(pattern, text_lower):
+                    return {
+                        "category": category,
+                        "matched_keyword": keyword,
+                        "severity": config["severity"],
+                    }
+            
+            # 3. 공백이 없는 단일 키워드라도 단어 뒤에 조사가 붙는 경우 정규식으로 한 번 더 확인
+            if " " not in keyword_lower:
+                pattern = re.escape(keyword_lower) + r"(?:은|는|이|가|을|를|도|에|에서|로|으로)?"
                 if re.search(pattern, text_lower):
                     return {
                         "category": category,

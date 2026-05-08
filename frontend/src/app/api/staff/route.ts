@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
       }
 
       const view = searchParams.get("view");
-      const targetDeptId = departmentId || session.departmentId;
+      // ADMIN은 전체 부서를 조회해야 하므로, 명시적 파라미터만 사용
+      // STAFF는 자기 부서만 봐야 하므로 session.departmentId로 fallback
+      const targetDeptId = role === "ADMIN"
+        ? departmentId
+        : (departmentId || session.departmentId);
 
       const backendEndpoint = role === "ADMIN"
         ? (targetDeptId ? `${BACKEND_URL}/admin/requests?dept=${targetDeptId}` : `${BACKEND_URL}/admin/requests`)
@@ -83,13 +87,16 @@ export async function GET(request: NextRequest) {
           assignedStaffName: item.assignedStaffName,
           confidence: null,
           createdAt: item.createdAt,
+          version: item.version,
+          cancelRequested: item.cancelRequested ?? false,
+          cancelRequestedAt: item.cancelRequestedAt ?? null,
         }));
         return NextResponse.json(mappedData);
       }
 
       let finalData = data;
       if (role !== "ADMIN" && view === "my" && staffId) {
-        finalData = data.filter((item: any) => {
+        finalData = finalData.filter((item: any) => {
           return item.status === "PENDING" || item.assignedStaffId === staffId;
         });
       }
@@ -126,7 +133,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
 
-    if (action === "accept" || action === "complete" || action === "transfer") {
+    if (action === "accept" || action === "complete" || action === "transfer" || action === "approveCancellation" || action === "rejectCancellation") {
       let staffId = null;
       try {
         const payloadBase64 = session.token.split('.')[1];
@@ -137,7 +144,11 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ message: "토큰 해독에 실패했습니다." }, { status: 401 });
       }
 
-      const backendEndpoint = `${BACKEND_URL}/staff/requests/${id}/${action}`;
+      let backendActionPath = action;
+      if (action === "approveCancellation") backendActionPath = "cancellation/approve";
+      if (action === "rejectCancellation") backendActionPath = "cancellation/reject";
+
+      const backendEndpoint = `${BACKEND_URL}/staff/requests/${id}/${backendActionPath}`;
       
       const payload: any = { staffId: Number(staffId) };
       if (body.version !== undefined) payload.version = body.version;

@@ -21,9 +21,7 @@ const COLUMN_CONFIG = [
 const PRIORITY_OPTIONS = [
   { label: '전체 우선순위', value: 'ALL' },
   { label: '긴급 (URGENT)', value: 'URGENT' },
-  { label: '높음 (HIGH)', value: 'HIGH' },
   { label: '일반 (NORMAL)', value: 'NORMAL' },
-  { label: '낮음 (LOW)', value: 'LOW' },
 ];
 
 /**
@@ -42,7 +40,7 @@ export default function StaffDashboardPage() {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
-  const { tasks, loading, error, acceptTask, completeTask, transferTask, emergencyAlert, dismissEmergency } = useTasks(view === 'my' ? 'my' : 'dept');
+  const { tasks, loading, error, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation, emergencyAlert, dismissEmergency } = useTasks(view === 'my' ? 'my' : 'dept');
 
   // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,7 +94,7 @@ function DashboardContent() {
   const boardData = useMemo(() => ({
     TODO: filteredTasks.filter(t => t.status === 'PENDING'),
     IN_PROGRESS: filteredTasks.filter(t => t.status === 'IN_PROGRESS'),
-    DONE: filteredTasks.filter(t => t.status === 'COMPLETED'),
+    DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
   }), [filteredTasks]);
 
   return (
@@ -160,11 +158,13 @@ function DashboardContent() {
                           description={task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||')[0] : ''}
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
+                          cancelRequested={task.cancelRequested}
+                          isCancelled={task.status === 'CANCELLED'}
                           onAccept={col.status === 'TODO' ? (e) => {
                             e.stopPropagation();
                             acceptTask(task.id, task.version);
                           } : undefined}
-                          onComplete={col.status === 'IN_PROGRESS' ? (e) => {
+                          onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
                             e.stopPropagation();
                             completeTask(task.id, task.version);
                           } : undefined}
@@ -189,16 +189,14 @@ function DashboardContent() {
         onAccept={acceptTask}
         onComplete={completeTask}
         onTransfer={transferTask}
+        onApproveCancellation={approveCancellation}
+        onRejectCancellation={rejectCancellation}
       />
     </div>
   );
 }
 
-function mapPriority(p: string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' {
-  switch (p) {
-    case 'URGENT': return 'URGENT';
-    case 'HIGH': return 'HIGH';
-    case 'LOW': return 'LOW';
-    default: return 'MEDIUM';
-  }
+function mapPriority(p: string): 'NORMAL' | 'URGENT' {
+  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') return 'URGENT';
+  return 'NORMAL';
 }

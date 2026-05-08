@@ -5,7 +5,7 @@ import com.anook.backend.admin.emergency.application.port.out.EmergencyRequestCo
 import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
-import com.anook.backend.request.domain.model.Request;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

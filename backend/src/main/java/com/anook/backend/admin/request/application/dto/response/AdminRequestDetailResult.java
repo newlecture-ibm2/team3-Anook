@@ -20,6 +20,8 @@ public record AdminRequestDetailResult(
         Long assignedStaffId,
         String assignedStaffName,
         int version,
+        boolean cancelRequested,
+        LocalDateTime cancelRequestedAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

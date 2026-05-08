@@ -66,6 +66,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=db
+      - BACKEND_URL=http://backend:8080
     volumes:
       - ./ai:/app # 소스 코드 실시간 동기화 (Hot Reload)
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

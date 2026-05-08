@@ -54,6 +54,12 @@ public class AdminRequestJpaEntity {
     @Column(nullable = false)
     private Integer version;
 
+    @Column(name = "cancel_requested", nullable = false)
+    private Boolean cancelRequested = false;
+
+    @Column(name = "cancel_requested_at")
+    private LocalDateTime cancelRequestedAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -75,6 +81,8 @@ public class AdminRequestJpaEntity {
                 this.roomNo,
                 this.assignedStaffId,
                 this.version,
+                this.cancelRequested != null ? this.cancelRequested : false,
+                this.cancelRequestedAt,
                 this.createdAt,
                 this.updatedAt
         );
@@ -109,6 +117,24 @@ public class AdminRequestJpaEntity {
 
     public void cancel() {
         this.status = "CANCELLED";
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void approveCancellation() {
+        if (this.cancelRequested == null || !this.cancelRequested) {
+            throw new IllegalStateException("취소 요청이 없는 상태에서 취소 승인할 수 없습니다.");
+        }
+        this.status = "CANCELLED";
+        this.cancelRequested = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void rejectCancellation() {
+        if (this.cancelRequested == null || !this.cancelRequested) {
+            throw new IllegalStateException("취소 요청이 없는 상태에서 취소 반려할 수 없습니다.");
+        }
+        this.cancelRequested = false;
+        this.cancelRequestedAt = null;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -148,6 +174,7 @@ public class AdminRequestJpaEntity {
         entity.status = (assignedStaffId != null) ? "IN_PROGRESS" : "PENDING";
         entity.confidence = 1.0f;
         entity.version = 0;
+        entity.cancelRequested = false;
         entity.createdAt = LocalDateTime.now();
         entity.updatedAt = LocalDateTime.now();
         return entity;

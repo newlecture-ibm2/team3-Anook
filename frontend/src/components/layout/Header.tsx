@@ -19,10 +19,10 @@ export default function Header({ className = '' }: HeaderProps) {
         <button className={styles.hamburgerBtn} onClick={toggleSidebar} aria-label="메뉴 열기">
           <Menu size={24} />
         </button>
-        <Link href="/" style={{ 
-          fontSize: '1.75rem', 
-          fontWeight: 900, 
-          letterSpacing: '-0.05em', 
+        <Link href="/" style={{
+          fontSize: '1.75rem',
+          fontWeight: 900,
+          letterSpacing: '-0.05em',
           color: 'var(--color-primary, #0f172a)',
           textDecoration: 'none'
         }}>
@@ -39,10 +39,10 @@ export default function Header({ className = '' }: HeaderProps) {
 
 function LanguageToggle() {
   const { language, setLanguage } = useUiStore();
-  
+
   return (
     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      <button 
+      <button
         onClick={() => setLanguage('ko')}
         style={{
           background: language === 'ko' ? 'var(--color-primary, #0f172a)' : 'transparent',
@@ -57,7 +57,7 @@ function LanguageToggle() {
       >
         KO
       </button>
-      <button 
+      <button
         onClick={() => setLanguage('en')}
         style={{
           background: language === 'en' ? 'var(--color-primary, #0f172a)' : 'transparent',

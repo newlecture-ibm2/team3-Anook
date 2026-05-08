@@ -72,6 +72,11 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
         # ── 2) Pydantic 스키마 검증 ──
         result = RouterOutputSchema(**item)
 
+        # ── 2.5) 긴급 상황 예외 처리 ──
+        if result.mode == "EMERGENCY" or result.domain == "EMERGENCY":
+            result.mode = "TASK"
+            result.domain = "EMERGENCY"
+
         # ── 3) mode 유효성 검증 ──
         if result.mode not in VALID_MODES:
             logger.warning(f"[Router] 알 수 없는 mode '{result.mode}' → CLARIFICATION으로 Fallback")

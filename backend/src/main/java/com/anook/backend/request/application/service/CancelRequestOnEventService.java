@@ -41,22 +41,38 @@ public class CancelRequestOnEventService {
         if (latestRequest.isPresent()) {
             Request request = latestRequest.get();
             try {
-                // 도메인 로직: 상태 변경 (PENDING -> CANCELLED)
-                request.changeStatus(RequestStatus.CANCELLED);
-                requestPort.save(request);
+                if (request.getStatus() == RequestStatus.PENDING) {
+                    request.changeStatus(RequestStatus.CANCELLED);
+                    requestPort.save(request);
 
-                log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
+                    log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
 
-                // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
-                RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                        request.getId(), request.getStatus().name(),
-                        request.getDomainCode() != null ? request.getDomainCode().name() : null,
-                        request.getSummary(), request.getRoomNo());
-                dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
+                    // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
+                    RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                            request.getId(), request.getStatus().name(),
+                            request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                            request.getSummary(), request.getRoomNo());
+                    dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
 
-                // 관리자 대시보드 쪽에도 취소되었다는 알림 전송 (필요 시)
-                if (request.getDepartmentId() != null) {
-                    dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+                    // 관리자 대시보드 쪽에도 취소되었다는 알림 전송 (필요 시)
+                    if (request.getDepartmentId() != null) {
+                        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+                    }
+                } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
+                    request.requestCancellation();
+                    requestPort.save(request);
+
+                    log.info("[Request] 최근 요청 취소 승인 대기 처리 완료 — id: {}", request.getId());
+
+                    RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRequestReceived(
+                            request.getId(),
+                            request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                            request.getSummary(), request.getRoomNo());
+                    dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
+
+                    if (request.getDepartmentId() != null) {
+                        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+                    }
                 }
 
             } catch (IllegalStateException e) {

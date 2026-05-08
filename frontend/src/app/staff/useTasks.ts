@@ -7,7 +7,7 @@ import { handleResponse } from '@/lib/api';
 export interface StaffTask {
   id: number;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  priority: 'NORMAL' | 'URGENT';
   departmentId: string;
   summary: string;
   rawText: string;
@@ -17,6 +17,8 @@ export interface StaffTask {
   confidence: number | null;
   createdAt: string;
   version: number;
+  cancelRequested: boolean;
+  cancelRequestedAt: string | null;
 }
 
 export interface EmergencyAlert {
@@ -36,6 +38,8 @@ interface UseTasksReturn {
   transferTask: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
   emergencyAlert: EmergencyAlert | null;
   dismissEmergency: () => void;
+  approveCancellation: (id: number, version: number) => Promise<void>;
+  rejectCancellation: (id: number, version: number) => Promise<void>;
 }
 
 export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
@@ -116,6 +120,38 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
     }
   }, [fetchTasks]);
 
+  const approveCancellation = useCallback(async (id: number, version: number) => {
+    try {
+      const res = await fetch(`/api/staff?action=approveCancellation&id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
+      });
+      await handleResponse(res);
+      await fetchTasks(true);
+    } catch (err) {
+      console.error('Failed to approve cancellation:', err);
+      fetchTasks(true);
+      throw err;
+    }
+  }, [fetchTasks]);
+
+  const rejectCancellation = useCallback(async (id: number, version: number) => {
+    try {
+      const res = await fetch(`/api/staff?action=rejectCancellation&id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
+      });
+      await handleResponse(res);
+      await fetchTasks(true);
+    } catch (err) {
+      console.error('Failed to reject cancellation:', err);
+      fetchTasks(true);
+      throw err;
+    }
+  }, [fetchTasks]);
+
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -133,7 +169,7 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
       };
       if (!event || !event.type) return;
 
-      if (event.type === 'NEW_REQUEST' || event.type === 'STATUS_CHANGED') {
+      if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(event.type)) {
         fetchTasks(true);
       }
 
@@ -164,5 +200,5 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
 
   const dismissEmergency = useCallback(() => setEmergencyAlert(null), []);
 
-  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, emergencyAlert, dismissEmergency };
+  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation, emergencyAlert, dismissEmergency };
 }
