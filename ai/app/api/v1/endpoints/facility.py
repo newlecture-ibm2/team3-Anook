@@ -11,6 +11,6 @@ class DomainRequest(BaseModel):
     room_no: str
     chat_history: List[dict] = []
 
-@router.post("", response_model=HotelRequestSchema)
+@router.post("")
 async def handle_facility(request: DomainRequest):
     return run_facility_agent(request.message, request.room_no, request.chat_history)

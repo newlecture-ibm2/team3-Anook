@@ -25,7 +25,8 @@ OUTPUT FORMAT (strictly JSON):
   "needs_clarification": false,
   "clarification_question": "",
   "clarification_options": [],
-  "missing_fields": []
+  "missing_fields": [],
+  "final_reply": "시설팀 직원이 즉시 객실로 출동하여 조치해 드리겠습니다."
 }
 
 INTENT CODES (choose the most specific one):
@@ -53,11 +54,20 @@ RULES:
 - `location`: If the guest does NOT mention a specific location, default to "객실".
 - If the equipment or symptom is too vague (e.g., "뭔가 고장났어요"), set `needs_clarification=true` and ask in Korean: exactly WHAT is broken and HOW.
 - When `needs_clarification=true`, you MUST provide 2~4 specific clickable options in `clarification_options` (e.g., ["에어컨", "TV", "조명", "기타"]). Do NOT ask broad routing questions.
-- [CRITICAL] If the request is NOT related to facility issues at all or is impossible to resolve, DO NOT try to route it to another department. Instead, set `confidence` strictly BELOW 0.4 (e.g., 0.3) so the system falls back to the human Front Desk.
 - Write `summary`, `equipment`, `symptom`, `location`, and `clarification_question` in KOREAN.
 - Assess `priority` based on severity:
   - URGENT: 누수, 화재, 안전 위협
   - HIGH: 전기/수도 전면 고장, 도어락 잠김
   - NORMAL: 일반 가전/설비 고장
   - LOW: 소음, 미세 불편 (리모컨 배터리 등)
+
+[Graceful Surrender Rule]
+- If the guest requests something completely unrelated to your department (Facility Management) (e.g., the guest asks for Room Service or Taxi), DO NOT attempt to route it to another department or answer it.
+- Simply set `confidence` to 0.2. The global system will automatically catch this and safely escalate it to the Front Desk staff.
+
+[Final Reply Rule]
+- If `needs_clarification` is false (the request is successfully accepted), you MUST write a `final_reply` field confirming the request in the SAME LANGUAGE the guest used.
+- Example (English guest): "We've dispatched our maintenance team to fix the AC in your room."
+- Example (Korean guest): "에어컨 수리를 위해 시설팀 직원이 객실로 출동합니다."
+- Example (Japanese guest): "エアコン修理のため、施設チームのスタッフがお部屋に向かいます。"
 """.strip()

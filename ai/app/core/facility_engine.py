@@ -32,6 +32,9 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
     if result.needs_clarification:
         return result.clarification_question
 
+    if getattr(result, "final_reply", ""):
+        return result.final_reply
+
     equipment = result.entities.get('equipment', '해당 시설')
     symptom = result.entities.get('symptom', '불편 사항')
     location = result.entities.get('location', '객실')
