@@ -53,6 +53,7 @@ DOMAIN_AGENTS: Dict[str, Any] = {
 # ── 다국어 정적 멘트 딕셔너리 ──
 STATIC_REPLIES = {
     "ESCALATION": {
+<<<<<<< danhee/fix/AN-269
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
         "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
         "ja": "私ではすぐにお答えするのが難しいため、すぐにフロントデスクのスタッフにお繋ぎいたしますね。少々お待ちくださいませ！",
@@ -87,6 +88,42 @@ STATIC_REPLIES = {
         "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
         "ja": "少しシステムに問題が発生しているようです。少し経ってからもう一度お話しいただけますでしょうか？",
         "zh": "哎呀，系统似乎出了点小问题。能麻烦您稍后再试一下吗？"
+=======
+        "ko": "죄송합니다. 정확한 파악이 어려워 즉시 프런트 데스크 직원에게 연결해 드리겠습니다.",
+        "en": "I apologize, but I am having trouble understanding. I will connect you to the front desk immediately.",
+        "ja": "申し訳ありません。正確な把握が難しいため、すぐにフロントデスクのスタッフにお繋ぎいたします。",
+        "zh": "很抱歉，我很难准确理解您的需求。我将立即为您连接前台工作人员。"
+    },
+    "CLARIFICATION": {
+        "ko": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
+        "en": "I'm sorry, could you please provide more details? Let us know how we can help you, and we will assist you right away.",
+        "ja": "申し訳ありませんが、もう少し詳しく教えていただけますか？どのようなご用件かお知らせいただければ、すぐに対応いたします。",
+        "zh": "对不起，您能再详细说明一下吗？请告诉我们您需要什么帮助，我们会立即为您处理。"
+    },
+    "CANCEL": {
+        "ko": "네, 가장 최근 요청을 취소 처리하겠습니다.",
+        "en": "Okay, I will cancel your most recent request.",
+        "ja": "はい、直近のリクエストをキャンセルいたします。",
+        "zh": "好的，我将取消您最近的请求。"
+    },
+    "TASK_WAIT": {
+        "ko": "네, 알겠습니다. 담당 부서에 요청을 전달하겠습니다. 잠시만 기다려 주세요.",
+        "en": "Understood. I will forward your request to the department in charge. Please wait a moment.",
+        "ja": "承知いたしました。担当部署にリクエストを転送いたします。少々お待ちください。",
+        "zh": "好的，我将把您的请求转交给相关部门。请稍等片刻。"
+    },
+    "INFO_NOT_FOUND": {
+        "ko": "죄송합니다, 해당 정보를 찾지 못했습니다. 프론트 데스크(내선 0번)로 문의해 주세요.",
+        "en": "I'm sorry, I couldn't find that information. Please contact the front desk (extension 0).",
+        "ja": "申し訳ありませんが、その情報が見つかりませんでした。フロントデスク（内線0番）までお問い合わせください。",
+        "zh": "抱歉，我没有找到相关信息。请联系前台（分机0）。"
+    },
+    "ERROR": {
+        "ko": "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        "en": "A problem occurred while processing your request. Please try again later.",
+        "ja": "リクエストの処理中に問題が発生しました。しばらくしてからもう一度お試しください。",
+        "zh": "处理您的请求时出现问题。请稍后再试。"
+>>>>>>> dev
     }
 }
 
@@ -96,6 +133,7 @@ def _get_static_reply(key: str, lang: str) -> str:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES[key]["en"])
 
+<<<<<<< danhee/fix/AN-269
 
 def _summarize_from_context(current_text: str, chat_history: List[dict], fallback: str) -> str:
     """
@@ -128,6 +166,8 @@ def _summarize_from_context(current_text: str, chat_history: List[dict], fallbac
         print(f"[Analyze] ⚠️ 맥락 요약 생성 실패 (폴백 사용): {e}")
     return fallback
 
+=======
+>>>>>>> dev
 
 @router.post("/analyze")
 async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
@@ -276,7 +316,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
         response = {
             "guest_reply": _get_static_reply("TASK_WAIT", request.language),
+<<<<<<< danhee/fix/AN-269
             "summary": context_summary,
+=======
+            "summary": f"{domain} 부서 요청 접수",
+>>>>>>> dev
             "domain_code": domain,
             "priority": "NORMAL",
             "entities": {},
@@ -396,10 +440,16 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
         if guest_reply == info_not_found_msg:
             # AI가 답을 모르는 정보성 질문일 경우, 0번 전화 안내로 끝내지 않고 프론트데스크로 이관
+<<<<<<< danhee/fix/AN-269
             escalation_summary = _summarize_from_context(request.text, request.chat_history, "AI 미학습 정보 (직원 연결)")
             response = {
                 "guest_reply": _get_static_reply("ESCALATION", request.language),
                 "summary": escalation_summary,
+=======
+            response = {
+                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "summary": "AI 미학습 정보 (직원 연결)",
+>>>>>>> dev
                 "domain_code": "FRONT",
                 "priority": "NORMAL",
                 "entities": {"intent": "ESCALATION"},

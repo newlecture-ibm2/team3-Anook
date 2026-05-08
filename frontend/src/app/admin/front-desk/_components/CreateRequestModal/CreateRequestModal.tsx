@@ -27,7 +27,6 @@ interface CreateRequestModalProps {
     summary: string;
     rawText?: string;
     priority?: string;
-    assignedStaffId?: number;
   }) => Promise<boolean>;
   loading?: boolean;
 }
@@ -50,10 +49,8 @@ export default function CreateRequestModal({
   const [summary, setSummary] = useState('');
   const [rawText, setRawText] = useState('');
   const [priority, setPriority] = useState('NORMAL');
-  const [assignedStaffId, setAssignedStaffId] = useState<number | ''>('');
 
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [staffList, setStaffList] = useState<StaffMember[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -61,11 +58,6 @@ export default function CreateRequestModal({
     fetch('/api/admin/departments')
       .then(res => res.json())
       .then(data => setDepartments(data))
-      .catch(() => {});
-    // 직원 목록 조회
-    fetch('/api/admin/staff')
-      .then(res => res.json())
-      .then(data => setStaffList(data))
       .catch(() => {});
   }, [isOpen]);
 
@@ -75,7 +67,6 @@ export default function CreateRequestModal({
     setSummary('');
     setRawText('');
     setPriority('NORMAL');
-    setAssignedStaffId('');
   };
 
   const handleClose = () => {
@@ -87,7 +78,6 @@ export default function CreateRequestModal({
     if (!departmentId || !roomNo || !summary) return;
     const payload: any = { departmentId, roomNo, summary, priority };
     if (rawText) payload.rawText = rawText;
-    if (assignedStaffId !== '') payload.assignedStaffId = assignedStaffId;
     const success = await onCreate(payload);
     if (success) {
       resetForm();
@@ -121,22 +111,6 @@ export default function CreateRequestModal({
             />
           </div>
 
-          {/* 부서 선택 */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="cr-dept">부서 <span className={styles.required}>*</span></label>
-            <select
-              id="cr-dept"
-              className={styles.select}
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-            >
-              <option value="" disabled>부서를 선택하세요</option>
-              {departments.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
-
           {/* 요약 */}
           <div className={styles.field}>
             <label className={styles.label} htmlFor="cr-summary">요청 내용 <span className={styles.required}>*</span></label>
@@ -163,7 +137,7 @@ export default function CreateRequestModal({
             />
           </div>
 
-          {/* 하단 2열: 우선순위 + 담당 직원 */}
+          {/* 하단 2열: 우선순위 + 배정 부서 */}
           <div className={styles.row}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="cr-priority">우선순위</label>
@@ -179,16 +153,16 @@ export default function CreateRequestModal({
               </select>
             </div>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="cr-staff">담당 직원</label>
+              <label className={styles.label} htmlFor="cr-dept">배정 부서 <span className={styles.required}>*</span></label>
               <select
-                id="cr-staff"
+                id="cr-dept"
                 className={styles.select}
-                value={assignedStaffId}
-                onChange={(e) => setAssignedStaffId(e.target.value ? Number(e.target.value) : '')}
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
               >
-                <option value="">미배정</option>
-                {staffList.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                <option value="" disabled>부서를 선택하세요</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
             </div>

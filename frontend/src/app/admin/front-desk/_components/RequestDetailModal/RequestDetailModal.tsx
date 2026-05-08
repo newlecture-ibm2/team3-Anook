@@ -258,12 +258,39 @@ export default function RequestDetailModal({
             <span className={styles.label}>요약</span>
             <p className={styles.contentText}>{detail.summary}</p>
           </div>
-          {detail.rawText && (
-            <div className={styles.contentBlock}>
-              <span className={styles.label}>고객 원문</span>
-              <p className={styles.rawText}>{detail.rawText}</p>
-            </div>
-          )}
+          {(() => {
+            if (!detail.rawText) return null;
+            const transferParts = detail.rawText.split('\n|||TRANSFER_REASON|||');
+            const mainText = transferParts[0] || '';
+            const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
+
+            const detailParts = mainText.split('[주문 상세]');
+            const customerText = detailParts[0].trim();
+            const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
+
+            return (
+              <>
+                {customerText && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>고객 원문</span>
+                    <p className={styles.rawText}>{customerText}</p>
+                  </div>
+                )}
+                {orderDetail && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>주문/요청 상세</span>
+                    <p className={styles.orderDetail}>{orderDetail}</p>
+                  </div>
+                )}
+                {transferReason && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>부서 이관 사유</span>
+                    <p className={styles.transferReason}>{transferReason}</p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* AI 분석 결과 */}

@@ -1,0 +1,48 @@
+"""
+이 스크립트는 도커 컨테이너 안에서 실행해야 합니다.
+- 전체 부서 통합 시딩: docker exec anook-local-ai python seed_all.py
+- FB 부서 단독 시딩: docker exec anook-local-ai python app/domains/fb/seed_knowledge.py
+"""
+import sys
+import os
+
+# ai 디렉토리를 파이썬 경로에 추가하여 app 모듈을 임포트할 수 있게 함
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+from app.infrastructure.database.connection import get_db_connection
+from app.domains.rag.service import embed_text
+from app.domains.fb.knowledge_data import FB_KNOWLEDGE
+
+def seed_fb_knowledge():
+    print("🚀 식음료(F&B) RAG 지식 시딩을 시작합니다...")
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            for item in FB_KNOWLEDGE:
+                question = item["question"]
+                answer = item["answer"]
+                
+                print(f"⏳ 임베딩 생성 중: {question[:20]}...")
+                # 질문과 답변을 합쳐서 임베딩 텍스트로 사용 (검색 품질 향상)
+                embed_text_input = f"질문: {question}\n답변: {answer}"
+                embedding_vector = embed_text(embed_text_input)
+                
+                # DB에 INSERT
+                sql = """
+                    INSERT INTO knowledge_entry (question, answer, domain_code, status, embedding)
+                    VALUES (%s, %s, %s, %s, %s::vector)
+                """
+                cur.execute(sql, (question, answer, "FB", "APPROVED", embedding_vector))
+                print(f"✅ 삽입 완료: {question[:20]}...")
+                
+        conn.commit()
+        print("\n🎉 모든 식음료(F&B) 지식이 성공적으로 DB에 저장되었습니다!")
+    except Exception as e:
+        conn.rollback()
+        print(f"\n❌ 시딩 중 오류 발생: {e}")
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    seed_fb_knowledge()

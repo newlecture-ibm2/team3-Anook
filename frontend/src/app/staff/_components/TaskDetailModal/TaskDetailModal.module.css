@@ -77,6 +77,26 @@
   border: 1px solid var(--color-gray-200);
 }
 
+.orderDetailBox {
+  background-color: var(--color-primary-light, #f0f4ff);
+  padding: var(--space-16);
+  border-radius: var(--radius-8, 8px);
+  font: var(--text-body-regular);
+  color: var(--color-gray-800);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.transferReasonBox {
+  background-color: #fef3c7;
+  padding: var(--space-16);
+  border-radius: var(--radius-8, 8px);
+  font: var(--text-body-regular);
+  color: var(--color-gray-800);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .footer {
   display: flex;
   justify-content: flex-end;

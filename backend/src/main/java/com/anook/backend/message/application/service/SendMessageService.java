@@ -194,8 +194,13 @@ public class SendMessageService implements SendMessageUseCase {
     @Override
     @Transactional
     public void sendStaffMessage(com.anook.backend.message.application.dto.request.SendStaffMessageCommand command) {
+        String targetLang = command.targetLanguage();
+        if (targetLang == null || targetLang.isBlank()) {
+            targetLang = "ko"; // 기본값 (추후 팀원이 다국어 지원 시 수정 예정)
+        }
+
         // 1. 번역 수행
-        String translatedContent = aiPort.translate(command.content(), command.targetLanguage());
+        String translatedContent = aiPort.translate(command.content(), targetLang);
 
         // 2. 메시지 도메인 생성 및 저장
         Message staffMsg = Message.createStaffMessage(command.roomNo(), command.guestId(), command.content());

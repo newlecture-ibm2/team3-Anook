@@ -114,10 +114,13 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
 
     // 2. 백엔드로 전송
     try {
-      const res = await fetch(`/api/admin/messages/rooms/${roomNumber}/messages`, {
+      const res = await fetch(`/api/staff/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({ 
+          content: text,
+          roomNo: roomNumber
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
