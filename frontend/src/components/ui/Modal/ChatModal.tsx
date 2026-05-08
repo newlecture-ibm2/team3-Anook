@@ -70,12 +70,18 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
       const messageId = payload.messageId as number | undefined;
 
       if (type === 'AI_RESPONSE' || type === 'STAFF_MESSAGE') {
+        const displayContent = payload.originalContent ? (payload.originalContent as string) : content;
         setMessages(prev => {
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
+          // 낙관적 업데이트로 인한 중복 방지 (내용으로 비교)
+          if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp'))) {
+            // tempId를 실제 messageId로 교체
+            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent } : m);
+          }
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
             variant: 'sent',
-            content,
+            content: displayContent,
           }];
         });
       } else if (type === 'GUEST_MESSAGE') {
@@ -102,7 +108,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204' }: Chat
 
   const handleSend = async (text: string) => {
     // 1. 낙관적 업데이트 (즉시 화면에 표시)
-    const tempId = Date.now().toString();
+    const tempId = `temp-${Date.now()}`;
     const newMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
     setMessages(prev => [...prev, newMsg]);
 
