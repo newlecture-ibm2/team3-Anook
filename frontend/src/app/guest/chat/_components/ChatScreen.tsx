@@ -22,13 +22,13 @@ export interface ChatMessage {
 export interface ChatScreenProps {
   messages: ChatMessage[];
   isTyping: boolean;
-  activeRequest?: ActiveRequest | null;
+  activeRequests?: ActiveRequest[];
   onSendMessage: (text: string) => void;
   onCancelRequest?: (requestId: number) => void;
   onConfirmRequest?: (requestId: number) => void;
 }
 
-export default function ChatScreen({ messages, isTyping, activeRequest, onSendMessage, onCancelRequest, onConfirmRequest }: ChatScreenProps) {
+export default function ChatScreen({ messages, isTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest }: ChatScreenProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages or typing state changes
@@ -42,16 +42,32 @@ export default function ChatScreen({ messages, isTyping, activeRequest, onSendMe
         <div className={styles.logo}>Anook</div>
       </div>
       
-      {/* 고정 상태 바 */}
-      {activeRequest && (
-        <RequestStatusBar
-          requestId={activeRequest.requestId}
-          domainCode={activeRequest.domainCode}
-          summary={activeRequest.summary}
-          status={activeRequest.status}
-          entities={activeRequest.entities}
-          progress={activeRequest.progress}
-        />
+      {/* 고정 상태 바 컨테이너 */}
+      {activeRequests && activeRequests.length > 0 && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '72px', 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          width: 'calc(100% - var(--space-32))', 
+          maxWidth: '448px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '8px', 
+          zIndex: 10 
+        }}>
+          {activeRequests.map(req => (
+            <RequestStatusBar
+              key={req.requestId}
+              requestId={req.requestId}
+              domainCode={req.domainCode}
+              summary={req.summary}
+              status={req.status}
+              entities={req.entities}
+              progress={req.progress}
+            />
+          ))}
+        </div>
       )}
 
       <div className={styles.messageList}>

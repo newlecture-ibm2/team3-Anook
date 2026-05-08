@@ -19,6 +19,14 @@ export interface StaffTask {
   version: number;
   cancelRequested: boolean;
   cancelRequestedAt: string | null;
+  entities?: {
+    intent?: string;
+    items?: Array<{ item: string; count: number }>;
+    tasks?: string[];
+    is_contactless?: boolean;
+    target_time?: string;
+    [key: string]: any;
+  };
 }
 
 export interface EmergencyAlert {

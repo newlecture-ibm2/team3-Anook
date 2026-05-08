@@ -100,14 +100,14 @@ export default function RequestCard({
   const detailsText = renderDetails();
 
   return (
-    <div className={`${styles.card} ${isUrgent ? styles.urgentCard : ''} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
+    <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.badge} style={{ backgroundColor: domainInfo.color }}>
           {domainInfo.icon} {domainInfo.label}
         </div>
         <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : isUrgent ? '긴급 접수' : '대기 중'}
+          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : '대기 중'}
         </div>
       </div>
 
@@ -153,10 +153,6 @@ export default function RequestCard({
           ) : isEscalatedChat ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
               💬 프론트 직원이 채팅으로 응대할 예정입니다.
-            </div>
-          ) : isUrgent ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-error)' }}>
-              🔴 즉시 대응팀에 전달되었습니다
             </div>
           ) : (
             <div className={styles.completionMessage}>

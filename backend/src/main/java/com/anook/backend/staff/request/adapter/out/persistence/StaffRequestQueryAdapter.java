@@ -16,13 +16,14 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
 
     private final JdbcTemplate jdbcTemplate;
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @Override
     public List<StaffTaskResult> findRequests(String departmentId, String status, String priority) {
         StringBuilder sql = new StringBuilder(
-                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at, r.version, r.cancel_requested, r.cancel_requested_at "
-                        +
-                        "FROM request r WHERE 1=1");
-
+                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at, r.version, r.cancel_requested, r.cancel_requested_at, r.entities " +
+                "FROM request r WHERE 1=1"
+        );
         List<Object> params = new ArrayList<>();
 
         if (!"ALL".equalsIgnoreCase(departmentId)) {
@@ -60,7 +61,18 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                     ? rs.getTimestamp("cancel_requested_at").toLocalDateTime()
                     : null;
 
+            java.util.Map<String, Object> rEntities = java.util.Collections.emptyMap();
+            String entitiesJson = rs.getString("entities");
+            if (entitiesJson != null && !entitiesJson.isBlank()) {
+                try {
+                    rEntities = objectMapper.readValue(entitiesJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+                } catch (Exception e) {
+                    // JSON 파싱 에러 무시
+                }
+            }
+
             return new StaffTaskResult(
+<<<<<<< HEAD
                     rId,
                     rStatus,
                     rPriority,
@@ -74,6 +86,23 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                     rVersion,
                     rCancelRequested,
                     rCancelRequestedAt);
+=======
+                rId,
+                rStatus,
+                rPriority,
+                rDeptId,
+                rSummary,
+                rRawText,
+                rRoomNo,
+                rAssignedStaffId,
+                rConfidence,
+                rCreatedAt,
+                rVersion,
+                rCancelRequested,
+                rCancelRequestedAt,
+                rEntities
+            );
+>>>>>>> origin/dev
         }, params.toArray());
     }
 }

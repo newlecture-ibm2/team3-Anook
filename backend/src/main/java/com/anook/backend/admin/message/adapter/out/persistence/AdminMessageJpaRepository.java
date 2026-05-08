@@ -23,4 +23,9 @@ public interface AdminMessageJpaRepository extends JpaRepository<AdminMessageJpa
      * 특정 roomNo의 메시지를 시간순으로 조회
      */
     List<AdminMessageJpaEntity> findByRoomNoOrderByCreatedAtAsc(String roomNo);
+
+    /**
+     * 특정 roomNo의 최신 메시지 조회 (guestId 추출용)
+     */
+    java.util.Optional<AdminMessageJpaEntity> findFirstByRoomNoOrderByCreatedAtDesc(String roomNo);
 }
