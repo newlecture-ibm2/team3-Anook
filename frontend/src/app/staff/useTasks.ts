@@ -36,8 +36,6 @@ interface UseTasksReturn {
   acceptTask: (id: number, version: number) => Promise<void>;
   completeTask: (id: number, version: number) => Promise<void>;
   transferTask: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
-  emergencyAlert: EmergencyAlert | null;
-  dismissEmergency: () => void;
   approveCancellation: (id: number, version: number) => Promise<void>;
   rejectCancellation: (id: number, version: number) => Promise<void>;
 }
@@ -46,7 +44,6 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const [tasks, setTasks] = useState<StaffTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [emergencyAlert, setEmergencyAlert] = useState<EmergencyAlert | null>(null);
 
   const { subscribe } = useWebSocket();
 
@@ -173,19 +170,7 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
         fetchTasks(true);
       }
 
-      // 긴급 상황 감지: URGENT + emergency_category 포함 시 배너 트리거
-      if (
-        event.type === 'NEW_REQUEST' &&
-        event.priority === 'URGENT' &&
-        event.entities?.emergency_category
-      ) {
-        setEmergencyAlert({
-          requestId: event.requestId ?? 0,
-          roomNo: event.roomNo ?? '',
-          summary: event.summary ?? '긴급 상황 발생',
-          category: event.entities.emergency_category as string,
-        });
-      }
+      // 긴급 상황 감지 로직은 GlobalEmergencyListener(어드민 레이아웃)로 이동됨
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
@@ -198,7 +183,5 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
     };
   }, [subscribe, fetchTasks, derivedDepartmentId]);
 
-  const dismissEmergency = useCallback(() => setEmergencyAlert(null), []);
-
-  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation, emergencyAlert, dismissEmergency };
+  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation };
 }

@@ -8,7 +8,6 @@ import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import TaskDetailModal from './_components/TaskDetailModal/TaskDetailModal';
-import EmergencyBanner from './_components/EmergencyBanner/EmergencyBanner';
 import { useTasks, StaffTask } from './useTasks';
 import styles from './page.module.css';
 
@@ -40,7 +39,7 @@ export default function StaffDashboardPage() {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
-  const { tasks, loading, error, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation, emergencyAlert, dismissEmergency } = useTasks(view === 'my' ? 'my' : 'dept');
+  const { tasks, loading, error, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation } = useTasks(view === 'my' ? 'my' : 'dept');
 
   // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,12 +101,6 @@ function DashboardContent() {
       <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
 
       <main className={styles.mainContent}>
-        {emergencyAlert && (
-          <EmergencyBanner
-            alert={emergencyAlert}
-            onDismiss={dismissEmergency}
-          />
-        )}
         <div className={styles.headerContainer}>
           <header className={styles.header}>
             <h1 className={styles.title}>{departmentName} 관리</h1>
@@ -203,6 +196,6 @@ function DashboardContent() {
 }
 
 function mapPriority(p: string): 'NORMAL' | 'URGENT' {
-  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') return 'URGENT';
+  if (p === 'HIGH' || p === 'URGENT') return 'URGENT';
   return 'NORMAL';
 }
