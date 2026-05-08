@@ -17,18 +17,19 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
-
+import java.util.Map;
+import java.util.ArrayList;
 /**
  * Message 도메인에서 발행한 RequestDetectedEvent를 수신하여 Request 생성
  *
  * [AN-252] Grace Period + Generative UI 적용:
- *   - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
- *   - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
- *   - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
+ * - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
+ * - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
+ * - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
  *
  * [Cancel & Replace] 대화형 수정 패턴:
- *   - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
- *   - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
+ * - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
+ * - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
  */
 @Slf4j
 @Service
@@ -42,14 +43,29 @@ public class CreateRequestOnEventService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onRequestDetected(RequestDetectedEvent event) {
-        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}", 
-                 event.getRoomNo(), event.getDomainCode(), event.getSummary());
+        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}",
+                event.getRoomNo(), event.getDomainCode(), event.getSummary());
 
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
 
-        // [Cancel & Replace] 같은 객실+게스트+부서의 PENDING 요청이 있으면 자동 취소
-        cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+        // [Cancel & Replace] AI가 기존 요청을 '수정(REPLACE)'하는 문맥이라고 판단했을 때만 자동 취소
+        // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
+        // "수건 줘" → "물도 줘" = ADD (기존 요청 유지)
+        if ("REPLACE".equalsIgnoreCase(event.getActionType())) {
+            cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+        }
+
+        // [AN-125] 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
+        // 긴 문장일 경우에는 원문과 AI가 추출한 상세 내역을 모두 표시하여 직원의 가독성을 높임.
+        String finalRawText = event.getRawText();
+        String formattedEntities = formatEntities(event.getEntities());
+        
+        if (finalRawText != null && finalRawText.length() <= 3) {
+            finalRawText = formattedEntities.trim(); // "응"은 버리고 상세 내역만 사용
+        } else if (formattedEntities != null && !formattedEntities.isEmpty()) {
+            finalRawText = finalRawText + "\n\n" + formattedEntities.trim();
+        }
 
         // Request 도메인 객체 생성
         Request request = Request.create(
@@ -59,9 +75,8 @@ public class CreateRequestOnEventService {
                 event.getPriority(),
                 event.getEntities(),
                 event.getConfidence(),
-                event.getRawText(),
-                event.getSummary()
-        );
+                finalRawText,
+                event.getSummary());
 
         // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
         boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
@@ -88,8 +103,7 @@ public class CreateRequestOnEventService {
                 savedRequest.getRoomNo(),
                 savedRequest.getEntities(),
                 graceRemaining,
-                savedRequest.getPriority().name()
-        );
+                savedRequest.getPriority().name());
 
         // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
@@ -108,8 +122,7 @@ public class CreateRequestOnEventService {
                     savedRequest.getId(),
                     savedRequest.getRoomNo(),
                     deptCode,
-                    payload
-            );
+                    payload);
         }
     }
 
@@ -123,7 +136,8 @@ public class CreateRequestOnEventService {
      */
     private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
         String deptId = domainCode.getDeptId();
-        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo, guestId, deptId);
+        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo,
+                guestId, deptId);
 
         for (Request existing : existingPending) {
             try {
@@ -139,8 +153,7 @@ public class CreateRequestOnEventService {
                         RequestStatus.CANCELLED.name(),
                         existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                         existing.getSummary(),
-                        existing.getRoomNo()
-                );
+                        existing.getRoomNo());
                 dispatchPort.dispatchToRoom(roomNo, cancelPayload);
 
             } catch (IllegalStateException e) {
@@ -148,5 +161,51 @@ public class CreateRequestOnEventService {
                         existing.getId(), e.getMessage());
             }
         }
+    }
+
+    private String formatEntities(Map<String, Object> entities) {
+        if (entities == null || entities.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder("[주문 상세]");
+        
+        // 특별 취급: FB 메뉴 (menu_items 배열 구조)
+        if (entities.containsKey("menu_items")) {
+            Object menuItems = entities.get("menu_items");
+            if (menuItems instanceof List<?> items) {
+                sb.append("\n- 메뉴: ");
+                List<String> menuStrs = new ArrayList<>();
+                for (Object itemObj : items) {
+                    if (itemObj instanceof Map<?,?> item) {
+                        String name = (String) item.get("name");
+                        Object qty = item.get("quantity");
+                        String opt = (String) item.get("selected_option");
+                        String menuStr = name + " " + qty + "개";
+                        if (opt != null && !opt.isBlank() && !"없음".equals(opt)) {
+                            menuStr += "(" + opt + ")";
+                        }
+                        menuStrs.add(menuStr);
+                    }
+                }
+                sb.append(String.join(", ", menuStrs));
+            }
+        } else {
+            // 다른 부서는 key-value 순차 출력 (intent, allergen_warning 제외)
+            for (Map.Entry<String, Object> entry : entities.entrySet()) {
+                if ("intent".equals(entry.getKey())) continue;
+                if ("allergen_warning".equals(entry.getKey())) continue;
+                if ("special_requests".equals(entry.getKey())) continue; // 아래에서 별도 처리
+                
+                sb.append("\n- ").append(entry.getKey()).append(": ").append(entry.getValue());
+            }
+        }
+        
+        // 추가 요청 사항이 있으면 표시
+        if (entities.containsKey("special_requests")) {
+            Object specialReq = entities.get("special_requests");
+            if (specialReq != null && !specialReq.toString().isBlank() && !"없음".equals(specialReq.toString())) {
+                sb.append("\n- 추가 요청: ").append(specialReq);
+            }
+        }
+        
+        return sb.toString();
     }
 }

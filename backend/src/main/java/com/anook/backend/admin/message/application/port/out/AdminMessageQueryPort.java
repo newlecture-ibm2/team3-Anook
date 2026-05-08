@@ -28,10 +28,7 @@ public interface AdminMessageQueryPort {
     List<Map<String, Object>> findMessagesByRoomNo(String roomNo);
 
     /**
-     * 관리자/직원 메시지 저장
-     *
-     * @param roomNo  객실 번호
-     * @param content 메시지 내용
+     * 특정 roomNo의 최근 메시지 기준 guestId 조회
      */
-    void saveStaffMessage(String roomNo, String content);
+    Long getLatestGuestId(String roomNo);
 }

@@ -13,5 +13,8 @@ public record StaffTaskResult(
         Long assignedStaffId,
         Float confidence,
         LocalDateTime createdAt,
-        Integer version
+        Integer version,
+        boolean cancelRequested,
+        LocalDateTime cancelRequestedAt,
+        java.util.Map<String, Object> entities
 ) {}

@@ -92,27 +92,27 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 -- PMS 룸서비스 메뉴 (더미 데이터)
 -- ============================================================
-INSERT INTO pms_menu (name, price, category, allergens, available) VALUES
+INSERT INTO pms_menu (name, price, category, allergens, options, available) VALUES
     -- MAIN (메인 요리)
-    ('클래식 치즈버거',      15000, 'MAIN',    '밀,유제품',        TRUE),
-    ('트러플 머쉬룸 리조또', 28000, 'MAIN',    '유제품',           TRUE),
-    ('한우 불고기 덮밥',     22000, 'MAIN',    '대두,밀',          TRUE),
-    ('시저 샐러드',          14000, 'MAIN',    '유제품,계란',      TRUE),
-    ('해산물 파스타',        25000, 'MAIN',    '밀,갑각류,연체류', TRUE),
-    ('스테이크 샌드위치',    20000, 'MAIN',    '밀,유제품',        TRUE),
+    ('클래식 치즈버거',      15000, 'MAIN',    '밀,유제품',        NULL,                          TRUE),
+    ('트러플 머쉬룸 리조또', 28000, 'MAIN',    '유제품',           NULL,                          TRUE),
+    ('한우 불고기 덮밥',     22000, 'MAIN',    '대두,밀',          NULL,                          TRUE),
+    ('시저 샐러드',          14000, 'MAIN',    '유제품,계란',      '드레싱:시저|발사믹|없음',      TRUE),
+    ('해산물 파스타',        25000, 'MAIN',    '밀,갑각류,연체류', NULL,                          TRUE),
+    ('스테이크 샌드위치',    20000, 'MAIN',    '밀,유제품',        '굽기:레어|미디엄|웰던',        TRUE),
     -- SIDE (사이드)
-    ('감자튀김',             8000,  'SIDE',    NULL,               TRUE),
-    ('시즌 과일 플레이트',   12000, 'SIDE',    NULL,               TRUE),
-    ('모짜렐라 스틱',        10000, 'SIDE',    '밀,유제품',        TRUE),
+    ('감자튀김',             8000,  'SIDE',    NULL,               NULL,                          TRUE),
+    ('시즌 과일 플레이트',   12000, 'SIDE',    NULL,               NULL,                          TRUE),
+    ('모짜렐라 스틱',        10000, 'SIDE',    '밀,유제품',        NULL,                          TRUE),
     -- DRINK (음료)
-    ('콜라',                 4000,  'DRINK',   NULL,               TRUE),
-    ('오렌지 주스',          6000,  'DRINK',   NULL,               TRUE),
-    ('아메리카노',           5000,  'DRINK',   NULL,               TRUE),
-    ('캐모마일 티',          5000,  'DRINK',   NULL,               TRUE),
+    ('콜라',                 4000,  'DRINK',   NULL,               '종류:일반|제로',               TRUE),
+    ('오렌지 주스',          6000,  'DRINK',   NULL,               NULL,                          TRUE),
+    ('아메리카노',           5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
+    ('캐모마일 티',          5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
     -- DESSERT (디저트)
-    ('뉴욕 치즈케이크',      12000, 'DESSERT', '밀,유제품,계란',        TRUE),
-    ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', TRUE),
-    ('바닐라 아이스크림',    8000,  'DESSERT', '유제품',               TRUE)
+    ('뉴욕 치즈케이크',      12000, 'DESSERT', '밀,유제품,계란',        NULL,                    TRUE),
+    ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', NULL,                    TRUE),
+    ('바닐라 아이스크림',    8000,  'DESSERT', '유제품',               NULL,                    TRUE)
 ON CONFLICT DO NOTHING;
 
 -- Mock 요청 시드 데이터
@@ -120,15 +120,15 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO request (status, priority, department_id, summary, raw_text, confidence, room_no, assigned_staff_id, version, created_at, updated_at, entities) VALUES
     ('PENDING',     'NORMAL', 'HK',        '수건 2장 추가 요청',      '수건 두 장만 더 주세요',              0.95, '707', NULL, 0, NOW() - INTERVAL '2 hours',      NOW() - INTERVAL '2 hours',      '{"REQ_ITEM": ["수건"]}'),
-    ('IN_PROGRESS', 'HIGH',   'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes',   '{"REQ_ITEM": ["룸서비스", "스테이크"]}'),
+    ('IN_PROGRESS', 'URGENT', 'FB',        '룸서비스 스테이크 주문',   '스테이크 미디엄으로 하나 주문할게요',   0.88, '707', 1,    0, NOW() - INTERVAL '1 hour',       NOW() - INTERVAL '30 minutes',   '{"REQ_ITEM": ["룸서비스", "스테이크"]}'),
     ('IN_PROGRESS', 'URGENT', 'FACILITY',  '에어컨 고장 수리 요청',    '에어컨이 안 켜져요',                 0.92, '707', 1,    0, NOW() - INTERVAL '45 minutes',   NOW() - INTERVAL '10 minutes',   '{"REQ_ITEM": ["에어컨"]}'),
     ('COMPLETED',   'NORMAL', 'CONCIERGE', '택시 호출 요청',          '공항까지 택시 하나 불러주세요',        0.97, '707', 1,    0, NOW() - INTERVAL '3 hours',      NOW() - INTERVAL '1 hour',       '{"REQ_ITEM": ["택시"]}'),
-    ('PENDING',     'LOW',    'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),
-    ('PENDING',     'HIGH',   'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes',   '{"REQ_ITEM": ["체크아웃"]}'),
+    ('PENDING',     'NORMAL', 'HK',        '미니바 보충 요청',        '미니바에 물이 없어요',                0.91, '707', NULL, 0, NOW() - INTERVAL '15 minutes',   NOW() - INTERVAL '15 minutes',   '{"REQ_ITEM": ["미니바", "생수"]}'),
+    ('PENDING',     'URGENT', 'FRONT',     '레이트 체크아웃 문의',     '오후 2시 체크아웃 가능한가요?',        0.98, '301', NULL, 0, NOW() - INTERVAL '20 minutes',   NOW() - INTERVAL '20 minutes',   '{"REQ_ITEM": ["체크아웃"]}'),
     ('IN_PROGRESS', 'URGENT', 'FRONT',     '객실 키 분실 신고',        '키를 잃어버려서 문을 못 열고 있어요',   0.94, '502', 1,    0, NOW() - INTERVAL '10 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["객실 키"]}'),
-    ('PENDING',     'CRITICAL', 'FRONT',     '객실 내 응급 환자 발생',   '심한 복통 호소, 의료진 지원 필요',     0.99, '401', NULL, 0, NOW() - INTERVAL '2 minutes',    NOW() - INTERVAL '2 minutes',    '{"REQ_ITEM": ["응급환자"]}'),
-    ('PENDING',     'CRITICAL', 'FACILITY',  '화재 의심 신고',          '타는 냄새가 나고 연기가 보입니다',     0.99, '402', NULL, 0, NOW() - INTERVAL '1 minutes',    NOW() - INTERVAL '1 minutes',    '{"REQ_ITEM": ["화재의심"]}'),
-    ('ESCALATED',   'HIGH',   'FRONT',     '특수 와인잔 요청',        '리델 와인잔 좀 가져다주세요',        0.90, '707', NULL, 0, NOW() - INTERVAL '30 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["와인잔"]}')
+    ('PENDING',     'URGENT', 'FRONT',     '객실 내 응급 환자 발생',   '심한 복통 호소, 의료진 지원 필요',     0.99, '401', NULL, 0, NOW() - INTERVAL '2 minutes',    NOW() - INTERVAL '2 minutes',    '{"REQ_ITEM": ["응급환자"]}'),
+    ('PENDING',     'URGENT', 'FACILITY',  '화재 의심 신고',          '타는 냄새가 나고 연기가 보입니다',     0.99, '402', NULL, 0, NOW() - INTERVAL '1 minutes',    NOW() - INTERVAL '1 minutes',    '{"REQ_ITEM": ["화재의심"]}'),
+    ('ESCALATED',   'URGENT', 'FRONT',     '특수 와인잔 요청',        '리델 와인잔 좀 가져다주세요',        0.90, '707', NULL, 0, NOW() - INTERVAL '30 minutes',   NOW() - INTERVAL '5 minutes',    '{"REQ_ITEM": ["와인잔"]}')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================

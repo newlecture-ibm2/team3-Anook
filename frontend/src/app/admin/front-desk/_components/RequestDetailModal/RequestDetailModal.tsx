@@ -32,6 +32,8 @@ interface RequestDetail {
   version: number;
   createdAt: string;
   updatedAt: string;
+  cancelRequested: boolean;
+  cancelRequestedAt: string | null;
 }
 
 interface RequestDetailModalProps {
@@ -43,6 +45,8 @@ interface RequestDetailModalProps {
   onCancel: (id: number) => Promise<boolean>;
   onApproveEscalation?: (id: number, departmentId: string, priority: string) => Promise<boolean>;
   onRejectEscalation?: (id: number, reason: string) => Promise<boolean>;
+  onApproveCancellation?: (id: number) => Promise<boolean>;
+  onRejectCancellation?: (id: number) => Promise<boolean>;
   onUpdate: () => void;
   loading?: boolean;
 }
@@ -72,6 +76,8 @@ export default function RequestDetailModal({
   onCancel,
   onApproveEscalation,
   onRejectEscalation,
+  onApproveCancellation,
+  onRejectCancellation,
   onUpdate,
   loading = false,
 }: RequestDetailModalProps) {
@@ -172,6 +178,34 @@ export default function RequestDetailModal({
     return ok;
   };
 
+  const handleApproveCancellation = async () => {
+    if (!onApproveCancellation) return;
+    setSaving(true);
+    const ok = await onApproveCancellation(detail.id);
+    setSaving(false);
+    if (ok) {
+      showToast('취소가 승인되었습니다.', 'success');
+      onUpdate();
+      onClose();
+    } else {
+      showToast('취소 승인에 실패했습니다.', 'error');
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    if (!onRejectCancellation) return;
+    setSaving(true);
+    const ok = await onRejectCancellation(detail.id);
+    setSaving(false);
+    if (ok) {
+      showToast('취소가 반려되었습니다.', 'success');
+      onUpdate();
+      onClose();
+    } else {
+      showToast('취소 반려에 실패했습니다.', 'error');
+    }
+  };
+
   const formatDateTime = (dt: string) => {
     const d = new Date(dt);
     return d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -185,6 +219,9 @@ export default function RequestDetailModal({
           <div className={styles.headerLeft}>
             <h2 className={styles.title}>요청 상세</h2>
             <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
+            {detail.cancelRequested && (
+              <StatusBadge variant="red">고객 취소 요청됨</StatusBadge>
+            )}
           </div>
           <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
             <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
@@ -221,12 +258,39 @@ export default function RequestDetailModal({
             <span className={styles.label}>요약</span>
             <p className={styles.contentText}>{detail.summary}</p>
           </div>
-          {detail.rawText && (
-            <div className={styles.contentBlock}>
-              <span className={styles.label}>고객 원문</span>
-              <p className={styles.rawText}>{detail.rawText}</p>
-            </div>
-          )}
+          {(() => {
+            if (!detail.rawText) return null;
+            const transferParts = detail.rawText.split('\n|||TRANSFER_REASON|||');
+            const mainText = transferParts[0] || '';
+            const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
+
+            const detailParts = mainText.split('[주문 상세]');
+            const customerText = detailParts[0].trim();
+            const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
+
+            return (
+              <>
+                {customerText && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>고객 원문</span>
+                    <p className={styles.rawText}>{customerText}</p>
+                  </div>
+                )}
+                {orderDetail && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>주문/요청 상세</span>
+                    <p className={styles.orderDetail}>{orderDetail}</p>
+                  </div>
+                )}
+                {transferReason && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>부서 이관 사유</span>
+                    <p className={styles.transferReason}>{transferReason}</p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* AI 분석 결과 */}
@@ -283,9 +347,18 @@ export default function RequestDetailModal({
             <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
               에스컬레이션 반려
             </Button>
+          ) : detail.cancelRequested ? (
+            <>
+              <Button variant="secondary" onClick={handleRejectCancellation} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
+                취소 반려
+              </Button>
+              <Button variant="primary" onClick={handleApproveCancellation} disabled={saving || loading}>
+                취소 승인
+              </Button>
+            </>
           ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
-              요청 취소
+              강제 요청 취소
             </Button>
           ) : <div />}
 

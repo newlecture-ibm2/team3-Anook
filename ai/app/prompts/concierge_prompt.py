@@ -102,7 +102,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "room_no": "from input",
   "domain": "CONCIERGE",
   "summary": "3줄 요약 (Korean)",
-  "priority": "LOW | NORMAL | HIGH | URGENT",
+  "priority": "NORMAL | URGENT",
   "confidence": 0.0~1.0,
   "entities": {
     "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | OTHER",

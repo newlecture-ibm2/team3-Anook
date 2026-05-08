@@ -4,7 +4,6 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
 import styles from './TaskDetailModal.module.css';
-import { useUiStore } from '@/stores/useUiStore';
 import { StaffTask } from '../../useTasks';
 
 interface TaskDetailModalProps {
@@ -14,6 +13,8 @@ interface TaskDetailModalProps {
   onAccept?: (id: number, version: number) => Promise<void>;
   onComplete?: (id: number, version: number) => Promise<void>;
   onTransfer?: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
+  onApproveCancellation?: (id: number, version: number) => Promise<void>;
+  onRejectCancellation?: (id: number, version: number) => Promise<void>;
 }
 
 const DEPARTMENTS = [
@@ -24,8 +25,7 @@ const DEPARTMENTS = [
   { id: 'CONCIERGE', name: '컨시어지' }
 ];
 
-export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete, onTransfer }: TaskDetailModalProps) {
-  const { showToast } = useUiStore();
+export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete, onTransfer, onApproveCancellation, onRejectCancellation }: TaskDetailModalProps) {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [toDepartmentId, setToDepartmentId] = useState('');
   const [transferReason, setTransferReason] = useState('');
@@ -42,17 +42,17 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
   const handleTransferSubmit = async () => {
     if (!toDepartmentId || !transferReason.trim()) {
-      showToast('전달할 부서와 사유를 모두 입력해주세요.', 'error');
+      alert('전달할 부서와 사유를 모두 입력해주세요.');
       return;
     }
     if (onTransfer) {
       setIsSubmitting(true);
       try {
         await onTransfer(task.id, task.version, toDepartmentId, transferReason);
-        showToast('부서 전달이 완료되었습니다.', 'success');
+        alert('부서 전달이 완료되었습니다.');
         handleClose();
       } catch (err) {
-        showToast(err instanceof Error ? err.message : '부서 전달 중 오류가 발생했습니다.', 'error');
+        alert(err instanceof Error ? err.message : '부서 전달 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -67,7 +67,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         await onAccept(task.id, task.version);
         handleClose();
       } catch (err) {
-        showToast(err instanceof Error ? err.message : '요청 수락 중 오류가 발생했습니다.', 'error');
+        alert(err instanceof Error ? err.message : '요청 수락 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -82,7 +82,39 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         await onComplete(task.id, task.version);
         handleClose();
       } catch (err) {
-        showToast(err instanceof Error ? err.message : '요청 완료 중 오류가 발생했습니다.', 'error');
+        alert(err instanceof Error ? err.message : '요청 완료 중 오류가 발생했습니다.');
+        handleClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleApproveCancellation = async () => {
+    if (onApproveCancellation) {
+      setIsSubmitting(true);
+      try {
+        await onApproveCancellation(task.id, task.version);
+        alert('취소가 승인되었습니다.');
+        handleClose();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '취소 승인 중 오류가 발생했습니다.');
+        handleClose();
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    if (onRejectCancellation) {
+      setIsSubmitting(true);
+      try {
+        await onRejectCancellation(task.id, task.version);
+        alert('취소가 반려되었습니다.');
+        handleClose();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '취소 반려 중 오류가 발생했습니다.');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -91,7 +123,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   };
 
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
-  if (task.priority === 'HIGH' || task.priority === 'URGENT') {
+  if (task.priority === 'URGENT') {
     badgeVariant = 'red';
   }
 
@@ -104,8 +136,12 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   });
 
   const rawTextParts = task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||') : [];
-  const originalRawText = rawTextParts[0] || '';
-  const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n') : null;
+  const mainText = rawTextParts[0] || '';
+  const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n').trim() : null;
+
+  const detailParts = mainText.split('[주문 상세]');
+  const customerText = detailParts[0].trim();
+  const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
@@ -115,6 +151,9 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             <div className={styles.headerTop}>
               <span className={styles.roomBadge}>[{task.roomNumber}호]</span>
               <StatusBadge variant={badgeVariant}>{task.priority}</StatusBadge>
+              {task.cancelRequested && (
+                <StatusBadge variant="red">취소 대기중</StatusBadge>
+              )}
             </div>
             <h2 className={styles.title}>{task.summary}</h2>
           </div>
@@ -133,17 +172,63 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               <span className={styles.infoValue}>{task.departmentId}</span>
             </div>
 
-            <div className={styles.descriptionSection}>
-              <h3 className={styles.descriptionTitle}>요청 상세 내용</h3>
-              <div className={styles.descriptionBox}>
-                {originalRawText}
+            {task.cancelRequested && (
+              <div className={styles.cancelAlertBox}>
+                <strong>⚠️ 고객 취소 요청</strong>
+                <p>고객이 해당 요청에 대해 취소를 신청했습니다. 진행 상황을 확인하고 취소 승인 또는 반려를 선택해주세요.</p>
               </div>
-            </div>
+            )}
+
+            {customerText && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>고객 원문</h3>
+                <div className={styles.descriptionBox}>
+                  {customerText}
+                </div>
+              </div>
+            )}
+
+            {orderDetail && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>주문/요청 상세</h3>
+                <div className={styles.orderDetailBox}>
+                  {orderDetail}
+                </div>
+              </div>
+            )}
+
+            {task.entities && ((task.entities.items?.length ?? 0) > 0 || (task.entities.tasks?.length ?? 0) > 0) && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>AI 분석 상세 내역</h3>
+                <div className={styles.descriptionBox} style={{ backgroundColor: '#f0f4ff' }}>
+                  {task.entities.items && task.entities.items.length > 0 && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong>물품 요청:</strong>
+                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+                        {task.entities.items.map((it: any, idx: number) => (
+                          <li key={idx}>{it.item} - {it.count}개</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {task.entities.tasks && task.entities.tasks.length > 0 && (
+                    <div>
+                      <strong>수행 업무:</strong>
+                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+                        {task.entities.tasks.map((t: string, idx: number) => (
+                          <li key={idx}>{t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {transferReasonText && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>
-                <div className={styles.descriptionBox}>
+                <div className={styles.transferReasonBox}>
                   {transferReasonText}
                 </div>
               </div>
@@ -205,7 +290,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 </>
               )}
 
-              {task.status === 'IN_PROGRESS' && onComplete && (
+              {task.status === 'IN_PROGRESS' && !task.cancelRequested && onComplete && (
                 <Button
                   variant="primary"
                   onClick={handleComplete}
@@ -214,6 +299,27 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 >
                   업무 완료
                 </Button>
+              )}
+
+              {task.status === 'IN_PROGRESS' && task.cancelRequested && (
+                <>
+                  <Button
+                    variant="outlined"
+                    onClick={handleRejectCancellation}
+                    className={styles.actionButton}
+                    disabled={isSubmitting}
+                  >
+                    취소 반려
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleApproveCancellation}
+                    className={styles.actionButton}
+                    disabled={isSubmitting}
+                  >
+                    취소 승인
+                  </Button>
+                </>
               )}
 
               <Button variant="outlined" onClick={handleClose} className={styles.closeButton}>

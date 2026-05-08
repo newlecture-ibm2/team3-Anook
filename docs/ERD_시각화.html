@@ -340,12 +340,14 @@
         <div class="table-body">
             <div class="col-row"><span class="col-name">id</span><span class="col-type">bigint</span><span class="badge badge-pk">PK</span></div>
             <div class="col-row"><span class="col-name">status</span><span class="col-type">varchar</span><span class="col-desc">PENDING → COMPLETED</span></div>
-            <div class="col-row"><span class="col-name">priority</span><span class="col-type">varchar</span><span class="col-desc">LOW ~ URGENT</span></div>
+            <div class="col-row"><span class="col-name">priority</span><span class="col-type">varchar</span><span class="col-desc">NORMAL, URGENT</span></div>
             <div class="col-row"><span class="col-name">department_id</span><span class="col-type">varchar</span><span class="badge badge-fk">FK</span><span class="col-desc">HK, FB, FACILITY 등</span></div>
             <div class="col-row"><span class="col-name">entities</span><span class="col-type">jsonb</span><span class="col-desc">부서별 가변 데이터</span></div>
             <div class="col-row"><span class="col-name">raw_text</span><span class="col-type">text</span><span class="col-desc">고객 발화 원문</span></div>
             <div class="col-row"><span class="col-name">summary</span><span class="col-type">text</span><span class="col-desc">AI 요약 (카드 제목)</span></div>
             <div class="col-row"><span class="col-name">confidence</span><span class="col-type">float</span><span class="col-desc">0.0~1.0</span></div>
+            <div class="col-row"><span class="col-name">cancel_requested</span><span class="col-type">boolean</span><span class="col-desc">고객 취소 요청 여부</span></div>
+            <div class="col-row"><span class="col-name">cancel_requested_at</span><span class="col-type">timestamp</span><span class="col-desc">취소 요청 시각</span></div>
             <div class="col-row"><span class="col-name">room_number</span><span class="col-type">varchar</span><span class="badge badge-fk">FK</span><span class="col-desc">room.number</span></div>
             <div class="col-row"><span class="col-name">assigned_staff_id</span><span class="col-type">bigint</span><span class="badge badge-fk">FK</span><span class="col-desc">nullable</span></div>
             <div class="col-row"><span class="col-name">version</span><span class="col-type">int</span><span class="col-desc">낙관적 락</span></div>

@@ -26,6 +26,7 @@ const STATUS_TEXT: Record<string, string> = {
   IN_PROGRESS: '처리 중',
   COMPLETED: '처리 완료',
   CANCELLED: '취소됨',
+  CANCEL_PENDING: '취소 대기 중',
 };
 
 export default function RequestStatusBar({
@@ -42,6 +43,36 @@ export default function RequestStatusBar({
 
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   const statusLabel = STATUS_TEXT[status] || '알 수 없음';
+  
+  // Render entities description
+  const renderDetails = () => {
+    if (!entities) return null;
+    
+    // Old format fallback
+    if (entities.item) {
+      return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
+    }
+    
+    // New Multi-intent format
+    const parts: string[] = [];
+    if (Array.isArray(entities.items)) {
+      entities.items.forEach((it: any) => {
+        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
+      });
+    }
+    if (Array.isArray(entities.tasks)) {
+      entities.tasks.forEach((t: string) => parts.push(t));
+    }
+    
+    if (parts.length === 0) {
+      if (entities.menu) parts.push(`${entities.menu}`);
+      if (entities.symptom) parts.push(`${entities.symptom}`);
+    }
+    
+    return parts.length > 0 ? parts.join(', ') : null;
+  };
+
+  const detailsText = renderDetails();
   
   // Handle auto-hide on completion or cancellation
   useEffect(() => {
@@ -94,65 +125,20 @@ export default function RequestStatusBar({
       {/* Expanded View */}
       {expanded && (
         <div className={styles.expandedView}>
-          <div className={styles.progressContainer}>
-            <div className={styles.inlineProgressBarContainer}>
-              <div className={styles.inlineProgressBarBg}>
-                <div 
-                  className={styles.inlineProgressBarFill} 
-                  style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} 
-                />
-              </div>
-              <div className={styles.progressDotsOverlay}>
-                <div className={`${styles.progressDot} ${progress > 0 ? styles.dotActive : ''}`} />
-                <div className={`${styles.progressDot} ${progress >= 50 ? styles.dotActive : ''}`} />
-                <div className={`${styles.progressDot} ${progress >= 100 ? styles.dotActive : ''}`} />
-              </div>
-            </div>
-            <div className={styles.steps}>
-              <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>접수 완료</span>
-              <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>처리 중</span>
-              <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>처리 완료</span>
-            </div>
-          </div>
-
           <div className={styles.detailsContainer}>
             <div className={styles.detailsTitle}>📋 {summary}</div>
             
             <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>담당</span>
+              <span className={styles.detailLabel}>담당 부서</span>
               <span className={styles.detailValue}>{domainInfo.label}</span>
             </div>
             
-            {createdAt && (
+            {detailsText && (
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>접수 시간</span>
-                <span className={styles.detailValue}>
-                  {new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <span className={styles.detailLabel}>상세 내용</span>
+                <span className={styles.detailValue}>{detailsText}</span>
               </div>
             )}
-            
-            {Boolean(entities && entities.item) && (
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>물품</span>
-                <span className={styles.detailValue}>{String(entities?.item)}</span>
-              </div>
-            )}
-            {Boolean(entities && entities.count !== undefined && entities.count !== null) && (
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>수량</span>
-                <span className={styles.detailValue}>{String(entities?.count)}개</span>
-              </div>
-            )}
-            {Boolean(entities && !entities.item) && Object.entries(entities || {}).map(([key, val]) => {
-              if (key === 'intent') return null;
-              return (
-                <div key={key} className={styles.detailItem}>
-                  <span className={styles.detailLabel}>{key}</span>
-                  <span className={styles.detailValue}>{String(val)}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}

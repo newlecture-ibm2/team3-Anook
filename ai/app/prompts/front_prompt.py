@@ -11,7 +11,7 @@ OUTPUT FORMAT (strictly JSON):
   "room_no": "from input",
   "domain": "FRONT",
   "summary": "3줄 요약 (Korean)",
-  "priority": "LOW | NORMAL | HIGH | URGENT",
+  "priority": "NORMAL | URGENT",
   "status": "PENDING",
   "confidence": 0.0~1.0,
   "entities": {
@@ -41,5 +41,5 @@ RULES:
   2. Set `needs_clarification` to false.
   3. Include a `"fallback_message"` key inside the `entities` object, translating "I will connect you to a front desk agent immediately. Please wait a moment." into the SAME LANGUAGE as the guest's input.
   4. Set `summary` to a handover note for the human staff explaining the context in KOREAN (e.g., "[직원 인수인계] 고객이 3번 이상 핑퐁 후 분노하여 직원을 호출함").
-  5. Set `priority` to "HIGH" or "URGENT".
+  5. Set `priority` to "URGENT".
 """.strip()

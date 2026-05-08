@@ -194,13 +194,33 @@
 
 ---
 
+### 3.3 고객 요청 직접 취소
+| 항목 | 값 |
+|------|-----|
+| **Method** | `POST` |
+| **URL** | `/chat/{roomNo}/requests/{requestId}/cancel` |
+| **Auth** | Guest JWT |
+| **설명** | Grace Period 내 고객이 직접 요청을 취소합니다. |
+
+---
+
+### 3.4 고객 요청 빠른 접수(수락)
+| 항목 | 값 |
+|------|-----|
+| **Method** | `POST` |
+| **URL** | `/chat/{roomNo}/requests/{requestId}/confirm` |
+| **Auth** | Guest JWT |
+| **설명** | 프론트엔드 위젯의 [수락하기] 클릭 시 즉시 접수 처리합니다. |
+
+---
+
 ## 4. 직원 태스크 (Staff Task)
 
 ### 4.1 배정된 태스크 목록 조회
 | 항목 | 값 |
 |------|-----|
 | **Method** | `GET` |
-| **URL** | `/staff/tasks` |
+| **URL** | `/staff/requests` |
 | **Auth** | Staff JWT |
 | **Query** | `?status=ASSIGNED,IN_PROGRESS&sort=createdAt,desc` |
 
@@ -229,13 +249,13 @@
 | 항목 | 값 |
 |------|-----|
 | **Method** | `PATCH` |
-| **URL** | `/staff/tasks/{taskId}/accept` |
+| **URL** | `/staff/requests/{taskId}/accept` |
 | **Auth** | Staff JWT |
 | **설명** | 낙관적 락(version) 적용. 동시 수락 시 먼저 요청한 직원만 성공 |
 
 **Request Body**
 ```json
-{ "version": 1 }
+{ "staffId": 5, "version": 1 }
 ```
 
 **Response 200**
@@ -254,12 +274,12 @@
 | 항목 | 값 |
 |------|-----|
 | **Method** | `PATCH` |
-| **URL** | `/staff/tasks/{taskId}/complete` |
+| **URL** | `/staff/requests/{taskId}/complete` |
 | **Auth** | Staff JWT |
 
 **Request Body**
 ```json
-{ "note": "수건 2장 전달 완료", "version": 2 }
+{ "staffId": 5, "version": 2 }
 ```
 
 **Response 200**
@@ -273,42 +293,45 @@
 | 항목 | 값 |
 |------|-----|
 | **Method** | `PATCH` |
-| **URL** | `/staff/tasks/{taskId}/transfer` |
+| **URL** | `/staff/requests/{taskId}/transfer` |
 | **Auth** | Staff JWT |
 
 **Request Body**
 ```json
-{ "toDepartmentId": 3, "reason": "시설관리팀 소관 건", "version": 2 }
+{ "staffId": 5, "toDepartmentId": "FACILITY", "reason": "시설관리팀 소관 건", "version": 2 }
 ```
 
 **Response 200**
 ```json
-{ "id": 100, "status": "ASSIGNED", "departmentId": 3, "version": 3 }
+{ "id": 100, "status": "ASSIGNED", "departmentId": "FACILITY", "version": 3 }
 ```
 
 ---
 
-### 4.5 투숙객 메시지 응답 (자동 번역)
+### 4.5 고객 요청 취소 승인 (Staff)
 | 항목 | 값 |
 |------|-----|
-| **Method** | `POST` |
-| **URL** | `/staff/tasks/{taskId}/respond` |
+| **Method** | `PATCH` |
+| **URL** | `/staff/requests/{taskId}/cancellation/approve` |
 | **Auth** | Staff JWT |
-| **설명** | 직원이 한국어로 작성 → 투숙객 언어로 자동 번역하여 전달 |
 
 **Request Body**
 ```json
-{ "content": "수건 2장 지금 가져다 드리겠습니다." }
+{ "staffId": 5, "version": 3 }
 ```
 
-**Response 200**
+---
+
+### 4.6 고객 요청 취소 반려 (Staff)
+| 항목 | 값 |
+|------|-----|
+| **Method** | `PATCH` |
+| **URL** | `/staff/requests/{taskId}/cancellation/reject` |
+| **Auth** | Staff JWT |
+
+**Request Body**
 ```json
-{
-  "messageId": 55,
-  "content": "수건 2장 지금 가져다 드리겠습니다.",
-  "translatedContent": "I'll bring 2 towels to your room right now.",
-  "senderType": "STAFF"
-}
+{ "staffId": 5, "version": 3 }
 ```
 
 ---
@@ -554,50 +577,78 @@
 
 ## 8. 관리자 — 인수인계 브리핑 (Handover)
 
-### 8.1 브리핑 생성 (AI 자동 요약)
+### 8.1 브리핑 상세 조회
 | 항목 | 값 |
 |------|-----|
-| **Method** | `POST` |
+| **Method** | `GET` |
 | **URL** | `/admin/handover` |
 | **Auth** | Admin JWT |
-| **설명** | 교대 시간 기준 태스크 필터링 → AI 3~5줄 자연어 브리핑 생성 |
+| **Query** | `?date=YYYY-MM-DD&shiftType=MORNING/AFTERNOON/NIGHT` |
+| **설명** | 특정 일자 및 교대조의 인수인계 브리핑 요약과 태스크 목록을 조회합니다. |
 
-**Request Body**
-```json
-{ "shiftStart": "2026-05-10T08:00:00", "shiftEnd": "2026-05-10T16:00:00" }
-```
-
-**Response 201**
+**Response 200**
 ```json
 {
-  "id": 5,
-  "shiftStart": "2026-05-10T08:00:00",
-  "shiftEnd": "2026-05-10T16:00:00",
-  "totalRequestCount": 23,
-  "pendingCount": 3,
-  "escalatedCount": 1,
-  "summary": "금일 08~16시 교대 기간 총 23건 처리. 미완료 3건(302호 수건 추가 요청 포함). 501호 에어컨 고장 건은 시설관리팀 확인 중. VIP 801호 특별 어메니티 정상 완료.",
-  "createdAt": "2026-05-10T16:05:00"
+  "shiftTimeLabel": "2026-05-10 MORNING",
+  "totalRequestCount": 10,
+  "pendingCount": 2,
+  "tasks": [
+    {
+      "id": 1,
+      "roomNo": "302",
+      "title": "수건 요청",
+      "status": "PENDING"
+    }
+  ]
 }
 ```
 
 ---
 
-### 8.2 브리핑 목록 조회
+## 8-1. 관리자 — 긴급 상황 (Emergency)
+
+### 8-1.1 활성 긴급 태스크 목록 조회
 | 항목 | 값 |
 |------|-----|
 | **Method** | `GET` |
-| **URL** | `/admin/handover` |
+| **URL** | `/admin/emergency` |
 | **Auth** | Admin JWT |
-| **Query** | `?page=0&size=10` |
+| **설명** | 현재 처리 중이거나 대기 중인 URGENT/HIGH 긴급 태스크 목록 조회 |
 
----
+**Response 200**
+```json
+[
+  {
+    "id": 101,
+    "roomNo": "501",
+    "title": "객실 누수 발생",
+    "description": "천장에서 물이 쏟아짐",
+    "status": "PENDING",
+    "priority": "URGENT",
+    "createdAt": "2026-05-10T15:30:00"
+  }
+]
+```
 
-### 8.3 브리핑 상세 조회
+### 8-1.2 긴급 태스크 조치 시작
 | 항목 | 값 |
 |------|-----|
-| **Method** | `GET` |
-| **URL** | `/admin/handover/{id}` |
+| **Method** | `POST` |
+| **URL** | `/admin/emergency/{id}/start` |
+| **Auth** | Admin JWT |
+
+### 8-1.3 외부 엔지니어 호출
+| 항목 | 값 |
+|------|-----|
+| **Method** | `POST` |
+| **URL** | `/admin/emergency/{id}/call-engineer` |
+| **Auth** | Admin JWT |
+
+### 8-1.4 긴급 태스크 처리 완료
+| 항목 | 값 |
+|------|-----|
+| **Method** | `POST` |
+| **URL** | `/admin/emergency/{id}/complete` |
 | **Auth** | Admin JWT |
 
 ---

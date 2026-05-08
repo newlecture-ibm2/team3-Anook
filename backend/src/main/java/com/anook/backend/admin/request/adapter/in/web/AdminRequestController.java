@@ -92,6 +92,28 @@ public class AdminRequestController {
     }
 
     /**
+     * 취소 요청 승인
+     *
+     * PATCH /admin/requests/{id}/cancellation/approve
+     */
+    @PatchMapping("/{id}/cancellation/approve")
+    public ResponseEntity<Void> approveCancellation(@PathVariable Long id) {
+        manageAdminRequestUseCase.approveCancellation(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 취소 요청 반려
+     *
+     * PATCH /admin/requests/{id}/cancellation/reject
+     */
+    @PatchMapping("/{id}/cancellation/reject")
+    public ResponseEntity<Void> rejectCancellation(@PathVariable Long id) {
+        manageAdminRequestUseCase.rejectCancellation(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 부서 변경 (관리자 수동 배정)
      *
      * PATCH /admin/requests/{id}/department

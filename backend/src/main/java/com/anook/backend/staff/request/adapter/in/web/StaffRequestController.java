@@ -48,6 +48,18 @@ public class StaffRequestController {
         return ResponseEntity.ok("부서 전달 완료");
     }
 
+    @PatchMapping("/{id}/cancellation/approve")
+    public ResponseEntity<String> approveCancellation(@PathVariable Long id, @RequestBody StaffActionDto dto) {
+        changeRequestStatusUseCase.approveCancellation(id, dto.staffId(), dto.version());
+        return ResponseEntity.ok("요청 취소 승인 완료");
+    }
+
+    @PatchMapping("/{id}/cancellation/reject")
+    public ResponseEntity<String> rejectCancellation(@PathVariable Long id, @RequestBody StaffActionDto dto) {
+        changeRequestStatusUseCase.rejectCancellation(id, dto.staffId(), dto.version());
+        return ResponseEntity.ok("요청 취소 반려 완료");
+    }
+
     public record StaffActionDto(Long staffId, Integer version) {}
     
     public record TransferDto(Long staffId, String toDepartmentId, String reason, Integer version) {}

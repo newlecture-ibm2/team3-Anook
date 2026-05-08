@@ -62,6 +62,12 @@ public class RequestJpaEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "cancel_requested", nullable = false)
+    private Boolean cancelRequested = false;
+
+    @Column(name = "cancel_requested_at")
+    private LocalDateTime cancelRequestedAt;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -81,6 +87,8 @@ public class RequestJpaEntity {
         entity.guestId = request.getGuestId();
         entity.assignedStaffId = request.getAssignedStaffId();
         entity.version = request.getVersion();
+        entity.cancelRequested = request.isCancelRequested();
+        entity.cancelRequestedAt = request.getCancelRequestedAt();
         entity.createdAt = request.getCreatedAt();
         entity.updatedAt = request.getUpdatedAt();
         return entity;
@@ -102,6 +110,8 @@ public class RequestJpaEntity {
                 this.guestId,
                 this.assignedStaffId,
                 this.version,
+                this.cancelRequested != null ? this.cancelRequested : false,
+                this.cancelRequestedAt,
                 this.createdAt,
                 this.updatedAt);
     }

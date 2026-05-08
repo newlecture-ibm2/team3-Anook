@@ -5,39 +5,53 @@ import Button from '@/components/ui/Button/Button';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  priority?: 'NORMAL' | 'URGENT';
   title: string;
   description: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
   createdAt: string | Date;
   updatedAt?: string | Date;
+  cancelRequested?: boolean;
   onAccept?: (e: React.MouseEvent) => void;
   onComplete?: (e: React.MouseEvent) => void;
+  isCancelled?: boolean;
+  entities?: {
+    is_contactless?: boolean;
+    target_time?: string;
+    items?: Array<{ item: string; count: number }>;
+    tasks?: string[];
+    [key: string]: any;
+  };
 }
 
 export default function TaskTicket({
   ticketId,
-  priority = 'MEDIUM',
+  priority = 'NORMAL',
   title,
   description,
   status = 'TODO',
   createdAt,
   updatedAt,
+  cancelRequested = false,
   onAccept,
-  onComplete
+  onComplete,
+  isCancelled = false,
+  entities
 }: TaskTicketProps) {
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
-  if (priority === 'HIGH' || priority === 'URGENT') {
+  if (priority === 'URGENT') {
     badgeVariant = 'red';
-  } else if (priority === 'LOW') {
-    badgeVariant = 'gray';
   } else {
     badgeVariant = 'gray';
   }
 
   let timeDisplay = '';
   if (status === 'DONE') {
-    const date = new Date(createdAt);
+    let parsedString = createdAt;
+    if (typeof createdAt === 'string' && !createdAt.endsWith('Z') && !createdAt.includes('+')) {
+      parsedString = createdAt + 'Z';
+    }
+    const date = new Date(parsedString);
     const hours = date.getHours();
     const mins = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -51,14 +65,37 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={styles.taskTicket}>
+    <div className={`${styles.taskTicket} ${priority === 'URGENT' ? styles.urgentTicket : ''}`}>
       <div className={styles.header}>
         {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
-        <StatusBadge variant={badgeVariant}>
-          {priority}
-        </StatusBadge>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isCancelled && (
+            <StatusBadge variant="gray">
+              취소됨
+            </StatusBadge>
+          )}
+          {cancelRequested && (
+            <StatusBadge variant="red">
+              취소 대기
+            </StatusBadge>
+          )}
+          <StatusBadge variant={badgeVariant}>
+            {priority}
+          </StatusBadge>
+        </div>
       </div>
       
+      {(entities?.is_contactless || entities?.target_time) && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', marginTop: '-4px' }}>
+          {entities.is_contactless && (
+            <StatusBadge variant="purple">비대면 배달</StatusBadge>
+          )}
+          {entities.target_time && (
+            <StatusBadge variant="gray">희망 시간: {entities.target_time}</StatusBadge>
+          )}
+        </div>
+      )}
+
       <div className={styles.content}>
         <h3 className={styles.title}>{title}</h3>
         <p className={styles.description}>{description}</p>
@@ -98,7 +135,11 @@ export default function TaskTicket({
 }
 
 function getRelativeTime(dateString: string | Date): string {
-  const date = new Date(dateString);
+  let parsedString = dateString;
+  if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+    parsedString = dateString + 'Z';
+  }
+  const date = new Date(parsedString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));

@@ -89,7 +89,27 @@
   padding: var(--space-12) var(--space-16);
   border-radius: var(--radius-md);
   margin: 0;
-  border-left: 3px solid var(--color-gray-300);
+  white-space: pre-wrap;
+}
+
+.orderDetail {
+  font: var(--text-body-medium);
+  color: var(--color-gray-800);
+  background: var(--color-primary-light, #f0f4ff);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.transferReason {
+  font: var(--text-body-medium);
+  color: var(--color-gray-800);
+  background: #fef3c7;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-md);
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 .aiInfo {

@@ -14,6 +14,5 @@ public record SendStaffMessageCommand(
 
         Long guestId,
 
-        @NotBlank(message = "번역할 대상 언어 코드는 필수입니다.")
         String targetLanguage
 ) {}

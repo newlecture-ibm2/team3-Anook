@@ -16,10 +16,12 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
 
     private final JdbcTemplate jdbcTemplate;
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
     @Override
     public List<StaffTaskResult> findRequests(String departmentId, String status, String priority) {
         StringBuilder sql = new StringBuilder(
-                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at, r.version " +
+                "SELECT r.id, r.status, r.priority, r.department_id, r.summary, r.raw_text, r.room_no, r.assigned_staff_id, r.confidence, r.created_at, r.version, r.cancel_requested, r.cancel_requested_at, r.entities " +
                 "FROM request r WHERE 1=1"
         );
         
@@ -52,6 +54,18 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
             Float rConfidence = rs.getObject("confidence") != null ? rs.getFloat("confidence") : null;
             LocalDateTime rCreatedAt = rs.getTimestamp("created_at").toLocalDateTime();
             Integer rVersion = rs.getInt("version");
+            boolean rCancelRequested = rs.getBoolean("cancel_requested");
+            LocalDateTime rCancelRequestedAt = rs.getTimestamp("cancel_requested_at") != null ? rs.getTimestamp("cancel_requested_at").toLocalDateTime() : null;
+
+            java.util.Map<String, Object> rEntities = java.util.Collections.emptyMap();
+            String entitiesJson = rs.getString("entities");
+            if (entitiesJson != null && !entitiesJson.isBlank()) {
+                try {
+                    rEntities = objectMapper.readValue(entitiesJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+                } catch (Exception e) {
+                    // JSON 파싱 에러 무시
+                }
+            }
 
             return new StaffTaskResult(
                 rId,
@@ -64,7 +78,10 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                 rAssignedStaffId,
                 rConfidence,
                 rCreatedAt,
-                rVersion
+                rVersion,
+                rCancelRequested,
+                rCancelRequestedAt,
+                rEntities
             );
         }, params.toArray());
     }

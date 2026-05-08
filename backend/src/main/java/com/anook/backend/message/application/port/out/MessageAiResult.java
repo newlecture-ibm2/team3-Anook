@@ -32,6 +32,9 @@ public record MessageAiResult(
 
         /** AI가 지시하는 특수 액션 (예: "CANCEL_REQUEST"). 일반 흐름이면 null */
         String action,
+
+        /** 요청 유형: "ADD"(새 요청 추가) 또는 "REPLACE"(기존 요청 수정). 기본값 "ADD" */
+        String actionType,
         
         /** AI 로그 저장을 위한 메타데이터 (토큰, 소요시간 등) */
         Map<String, Object> aiLogMeta

@@ -52,4 +52,16 @@ public record RequestWebSocketPayload(
         return new RequestWebSocketPayload("GRACE_EXPIRED", id, null, null, null, roomNo,
                 null, 0, null);
     }
+
+    public static RequestWebSocketPayload cancelRequestReceived(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary, roomNo, null, 0, "NORMAL");
+    }
+
+    public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo, null, 0, "NORMAL");
+    }
+
+    public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary, String roomNo) {
+        return new RequestWebSocketPayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo, null, 0, "NORMAL");
+    }
 }
