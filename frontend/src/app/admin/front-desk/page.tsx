@@ -17,9 +17,9 @@ import { useTranslation } from '@/app/useTranslation';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
-  const { requests, pending, inProgress, loading, error, refetch } = useAdminRequests('FRONT');
+  const { requests, pending, inProgress, cancelPending, loading, error, refetch } = useAdminRequests('FRONT');
   const { createRequest, loading: creating } = useCreateRequest();
-  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest } = useRequestDetail();
+  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, approveCancellation, rejectCancellation } = useRequestDetail();
   const { escalations, approveEscalation, rejectEscalation } = useEscalations();
   const { t } = useTranslation();
 
@@ -69,6 +69,7 @@ export default function FrontDeskPage() {
   const getFilteredRequests = () => {
     if (activeTab === 'unhandled') return pending;
     if (activeTab === 'inProgress') return inProgress;
+    if (activeTab === 'cancelPending') return cancelPending;
     if (activeTab === 'escalation') return escalations;
     return pending;
   };
@@ -86,7 +87,7 @@ export default function FrontDeskPage() {
   };
 
   // 탭에 따른 섹션 제목
-  const sectionTitle = activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation : t.adminPage.frontDesk.sections.unhandled;
+  const sectionTitle = activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation : activeTab === 'cancelPending' ? '취소 승인 대기' : t.adminPage.frontDesk.sections.unhandled;
 
   return (
     <div className={styles.container}>
@@ -104,6 +105,7 @@ export default function FrontDeskPage() {
           options={[
             { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
+            { label: '취소 승인 대기', value: 'cancelPending', count: cancelPending.length },
             { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length }
           ]}
           activeValue={activeTab}
@@ -164,6 +166,8 @@ export default function FrontDeskPage() {
         onCancel={cancelRequest}
         onApproveEscalation={approveEscalation}
         onRejectEscalation={rejectEscalation}
+        onApproveCancellation={approveCancellation}
+        onRejectCancellation={rejectCancellation}
         onUpdate={() => refetch && refetch()}
       />
 

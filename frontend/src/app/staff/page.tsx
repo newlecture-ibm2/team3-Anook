@@ -41,7 +41,7 @@ export default function StaffDashboardPage() {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
-  const { tasks, loading, error, acceptTask, completeTask, transferTask } = useTasks(view === 'my' ? 'my' : 'dept');
+  const { tasks, loading, error, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation } = useTasks(view === 'my' ? 'my' : 'dept');
 
   // 필터 및 모달 상태 관리
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +95,7 @@ function DashboardContent() {
   const boardData = useMemo(() => ({
     TODO: filteredTasks.filter(t => t.status === 'PENDING'),
     IN_PROGRESS: filteredTasks.filter(t => t.status === 'IN_PROGRESS'),
-    DONE: filteredTasks.filter(t => t.status === 'COMPLETED'),
+    DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
   }), [filteredTasks]);
 
   return (
@@ -153,11 +153,13 @@ function DashboardContent() {
                           description={task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||')[0] : ''}
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
+                          cancelRequested={task.cancelRequested}
+                          isCancelled={task.status === 'CANCELLED'}
                           onAccept={col.status === 'TODO' ? (e) => {
                             e.stopPropagation();
                             acceptTask(task.id, task.version);
                           } : undefined}
-                          onComplete={col.status === 'IN_PROGRESS' ? (e) => {
+                          onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
                             e.stopPropagation();
                             completeTask(task.id, task.version);
                           } : undefined}
@@ -182,6 +184,8 @@ function DashboardContent() {
         onAccept={acceptTask}
         onComplete={completeTask}
         onTransfer={transferTask}
+        onApproveCancellation={approveCancellation}
+        onRejectCancellation={rejectCancellation}
       />
     </div>
   );

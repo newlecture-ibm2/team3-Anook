@@ -30,4 +30,10 @@ public class GlobalExceptionHandler {
         public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e) {
                 return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<String> handleException(Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage() != null ? e.getMessage() : e.toString());
+        }
 }

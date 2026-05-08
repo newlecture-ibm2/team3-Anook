@@ -15,7 +15,7 @@ export interface ActiveRequest {
   domainCode: string;
   summary: string;
   status: string;
-  entities?: Record<string, any>;
+  entities?: Record<string, unknown>;
   progress: number;
 }
 
@@ -118,18 +118,19 @@ export function useChat() {
               };
 
               setMessages(prev => [...prev, newAiMsg]);
-            } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
+            } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(payload.type)) {
               const progressMap: Record<string, number> = {
-                'PENDING': 10, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
-              
+              const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
+
               // Set Active Request for Status Bar
               setActiveRequest({
                 requestId: payload.requestId,
                 domainCode: payload.domainCode || 'UNKNOWN',
                 summary: payload.summary,
-                status: payload.status,
+                status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
                 entities: payload.entities,
                 progress: progressMap[payload.status] || 0
               });
@@ -148,30 +149,47 @@ export function useChat() {
                   entities: payload.entities,
                   progress: progressMap[payload.status] || 0,
                   graceRemaining: payload.graceRemaining || 0,
-                  priority: payload.priority || 'NORMAL'
+                  priority: payload.priority || 'NORMAL',
+                  cancelPending: isCancelPending
                 }
               };
 
               setMessages(prev => {
-                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
-                if (existingIdx >= 0) {
-                  const updated = [...prev];
-                  // STATUS_CHANGED일 때 Grace Remaining 유지 (0으로 내려왔어도 기존 카드에서 타이머가 돌고 있을 것임)
-                  // payload.graceRemaining은 NEW_REQUEST일때만 10, STATUS_CHANGED일때 0으로 옴
-                  const existingGrace = updated[existingIdx].meta?.graceRemaining || 0;
-                  
-                  updated[existingIdx] = {
-                    ...requestMsg,
-                    meta: {
-                      ...requestMsg.meta,
-                      // STATUS_CHANGED시에는 graceRemaining을 갱신하지 않고 기존 값을 유지하거나 0 처리
-                      graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (isCancelled ? 0 : existingGrace)
-                    }
-                  };
-                  return updated;
-                }
-                return [...prev, requestMsg];
+                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
+                const existingGrace = existingIdx >= 0 ? (prev[existingIdx].meta?.graceRemaining || 0) : 0;
+                
+                // Remove the existing card from the list
+                const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
+                
+                // Append the updated card at the bottom
+                return [...filtered, {
+                  ...requestMsg,
+                  id: `request-${payload.requestId}-${Date.now()}`, // Force re-render at the bottom
+                  meta: {
+                    ...requestMsg.meta,
+                    graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
+                  }
+                }];
               });
+
+              // --- System messages for cancel flow ---
+              if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
+                setMessages(prev => [...prev, {
+                  id: `system-cancel-success-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 요청이 정상적으로 취소되었습니다.',
+                }]);
+              }
+
+              if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
+                setMessages(prev => [...prev, {
+                  id: `system-cancel-pending-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
+                }]);
+              }
 
               if (payload.status === 'COMPLETED') {
                 setTimeout(() => {
@@ -182,10 +200,19 @@ export function useChat() {
                   }]);
                 }, 1000);
               }
+
+              if (payload.type === 'CANCEL_REJECTED') {
+                setMessages(prev => [...prev, {
+                  id: `system-${Date.now()}`,
+                  variant: 'received',
+                  type: 'TEXT',
+                  content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
+                }]);
+              }
             } else if (payload.type === 'GRACE_EXPIRED') {
               // Hide the buttons on the specific card by forcing graceRemaining to 0
               setMessages(prev => {
-                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}`);
+                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
                 if (existingIdx >= 0) {
                   const updated = [...prev];
                   updated[existingIdx] = {
@@ -276,11 +303,27 @@ export function useChat() {
     }
   };
 
+  // 5. Confirm Request Action
+  const confirmRequest = async (requestId: number) => {
+    if (!roomNo) return;
+    try {
+      const response = await fetch(`/api/chat/${roomNo}/requests/${requestId}/confirm`, {
+        method: 'POST'
+      });
+      if (!response.ok) {
+        console.error('Failed to confirm request');
+      }
+    } catch (error) {
+      console.error('Error confirming request:', error);
+    }
+  };
+
   return {
     messages,
     isTyping,
     sendMessage,
     activeRequest,
-    cancelRequest
+    cancelRequest,
+    confirmRequest
   };
 }
