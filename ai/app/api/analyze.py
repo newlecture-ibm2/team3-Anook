@@ -231,6 +231,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
                     "priority": agent_result.get("priority", "NORMAL"),
                     "entities": final_entities,
                     "confidence": agent_confidence,
+                    "action_type": primary.action_type,
                 }
                 print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
                 print(f"[Analyze] 응답: {response}\n")
@@ -246,6 +247,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
             "priority": "NORMAL",
             "entities": {},
             "confidence": primary.confidence,
+            "action_type": primary.action_type,
         }
         print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
         print(f"[Analyze] 응답: {response}\n")

@@ -139,9 +139,10 @@ public class SendMessageService implements SendMessageUseCase {
                         analysis.confidence(),
                         content,
                         analysis.summary(),
-                        escalated));
-                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}",
-                        analysis.domainCode(), escalated);
+                        escalated,
+                        analysis.actionType()));
+                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
+                        analysis.domainCode(), escalated, analysis.actionType());
             } else if ("CANCEL_REQUEST".equals(analysis.action())) {
                 eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
                 log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);

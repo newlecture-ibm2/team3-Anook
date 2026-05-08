@@ -18,3 +18,7 @@ class RouterOutputSchema(BaseModel):
     reasoning: str = Field(
         description="이 도메인/모드로 분류한 논리적 이유 (개발자 디버깅 및 로깅용)"
     )
+    action_type: str = Field(
+        default="ADD",
+        description="요청 유형: ADD(새로운 요청 추가) 또는 REPLACE(이전 요청을 수정/변경). 고객이 '아니', '바꿔줘', '대신', '말고' 등으로 기존 요청을 번복하면 REPLACE, 그 외에는 ADD."
+    )
