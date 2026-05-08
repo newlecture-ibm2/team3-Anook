@@ -167,6 +167,7 @@ function DashboardContent() {
                             e.stopPropagation();
                             completeTask(task.id, task.version);
                           } : undefined}
+                          entities={task.entities}
                         />
                       </div>
                     ))}

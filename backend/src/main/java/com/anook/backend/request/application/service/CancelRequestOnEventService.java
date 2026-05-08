@@ -32,54 +32,78 @@ public class CancelRequestOnEventService {
     @EventListener
     @Transactional
     public void onGuestCancel(RequestCancelledByGuestEvent event) {
-        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}", event.getRoomNo(), event.getGuestId());
+        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}", event.getRoomNo(), event.getGuestId(), event.getDomainCode());
 
-        Optional<Request> latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+        Optional<Request> latestRequest;
+        if (event.getDomainCode() != null && !event.getDomainCode().isBlank()) {
+            latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestIdAndDomainCode(event.getRoomNo(), event.getGuestId(), event.getDomainCode());
+        } else {
+            latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+        }
 
         if (latestRequest.isPresent()) {
-            Request request = latestRequest.get();
-            try {
-                if (request.getStatus() == RequestStatus.PENDING) {
-                    request.changeStatus(RequestStatus.CANCELLED);
-                    requestPort.save(request);
-
-                    log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
-
-                    // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
-                    RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                            request.getId(), request.getStatus().name(),
-                            request.getDomainCode() != null ? request.getDomainCode().name() : null,
-                            request.getSummary(), request.getRoomNo()
-                    );
-                    dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
-
-                    // 관리자 대시보드 쪽에도 취소되었다는 알림 전송 (필요 시)
-                    if (request.getDepartmentId() != null) {
-                        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
-                    }
-                } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
-                    request.requestCancellation();
-                    requestPort.save(request);
-
-                    log.info("[Request] 최근 요청 취소 승인 대기 처리 완료 — id: {}", request.getId());
-
-                    RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRequestReceived(
-                            request.getId(),
-                            request.getDomainCode() != null ? request.getDomainCode().name() : null,
-                            request.getSummary(), request.getRoomNo()
-                    );
-                    dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
-
-                    if (request.getDepartmentId() != null) {
-                        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
-                    }
-                }
-
-            } catch (IllegalStateException e) {
-                log.warn("[Request] 취소 불가능한 상태이거나 도메인 규칙 위반 — id: {}, reason: {}", request.getId(), e.getMessage());
-            }
+            cancelSingleRequest(latestRequest.get(), event.getRoomNo());
         } else {
             log.info("[Request] 취소 가능한 요청이 없습니다 — room: {}", event.getRoomNo());
+        }
+    }
+
+    private void cancelSingleRequest(Request request, String roomNo) {
+        try {
+            if (request.getStatus() == RequestStatus.PENDING) {
+                request.changeStatus(RequestStatus.CANCELLED);
+                requestPort.save(request);
+
+                log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
+
+                // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
+                RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                        request.getId(), request.getStatus().name(),
+                        request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                        request.getSummary(), request.getRoomNo()
+                );
+                dispatchPort.dispatchToRoom(roomNo, payload);
+
+                // 관리자 대시보드 쪽에도 취소되었다는 알림 전송 (필요 시)
+                if (request.getDepartmentId() != null) {
+                    dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+                }
+            } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
+                request.requestCancellation();
+                requestPort.save(request);
+
+                log.info("[Request] 최근 요청 취소 승인 대기 처리 완료 — id: {}", request.getId());
+
+                RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRequestReceived(
+                        request.getId(),
+                        request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                        request.getSummary(), request.getRoomNo()
+                );
+                dispatchPort.dispatchToRoom(roomNo, payload);
+
+                if (request.getDepartmentId() != null) {
+                    dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+                }
+            }
+
+        } catch (IllegalStateException e) {
+            log.warn("[Request] 취소 불가능한 상태이거나 도메인 규칙 위반 — id: {}, reason: {}", request.getId(), e.getMessage());
+        }
+    }
+
+    @EventListener
+    @Transactional
+    public void onGuestCancelAll(com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent event) {
+        log.info("[Request] AllRequestsCancelledByGuestEvent 수신 — room: {}, guest: {}", event.getRoomNo(), event.getGuestId());
+
+        java.util.List<Request> allPending = requestPort.findAllCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+        if (allPending.isEmpty()) {
+            log.info("[Request] 취소 가능한 전체 요청이 없습니다 — room: {}", event.getRoomNo());
+            return;
+        }
+        
+        for (Request request : allPending) {
+            cancelSingleRequest(request, event.getRoomNo());
         }
     }
 }

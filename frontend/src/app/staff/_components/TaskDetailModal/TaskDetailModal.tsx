@@ -197,6 +197,34 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
+            {task.entities && ((task.entities.items?.length ?? 0) > 0 || (task.entities.tasks?.length ?? 0) > 0) && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>AI 분석 상세 내역</h3>
+                <div className={styles.descriptionBox} style={{ backgroundColor: '#f0f4ff' }}>
+                  {task.entities.items && task.entities.items.length > 0 && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong>물품 요청:</strong>
+                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+                        {task.entities.items.map((it: any, idx: number) => (
+                          <li key={idx}>{it.item} - {it.count}개</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {task.entities.tasks && task.entities.tasks.length > 0 && (
+                    <div>
+                      <strong>수행 업무:</strong>
+                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+                        {task.entities.tasks.map((t: string, idx: number) => (
+                          <li key={idx}>{t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {transferReasonText && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>

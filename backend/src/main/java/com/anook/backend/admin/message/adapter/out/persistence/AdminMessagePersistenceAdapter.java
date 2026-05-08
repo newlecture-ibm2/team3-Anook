@@ -49,8 +49,9 @@ public class AdminMessagePersistenceAdapter implements AdminMessageQueryPort {
     }
 
     @Override
-    public void saveStaffMessage(String roomNo, String content) {
-        AdminMessageJpaEntity entity = AdminMessageJpaEntity.createStaffMessage(roomNo, content);
-        jpaRepository.save(entity);
+    public Long getLatestGuestId(String roomNo) {
+        return jpaRepository.findFirstByRoomNoOrderByCreatedAtDesc(roomNo)
+                .map(AdminMessageJpaEntity::getGuestId)
+                .orElse(1L); // fallback
     }
 }

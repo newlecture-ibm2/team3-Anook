@@ -1,10 +1,6 @@
 .statusBarContainer {
-  position: absolute;
-  top: 72px; /* 헤더 아래쪽 여백 */
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - var(--space-32));
-  max-width: 448px;
+  position: relative;
+  width: 100%;
   z-index: 20;
   background-color: var(--color-white);
   border: 1px solid var(--color-info);
