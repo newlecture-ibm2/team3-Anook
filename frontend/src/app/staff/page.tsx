@@ -148,7 +148,13 @@ function DashboardContent() {
                         <TaskTicket
                           priority={mapPriority(task.priority)}
                           title={`[${task.roomNumber}호] ${task.summary}`}
-                          description={task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||')[0] : ''}
+                          description={(() => {
+                            if (!task.rawText) return '';
+                            const main = task.rawText.split('\n|||TRANSFER_REASON|||')[0];
+                            const customer = main.split('[주문 상세]')[0].trim();
+                            const detail = main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '';
+                            return customer ? (detail ? `${customer}\n${detail}` : customer) : detail;
+                          })()}
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
                           cancelRequested={task.cancelRequested}

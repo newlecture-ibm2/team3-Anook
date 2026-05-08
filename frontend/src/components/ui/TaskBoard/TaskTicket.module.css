@@ -45,6 +45,7 @@
   font: var(--text-body-regular);
   color: var(--color-gray-700);
   margin: 0;
+  white-space: pre-wrap;
 }
 
 .divider {
