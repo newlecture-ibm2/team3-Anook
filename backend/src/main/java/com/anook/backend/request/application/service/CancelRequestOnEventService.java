@@ -32,9 +32,11 @@ public class CancelRequestOnEventService {
     @EventListener
     @Transactional
     public void onGuestCancel(RequestCancelledByGuestEvent event) {
-        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}", event.getRoomNo(), event.getGuestId());
+        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}", event.getRoomNo(),
+                event.getGuestId());
 
-        Optional<Request> latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+        Optional<Request> latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestId(event.getRoomNo(),
+                event.getGuestId());
 
         if (latestRequest.isPresent()) {
             Request request = latestRequest.get();
@@ -49,8 +51,7 @@ public class CancelRequestOnEventService {
                 RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
                         request.getId(), request.getStatus().name(),
                         request.getDomainCode() != null ? request.getDomainCode().name() : null,
-                        request.getSummary(), request.getRoomNo()
-                );
+                        request.getSummary(), request.getRoomNo());
                 dispatchPort.dispatchToRoom(event.getRoomNo(), payload);
 
                 // 관리자 대시보드 쪽에도 취소되었다는 알림 전송 (필요 시)

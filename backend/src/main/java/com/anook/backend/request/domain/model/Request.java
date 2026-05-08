@@ -112,6 +112,16 @@ public class Request {
     }
 
     /**
+     * 긴급 상황 마킹 — priority URGENT + 즉시 ESCALATED 상태로 전환
+     * (화재·의료·위협 키워드 감지 시 Pre-Filter에서 호출)
+     */
+    public void markEmergency(String category) {
+        this.priority = Priority.URGENT;
+        this.status = RequestStatus.ESCALATED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
      * 직원 배정
      */
     public void assignStaff(Long staffId) {

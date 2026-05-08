@@ -146,6 +146,29 @@ async def analyze_message(request: AnalyzeRequest) -> Dict[str, Any]:
 
 async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
     print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
+
+    # ──────────────────────────────────────────────
+    # STEP 0: 긴급 상황 키워드 Pre-Filter (Gemini 호출 전 즉시 감지)
+    # ──────────────────────────────────────────────
+    from app.core.emergency_filter import emergency_pre_filter, get_emergency_reply
+
+    emergency = emergency_pre_filter(request.text)
+    if emergency:
+        print(f"\n[Analyze] 🚨 긴급 상황 감지! Category: {emergency['category']}, "
+              f"Keyword: '{emergency['matched_keyword']}'")
+
+        return {
+            "guest_reply": get_emergency_reply(emergency["category"], request.language),
+            "summary": f"긴급: {emergency['category']} ({emergency['matched_keyword']})",
+            "domain_code": "EMERGENCY",
+            "priority": "URGENT",
+            "entities": {
+                "emergency_category": emergency["category"],
+                "matched_keyword": emergency["matched_keyword"],
+                "severity": emergency["severity"],
+            },
+            "confidence": 1.0,
+        }
     if request.chat_history:
         print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
     else:

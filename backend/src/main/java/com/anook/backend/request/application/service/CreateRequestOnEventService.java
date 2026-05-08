@@ -22,13 +22,13 @@ import java.util.List;
  * Message 도메인에서 발행한 RequestDetectedEvent를 수신하여 Request 생성
  *
  * [AN-252] Grace Period + Generative UI 적용:
- *   - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
- *   - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
- *   - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
+ * - URGENT 요청: 즉시 직원 알림 (Grace Period 스킵)
+ * - 일반 요청: 10초 Grace Period 후 직원 알림 (고객에게 수정/취소 기회 제공)
+ * - WebSocket payload에 entities, graceRemaining, priority 포함 (위젯 카드 렌더링용)
  *
  * [Cancel & Replace] 대화형 수정 패턴:
- *   - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
- *   - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
+ * - 같은 객실+게스트+부서에 PENDING 상태 요청이 이미 있으면 자동 취소 후 새 요청 생성
+ * - "수건 2장" → "아니 3장으로 바꿔줘" 시나리오를 매끄럽게 처리
  */
 @Slf4j
 @Service
@@ -42,8 +42,8 @@ public class CreateRequestOnEventService {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onRequestDetected(RequestDetectedEvent event) {
-        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}", 
-                 event.getRoomNo(), event.getDomainCode(), event.getSummary());
+        log.info("요청 이벤트 수신: roomNo={}, domainCode={}, summary={}",
+                event.getRoomNo(), event.getDomainCode(), event.getSummary());
 
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
@@ -60,12 +60,19 @@ public class CreateRequestOnEventService {
                 event.getEntities(),
                 event.getConfidence(),
                 event.getRawText(),
-                event.getSummary()
-        );
+                event.getSummary());
 
-        // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
+        // 긴급 상황 Pre-Filter 감지 여부
+        boolean isEmergencyDetected = event.getEntities() != null
+                && event.getEntities().containsKey("emergency_category");
+
         boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
-        if (isEscalated) {
+
+        if (isEmergencyDetected) {
+            log.warn("🚨 [EMERGENCY] 긴급 상황 자동 에스컬레이션 — category: {}",
+                    event.getEntities().get("emergency_category"));
+            request.markEmergency((String) event.getEntities().get("emergency_category"));
+        } else if (isEscalated) {
             log.warn("에스컬레이션 발생! 확신도: {}", event.getConfidence());
             request.escalate("AI 확신도 부족: " + event.getConfidence());
         }
@@ -88,8 +95,7 @@ public class CreateRequestOnEventService {
                 savedRequest.getRoomNo(),
                 savedRequest.getEntities(),
                 graceRemaining,
-                savedRequest.getPriority().name()
-        );
+                savedRequest.getPriority().name());
 
         // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
@@ -97,7 +103,14 @@ public class CreateRequestOnEventService {
         if (isUrgent) {
             // URGENT: 즉시 직원/관리자 알림 (Grace Period 없음)
             log.info("[GracePeriod] URGENT 요청 → 즉시 직원 알림 발송 — id: {}", savedRequest.getId());
-            if (savedRequest.getDomainCode() != null) {
+            // 긴급 상황(EMERGENCY 도메인): 전 부서에 동시 알림
+            if (savedRequest.getDomainCode() == DomainCode.EMERGENCY) {
+                log.warn("🚨 [EMERGENCY] 전 부서 긴급 알림 발송 — id: {}, room: {}",
+                        savedRequest.getId(), savedRequest.getRoomNo());
+                for (DomainCode dc : DomainCode.values()) {
+                    dispatchPort.dispatchToDepartment(dc.name(), payload);
+                }
+            } else if (savedRequest.getDomainCode() != null) {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }
             dispatchPort.dispatchToAdmin(payload);
@@ -108,8 +121,7 @@ public class CreateRequestOnEventService {
                     savedRequest.getId(),
                     savedRequest.getRoomNo(),
                     deptCode,
-                    payload
-            );
+                    payload);
         }
     }
 
@@ -123,7 +135,8 @@ public class CreateRequestOnEventService {
      */
     private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
         String deptId = domainCode.getDeptId();
-        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo, guestId, deptId);
+        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo,
+                guestId, deptId);
 
         for (Request existing : existingPending) {
             try {
@@ -139,8 +152,7 @@ public class CreateRequestOnEventService {
                         RequestStatus.CANCELLED.name(),
                         existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                         existing.getSummary(),
-                        existing.getRoomNo()
-                );
+                        existing.getRoomNo());
                 dispatchPort.dispatchToRoom(roomNo, cancelPayload);
 
             } catch (IllegalStateException e) {

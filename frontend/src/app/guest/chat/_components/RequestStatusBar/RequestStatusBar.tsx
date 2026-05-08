@@ -145,7 +145,8 @@ export default function RequestStatusBar({
               </div>
             )}
             {Boolean(entities && !entities.item) && Object.entries(entities || {}).map(([key, val]) => {
-              if (key === 'intent') return null;
+              // 시스템 내부용 키는 화면에 표시하지 않음
+              if (['intent', 'emergency_category', 'matched_keyword', 'severity'].includes(key)) return null;
               return (
                 <div key={key} className={styles.detailItem}>
                   <span className={styles.detailLabel}>{key}</span>

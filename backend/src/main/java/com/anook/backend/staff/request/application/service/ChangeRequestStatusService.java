@@ -46,8 +46,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 staffId,
                 request.getVersion(),
                 request.getCreatedAt(),
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
 
         requestRepositoryPort.save(updatedRequest);
         log.info("요청 수락 완료: requestId={}, staffId={}", requestId, staffId);
@@ -58,8 +57,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 updatedRequest.getStatus().name(),
                 updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
                 updatedRequest.getSummary(),
-                updatedRequest.getRoomNo()
-        );
+                updatedRequest.getRoomNo());
         dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
         if (updatedRequest.getDomainCode() != null) {
             dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
@@ -91,8 +89,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getAssignedStaffId(),
                 request.getVersion(),
                 request.getCreatedAt(),
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
 
         requestRepositoryPort.save(updatedRequest);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
@@ -103,8 +100,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 updatedRequest.getStatus().name(),
                 updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
                 updatedRequest.getSummary(),
-                updatedRequest.getRoomNo()
-        );
+                updatedRequest.getRoomNo());
         dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
         if (updatedRequest.getDomainCode() != null) {
             dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
@@ -124,8 +120,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         String oldDepartmentId = request.getDomainCode() != null ? request.getDomainCode().name() : null;
 
         // DomainCode 변환
-        com.anook.backend.request.domain.model.DomainCode newDomainCode = 
-            com.anook.backend.request.domain.model.DomainCode.from(toDepartmentId);
+        com.anook.backend.request.domain.model.DomainCode newDomainCode = com.anook.backend.request.domain.model.DomainCode
+                .from(toDepartmentId);
 
         // 부서 이관
         request.transferDepartment(newDomainCode, reason);
@@ -146,11 +142,10 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getAssignedStaffId(),
                 request.getVersion(),
                 request.getCreatedAt(),
-                request.getUpdatedAt()
-        );
+                request.getUpdatedAt());
 
         requestRepositoryPort.save(updatedRequest);
-        log.info("요청 부서 전달 완료: requestId={}, staffId={}, from={}, to={}, reason={}", 
+        log.info("요청 부서 전달 완료: requestId={}, staffId={}, from={}, to={}, reason={}",
                 requestId, staffId, oldDepartmentId, toDepartmentId, reason);
 
         // WebSocket 알림 (고객에게 상태 변경 알림)
@@ -159,15 +154,14 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 updatedRequest.getStatus().name(),
                 updatedRequest.getDomainCode() != null ? updatedRequest.getDomainCode().name() : "UNKNOWN",
                 updatedRequest.getSummary(),
-                updatedRequest.getRoomNo()
-        );
+                updatedRequest.getRoomNo());
         dispatchPort.dispatchToRoom(updatedRequest.getRoomNo(), payload);
-        
+
         // 새 부서에 알림
         if (updatedRequest.getDomainCode() != null) {
             dispatchPort.dispatchToDepartment(updatedRequest.getDomainCode().name(), payload);
         }
-        
+
         // 이전 부서에도 상태 업데이트 알림 (태스크 보드에서 사라지도록)
         if (oldDepartmentId != null && !oldDepartmentId.equals(toDepartmentId)) {
             dispatchPort.dispatchToDepartment(oldDepartmentId, payload);

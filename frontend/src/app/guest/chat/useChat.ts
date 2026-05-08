@@ -123,7 +123,7 @@ export function useChat() {
                 'PENDING': 10, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
-              
+
               // Set Active Request for Status Bar
               setActiveRequest({
                 requestId: payload.requestId,
@@ -158,12 +158,15 @@ export function useChat() {
                   const updated = [...prev];
                   // STATUS_CHANGED일 때 Grace Remaining 유지 (0으로 내려왔어도 기존 카드에서 타이머가 돌고 있을 것임)
                   // payload.graceRemaining은 NEW_REQUEST일때만 10, STATUS_CHANGED일때 0으로 옴
-                  const existingGrace = updated[existingIdx].meta?.graceRemaining || 0;
-                  
+                  const existingMeta = updated[existingIdx].meta || {};
+                  const existingGrace = existingMeta.graceRemaining || 0;
+
                   updated[existingIdx] = {
                     ...requestMsg,
                     meta: {
                       ...requestMsg.meta,
+                      entities: payload.entities || existingMeta.entities,
+                      priority: payload.priority || existingMeta.priority,
                       // STATUS_CHANGED시에는 graceRemaining을 갱신하지 않고 기존 값을 유지하거나 0 처리
                       graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (isCancelled ? 0 : existingGrace)
                     }

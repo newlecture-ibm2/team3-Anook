@@ -19,6 +19,13 @@ export interface StaffTask {
   version: number;
 }
 
+export interface EmergencyAlert {
+  requestId: number;
+  roomNo: string;
+  summary: string;
+  category: string;
+}
+
 interface UseTasksReturn {
   tasks: StaffTask[];
   loading: boolean;
@@ -27,12 +34,15 @@ interface UseTasksReturn {
   acceptTask: (id: number, version: number) => Promise<void>;
   completeTask: (id: number, version: number) => Promise<void>;
   transferTask: (id: number, version: number, toDepartmentId: string, reason: string) => Promise<void>;
+  emergencyAlert: EmergencyAlert | null;
+  dismissEmergency: () => void;
 }
 
 export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const [tasks, setTasks] = useState<StaffTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emergencyAlert, setEmergencyAlert] = useState<EmergencyAlert | null>(null);
 
   const { subscribe } = useWebSocket();
 
@@ -113,11 +123,32 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const derivedDepartmentId = tasks.length > 0 ? tasks[0].departmentId : 'HK';
   useEffect(() => {
     const handleEvent = (data: unknown) => {
-      const event = data as { type?: string };
+      const event = data as {
+        type?: string;
+        priority?: string;
+        entities?: Record<string, unknown>;
+        requestId?: number;
+        roomNo?: string;
+        summary?: string;
+      };
       if (!event || !event.type) return;
 
       if (event.type === 'NEW_REQUEST' || event.type === 'STATUS_CHANGED') {
         fetchTasks(true);
+      }
+
+      // 긴급 상황 감지: URGENT + emergency_category 포함 시 배너 트리거
+      if (
+        event.type === 'NEW_REQUEST' &&
+        event.priority === 'URGENT' &&
+        event.entities?.emergency_category
+      ) {
+        setEmergencyAlert({
+          requestId: event.requestId ?? 0,
+          roomNo: event.roomNo ?? '',
+          summary: event.summary ?? '긴급 상황 발생',
+          category: event.entities.emergency_category as string,
+        });
       }
     };
 
@@ -131,5 +162,7 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
     };
   }, [subscribe, fetchTasks, derivedDepartmentId]);
 
-  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask };
+  const dismissEmergency = useCallback(() => setEmergencyAlert(null), []);
+
+  return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, emergencyAlert, dismissEmergency };
 }
