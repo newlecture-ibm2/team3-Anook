@@ -4,6 +4,7 @@ import com.anook.backend.global.exception.BusinessException;
 import com.anook.backend.global.exception.ErrorCode;
 import com.anook.backend.request.application.dto.response.GetMyRequestsResult;
 import com.anook.backend.request.application.port.in.CancelRequestUseCase;
+import com.anook.backend.request.application.port.in.ConfirmRequestUseCase;
 import com.anook.backend.request.application.port.in.GetMyRequestsUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class GuestRequestController {
 
     private final GetMyRequestsUseCase getMyRequestsUseCase;
     private final CancelRequestUseCase cancelRequestUseCase;
+    private final ConfirmRequestUseCase confirmRequestUseCase;
 
     /**
      * 내 요청 목록 조회
@@ -66,6 +68,25 @@ public class GuestRequestController {
         cancelRequestUseCase.cancelByGuest(requestId, roomNo, guestId);
 
         return ResponseEntity.ok(Map.of("message", "요청이 취소되었습니다."));
+    }
+
+    /**
+     * [수락하기] 빠른 등록
+     */
+    @PostMapping("/{roomNo}/requests/{requestId}/confirm")
+    public ResponseEntity<Map<String, String>> confirmRequest(
+            @PathVariable String roomNo,
+            @PathVariable Long requestId,
+            Principal principal
+    ) {
+        validateRoomNo(principal, roomNo);
+        Long guestId = Long.parseLong(principal.getName());
+
+        log.info("[GuestRequestController] 수락 요청 수신 — roomNo: {}, requestId: {}, guestId: {}", roomNo, requestId, guestId);
+
+        confirmRequestUseCase.confirmRequest(requestId, roomNo);
+
+        return ResponseEntity.ok(Map.of("message", "요청이 즉시 접수되었습니다."));
     }
 
     /**

@@ -33,4 +33,22 @@ public interface ChangeRequestStatusUseCase {
      * @param version        낙관적 락을 위한 버전
      */
     void transferRequest(Long requestId, Long staffId, String toDepartmentId, String reason, Integer version);
+
+    /**
+     * 고객의 취소 요청을 승인합니다.
+     *
+     * @param requestId 요청 ID
+     * @param staffId   담당 직원 ID
+     * @param version   낙관적 락을 위한 버전
+     */
+    void approveCancellation(Long requestId, Long staffId, Integer version);
+
+    /**
+     * 고객의 취소 요청을 반려합니다.
+     *
+     * @param requestId 요청 ID
+     * @param staffId   담당 직원 ID
+     * @param version   낙관적 락을 위한 버전
+     */
+    void rejectCancellation(Long requestId, Long staffId, Integer version);
 }

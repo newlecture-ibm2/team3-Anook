@@ -6,12 +6,14 @@ export interface StatusCardProps {
   progress: number; // 0 to 100
   steps?: string[];
   cancelled?: boolean;
+  cancelPending?: boolean;
 }
 
 export default function StatusCard({ 
   progress, 
   steps = ['접수 완료', '처리 중', '완료'],
   cancelled = false,
+  cancelPending = false,
 }: StatusCardProps) {
   
   // 취소 상태면 별도 렌더링
@@ -41,7 +43,7 @@ export default function StatusCard({
       </div>
       <div className={styles.barBackground}>
         <div 
-          className={styles.barFill} 
+          className={cancelPending ? styles.barCancelPending : styles.barFill} 
           style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} 
         />
       </div>
@@ -49,7 +51,7 @@ export default function StatusCard({
         {steps.map((step, index) => (
           <span 
             key={index} 
-            className={index <= activeStepIndex ? styles.stepActive : styles.stepInactive}
+            className={index <= activeStepIndex ? (cancelPending ? styles.stepCancelPending : styles.stepActive) : styles.stepInactive}
             style={{ 
               flex: 1, 
               textAlign: index === 0 ? 'left' : index === steps.length - 1 ? 'right' : 'center' 

@@ -118,6 +118,24 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     }
 
     @Override
+    @Transactional
+    public void approveCancellation(Long id) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.approveCancellation(id);
+    }
+
+    @Override
+    @Transactional
+    public void rejectCancellation(Long id) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.rejectCancellation(id);
+    }
+
+    @Override
     public List<AdminRequestListResult> getEscalations() {
         List<AdminRequest> escalations = adminRequestQueryPort.findEscalations();
 
@@ -322,7 +340,10 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getSummary(), r.getRoomNo(),
                 r.getAssignedStaffId(),
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
-                r.getCreatedAt(), r.getUpdatedAt()
+                r.isCancelRequested(),
+                r.getCancelRequestedAt(),
+                r.getCreatedAt(), r.getUpdatedAt(),
+                r.getVersion()
         );
     }
 
@@ -335,7 +356,9 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getConfidence(), r.getRoomNo(),
                 r.getAssignedStaffId(),
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
-                r.getVersion(), r.getCreatedAt(), r.getUpdatedAt()
+                r.getVersion(),
+                r.isCancelRequested(), r.getCancelRequestedAt(),
+                r.getCreatedAt(), r.getUpdatedAt()
         );
     }
 }

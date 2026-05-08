@@ -10,8 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,6 +33,8 @@ public class GracePeriodScheduler {
     public static final int GRACE_SECONDS = 10;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private final ConcurrentHashMap<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
+    
     private final RequestRepositoryPort requestPort;
     private final DispatchPort dispatchPort;
 
@@ -51,7 +55,8 @@ public class GracePeriodScheduler {
                                      String deptCode, RequestWebSocketPayload payload) {
         log.info("[GracePeriod] 스케줄 등록 — requestId: {}, {}초 후 직원 알림 발송 예정", requestId, GRACE_SECONDS);
 
-        scheduler.schedule(() -> {
+        ScheduledFuture<?> future = scheduler.schedule(() -> {
+            scheduledTasks.remove(requestId);
             try {
                 Optional<Request> requestOpt = requestPort.findById(requestId);
 
@@ -81,6 +86,53 @@ public class GracePeriodScheduler {
                 log.error("[GracePeriod] 만료 처리 중 오류 — requestId: {}, error: {}", requestId, e.getMessage(), e);
             }
         }, GRACE_SECONDS, TimeUnit.SECONDS);
+
+        scheduledTasks.put(requestId, future);
+    }
+
+    /**
+     * 고객이 10초 대기를 스킵하고 수락(Confirm) 버튼을 누른 경우,
+     * 스케줄을 즉시 취소하고 즉시 직원에게 알림을 발송한다.
+     */
+    public void confirmEarly(Long requestId, String roomNo) {
+        ScheduledFuture<?> future = scheduledTasks.remove(requestId);
+        if (future != null) {
+            future.cancel(false);
+            log.info("[GracePeriod] 스케줄 취소(고객 수락) — requestId: {}", requestId);
+        }
+
+        try {
+            Optional<Request> requestOpt = requestPort.findById(requestId);
+            if (requestOpt.isPresent()) {
+                Request request = requestOpt.get();
+                if (request.getStatus() == RequestStatus.PENDING) {
+                    String deptCode = request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN";
+                    
+                    log.info("[GracePeriod] 수락하기 즉시 발송 — requestId: {}, dept: {}", requestId, deptCode);
+
+                    // 직원 대시보드 발송 시 graceRemaining을 0으로 설정하여 보냄
+                    RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+                            request.getId(),
+                            request.getStatus().name(),
+                            deptCode,
+                            request.getSummary(),
+                            request.getRoomNo(),
+                            request.getEntities(),
+                            0, // 남은 시간 0
+                            request.getPriority().name()
+                    );
+
+                    dispatchPort.dispatchToDepartment(deptCode, payload);
+                    dispatchPort.dispatchToAdmin(payload);
+
+                    // 고객 UI에 완료(만료) 알림
+                    RequestWebSocketPayload graceExpired = RequestWebSocketPayload.graceExpired(requestId, roomNo);
+                    dispatchPort.dispatchToRoom(roomNo, graceExpired);
+                }
+            }
+        } catch (Exception e) {
+            log.error("[GracePeriod] 고객 수락 처리 중 오류 — requestId: {}, error: {}", requestId, e.getMessage(), e);
+        }
     }
 
     /**

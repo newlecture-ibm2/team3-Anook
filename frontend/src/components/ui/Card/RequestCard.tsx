@@ -94,7 +94,11 @@ export default function RequestCard({
 }
 
 function getRelativeTime(dateString: string | Date): string {
-  const date = new Date(dateString);
+  let parsedString = dateString;
+  if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+    parsedString = dateString + 'Z';
+  }
+  const date = new Date(parsedString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));

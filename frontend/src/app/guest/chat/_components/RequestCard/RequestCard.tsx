@@ -11,8 +11,10 @@ export interface RequestCardProps {
   graceRemaining: number;
   priority: string;
   createdAt?: string;
+  cancelPending?: boolean;
   onCancel?: () => void;
   onModify?: () => void;
+  onAccept?: () => void;
 }
 
 const DOMAIN_MAP: Record<string, { icon: string; label: string; color: string }> = {
@@ -35,12 +37,17 @@ export default function RequestCard({
   graceRemaining,
   priority,
   createdAt,
+  cancelPending,
   onCancel,
   onModify,
+  onAccept,
 }: RequestCardProps) {
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
+  const isCancelPending = cancelPending === true;
   const isEscalatedChat = entities?.intent === 'ESCALATION';
+  const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
+  const isCompleted = progress >= 100 && !isCancelled;
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   
   // Timer state
@@ -87,14 +94,14 @@ export default function RequestCard({
   const detailsText = renderDetails();
 
   return (
-    <div className={`${styles.card} ${isUrgent ? styles.urgentCard : ''} ${isCancelled ? styles.cancelledCard : ''}`}>
+    <div className={`${styles.card} ${isUrgent ? styles.urgentCard : ''} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.badge} style={{ backgroundColor: domainInfo.color }}>
           {domainInfo.icon} {domainInfo.label}
         </div>
         <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isEscalatedChat ? '상담 대기 중' : isUrgent ? '긴급 접수' : '대기 중'}
+          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : isUrgent ? '긴급 접수' : '대기 중'}
         </div>
       </div>
 
@@ -124,7 +131,7 @@ export default function RequestCard({
             <div className={styles.timerText}>{timeLeft}초</div>
           </div>
           <div className={styles.buttonGroup}>
-            <button className={styles.actionButton} onClick={onModify}>수정하기</button>
+            <button className={styles.actionButton} onClick={onAccept}>바로등록</button>
             <button className={styles.actionButton} onClick={onCancel}>취소하기</button>
           </div>
         </>
@@ -133,7 +140,11 @@ export default function RequestCard({
       {/* Expiry Message or Progress */}
       {!showButtons && !isCancelled && (
         <>
-          {isEscalatedChat ? (
+          {isCancelPending ? (
+            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
+              🔄 취소 요청이 접수되어 직원이 확인 중입니다
+            </div>
+          ) : isEscalatedChat ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
               💬 프론트 직원이 채팅으로 응대할 예정입니다.
             </div>
