@@ -14,8 +14,8 @@ def seed_concierge_knowledge():
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            # 기존 데이터 중복 방지를 위해 삭제 (개발 편의성)
-            # cur.execute("DELETE FROM knowledge_entry WHERE domain_code = 'CONCIERGE'")
+            # 기존 데이터 중복 방지를 위해 삭제
+            cur.execute("DELETE FROM knowledge_entry WHERE domain_code = 'CONCIERGE'")
             
             for item in CONCIERGE_KNOWLEDGE:
                 question = item["question"]

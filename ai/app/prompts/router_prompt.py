@@ -58,7 +58,10 @@ If the user's message contains multiple distinct requests (e.g., "towels and roo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, even if there is a previous context. Do not guess the intent.
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
+- **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
+- **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
 - If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CANCEL" so no actionable ticket is created and recent request is cancelled.
 - If mode is "CHITCHAT", "CLARIFICATION", or "CANCEL", the domain MUST be `null`.
 - If mode is "INFO", assign the relevant domain so the system can search the correct RAG knowledge base.
