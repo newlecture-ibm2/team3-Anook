@@ -7,44 +7,24 @@ Gemini 호출 이전에 화재·의료·위협 키워드를 감지하여
 매칭 시 Gemini 호출을 건너뛰어 지연 시간을 0에 가깝게 줄인다.
 """
 
+import re
 from typing import Optional, Dict, Any
 
 EMERGENCY_KEYWORDS: Dict[str, Dict[str, Any]] = {
     "MEDICAL_ASSIST": {
-        "keywords": [
-            # 한국어
-            "피 나", "피가 나", "베었", "다쳤", "해열제", "구급 상자", "반창고", "배 아파", "배가 아파", "복통", "고열", "응급실",
-            # English
-            "bleeding", "cut my", "injured", "fever", "medicine", "first aid", "band aid", "stomachache", "stomach ache",
-        ],
-        "severity": 8,
-    },
-    "SECURITY": {
-        "keywords": [
-            # 한국어
-            "싸우는", "싸워요", "싸움", "다툼", "폭력", "비명", "무서워", "누가 자꾸", "모르는 사람", "문 손잡이", "문 쾅쾅", "취객", "술 취한", "술취한",
-            # English
-            "fighting", "screaming", "scared", "someone knocking", "stranger", "trying to open",
-        ],
-        "severity": 9,
-    },
-    "WATER_LEAK": {
-        "keywords": [
-            # 한국어
-            "천장에서 물", "방이 물바다", "변기 터졌", "홍수", "침수",
-            # English
-            "flooded", "flooding", "water pouring", "pipe burst", "overflowing",
+        "patterns": [
+            # 극단적으로 명백한 생명 직결 단어만 남김 (말장난 불가능한 수준)
+            r"119", r"구급차", r"앰뷸런스", r"심정지", r"심장\s*마비", 
+            r"살려\s*주세", r"응급실\s*불러", r"cpr", r"의식\s*없"
         ],
         "severity": 10,
     },
-    "URGENT_CLEANUP": {
-        "keywords": [
-            # 한국어
-            "토해", "토했", "구토", "토사물", "오물", "똥", "더러워", "악취", "역겨운",
-            # English
-            "vomit", "puke", "throw up", "feces", "poop", "biohazard", "disgusting smell",
+    "SECURITY": {
+        "patterns": [
+            # 폭동/범죄 등 경찰 개입이 필요한 명백한 단어
+            r"강도", r"도둑", r"침입", r"경찰\s*불러", r"경찰\s*신고", r"살인"
         ],
-        "severity": 8,
+        "severity": 10,
     }
 }
 # 긴급 상황별 다국어 응답 (한국어/영어만 지원)
@@ -78,43 +58,14 @@ def emergency_pre_filter(text: str) -> Optional[Dict[str, Any]]:
     text_no_space = text_lower.replace(" ", "")
 
     for category, config in EMERGENCY_KEYWORDS.items():
-        for keyword in config["keywords"]:
-            keyword_lower = keyword.lower()
-            keyword_no_space = keyword_lower.replace(" ", "")
-            
-            # 1. 띄어쓰기 완전 무시 매칭 ("피가나" -> "피가 나요" 등 매칭)
-            if keyword_no_space in text_no_space:
+        for pattern in config["patterns"]:
+            match = re.search(pattern, text_lower)
+            if match:
                 return {
                     "category": category,
-                    "matched_keyword": keyword,
+                    "matched_keyword": match.group(0),
                     "severity": config["severity"],
                 }
-                
-            # 2. 키워드에 공백이 포함된 경우, 유연한 정규식 매칭
-            # 예: "물 넘쳐" -> "물(은|는|이|가|을|를|도|에|에서|로|으로)?.*넘쳐" 로 변환
-            if " " in keyword_lower:
-                # 각 단어 뒤에 한국어 조사가 붙을 수 있음을 명시적으로 허용
-                words = keyword_lower.split()
-                regex_words = [re.escape(w) + r"(?:은|는|이|가|을|를|도|에|에서|로|으로)?" for w in words]
-                
-                # 단어 사이사이에 '최대 10글자 이내의 어떤 문자열'이 와도 매칭되도록 허용
-                pattern = r".{0,10}".join(regex_words)
-                if re.search(pattern, text_lower):
-                    return {
-                        "category": category,
-                        "matched_keyword": keyword,
-                        "severity": config["severity"],
-                    }
-            
-            # 3. 공백이 없는 단일 키워드라도 단어 뒤에 조사가 붙는 경우 정규식으로 한 번 더 확인
-            if " " not in keyword_lower:
-                pattern = re.escape(keyword_lower) + r"(?:은|는|이|가|을|를|도|에|에서|로|으로)?"
-                if re.search(pattern, text_lower):
-                    return {
-                        "category": category,
-                        "matched_keyword": keyword,
-                        "severity": config["severity"],
-                    }
                     
     return None
 

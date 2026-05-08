@@ -171,7 +171,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> Dict[str, Any]:
         return {
             "guest_reply": reply_msg,
             "summary": f"긴급: {emergency['category']} ({emergency['matched_keyword']})",
-            "domain_code": "EMERGENCY",
+            "domain_code": "FRONT",
             "priority": "URGENT",
             "entities": {
                 "intent": emergency["category"],

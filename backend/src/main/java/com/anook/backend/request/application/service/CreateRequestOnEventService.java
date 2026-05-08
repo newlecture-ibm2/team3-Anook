@@ -119,12 +119,7 @@ public class CreateRequestOnEventService {
         if (isUrgent) {
             // URGENT: 즉시 직원/관리자 알림 (Grace Period 없음)
             log.info("[GracePeriod] URGENT 요청 → 즉시 직원 알림 발송 — id: {}", savedRequest.getId());
-            // 긴급 상황(EMERGENCY 도메인): 프론트 데스크에만 전담 알림
-            if (savedRequest.getDomainCode() == DomainCode.EMERGENCY) {
-                log.warn("🚨 [EMERGENCY] 프론트 데스크 긴급 알림 발송 — id: {}, room: {}",
-                        savedRequest.getId(), savedRequest.getRoomNo());
-                dispatchPort.dispatchToDepartment(DomainCode.FRONT.name(), payload);
-            } else if (savedRequest.getDomainCode() != null) {
+            if (savedRequest.getDomainCode() != null) {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }
             dispatchPort.dispatchToAdmin(payload);
