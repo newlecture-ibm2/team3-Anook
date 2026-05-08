@@ -43,6 +43,16 @@ public interface AdminRequestQueryPort {
     void cancel(Long requestId);
 
     /**
+     * 고객의 취소 요청 승인
+     */
+    void approveCancellation(Long requestId);
+
+    /**
+     * 고객의 취소 요청 반려
+     */
+    void rejectCancellation(Long requestId);
+
+    /**
      * 부서 변경 (관리자 수동 배정)
      */
     void changeDepartment(Long requestId, String departmentId);

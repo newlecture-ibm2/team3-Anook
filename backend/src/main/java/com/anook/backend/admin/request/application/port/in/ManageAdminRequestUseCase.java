@@ -65,4 +65,18 @@ public interface ManageAdminRequestUseCase {
      * 대시보드 통계
      */
     AdminRequestStatsResult getStats();
+
+    /**
+     * 고객의 취소 요청 승인
+     *
+     * @param id 요청 ID
+     */
+    void approveCancellation(Long id);
+
+    /**
+     * 고객의 취소 요청 반려
+     *
+     * @param id 요청 ID
+     */
+    void rejectCancellation(Long id);
 }

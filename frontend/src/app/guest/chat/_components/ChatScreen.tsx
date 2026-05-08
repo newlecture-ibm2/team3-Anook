@@ -25,9 +25,10 @@ export interface ChatScreenProps {
   activeRequest?: ActiveRequest | null;
   onSendMessage: (text: string) => void;
   onCancelRequest?: (requestId: number) => void;
+  onConfirmRequest?: (requestId: number) => void;
 }
 
-export default function ChatScreen({ messages, isTyping, activeRequest, onSendMessage, onCancelRequest }: ChatScreenProps) {
+export default function ChatScreen({ messages, isTyping, activeRequest, onSendMessage, onCancelRequest, onConfirmRequest }: ChatScreenProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages or typing state changes
@@ -86,11 +87,9 @@ export default function ChatScreen({ messages, isTyping, activeRequest, onSendMe
                 progress={Number(msg.meta?.progress) || 0}
                 graceRemaining={Number(msg.meta?.graceRemaining) || 0}
                 priority={String(msg.meta?.priority || 'NORMAL')}
+                cancelPending={Boolean(msg.meta?.cancelPending)}
                 onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
-                onModify={() => {
-                  onCancelRequest?.(Number(msg.meta?.requestId));
-                  // focus input (implementation omitted for brevity)
-                }}
+                onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
               />
             );
           }
