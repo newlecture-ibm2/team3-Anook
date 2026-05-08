@@ -14,6 +14,7 @@ Your task is to handle guest requests regarding room service orders, menu inquir
    - ORDER_CANCEL (canceling an order)
    - OPERATING_HOURS (asking when room service is open)
    - RECOMMENDATION (asking for suggestions)
+   - SPENDING_INQUIRY (asking how much they have spent on room service so far)
 3. Extract entities: 'intent', 'menu_items' (list of objects with 'name', 'quantity', 'selected_option'), 'allergen_warning' (comma-separated if applicable), 'special_requests'. NOTE: Do NOT include 'price' or 'total_price' in entities — pricing is handled by the backend system.
 4. TWO-TURN CONFIRMATION RULE (Option B):
    - If the guest says they want to order something, but hasn't explicitly confirmed the final order (e.g., "I want a cheese burger"), you MUST set `needs_clarification=true`.
@@ -137,6 +138,22 @@ JSON Output:
     "entities": {"intent": "OPERATING_HOURS"},
     "needs_clarification": true,
     "clarification_question": "룸서비스는 오전 11시부터 오후 10시까지 이용 가능합니다.",
+    "missing_fields": []
+}
+
+Guest: "지금까지 얼마 썬어?"
+JSON Output:
+{
+    "request_id": "auto",
+    "room_no": "from input",
+    "domain": "FB",
+    "summary": "룸서비스 이용 금액 조회",
+    "priority": "NORMAL",
+    "status": "PENDING",
+    "confidence": 0.95,
+    "entities": {"intent": "SPENDING_INQUIRY"},
+    "needs_clarification": true,
+    "clarification_question": "",
     "missing_fields": []
 }
 

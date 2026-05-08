@@ -89,14 +89,26 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
 
     result = HotelRequestSchema(**raw)
 
-    # 6. 자연스러운 응답 생성
+    # 6. SPENDING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
+    if result.entities.get("intent") == "SPENDING_INQUIRY":
+        guest_reply = _handle_spending_inquiry(room_no, user_message)
+        return {
+            "guest_reply": guest_reply,
+            "summary": "룸서비스 이용 금액 조회",
+            "domain_code": None,  # 정보 조회일 뿐, request 생성 불필요
+            "priority": "NORMAL",
+            "entities": {"intent": "SPENDING_INQUIRY"},
+            "confidence": result.confidence,
+        }
+
+    # 7. 자연스러운 응답 생성
     if result.needs_clarification:
         guest_reply = result.clarification_question
     else:
         # 주문 확정 시 AI가 고객 언어로 작성한 final_reply 사용 (다국어 미러링)
         guest_reply = result.final_reply or "룸서비스 주문이 접수되었습니다."
 
-    # 7. analyze.py 응답 포맷 반환 (needs_clarification 이면 domain_code=None으로 request 생성 방지)
+    # 8. analyze.py 응답 포맷 반환 (needs_clarification 이면 domain_code=None으로 request 생성 방지)
     return {
         "guest_reply": guest_reply,
         "summary": result.summary,
@@ -105,3 +117,43 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
         "entities": result.entities,
         "confidence": result.confidence,
     }
+
+
+def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
+    """백엔드 영수증 요약 API를 호출하여 이용 금액 안내 메시지를 생성"""
+    try:
+        base_url = os.getenv("BACKEND_URL", "http://host.docker.internal:8080")
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get(f"{base_url}/fb/receipts/room/{room_no}/summary")
+
+        if resp.status_code == 200:
+            data = resp.json()
+            items = data.get("items", [])
+            total = data.get("totalAmount", 0)
+
+            if not items:
+                return "현재까지 룸서비스 이용 내역이 없습니다."
+
+            # 항목별 내역 구성
+            lines = []
+            for item in items:
+                name = item.get("menuName", "")
+                qty = item.get("quantity", 0)
+                price = item.get("totalPrice", 0)
+                lines.append(f"- {name} {qty}개: {price:,}원")
+
+            detail = "\n".join(lines)
+
+            # 고객 언어 감지 (간단한 휴리스틱)
+            is_english = any(c.isascii() and c.isalpha() for c in user_message) and not any('\uac00' <= c <= '\ud7a3' for c in user_message)
+
+            if is_english:
+                return f"Here is your room service usage so far:\n{detail}\n\nTotal: {total:,} KRW"
+            else:
+                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: {total:,}원"
+        else:
+            print(f"[FB Agent] 영수증 조회 API 실패: HTTP {resp.status_code}")
+            return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+    except Exception as e:
+        print(f"[FB Agent] 영수증 조회 API 호출 중 오류 발생: {e}")
+        return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
