@@ -1,3 +1,8 @@
+"""
+이 스크립트는 도커 컨테이너 안에서 실행해야 합니다.
+- 전체 부서 통합 시딩: docker exec anook-local-ai python seed_all.py
+- FB 부서 단독 시딩: docker exec anook-local-ai python app/domains/fb/seed_knowledge.py
+"""
 import sys
 import os
 
