@@ -23,8 +23,12 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
-  const [activeRequest, setActiveRequest] = useState<ActiveRequest | null>(null);
+  const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
+  
+  // 연속된 시스템 메시지 방지용 Ref
+  const lastCancelSuccessTime = useRef<number>(0);
+  const lastCancelPendingTime = useRef<number>(0);
 
   // 0. 세션 정보 가져오기
   useEffect(() => {
@@ -142,14 +146,20 @@ export function useChat() {
               const isCancelled = payload.status === 'CANCELLED';
               const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
 
-              // Set Active Request for Status Bar
-              setActiveRequest({
-                requestId: payload.requestId,
-                domainCode: payload.domainCode || 'UNKNOWN',
-                summary: payload.summary,
-                status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
-                entities: payload.entities,
-                progress: progressMap[payload.status] || 0
+              // Set Active Requests for Status Bar (remove if completed or cancelled)
+              setActiveRequests(prev => {
+                const isFinished = payload.status === 'COMPLETED' || payload.status === 'CANCELLED';
+                const filtered = prev.filter(r => r.requestId !== payload.requestId);
+                if (isFinished) return filtered;
+                
+                return [...filtered, {
+                  requestId: payload.requestId,
+                  domainCode: payload.domainCode || 'UNKNOWN',
+                  summary: payload.summary,
+                  status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
+                  entities: payload.entities,
+                  progress: progressMap[payload.status] || 0
+                }];
               });
 
               // Add/Update Request Card in Chat Stream
@@ -191,29 +201,41 @@ export function useChat() {
 
               // --- System messages for cancel flow ---
               if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
-                setMessages(prev => {
-                  const msgId = `system-cancel-success-${payload.requestId}`;
-                  if (prev.some(m => m.id === msgId)) return prev;
-                  return [...prev, {
-                    id: msgId,
-                    variant: 'received',
-                    type: 'TEXT',
-                    content: '안내: 요청이 정상적으로 취소되었습니다.',
-                  }];
-                });
+                const now = Date.now();
+                if (now - lastCancelSuccessTime.current > 500) {
+                  lastCancelSuccessTime.current = now;
+                  setTimeout(() => {
+                    setMessages(prev => {
+                      const msgId = `system-cancel-success-${payload.requestId}`;
+                      if (prev.some(m => m.id === msgId)) return prev;
+                      return [...prev, {
+                        id: msgId,
+                        variant: 'received',
+                        type: 'TEXT',
+                        content: '안내: 요청이 정상적으로 취소되었습니다.',
+                      }];
+                    });
+                  }, 600); // 디바운스(500ms)보다 길게 설정하여 모든 카드가 도착한 후 렌더링되게 보장
+                }
               }
 
               if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
-                setMessages(prev => {
-                  const msgId = `system-cancel-pending-${payload.requestId}`;
-                  if (prev.some(m => m.id === msgId)) return prev;
-                  return [...prev, {
-                    id: msgId,
-                    variant: 'received',
-                    type: 'TEXT',
-                    content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
-                  }];
-                });
+                const now = Date.now();
+                if (now - lastCancelPendingTime.current > 500) {
+                  lastCancelPendingTime.current = now;
+                  setTimeout(() => {
+                    setMessages(prev => {
+                      const msgId = `system-cancel-pending-${payload.requestId}`;
+                      if (prev.some(m => m.id === msgId)) return prev;
+                      return [...prev, {
+                        id: msgId,
+                        variant: 'received',
+                        type: 'TEXT',
+                        content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
+                      }];
+                    });
+                  }, 600); // 디바운스(500ms)보다 길게 설정하여 모든 카드가 도착한 후 렌더링되게 보장
+                }
               }
 
               if (payload.status === 'COMPLETED') {
@@ -356,7 +378,7 @@ export function useChat() {
     messages,
     isTyping,
     sendMessage,
-    activeRequest,
+    activeRequests,
     cancelRequest,
     confirmRequest
   };
