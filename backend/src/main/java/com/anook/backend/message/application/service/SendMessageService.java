@@ -19,6 +19,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,13 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 메시지 전송 서비스
  *
  * 흐름 (비동기):
- *   [동기] 1. 디바운스 검증 (같은 객실 1초 내 연타 방지)
- *   [동기] 2. 고객 메시지 저장 (GUEST) → 즉시 HTTP 응답 반환
- *   [비동기] 3. AI 분석 호출 (MessageAiPort)
- *   [비동기] 4. AI 응답 메시지 저장 (AI)
- *   [비동기] 5. WebSocket Push → /topic/room/{roomNo} (AI_RESPONSE)
- *   [비동기] 6. 태스크형 요청 감지 시 RequestDetectedEvent 발행
- *   [비동기] 7. AI 로그 분리 저장 (AsyncAiLoggingService)
+ * [동기] 1. 디바운스 검증 (같은 객실 1초 내 연타 방지)
+ * [동기] 2. 고객 메시지 저장 (GUEST) → 즉시 HTTP 응답 반환
+ * [비동기] 3. AI 분석 호출 (MessageAiPort)
+ * [비동기] 4. AI 응답 메시지 저장 (AI)
+ * [비동기] 5. WebSocket Push → /topic/room/{roomNo} (AI_RESPONSE)
+ * [비동기] 6. 태스크형 요청 감지 시 RequestDetectedEvent 발행
+ * [비동기] 7. AI 로그 분리 저장 (AsyncAiLoggingService)
  *
  * ❌ JPA Repository 직접 import 금지 → Port(Out)만 의존
  * ❌ Request 도메인 직접 접근 금지 → 이벤트로 통신
@@ -49,6 +51,10 @@ public class SendMessageService implements SendMessageUseCase {
     private final MessageDispatchPort dispatchPort;
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncAiLoggingService asyncAiLoggingService;
+
+    @Autowired
+    @Lazy
+    private SendMessageService self;
 
     /** 디바운스: 객실별 마지막 메시지 전송 시간 (roomNo → timestamp) */
     private final ConcurrentHashMap<String, Long> lastSendTimeMap = new ConcurrentHashMap<>();
@@ -73,8 +79,8 @@ public class SendMessageService implements SendMessageUseCase {
                 "messageId", guestMsg.getId(),
                 "content", cmd.content()));
 
-        // 3. AI 처리는 비동기로 위임
-        processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
+        // 3. AI 처리는 비동기로 위임 (self 주입을 통해 프록시 우회 방지)
+        self.processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -83,10 +89,8 @@ public class SendMessageService implements SendMessageUseCase {
      * AI 호출 + 응답 저장 + WebSocket Push + 이벤트 발행 (비동기)
      *
      * @Async → aiTaskExecutor 스레드풀에서 실행
-     *        ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않지만,
-     *        여기서는 self-invocation이므로 별도 빈 분리 대신
-     *        Spring의 프록시 우회 없이 직접 @Async를 적용합니다.
-     *        (프로젝트 규모에서 충분한 구조)
+     *        ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않으므로,
+     *        @Lazy로 주입받은 self 인스턴스를 통해 호출하여 프록시를 통과하게 합니다.
      */
     @Async("aiTaskExecutor")
     @Transactional
@@ -183,7 +187,6 @@ public class SendMessageService implements SendMessageUseCase {
                     asyncAiLoggingService.saveAiLogAsync(aiLog);
                 }
             }
-            
         } catch (Exception e) {
             log.error("[Message] AI 비동기 처리 실패 — room: {}, error: {}", roomNo, e.getMessage(), e);
 

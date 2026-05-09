@@ -17,10 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 고객이 위젯 카드의 [취소]/[수정] 버튼을 눌러 직접 취소하는 서비스
  *
  * [AN-252] Grace Period 내 고객 주도 취소:
- *   - 본인 요청만 취소 가능 (roomNo + guestId 교차 검증)
- *   - 취소 성공 시 WebSocket으로 고객 + 부서 알림 발송
- *   - Grace Period 만료 전 취소 시 직원에게 알림이 가지 않음
- *     (GracePeriodScheduler가 DB 상태를 재확인하기 때문)
+ * - 본인 요청만 취소 가능 (roomNo + guestId 교차 검증)
+ * - 취소 성공 시 WebSocket으로 고객 + 부서 알림 발송
+ * - Grace Period 만료 전 취소 시 직원에게 알림이 가지 않음
+ * (GracePeriodScheduler가 DB 상태를 재확인하기 때문)
  */
 @Slf4j
 @Service
@@ -54,7 +54,7 @@ public class CancelRequestByGuestService implements CancelRequestUseCase {
             request.changeStatus(RequestStatus.CANCELLED);
         } catch (IllegalStateException e) {
             log.warn("[CancelByGuest] 취소 불가능한 상태 — requestId: {}, status: {}", requestId, request.getStatus());
-            throw new BusinessException(ErrorCode.INVALID_SETTLEMENT);  // 상태 전환 불가 (400)
+            throw new BusinessException(ErrorCode.INVALID_SETTLEMENT); // 상태 전환 불가 (400)
         }
 
         requestPort.save(request);
@@ -66,8 +66,7 @@ public class CancelRequestByGuestService implements CancelRequestUseCase {
                 RequestStatus.CANCELLED.name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : null,
                 request.getSummary(),
-                request.getRoomNo()
-        );
+                request.getRoomNo());
         dispatchPort.dispatchToRoom(roomNo, payload);
 
         // 5. 이미 Grace Period가 만료되어 직원이 배정된 경우 → 직원에게도 취소 알림

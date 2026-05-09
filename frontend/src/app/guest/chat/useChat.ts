@@ -141,7 +141,7 @@ export function useChat() {
               });
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
-                'PENDING': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
               const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
@@ -183,7 +183,8 @@ export function useChat() {
 
               setMessages(prev => {
                 const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
-                const existingGrace = existingIdx >= 0 ? (prev[existingIdx].meta?.graceRemaining || 0) : 0;
+                const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
+                const existingGrace = existingMeta.graceRemaining || 0;
                 
                 // Remove the existing card from the list
                 const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
@@ -194,6 +195,8 @@ export function useChat() {
                   id: `request-${payload.requestId}-${Date.now()}`, // Force re-render at the bottom
                   meta: {
                     ...requestMsg.meta,
+                    entities: payload.entities || existingMeta.entities,
+                    priority: payload.priority || existingMeta.priority,
                     graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                   }
                 }];

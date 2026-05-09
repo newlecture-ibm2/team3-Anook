@@ -43,14 +43,14 @@ from app.core.facility_engine import run_facility_agent
 from app.core.hk_engine import run_hk_agent
 from app.core.concierge_engine import run_concierge_agent
 from app.core.fb_engine import run_fb_agent
+from app.core.emergency_engine import run_emergency_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
     "FB": run_fb_agent,
-    # "FRONT": run_front_agent,
-    # "EMERGENCY": run_emergency_agent,
+    "EMERGENCY": run_emergency_agent,
 }
 
 
@@ -172,6 +172,31 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     if has_pii(request.text):
         request.text = mask_pii(request.text)
         print(f"[Analyze] 🛡️ PII 마스킹 적용: '{original_text}' → '{request.text}'")
+
+    # ──────────────────────────────────────────────
+    # STEP 0: 긴급 상황 키워드 Pre-Filter (Gemini 호출 전 즉시 감지)
+    # ──────────────────────────────────────────────
+    from app.core.emergency_filter import emergency_pre_filter, get_emergency_reply
+
+    emergency = emergency_pre_filter(request.text)
+    if emergency:
+        print(f"\n[Analyze] 🚨 긴급 상황 감지! Category: {emergency['category']}, "
+              f"Keyword: '{emergency['matched_keyword']}'")
+              
+        # 다국어 응답 선택
+        reply_msg = get_emergency_reply(emergency["category"], request.language)
+
+        return {
+            "guest_reply": reply_msg,
+            "summary": f"긴급: {emergency['category']} ({emergency['matched_keyword']})",
+            "domain_code": "FRONT",
+            "priority": "URGENT",
+            "entities": {
+                "intent": emergency["category"],
+                "details": emergency["matched_keyword"]
+            },
+            "confidence": 1.0,
+        }
 
     if request.chat_history:
         print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")

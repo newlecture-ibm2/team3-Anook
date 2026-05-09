@@ -10,7 +10,7 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
 const mapPriority = (p: string): 'NORMAL' | 'URGENT' => {
-  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') {
+  if (p === 'HIGH' || p === 'URGENT') {
     return 'URGENT';
   }
   return 'NORMAL';

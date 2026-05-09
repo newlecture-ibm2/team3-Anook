@@ -85,9 +85,15 @@ export default function RequestCard({
       return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
     }
     // Fallback if no specific format matched, maybe raw text or other entity props
+    const HIDDEN_KEYS = ['intent', 'emergency_category', 'matched_keyword', 'severity'];
     const parts = [];
     if (entities.menu) parts.push(`${entities.menu}`);
     if (entities.symptom) parts.push(`${entities.symptom}`);
+    // 시스템 내부용 키만 있는 경우 빈 문자열 반환
+    if (parts.length === 0) {
+      const visibleEntries = Object.entries(entities).filter(([key]) => !HIDDEN_KEYS.includes(key));
+      if (visibleEntries.length === 0) return null;
+    }
     return parts.join(', ');
   };
 

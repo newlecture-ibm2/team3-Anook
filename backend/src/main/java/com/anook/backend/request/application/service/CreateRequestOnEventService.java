@@ -78,9 +78,17 @@ public class CreateRequestOnEventService {
                 finalRawText,
                 event.getSummary());
 
-        // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우
+        // 긴급 상황 Pre-Filter 감지 여부
+        boolean isEmergencyDetected = event.getEntities() != null
+                && event.getEntities().containsKey("emergency_category");
+
         boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
-        if (isEscalated) {
+
+        if (isEmergencyDetected) {
+            log.warn("🚨 [EMERGENCY] 긴급 상황 자동 에스컬레이션 — category: {}",
+                    event.getEntities().get("emergency_category"));
+            request.markEmergency((String) event.getEntities().get("emergency_category"));
+        } else if (isEscalated) {
             log.warn("에스컬레이션 발생! 확신도: {}", event.getConfidence());
             request.escalate("AI 확신도 부족: " + event.getConfidence());
         }

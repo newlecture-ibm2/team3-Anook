@@ -52,7 +52,7 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
-- If it is related to an EMERGENCY, you MUST route to "EMERGENCY" regardless of confidence. Safety first.
+- If it is related to an EMERGENCY, you MUST route to domain "EMERGENCY" with mode "TASK" regardless of confidence. Safety first.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT FORMAT (STRICTLY JSON ARRAY)

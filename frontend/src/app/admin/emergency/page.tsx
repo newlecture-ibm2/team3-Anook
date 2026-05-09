@@ -84,7 +84,7 @@ export default function EmergencyPage() {
   };
 
   const filteredTasks = tasks.filter(task => 
-    task.priority === 'CRITICAL' && (
+    task.priority === 'URGENT' && (
       task.title?.toLowerCase().includes(searchValue.toLowerCase()) || 
       task.description?.toLowerCase().includes(searchValue.toLowerCase()) ||
       task.roomNo?.includes(searchValue)
@@ -93,8 +93,8 @@ export default function EmergencyPage() {
 
   const [activeTab, setActiveTab] = useState('unhandled');
 
-  const pendingTasks = filteredTasks.filter(task => task.status === 'PENDING');
-  const inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS' || task.status === 'ESCALATED');
+  const pendingTasks = filteredTasks.filter(task => task.status === 'PENDING' || task.status === 'ESCALATED');
+  const inProgressTasks = filteredTasks.filter(task => task.status === 'IN_PROGRESS');
   const completedTasks = filteredTasks.filter(task => task.status === 'COMPLETED');
 
   const getFilteredRequestsByTab = () => {
@@ -125,7 +125,6 @@ export default function EmergencyPage() {
           <FilterButton
             filterOptions={[
               { label: t.adminPage.taskBoard.filterAll, value: 'all' },
-              { label: 'CRITICAL', value: 'critical' },
               { label: 'URGENT', value: 'urgent' }
             ]}
             selectedFilter="all"
@@ -175,13 +174,13 @@ export default function EmergencyPage() {
                   task.status === 'COMPLETED' ? '' :
                   processingId === task.id ? '처리중...' : 
                   completingId === task.id ? '완료중...' :
-                  (task.status === 'IN_PROGRESS' || task.status === 'ESCALATED') ? '대응 완료' : '긴급 대응 시작'
+                  task.status === 'IN_PROGRESS' ? '대응 완료' : '긴급 대응 시작'
                 }
                 secondaryActionText=""
                 onPrimaryAction={() => {
-                  if (task.status === 'PENDING' && processingId !== task.id) {
+                  if ((task.status === 'PENDING' || task.status === 'ESCALATED') && processingId !== task.id) {
                     handleStartResponse(task.id);
-                  } else if ((task.status === 'IN_PROGRESS' || task.status === 'ESCALATED') && completingId !== task.id) {
+                  } else if (task.status === 'IN_PROGRESS' && completingId !== task.id) {
                     handleCompleteResponse(task.id);
                   }
                 }}

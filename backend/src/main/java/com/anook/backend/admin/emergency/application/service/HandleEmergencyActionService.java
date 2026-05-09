@@ -2,6 +2,10 @@ package com.anook.backend.admin.emergency.application.service;
 
 import com.anook.backend.admin.emergency.application.port.in.HandleEmergencyActionUseCase;
 import com.anook.backend.admin.emergency.application.port.out.EmergencyRequestCommandPort;
+import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.port.out.DispatchPort;
+import com.anook.backend.request.application.port.out.RequestRepositoryPort;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,11 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class HandleEmergencyActionService implements HandleEmergencyActionUseCase {
 
     private final EmergencyRequestCommandPort commandPort;
+    private final RequestRepositoryPort requestRepositoryPort;
+    private final DispatchPort dispatchPort;
 
     @Override
     @Transactional
     public void startEmergencyResponse(Long taskId) {
         commandPort.updateTaskStatus(taskId, "IN_PROGRESS");
+        broadcastStatusChanged(taskId, "IN_PROGRESS");
     }
 
     @Override
@@ -28,5 +35,19 @@ public class HandleEmergencyActionService implements HandleEmergencyActionUseCas
     @Transactional
     public void completeEmergencyResponse(Long taskId) {
         commandPort.updateTaskStatus(taskId, "COMPLETED");
+        broadcastStatusChanged(taskId, "COMPLETED");
+    }
+
+    private void broadcastStatusChanged(Long taskId, String status) {
+        requestRepositoryPort.findById(taskId).ifPresent(request -> {
+            RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                    request.getId(),
+                    status,
+                    request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                    request.getSummary(),
+                    request.getRoomNo()
+            );
+            dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        });
     }
 }
