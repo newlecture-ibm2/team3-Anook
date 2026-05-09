@@ -110,18 +110,35 @@ export function useChat() {
           if (message.body) {
             const payload = JSON.parse(message.body);
 
+            if (payload.type === 'AI_PROGRESS') {
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                return [...filtered, {
+                  id: `progress-${Date.now()}`,
+                  variant: 'received',
+                  type: 'AI_PROGRESS',
+                  content: '',
+                  meta: { domains: payload.domains }
+                }];
+              });
+              return;
+            }
+
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
               setIsTyping(false);
 
-              const newAiMsg: ChatMessage = {
-                id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
-                variant: 'received',
-                content: payload.content,
-                type: payload.uiType || 'TEXT',
-                meta: payload.meta || {},
-              };
-
-              setMessages(prev => [...prev, newAiMsg]);
+              // 진행 상태 메시지 제거
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                const newAiMsg: ChatMessage = {
+                  id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
+                  variant: 'received',
+                  content: payload.content,
+                  type: payload.uiType || 'TEXT',
+                  meta: payload.meta || {},
+                };
+                return [...filtered, newAiMsg];
+              });
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();

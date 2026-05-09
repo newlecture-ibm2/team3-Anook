@@ -1,4 +1,4 @@
-from app.infrastructure.gemini.client import call_gemini
+from app.infrastructure.gemini.client import call_gemini_async
 from app.schemas.common import HotelRequestSchema
 
 EMERGENCY_SYSTEM_PROMPT = """
@@ -66,7 +66,7 @@ JSON Output:
 }
 """
 
-def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
     if chat_history:
         context = "\n".join([
             f"{'Guest' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
@@ -78,7 +78,7 @@ def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_histor
         
     prompt += f"[Current Request]\nGuest: {user_message}"
     
-    raw = call_gemini(prompt=prompt, system_instruction=EMERGENCY_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=EMERGENCY_SYSTEM_PROMPT)
 
     if "request_id" not in raw or raw.get("request_id") == "auto":
         raw["request_id"] = "auto"

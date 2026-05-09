@@ -1,5 +1,6 @@
 import httpx
-from app.infrastructure.gemini.client import call_gemini
+import asyncio
+from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.fb_prompt import FB_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
@@ -10,7 +11,7 @@ def _fetch_menu_context() -> str:
     """백엔드 PMS API를 호출하여 메뉴 데이터를 가져와 프롬프트 컨텍스트로 변환"""
     try:
         # 환경 변수에 BACKEND_URL이 있으면 사용하고 (배포용), 없으면 로컬 도커 환경의 호스트 접근 주소를 사용
-        base_url = os.getenv("BACKEND_URL", "http://host.docker.internal:8080")
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
         with httpx.Client(timeout=3.0) as client:
             resp = client.get(f"{base_url}/pms/menus")
             
@@ -49,11 +50,11 @@ def _fetch_menu_context() -> str:
         print(f"[FB Agent] 메뉴 조회 API 호출 중 오류 발생: {e}")
         return "메뉴 정보를 현재 불러올 수 없습니다. 프론트데스크로 문의 부탁드립니다."
 
-def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
     """F&B 에이전트: 메뉴 조회, RAG 지식 결합, 2턴 주문 확인 로직 처리"""
     
     # 1. pms_menu 백엔드 조회
-    menu_context = _fetch_menu_context()
+    menu_context = await asyncio.to_thread(_fetch_menu_context)
     
     # 2. RAG 검색 → FB 도메인 지식 (운영시간, 기타 정책 등)
     rag_context = ""
@@ -84,7 +85,7 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini 호출
-    raw = call_gemini(prompt=prompt, system_instruction=FB_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=FB_SYSTEM_PROMPT)
 
     # 5. Pydantic 검증
     if "request_id" not in raw or raw["request_id"] == "auto":
@@ -98,7 +99,7 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
 
     # 6. SPENDING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
     if result.entities.get("intent") == "SPENDING_INQUIRY":
-        guest_reply = _handle_spending_inquiry(room_no, user_message)
+        guest_reply = await asyncio.to_thread(_handle_spending_inquiry, room_no, user_message)
         return {
             "guest_reply": guest_reply,
             "summary": "룸서비스 이용 금액 조회",
@@ -129,7 +130,7 @@ def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list
 def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
     """백엔드 영수증 요약 API를 호출하여 이용 금액 안내 메시지를 생성"""
     try:
-        base_url = os.getenv("BACKEND_URL", "http://host.docker.internal:8080")
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
         with httpx.Client(timeout=3.0) as client:
             resp = client.get(f"{base_url}/fb/receipts/room/{room_no}/summary")
 

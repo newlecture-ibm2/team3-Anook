@@ -45,6 +45,7 @@
   --text-body-bold: 700 0.875rem/1.5 var(--font-sans);
   --text-body-medium: 500 0.875rem/1.5 var(--font-sans);
   --text-body-regular: 400 0.875rem/1.5 var(--font-sans);
+  --text-caption-bold: 700 0.75rem/1.5 var(--font-sans);
   --text-caption-medium: 500 0.75rem/1.5 var(--font-sans);
   --text-caption-regular: 400 0.75rem/1.5 var(--font-sans);
 

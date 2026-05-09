@@ -127,6 +127,9 @@ export default function RequestCard({
       {/* Grace Period Timer & Buttons */}
       {showButtons && (
         <>
+          <div className={styles.guideText}>
+            <strong>잠시 후 자동으로 접수됩니다.</strong>
+          </div>
           <div className={styles.timerContainer}>
             <div className={styles.timerBarBg}>
               <div 
