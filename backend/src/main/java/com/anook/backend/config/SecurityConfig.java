@@ -39,6 +39,7 @@ public class SecurityConfig {
                 // 각 API 주소별로 필요한 권한을 설정합니다.
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll() // 로그인 API는 누구나 접근 가능
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/chat/*/progress").permitAll() // AI 서버 진입점
                         .requestMatchers("/admin/**").hasRole("ADMIN") // 관리자 API는 ADMIN 권한 필요
                         .requestMatchers("/staff/**").hasRole("STAFF") // 직원 API는 STAFF 권한 필요
                         .requestMatchers("/chat/**").hasRole("GUEST") // 채팅 API는 GUEST 권한 필요

@@ -1,4 +1,4 @@
-from app.infrastructure.gemini.client import call_gemini
+from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.facility_prompt import FACILITY_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 
@@ -32,7 +32,7 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
     return result.clarification_question if result.needs_clarification else getattr(result, "final_reply", "접수되었습니다.")
 
 
-def run_facility_agent(user_message: str, room_no: str, chat_history: list = None) -> dict:
+async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None) -> dict:
     """시설관리 에이전트: 고객 메시지에서 시설/수리 관련 정보를 추출"""
     
     if chat_history:
@@ -44,7 +44,7 @@ def run_facility_agent(user_message: str, room_no: str, chat_history: list = Non
     else:
         prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
     
-    raw = call_gemini(prompt=prompt, system_instruction=FACILITY_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=FACILITY_SYSTEM_PROMPT)
     
     # AI가 룸넘버를 누락할 경우를 대비한 안전 장치 (백엔드에서 받은 room_no 강제 주입)
     if "room_no" not in raw or raw["room_no"] in ["unknown", "", "from input"]:

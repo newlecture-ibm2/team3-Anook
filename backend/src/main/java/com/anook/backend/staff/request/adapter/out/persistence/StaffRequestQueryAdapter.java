@@ -72,21 +72,6 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
             }
 
             return new StaffTaskResult(
-<<<<<<< HEAD
-                    rId,
-                    rStatus,
-                    rPriority,
-                    rDeptId,
-                    rSummary,
-                    rRawText,
-                    rRoomNo,
-                    rAssignedStaffId,
-                    rConfidence,
-                    rCreatedAt,
-                    rVersion,
-                    rCancelRequested,
-                    rCancelRequestedAt);
-=======
                 rId,
                 rStatus,
                 rPriority,
@@ -102,7 +87,6 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                 rCancelRequestedAt,
                 rEntities
             );
->>>>>>> origin/dev
         }, params.toArray());
     }
 }

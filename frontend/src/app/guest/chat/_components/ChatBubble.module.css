@@ -18,6 +18,7 @@
   font: var(--text-body-regular);
   word-break: keep-all;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .received {

@@ -124,7 +124,7 @@ public class SendMessageService implements SendMessageUseCase {
                     .map(MessageAiResult::guestReply)
                     .filter(reply -> reply != null && !reply.isBlank())
                     .distinct()
-                    .collect(java.util.stream.Collectors.joining("\n\n"));
+                    .collect(java.util.stream.Collectors.joining("\n"));
             
             if (combinedReply.isEmpty()) {
                 combinedReply = "알겠습니다.";
