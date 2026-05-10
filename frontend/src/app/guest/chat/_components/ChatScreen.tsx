@@ -80,7 +80,7 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
         className={styles.messageList}
         style={{ paddingTop: activeRequests && activeRequests.length > 0 ? '100px' : undefined }}
       >
-        <div style={{ flex: 1 }} />
+        {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div style={{ flex: 1 }} />}
         {messages.map((msg, index) => {
           const isLatest = index === messages.length - 1;
 
