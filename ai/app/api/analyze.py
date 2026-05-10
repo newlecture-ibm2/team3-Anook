@@ -129,17 +129,13 @@ def _summarize_from_context(current_text: str, chat_history: list, fallback: str
             role = "고객" if msg.get("role") == "user" else "AI"
             context_lines.append(f"{role}: {msg.get('content', '')}")
         context_lines.append(f"고객: {current_text}")
-        context_str = "
-".join(context_lines)
+        context_str = "\n".join(context_lines)
 
         raw = call_gemini(
             prompt=(
                 f"아래 호텔 고객과 AI 컨시어지의 대화를 읽고, "
-                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.
-
-"
-                f"[대화]
-{context_str}"
+                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.\n\n"
+                f"[대화]\n{context_str}"
             ),
             system_instruction='반드시 {"summary": "요약내용"} 형식의 JSON으로만 출력하세요. 예: {"summary": "아기 침대 객실 배치 요청"}'
         )
@@ -305,56 +301,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             # 부서별 에이전트가 등록되어 있으면 호출
             if domain in DOMAIN_AGENTS:
                 coro = DOMAIN_AGENTS[domain](
-                    user_message=request.text, 
-                    room_no=request.room_no, 
+                    user_message=request.text,
+                    room_no=request.room_no,
                     chat_history=request.chat_history
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
 
-
-                # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
-                if agent_confidence < 0.4:
-                    final_domain_code = "FRONT"
-                    final_entities["intent"] = "ESCALATION"
-                    if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
-                        final_guest_reply = _get_static_reply("ESCALATION", request.language)
-
-                response = {
-                    "guest_reply": final_guest_reply,
-                    "summary": final_summary,
-                    "domain_code": final_domain_code,
-                    "priority": agent_result.get("priority", "NORMAL"),
-                    "entities": final_entities,
-                    "confidence": agent_confidence,
-                    "action_type": primary.action_type,
-                }
-                print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
-                print(f"[Analyze] 응답: {response}
-")
-                final_responses.append(response)
-                continue
-            except Exception as e:
-                print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {e}")
-
-        # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
-        context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
-        response = {
-            "guest_reply": _get_static_reply("TASK_WAIT", request.language),
-            "summary": context_summary,
-            "domain_code": domain,
-            "priority": "NORMAL",
-            "entities": {},
-            "confidence": primary.confidence,
-        }
-
+            # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
+            context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
+            response = {
+                "guest_reply": _get_static_reply("TASK_WAIT", request.language),
+                "summary": context_summary,
+                "domain_code": domain,
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
             }
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
-                
+
             print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
