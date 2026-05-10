@@ -37,19 +37,12 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  let backgroundClass = styles.bgNormal;
-  if (activeRequests && activeRequests.length > 0) {
-    if (activeRequests.some(req => req.domainCode === 'EMERGENCY')) {
-      backgroundClass = styles.bgEmergency;
-    } else if (activeRequests.some(req => req.status === 'ESCALATED' || req.entities?.intent === 'ESCALATION')) {
-      backgroundClass = styles.bgEscalated;
-    } else if (activeRequests.some(req => req.status === 'IN_PROGRESS' || req.status === 'PENDING')) {
-      backgroundClass = styles.bgProgress;
-    }
-  }
-
   return (
-    <div className={`${styles.chatScreen} ${backgroundClass} ${isTyping ? styles.thinking : ''}`}>
+    <div className={styles.chatScreen}>
+      <div className={styles.header}>
+        <div className={styles.logo}>Anook</div>
+      </div>
+      
       {/* 고정 상태 바 컨테이너 */}
       {activeRequests && activeRequests.length > 0 && (
         <div style={{ 
@@ -149,7 +142,9 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
           );
         })}
         {isTyping && (
-          <TypingIndicator />
+          <ChatBubble variant="received">
+            <TypingIndicator />
+          </ChatBubble>
         )}
         <div ref={messagesEndRef} />
       </div>
