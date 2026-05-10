@@ -289,11 +289,13 @@ export function useChat() {
                 setMessages(prev => {
                   const msgId = `system-cancel-reject-${payload.requestId}`;
                   if (prev.some(m => m.id === msgId)) return prev;
+                  const content = '안내: 이미 업무가 진행 중이라 취소/변경이 어렵습니다. 기존 요청대로 진행됩니다. 추가로 필요하신 부분이 있다면 언제든 말씀해 주세요!';
+
                   return [...prev, {
                     id: msgId,
                     variant: 'received',
                     type: 'TEXT',
-                    content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
+                    content,
                   }];
                 });
               }
