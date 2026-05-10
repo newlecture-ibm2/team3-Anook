@@ -76,17 +76,17 @@ STATIC_REPLIES = {
         "ja": "はい、先ほどのリクエストはすぐにキャンセルさせていただきますね。",
         "zh": "好的，我马上为您取消刚才的请求。"
     },
-    "TARGETED_CANCEL": {
-        "ko": "네, 지목하신 요청은 바로 취소해 드릴게요.",
-        "en": "Sure, I'll go ahead and cancel the specific request you mentioned.",
-        "ja": "はい、ご指定のリクエストはすぐにキャンセルさせていただきますね。",
-        "zh": "好的，我马上为您取消您指定的请求。"
-    },
     "STATUS_CHECK": {
-        "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드릴게요.",
+        "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
         "en": "I will check the status of your most recent request right now.",
-        "ja": "現在の直近のリクエストの進捗状況を確認いたしますね。",
-        "zh": "我现在为您查询最近一次请求的处理状态。"
+        "ja": "現在の直近のリクエストの進捗状況を確認いたします。",
+        "zh": "我现在将为您查询最近一次请求的处理状态。"
+    },
+    "TARGETED_CANCEL": {
+        "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
+        "en": "Okay, I will cancel the specific request you mentioned.",
+        "ja": "はい、ご指定のリクエストをキャンセルいたします。",
+        "zh": "好的，我将取消您指定的请求。"
     },
     "TASK_WAIT": {
         "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
@@ -107,10 +107,11 @@ STATIC_REPLIES = {
         "zh": "哎呀，系统似乎出了点小问题。能麻烦您稍后再试一下吗？"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드릴게요.",
+        "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
         "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution.",
         "ja": "ご不便をおかけして大変申し訳ございません。担当スタッフに即座にお伝えし、迅速に対応いたします。",
         "zh": "非常抱歉给您带来不便。我们会立即通知工作人员，尽快为您解决。"
+
     }
 }
 
@@ -120,26 +121,25 @@ def _get_static_reply(key: str, lang: str) -> str:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES.get(key, {}).get("en", "We are processing your request."))
 
-def _summarize_from_context(current_text: str, chat_history: List[dict], fallback: str) -> str:
-    """
-    대화 맥락(chat_history)을 활용해 Gemini에게 한줄 요약을 요청합니다.
-    실패 시 fallback 문자열을 그대로 반환합니다.
-    """
+def _summarize_from_context(current_text: str, chat_history: list, fallback: str) -> str:
     try:
-        # 최근 6개 메시지만 사용 (토큰 절약)
         recent = chat_history[-6:] if len(chat_history) > 6 else chat_history
         context_lines = []
         for msg in recent:
             role = "고객" if msg.get("role") == "user" else "AI"
             context_lines.append(f"{role}: {msg.get('content', '')}")
         context_lines.append(f"고객: {current_text}")
-        context_str = "\n".join(context_lines)
+        context_str = "
+".join(context_lines)
 
         raw = call_gemini(
             prompt=(
                 f"아래 호텔 고객과 AI 컨시어지의 대화를 읽고, "
-                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.\n\n"
-                f"[대화]\n{context_str}"
+                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.
+
+"
+                f"[대화]
+{context_str}"
             ),
             system_instruction='반드시 {"summary": "요약내용"} 형식의 JSON으로만 출력하세요. 예: {"summary": "아기 침대 객실 배치 요청"}'
         )
@@ -152,7 +152,6 @@ def _summarize_from_context(current_text: str, chat_history: List[dict], fallbac
     return fallback
 
 def _fallback_response(guest_reply: str) -> dict:
-    """에러 발생 시 안전한 폴백 응답을 생성합니다."""
     return {
         "guest_reply": guest_reply,
         "summary": "시스템 오류",
@@ -313,12 +312,42 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 agent_tasks.append((domain, primary, coro))
                 continue
 
-            # 에이전트 미등록 시 → 기본 응답
-            context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
-            response = {
-                "guest_reply": _get_static_reply("TASK_WAIT", request.language),
-                "summary": context_summary,
-                "domain_code": domain,
+
+                # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
+                if agent_confidence < 0.4:
+                    final_domain_code = "FRONT"
+                    final_entities["intent"] = "ESCALATION"
+                    if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
+                        final_guest_reply = _get_static_reply("ESCALATION", request.language)
+
+                response = {
+                    "guest_reply": final_guest_reply,
+                    "summary": final_summary,
+                    "domain_code": final_domain_code,
+                    "priority": agent_result.get("priority", "NORMAL"),
+                    "entities": final_entities,
+                    "confidence": agent_confidence,
+                    "action_type": primary.action_type,
+                }
+                print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
+                print(f"[Analyze] 응답: {response}
+")
+                final_responses.append(response)
+                continue
+            except Exception as e:
+                print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {e}")
+
+        # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
+        context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
+        response = {
+            "guest_reply": _get_static_reply("TASK_WAIT", request.language),
+            "summary": context_summary,
+            "domain_code": domain,
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": primary.confidence,
+        }
+
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
