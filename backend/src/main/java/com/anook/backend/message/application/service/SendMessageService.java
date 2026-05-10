@@ -146,8 +146,8 @@ public class SendMessageService implements SendMessageUseCase {
                     eventPublisher.publishEvent(new com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent(this, roomNo, guestId));
                     log.info("[Message] AllRequestsCancelledByGuestEvent 발행 — room: {}", roomNo);
                 } else if ("CANCEL_REQUEST".equals(analysis.action())) {
-                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode()));
-                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}", roomNo, analysis.domainCode());
+                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword()));
+                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}", roomNo, analysis.domainCode(), analysis.targetKeyword());
                 } else if (analysis.domainCode() != null) {
                     boolean escalated = analysis.confidence() < 0.7;
 
@@ -162,9 +162,10 @@ public class SendMessageService implements SendMessageUseCase {
                             content,
                             analysis.summary(),
                             escalated,
-                            analysis.actionType()));
-                    log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
-                            analysis.domainCode(), escalated, analysis.actionType());
+                            analysis.actionType(),
+                            analysis.targetKeyword()));
+                    log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}, targetKeyword: {}",
+                            analysis.domainCode(), escalated, analysis.actionType(), analysis.targetKeyword());
                 } else if ("STATUS_CHECK".equals(analysis.action())) {
                     eventPublisher.publishEvent(new RequestStatusCheckByGuestEvent(this, roomNo, guestId, content));
                     log.info("[Message] RequestStatusCheckByGuestEvent 발행 — room: {}", roomNo);

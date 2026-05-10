@@ -22,3 +22,8 @@ class RouterOutputSchema(BaseModel):
         default="ADD",
         description="요청 유형: ADD(새로운 요청 추가) 또는 REPLACE(이전 요청을 수정/변경). 고객이 '아니', '바꿔줘', '대신', '말고' 등으로 기존 요청을 번복하면 REPLACE, 그 외에는 ADD."
     )
+    target_keyword: Optional[str] = Field(
+        default=None,
+        description="취소/변경 대상이 되는 구체적인 아이템 명칭. 예: '콜라 취소해줘' → '콜라', '수건 말고 타월로' → '수건'. 대상이 불명확하면 null."
+    )
+

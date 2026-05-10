@@ -649,6 +649,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 }
                 if hasattr(primary, 'action_type'):
                     response["action_type"] = primary.action_type
+                # [Keyword Targeting] 취소 대상 키워드 전달
+                if hasattr(primary, 'target_keyword') and primary.target_keyword:
+                    response["target_keyword"] = primary.target_keyword
             
             print(f"[Analyze] 🛑 CANCEL 응답")
             print(f"[Analyze] 응답: {response}\n")
@@ -719,6 +722,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
+            # [Keyword Targeting] 변경 대상 키워드 전달
+            if hasattr(primary, 'target_keyword') and primary.target_keyword:
+                response["target_keyword"] = primary.target_keyword
                 
             print(f"[Analyze] ✅ {domain} 에이전트 병렬 처리 완료")
             print(f"[Analyze] 응답: {response}\n")

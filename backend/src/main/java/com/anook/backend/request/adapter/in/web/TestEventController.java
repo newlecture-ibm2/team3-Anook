@@ -51,7 +51,8 @@ public class TestEventController {
                 rawText,
                 summary,
                 escalated,
-                "ADD"
+                "ADD",
+                null
         );
 
         eventPublisher.publishEvent(event);

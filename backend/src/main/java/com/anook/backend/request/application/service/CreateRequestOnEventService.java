@@ -54,16 +54,37 @@ public class CreateRequestOnEventService {
         // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
         // "수건 줘" → "물도 줘" = ADD (기존 요청 유지)
         if ("REPLACE".equalsIgnoreCase(event.getActionType())) {
-            java.util.Optional<Request> latestCancellable = requestRepositoryPort.findLatestCancellableByRoomNoAndGuestIdAndDomainCode(event.getRoomNo(), event.getGuestId(), domainCode.name());
+            // [Keyword Targeting] targetKeyword가 있으면 키워드 매칭으로 대상 탐색
+            java.util.Optional<Request> targetRequest = java.util.Optional.empty();
             
-            if (latestCancellable.isPresent()) {
-                Request existing = latestCancellable.get();
+            if (event.getTargetKeyword() != null && !event.getTargetKeyword().isBlank()) {
+                List<Request> cancellable = requestRepositoryPort.findAllCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+                String lowerKeyword = event.getTargetKeyword().toLowerCase();
+                targetRequest = cancellable.stream()
+                        .filter(r -> r.getDomainCode() == domainCode)
+                        .filter(r -> r.getSummary() != null && r.getSummary().toLowerCase().contains(lowerKeyword))
+                        .findFirst();
+                
+                if (targetRequest.isEmpty()) {
+                    log.info("[Cancel&Replace] 키워드 '{}' 매칭 실패 → 최신 건 폴백", event.getTargetKeyword());
+                }
+            }
+            
+            // 키워드 매칭 실패 시 최신 건 폴백
+            if (targetRequest.isEmpty()) {
+                targetRequest = requestRepositoryPort.findLatestCancellableByRoomNoAndGuestIdAndDomainCode(
+                        event.getRoomNo(), event.getGuestId(), domainCode.name());
+            }
+            
+            if (targetRequest.isPresent()) {
+                Request existing = targetRequest.get();
                 if (existing.getStatus() == RequestStatus.PENDING) {
                     try {
                         existing.changeStatus(RequestStatus.CANCELLED);
                         requestRepositoryPort.save(existing);
 
-                        log.info("[Cancel&Replace] 가장 최근 PENDING 요청 자동 취소 — id: {}, summary: {}", existing.getId(), existing.getSummary());
+                        log.info("[Cancel&Replace] PENDING 요청 자동 취소 — id: {}, summary: {}, keyword: {}",
+                                existing.getId(), existing.getSummary(), event.getTargetKeyword());
 
                         RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
                                 existing.getId(),
@@ -81,7 +102,7 @@ public class CreateRequestOnEventService {
                         existing.requestCancellation();
                         requestRepositoryPort.save(existing);
                         
-                        log.info("[Cancel&Replace] 가장 최근 IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", existing.getId());
+                        log.info("[Cancel&Replace] IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", existing.getId());
                         
                         RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.cancelRequestReceived(
                                 existing.getId(),

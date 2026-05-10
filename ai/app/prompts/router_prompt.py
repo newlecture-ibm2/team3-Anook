@@ -50,6 +50,19 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
 - If mode is NOT "TASK", action_type should always be "ADD".
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ STEP 4: Extract Target Keyword (for CANCEL and REPLACE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When mode is "CANCEL" or action_type is "REPLACE", extract the **specific item name** the guest wants to cancel or replace from the original request.
+  - This is the noun/item the guest explicitly mentions as the target of cancellation or modification.
+  - Example: "콜라 취소해줘" → target_keyword: "콜라"
+  - Example: "수건 요청 취소" → target_keyword: "수건"
+  - Example: "콜라 말고 주스로" → target_keyword: "콜라" (the item being REPLACED)
+  - Example: "방금 거 취소" → target_keyword: null (no specific item mentioned)
+  - Example: "취소해줘" → target_keyword: null
+  - If the guest does not mention a specific item, set target_keyword to null.
+  - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
@@ -68,7 +81,8 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "Write a short logical reason in KOREAN",
-    "action_type": "ADD | REPLACE"
+    "action_type": "ADD | REPLACE",
+    "target_keyword": "The specific item name being cancelled or replaced (string or null)"
   }
 ]
 
