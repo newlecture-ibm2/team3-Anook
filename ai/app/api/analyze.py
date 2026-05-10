@@ -176,23 +176,61 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         is_clarification = (response.get("domain_code") is None) and ("?" in guest_reply)
         
         if is_clarification:
-            # ── [동일 키 되묻기 카운터] ──
-            # 고객 답변(user 메시지)을 기준으로 사이클을 리셋합니다.
-            # AI 질문 → 고객 답변 → AI 질문: 서로 다른 JSON key 질문 → 카운터 리셋 (이관 X)
-            # 고객 답변 없이 AI 질문만 3회 이상 반복: 같은 정보 재시도 → FD 이관
-            same_key_questions = 0
+            # ── [Option A + 폴백 라운드 카운팅 혼합 이관 카운터] ──
+            # 우선순위:
+            #   1. 에이전트가 missing_fields를 내려보낸 경우 → 해당 key가 3라운드 미해소면 이관
+            #   2. missing_fields가 없는 경우 (라우터-CLARIFICATION) → 라운드 카운팅으로 이관
+            current_missing = response.get("missing_fields", [])
+
+            # 현재 턴도 하나의 clarification 라운드로 간주하므로 1부터 시작 (고객의 현재 메시지가 history에서 빠져있기 때문)
+            clarification_rounds = 1
+            last_was_ai_question = False
+            
+            # missing_fields별 관련 키워드 (다국어 지원을 위해 영어 키워드 추가)
+            keyword_map = {
+                "quantity": ["몇", "수량", "개수", "얼마나", "개", "how many", "quantity", "amount", "number"],
+                "menu_items": ["어떤", "메뉴", "무엇을", "음식", "음료", "what", "menu", "food", "drink", "beverage", "which"],
+                "item": ["어떤", "무엇을", "용품", "물품", "필요하신", "what", "item", "need", "amenity", "supply"],
+                "temperature": ["따뜻", "차갑", "아이스", "핫", "온도", "hot", "cold", "ice", "iced", "warm", "temperature"],
+                "destination": ["어디", "목적지", "장소", "어느", "where", "destination", "place"],
+                "time": ["시간", "언제", "몇 시", "time", "when"],
+                "symptom": ["증상", "어떻게", "어떤 문제", "고장", "symptom", "problem", "issue", "wrong", "what"],
+                "location": ["어디", "위치", "어느 곳", "where", "location"],
+            }
+            
+            current_keywords = []
+            for field in current_missing:
+                current_keywords.extend(keyword_map.get(field, []))
+            
             for msg in reversed(request.chat_history):
                 role = msg.get("role")
-                if role == "user":
-                    # 고객이 답변한 시점 → 이전 사이클이므로 카운트 중단
-                    break
                 if role == "ai":
-                    content_msg = msg.get("content", "").strip()
-                    if "?" in content_msg:
-                        same_key_questions += 1
+                    msg_content = msg.get("content", "").strip()
+                    if "?" in msg_content:
+                        # 에이전트가 특정 필수값을 찾고 있다면, 이전 질문들도 그 필수값 관련 키워드를 포함해야만 같은 루프로 인정
+                        msg_content_lower = msg_content.lower()
+                        if current_keywords and not any(kw in msg_content_lower for kw in current_keywords):
+                            break # 이전 질문은 다른 것을 물어봤으므로 연속 루프가 아님!
+                        last_was_ai_question = True
+                    else:
+                        break # AI가 질문을 안 했으면 되묻기 사이클 단절
+                elif role == "user":
+                    if last_was_ai_question:
+                        # 이전 사이클(AI질문->고객답변) 1라운드 추가
+                        clarification_rounds += 1
+                        last_was_ai_question = False
 
-            if same_key_questions >= 3:
-                print(f"\n[Analyze] 🚨 동일 정보 재시도 질문 {same_key_questions}회 누적으로 인한 FRONT 강제 이관 발동")
+            should_escalate = False
+            if current_missing and clarification_rounds > 3:
+                # Case 1: 에이전트가 missing_fields를 명시했고 3번 물어봤는데도(4라운드째) 미해소
+                print(f"\n[Analyze] 🚨 missing_fields {current_missing} 미해소 {clarification_rounds}라운드 → FRONT 강제 이관")
+                should_escalate = True
+            elif not current_missing and clarification_rounds > 3:
+                # Case 2: 라우터-CLARIFICATION이 3번 물어봤는데도(4라운드째) 반복
+                print(f"\n[Analyze] 🚨 라우터-CLARIFICATION {clarification_rounds}라운드 반복 → FRONT 강제 이관")
+                should_escalate = True
+
+            if should_escalate:
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
                     "summary": "추가 확인 실패 (강제 이관)",
@@ -362,6 +400,61 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
         # STEP 3-c: CLARIFICATION → 되묻기
         if primary.mode == "CLARIFICATION":
+            # ── [에이전트 재위임 로직] ──
+            # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
+            # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
+            # "어떤 말씀인지 모르겠다" 대신 구체적인 재질문을 생성합니다.
+            last_agent_domain = None
+            recent_ai_msgs = [m for m in request.chat_history[-6:] if m.get("role") == "ai"]
+            if recent_ai_msgs and "?" in recent_ai_msgs[-1].get("content", ""):
+                # 최근 AI 질문 직전의 TASK 도메인을 찾기 위해 에이전트 등록된 도메인 추정
+                # chat_history에 domain 정보가 없으므로, 에이전트 등록 여부로 확인 가능한
+                # 도메인을 router_engine의 이전 히스토리 기반으로 추론합니다.
+                # → 가장 실용적인 방법: 현재 라우터에게 전체 맥락으로 재질의
+                for domain_key in DOMAIN_AGENTS:
+                    # 도메인 키워드가 최근 AI 질문에 포함된 경우 해당 에이전트 재호출
+                    # (예: "오렌지 주스", "수건", "에어컨" 등)
+                    pass
+                # 실용적 접근: 직전에 에이전트가 물어본 맥락이 있으면 가장 최근 TASK 도메인으로 재위임
+                # chat_history를 역순으로 탐색해 마지막 TASK 처리 도메인 흔적을 찾습니다.
+                # 현재 chat_history에 domain 태그가 없으므로, 도메인별 키워드 사전으로 추론합니다.
+                DOMAIN_KEYWORDS = {
+                    "FB": ["주문", "룸서비스", "메뉴", "음식", "음료", "콜라", "주스", "커피", "맥주", "와인", "스테이크", "샐러드"],
+                    "HK": ["수건", "타월", "베개", "이불", "침대", "어메니티", "칫솔", "샴푸", "비누", "슬리퍼"],
+                    "FACILITY": ["에어컨", "TV", "와이파이", "냉장고", "전기", "수도", "변기", "샤워", "조명", "고장"],
+                    "CONCIERGE": ["택시", "맡기", "짐", "레스토랑", "예약", "투어", "관광", "공항", "모닝콜"],
+                }
+                recent_context = " ".join(
+                    m.get("content", "") for m in request.chat_history[-8:]
+                )
+                for domain_key, keywords in DOMAIN_KEYWORDS.items():
+                    if domain_key in DOMAIN_AGENTS and any(kw in recent_context for kw in keywords):
+                        last_agent_domain = domain_key
+                        break
+
+            if last_agent_domain:
+                try:
+                    agent_result = await DOMAIN_AGENTS[last_agent_domain](
+                        user_message=request.text,
+                        room_no=request.room_no,
+                        chat_history=request.chat_history,
+                    )
+                    response = {
+                        "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
+                        "summary": agent_result.get("summary", "추가 확인 필요"),
+                        "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
+                        "priority": agent_result.get("priority", "NORMAL"),
+                        "entities": agent_result.get("entities", {}),
+                        "confidence": agent_result.get("confidence", primary.confidence),
+                        "missing_fields": agent_result.get("missing_fields", []),
+                    }
+                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
+                    print(f"[Analyze] 응답: {response}\n")
+                    final_responses.append(response)
+                    continue
+                except Exception as e:
+                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 정적 응답 폴백: {e}")
+
             response = {
                 "guest_reply": _get_static_reply("CLARIFICATION", request.language),
                 "summary": "추가 확인 필요",
@@ -618,6 +711,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
                     final_guest_reply = _get_static_reply("ESCALATION", request.language)
 
+            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
+            if agent_result.get("missing_fields"):
+                final_domain_code = None
+
             response = {
                 "guest_reply": final_guest_reply,
                 "summary": final_summary,
@@ -625,6 +722,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": agent_result.get("priority", "NORMAL"),
                 "entities": final_entities,
                 "confidence": agent_confidence,
+                "missing_fields": agent_result.get("missing_fields", []),
+                "clarification_options": agent_result.get("clarification_options", [])
             }
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]

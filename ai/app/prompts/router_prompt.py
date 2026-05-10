@@ -74,7 +74,8 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, even if there is a previous context. Do not guess the intent.
+- **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
+- **ONGOING CONVERSATION RULE**: If the last message in `[과거 대화 맥락]` was an AI question (ending with ?), and the user is answering it (even with short ambiguous words like '웅', '네', '아니요', '몰라', '3개'), DO NOT classify it as CLARIFICATION. You MUST classify it as a "TASK" (or whatever the ongoing mode was) and assign the SAME domain as the ongoing conversation, so the specific department agent can evaluate the user's answer.
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
