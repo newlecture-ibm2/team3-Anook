@@ -60,64 +60,45 @@ _background_tasks = set()
 STATIC_REPLIES = {
     "ESCALATION": {
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
-        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
-        "ja": "私ではすぐにお答えするのが難しいため、すぐにフロントデスクのスタッフにお繋ぎいたしますね。少々お待ちくださいませ！",
-        "zh": "这个问题我马上为您连接前台工作人员，请您稍等片刻！"
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!"
     },
     "CLARIFICATION": {
         "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
-        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!",
-        "ja": "もう少し詳しく教えていただけますでしょうか？お伺いでき次第、すぐに対応させていただきます！",
-        "zh": "您能再稍微详细地告诉我一下吗？了解后我会立刻为您处理的！"
+        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
     },
     "CANCEL": {
         "ko": "네, 방금 말씀하신 요청은 바로 취소해 드릴게요.",
-        "en": "Sure, I'll go ahead and cancel your most recent request.",
-        "ja": "はい、先ほどのリクエストはすぐにキャンセルさせていただきますね。",
-        "zh": "好的，我马上为您取消刚才的请求。"
+        "en": "Sure, I'll go ahead and cancel your most recent request."
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
-        "en": "I will check the status of your most recent request right now.",
-        "ja": "現在の直近のリクエストの進捗状況を確認いたします。",
-        "zh": "我现在将为您查询最近一次请求的处理状态。"
+        "en": "I will check the status of your most recent request right now."
     },
     "TARGETED_CANCEL": {
         "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
-        "en": "Okay, I will cancel the specific request you mentioned.",
-        "ja": "はい、ご指定のリクエストをキャンセルいたします。",
-        "zh": "好的，我将取消您指定的请求。"
+        "en": "Okay, I will cancel the specific request you mentioned."
     },
     "TASK_WAIT": {
         "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
-        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment.",
-        "ja": "かしこまりました！担当部署にすぐお伝えいたしますね。少々お待ちくださいませ。",
-        "zh": "明白了！我会立刻帮您转交到相关部门，请您稍等一下哦。"
+        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment."
     },
     "INFO_NOT_FOUND": {
         "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
-        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
-        "ja": "あっと、その件については私ではすぐにお答えが難しいため、フロントデスクのスタッフに申し伝えました！確認次第こちらで回答いたしますので、少々お待ちくださいませ。",
-        "zh": "哎呀，这个问题我马上无法给出准确答复，我已经将您的问题转达给前台工作人员了！他们确认后会很快在这里回复您，请稍等片刻。"
+        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly."
     },
     "ERROR": {
         "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
-        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
-        "ja": "少しシステムに問題が発生しているようです。少し経ってからもう一度お話しいただけますでしょうか？",
-        "zh": "哎呀，系统似乎出了点小问题。能麻烦您稍后再试一下吗？"
+        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?"
     },
     "COMPLAINT": {
         "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
-        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution.",
-        "ja": "ご不便をおかけして大変申し訳ございません。担当スタッフに即座にお伝えし、迅速に対応いたします。",
-        "zh": "非常抱歉给您带来不便。我们会立即通知工作人员，尽快为您解决。"
-
+        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution."
     }
 }
 
 def _get_static_reply(key: str, lang: str) -> str:
     lang = lang.lower()
-    if lang not in ["ko", "en", "ja", "zh"]:
+    if lang not in ["ko", "en"]:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES.get(key, {}).get("en", "We are processing your request."))
 
@@ -163,6 +144,14 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
     백엔드 PythonAiHttpAdapter가 호출하는 단일 분석 엔드포인트.
     멀티 인텐트를 처리하기 위해 배열(List)을 반환합니다.
     """
+    # 사용자가 실제로 입력한 텍스트를 기반으로 언어 덮어쓰기 (크롬 설정 무시)
+    def _detect_language(text: str, default: str) -> str:
+        if any('\uac00' <= char <= '\ud7a3' for char in text): return "ko"
+        if any('a' <= char.lower() <= 'z' for char in text): return "en"
+        return default
+        
+    request.language = _detect_language(request.text, request.language)
+
     # 요청마다 컨텍스트 초기화
     ai_log_meta_ctx.set({})
     
@@ -755,7 +744,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     task_responses = [r for r in final_responses if r.get("domain_code") and r.get("domain_code") != "FRONT"]
     if task_responses:
         last_task = task_responses[-1]
-        append_msg = "아래 접수 내역을 확인해 주세요." if request.language == "ko" else "Please check the request details below."
+        if request.language == "ko":
+            append_msg = "아래 접수 내역을 확인해 주세요."
+        else:
+            append_msg = "Please check the request details below."
         if last_task.get("guest_reply"):
             last_task["guest_reply"] = f"{last_task['guest_reply']}\n{append_msg}"
         else:

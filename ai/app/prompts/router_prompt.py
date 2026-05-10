@@ -75,7 +75,7 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
-- **ONGOING CONVERSATION RULE**: If the last message in `[과거 대화 맥락]` was an AI question (ending with ?), and the user is answering it (even with short ambiguous words like '웅', '네', '아니요', '몰라', '3개'), DO NOT classify it as CLARIFICATION. You MUST classify it as a "TASK" (or whatever the ongoing mode was) and assign the SAME domain as the ongoing conversation, so the specific department agent can evaluate the user's answer.
+- **MISSING KEY FALLBACK RULE**: If the last message in `[과거 대화 맥락]` was an AI question asking for missing information (ending with ?), the conversation is currently in a 'missing key fallback' state. In this state, regardless of what the user inputs (whether it's an answer, a confused question like "what?", or short ambiguous words), you MUST NEVER classify it as "CLARIFICATION". You MUST strictly maintain the original mode (e.g., "TASK") and assign the SAME domain as the ongoing conversation so the department agent can continue handling the missing key.
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
@@ -84,6 +84,6 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 - If mode is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
 - If mode is "INFO", assign the relevant domain so the system can search the correct RAG knowledge base.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
-- Regardless of the input language (English, Japanese, Chinese, etc.), classify it uniformly based on meaning.
+- Regardless of the input language (Korean or English), classify it uniformly based on meaning.
 - The `reasoning` field MUST be written in Korean.
 """.strip()

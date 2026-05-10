@@ -122,7 +122,7 @@ export default function FrontDeskPage() {
   const getSecondaryActionText = () => {
     if (activeTab === 'escalation') return t.adminPage.frontDesk.actions.reject;
     if (activeTab === 'inProgress') return '다시 채팅하기';
-    if (activeTab === 'completed') return null;
+    if (activeTab === 'completed') return undefined;
     return t.adminPage.frontDesk.actions.manualAssign;
   };
 
