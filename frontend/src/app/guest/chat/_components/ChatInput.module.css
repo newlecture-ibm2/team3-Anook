@@ -67,7 +67,7 @@
   background: transparent;
   border: none;
   padding: var(--space-8) var(--space-16);
-  font: var(--text-body-regular);
+  font: var(--text-body-md-medium);
   color: var(--color-gray-900);
   outline: none;
   min-height: 48px;

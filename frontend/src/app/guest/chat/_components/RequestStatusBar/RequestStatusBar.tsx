@@ -95,12 +95,8 @@ export default function RequestStatusBar({
 
   return (
     <div className={styles.statusBarContainer}>
-      {/* Compact View */}
+      {/* Compact Progress View */}
       <div className={styles.compactView} onClick={() => setExpanded(!expanded)}>
-        <div className={styles.iconWrapper}>
-          <span className={styles.icon}>{domainInfo.icon}</span>
-        </div>
-        
         <div className={styles.progressSection}>
           <div className={styles.inlineProgressBarContainer}>
             <div className={styles.inlineProgressBarBg}>
@@ -123,7 +119,7 @@ export default function RequestStatusBar({
         </div>
       </div>
 
-      {/* Expanded View */}
+      {/* Expandable Details View */}
       {expanded && (
         <div className={styles.expandedView}>
           <div className={styles.detailsContainer}>

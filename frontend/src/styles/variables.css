@@ -42,7 +42,10 @@
   --text-h1-bold: 700 1.5rem/1.5 var(--font-sans);
   --text-h2-bold: 700 1.125rem/1.5 var(--font-sans);
   --text-h3-bold: 700 1rem/1.5 var(--font-sans);
+  --text-h3-medium: 500 1rem/1.5 var(--font-sans);
   --text-h3-regular: 400 1rem/1.5 var(--font-sans);
+  --text-body-lg-medium: 500 1rem/1.5 var(--font-sans);
+  --text-body-md-medium: 500 0.9375rem/1.5 var(--font-sans);
   --text-body-bold: 700 0.875rem/1.5 var(--font-sans);
   --text-body-medium: 500 0.875rem/1.5 var(--font-sans);
   --text-body-regular: 400 0.875rem/1.5 var(--font-sans);

@@ -17,13 +17,11 @@ import RequestStatusBar from '@/app/guest/chat/_components/RequestStatusBar/Requ
 import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
-import TypingIndicator from '@/app/guest/chat/_components/TypingIndicator';
+
 import ChatScreen from '@/app/guest/chat/_components/ChatScreen';
 import Pill from '@/components/ui/Pill/Pill';
 import StatusCard from '@/app/guest/chat/_components/StatusCard';
 import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
-import GuestRequestCard from '@/app/guest/chat/_components/RequestCard/RequestCard';
-import RequestStatusBar from '@/app/guest/chat/_components/RequestStatusBar/RequestStatusBar';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
@@ -392,13 +390,6 @@ export default function ComponentShowcasePage() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 'var(--space-24)' }}>
-                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Typing Indicator (AI Thinking)</h4>
-                    <ComponentLabel path="app/guest/chat/_components/TypingIndicator.tsx" />
-                    <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
-                      <TypingIndicator />
-                    </div>
-                  </div>
 
                   <div style={{ marginTop: 'var(--space-24)' }}>
                     <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Guest Request Card (10초 타이머)</h4>
@@ -530,31 +521,7 @@ export default function ComponentShowcasePage() {
                 </div>
               </div>
 
-              <div style={{ marginTop: 'var(--space-48)' }}>
-                <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Chat Screen (상태별 배경색 테스트)</h4>
-                <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 'var(--space-16)' }}>
-                  <Button variant={chatScreenStatus === 'normal' ? 'primary' : 'outlined'} onClick={() => setChatScreenStatus('normal')} size="sm">Normal</Button>
-                  <Button variant={chatScreenStatus === 'progress' ? 'primary' : 'outlined'} onClick={() => setChatScreenStatus('progress')} size="sm">Progress</Button>
-                  <Button variant={chatScreenStatus === 'escalated' ? 'primary' : 'outlined'} onClick={() => setChatScreenStatus('escalated')} size="sm">Escalated</Button>
-                  <Button variant={chatScreenStatus === 'emergency' ? 'danger' : 'outlined'} onClick={() => setChatScreenStatus('emergency')} size="sm">Emergency</Button>
-                </div>
-                <div style={{ height: '600px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
-                  <ChatScreen 
-                    messages={[
-                      { id: '1', variant: 'received', content: '안녕하세요. 무엇을 도와드릴까요?' },
-                      { id: '2', variant: 'sent', content: '테스트 메시지입니다.' }
-                    ]}
-                    isTyping={false}
-                    activeRequests={
-                      chatScreenStatus === 'emergency' ? [{ requestId: 1, domainCode: 'EMERGENCY', summary: '응급', status: 'PENDING', progress: 0 }] :
-                      chatScreenStatus === 'escalated' ? [{ requestId: 2, domainCode: 'FRONT', summary: '불만 접수', status: 'ESCALATED', progress: 0 }] :
-                      chatScreenStatus === 'progress' ? [{ requestId: 3, domainCode: 'HK', summary: '수건 2장', status: 'IN_PROGRESS', progress: 50 }] :
-                      []
-                    }
-                    onSendMessage={(text) => alert(`전송: ${text}`)}
-                  />
-                </div>
-              </div>
+
             </div>
 
             {/* Group 5: Data Display & Cards */}
