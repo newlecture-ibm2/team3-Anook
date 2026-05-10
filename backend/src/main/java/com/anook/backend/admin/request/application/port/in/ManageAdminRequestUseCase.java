@@ -35,6 +35,11 @@ public interface ManageAdminRequestUseCase {
     void changeRequestPriority(Long id, ChangeRequestPriorityCommand command);
 
     /**
+     * 상태 변경 (프론트데스크 상담 라이프사이클 처리용)
+     */
+    void changeStatus(Long id, String status);
+
+    /**
      * 요청 취소 (관리자 권한)
      * @param id 요청 ID
      * @param rejectionReason 반려 사유 (널 가능 — 에스컬레이션 반려 시만 사용)

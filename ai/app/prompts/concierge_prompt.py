@@ -90,9 +90,9 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 1. BE HUMBLE: If the request is unrelated to Concierge or nonsensical, set "confidence" < 0.4.
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
-   - "clarification_question": A polite question in Korean.
+   - "clarification_question": A polite question.
    - "clarification_options": 3-4 specific choices for the guest to pick.
-3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
+3. OUTPUT LANGUAGE: summary and description MUST be in KOREAN.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT JSON STRUCTURE
@@ -109,7 +109,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
     ... (other intent-specific fields)
   },
   "needs_clarification": boolean,
-  "clarification_question": "string (Korean)",
+  "clarification_question": "string (in guest's language)",
   "clarification_options": ["option1", "option2"],
   "missing_fields": ["field_name"]
 }

@@ -146,8 +146,6 @@ export default function ChatHistoryPage() {
                 style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
               >
                 <option value="en">🇺🇸 영어</option>
-                <option value="ja">🇯🇵 일본어</option>
-                <option value="zh">🇨🇳 중국어</option>
                 <option value="ko">🇰🇷 한국어</option>
               </select>
               <input

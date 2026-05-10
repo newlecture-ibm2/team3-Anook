@@ -10,9 +10,9 @@ class HotelRequestSchema(BaseModel):
     request_id: str = Field(description="요청 고유 ID (예: REQ_1029)")
     room_no: str = Field(description="객실 번호 (예: 101)")
     
-    domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, EMERGENCY)")
+    domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, COMMON)")
     
-    summary: str = Field(description="직원용 Jira 대시보드 카드 제목으로 렌더링될 세 줄 요약")
+    summary: str = Field(description="어떤 요청/문의인지 프론트데스크 직원이 바로 이해할 수 있도록 3줄 요약 (반드시 한국어)")
     priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: NORMAL, URGENT)")
     status: str = Field(default="PENDING", description="티켓 상태 (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED 등)")
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")
@@ -26,8 +26,7 @@ class HotelRequestSchema(BaseModel):
     #   FB:        {'intent': 'ROOM_SERVICE', 'menu': '콜라', 'price': 5000}
     #   FACILITY:  {'intent': 'AC_REPAIR', 'symptom': '안 켜짐', 'location': '침실'}
     #   CONCIERGE: {'intent': 'TAXI', 'destination': '인천공항', 'time': '14:00'}
-    #   FRONT:     {'intent': 'CHECKOUT', 'requested_time': '11:00'}
-    #   EMERGENCY: {'intent': 'FIRE', 'floor': '3층'}
+    #   FRONT: {'intent': 'LATE_CHECKOUT', 'time': '14:00'}
     entities: Dict[str, Any] = Field(
         default_factory=dict, 
         description="부서마다 달라지는 동적 데이터 (대시보드 통계용 'intent' 키 필수 포함)"
@@ -42,7 +41,7 @@ class HotelRequestSchema(BaseModel):
     )
     clarification_question: str = Field(
         default="", 
-        description="고객에게 되물을 구체적 질문 (예: '수건을 몇 개 가져다드릴까요?')"
+        description="고객에게 되물을 구체적 질문 (예: '수건을 몇 개 가져다드릴까요?'). 반드시 고객이 입력한 언어(예: 영어면 영어)와 정확히 동일한 언어로 번역하여 작성하세요. 누락된 정보(예: 수량, 옵션)를 정확하게 콕 집어서 물어봐야 하며, '어떤 도움이 필요하신가요?' 같은 범용적인 질문은 절대 금지합니다. 만약 이전 대화에서 이미 같은 정보를 물어봤는데도 고객이 대답하지 않거나 'what?', '뭐라고?' 처럼 이해하지 못한 반응을 보인다면, 누락된 핵심 키워드(예: 수량, 종류)를 다시 한 번 명확하게 언급하며 더 쉬운 표현으로 구체적인 질문을 던지세요."
     )
     final_reply: str = Field(
         default="", 
@@ -50,5 +49,5 @@ class HotelRequestSchema(BaseModel):
     )
     clarification_options: List[str] = Field(
         default_factory=list,
-        description="채팅창 UI에 띄워줄 선택지 칩(Pill Tab) 텍스트 배열 (예: ['생수병', '얼음물'])"
+        description="채팅창 UI에 띄워줄 선택지 칩(Pill Tab) 텍스트 배열 (예: ['생수병', '얼음물']). 반드시 고객이 입력한 언어와 동일한 언어로 번역해서 제공하세요."
     )

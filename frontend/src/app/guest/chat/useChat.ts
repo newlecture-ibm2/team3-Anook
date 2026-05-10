@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import { ChatMessage } from './_components/ChatScreen';
+import { useTranslation } from '@/app/useTranslation';
+import { useUiStore } from '@/stores/useUiStore';
 
 interface BackendMessage {
   id: number;
@@ -25,7 +27,17 @@ export function useChat() {
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
-  
+
+  const { t } = useTranslation();
+  const setLanguage = useUiStore((state) => state.setLanguage);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const browserLang = navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en';
+      setLanguage(browserLang);
+    }
+  }, [setLanguage]);
+
   // 연속된 시스템 메시지 방지용 Ref
   const lastCancelSuccessTime = useRef<number>(0);
   const lastCancelPendingTime = useRef<number>(0);
@@ -65,14 +77,14 @@ export function useChat() {
               id: 'welcome-1',
               variant: 'received',
               type: 'WELCOME',
-              content: '안녕하세요! 그랜드 호텔 AI 컨시어지입니다 🏨\n무엇이든 편하게 말씀해주세요.\n\n💡 예시:\n• "수건 2개 가져다주세요"\n• "조식 몇 시에 열어요?"',
+              content: t.guestChat.welcomeMessage,
             },
             {
               id: 'idle-1',
               variant: 'received',
               type: 'QUICK_REPLY',
-              content: '추가로 필요한 서비스가 있으신가요?',
-              meta: { options: ['🛏️ 수건 요청', '🧴 어메니티 추가', '🧹 룸 클리닝', '🔑 체크아웃 문의'] }
+              content: t.guestChat.quickReplyPrompt,
+              meta: { options: t.guestChat.quickReplyOptions }
             }
           ]);
         } else {
@@ -110,18 +122,35 @@ export function useChat() {
           if (message.body) {
             const payload = JSON.parse(message.body);
 
+            if (payload.type === 'AI_PROGRESS') {
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                return [...filtered, {
+                  id: `progress-${Date.now()}`,
+                  variant: 'received',
+                  type: 'AI_PROGRESS',
+                  content: '',
+                  meta: { domains: payload.domains }
+                }];
+              });
+              return;
+            }
+
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
               setIsTyping(false);
 
-              const newAiMsg: ChatMessage = {
-                id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
-                variant: 'received',
-                content: payload.content,
-                type: payload.uiType || 'TEXT',
-                meta: payload.meta || {},
-              };
-
-              setMessages(prev => [...prev, newAiMsg]);
+              // 진행 상태 메시지 제거
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                const newAiMsg: ChatMessage = {
+                  id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
+                  variant: 'received',
+                  content: payload.content,
+                  type: payload.uiType || 'TEXT',
+                  meta: payload.meta || {},
+                };
+                return [...filtered, newAiMsg];
+              });
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
@@ -141,7 +170,7 @@ export function useChat() {
               });
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
-                'PENDING': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
               const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
@@ -151,7 +180,7 @@ export function useChat() {
                 const isFinished = payload.status === 'COMPLETED' || payload.status === 'CANCELLED';
                 const filtered = prev.filter(r => r.requestId !== payload.requestId);
                 if (isFinished) return filtered;
-                
+
                 return [...filtered, {
                   requestId: payload.requestId,
                   domainCode: payload.domainCode || 'UNKNOWN',
@@ -183,17 +212,20 @@ export function useChat() {
 
               setMessages(prev => {
                 const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
-                const existingGrace = existingIdx >= 0 ? (prev[existingIdx].meta?.graceRemaining || 0) : 0;
-                
+                const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
+                const existingGrace = existingMeta.graceRemaining || 0;
+
                 // Remove the existing card from the list
                 const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
-                
+
                 // Append the updated card at the bottom
                 return [...filtered, {
                   ...requestMsg,
                   id: `request-${payload.requestId}-${Date.now()}`, // Force re-render at the bottom
                   meta: {
                     ...requestMsg.meta,
+                    entities: payload.entities || existingMeta.entities,
+                    priority: payload.priority || existingMeta.priority,
                     graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                   }
                 }];

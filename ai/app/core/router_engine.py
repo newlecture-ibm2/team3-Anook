@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ── 상수 ──
 CONFIDENCE_THRESHOLD = 0.7
 FALLBACK_DOMAIN = "FRONT"
-VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "EMERGENCY"}
+VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
 VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL", "STATUS_CHECK"}
 
 
@@ -71,6 +71,11 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
     for item in raw_result:
         # ── 2) Pydantic 스키마 검증 ──
         result = RouterOutputSchema(**item)
+
+        # ── 2.5) 긴급 상황 예외 처리 ──
+        if result.mode == "EMERGENCY" or result.domain == "EMERGENCY":
+            result.mode = "TASK"
+            result.domain = "EMERGENCY"
 
         # ── 3) mode 유효성 검증 ──
         if result.mode not in VALID_MODES:

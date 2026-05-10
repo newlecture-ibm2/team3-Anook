@@ -32,10 +32,10 @@ Assign ONE of the 6 department codes below. For "INFO" mode, assign the domain s
 |------------|---------------|-----------------------------|
 | HK         | Housekeeping  | Towels, amenities, cleaning, beddings, minibar |
 | FB         | Food & Bev    | Room service, breakfast, drinks, restaurant reservation |
-| FACILITY   | Facility Mgt  | Broken AC/TV/lights, noise complaints, Wi-Fi issues |
-| CONCIERGE  | Concierge     | Taxi, tourist recommendations, luggage, external reservations |
-| FRONT      | Front Office  | Check-in/out, room change, billing inquiries, key cards |
-| EMERGENCY  | Emergency     | Fire, medical emergencies, crime, critical safety threats |
+| FACILITY   | Facility Mgt  | Broken AC/TV/lights, noise complaints |
+| CONCIERGE  | Concierge     | Taxi, luggage, external reservations (actionable tasks only) |
+| FRONT      | Front Office  | Check-in/out, room change, billing inquiries, key cards, emergencies (fire, medical) |
+| COMMON     | Common Info   | Tourist recommendations, Wi-Fi password, general hotel policy, simple Q&A |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ STEP 3: Determine Action Type (ADD or REPLACE)
@@ -52,7 +52,7 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
-- If it is related to an EMERGENCY, you MUST route to "EMERGENCY" regardless of confidence. Safety first.
+- If it is related to an EMERGENCY, you MUST route to domain "EMERGENCY" with mode "TASK" regardless of confidence. Safety first.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT FORMAT (STRICTLY JSON ARRAY)
@@ -64,7 +64,7 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 [
   {
     "mode": "TASK | CHITCHAT | CLARIFICATION | INFO | CANCEL | STATUS_CHECK",
-    "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | EMERGENCY | null",
+    "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "Write a short logical reason in KOREAN",
     "action_type": "ADD | REPLACE"
@@ -74,7 +74,8 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, even if there is a previous context. Do not guess the intent.
+- **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
+- **MISSING KEY FALLBACK RULE**: If the last message in `[과거 대화 맥락]` was an AI question asking for missing information (ending with ?), the conversation is currently in a 'missing key fallback' state. In this state, regardless of what the user inputs (whether it's an answer, a confused question like "what?", or short ambiguous words), you MUST NEVER classify it as "CLARIFICATION". You MUST strictly maintain the original mode (e.g., "TASK") and assign the SAME domain as the ongoing conversation so the department agent can continue handling the missing key.
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
@@ -83,6 +84,6 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 - If mode is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
 - If mode is "INFO", assign the relevant domain so the system can search the correct RAG knowledge base.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
-- Regardless of the input language (English, Japanese, Chinese, etc.), classify it uniformly based on meaning.
+- Regardless of the input language (Korean or English), classify it uniformly based on meaning.
 - The `reasoning` field MUST be written in Korean.
 """.strip()

@@ -20,7 +20,7 @@ public class EmergencyRequestPersistenceAdapter implements EmergencyRequestQuery
     public List<EmergencyTask> findActiveEmergencyTasks() {
         String sql = "SELECT r.id, r.room_no, r.summary, r.raw_text, r.status, r.priority, r.created_at " +
                      "FROM request r " +
-                     "WHERE r.priority IN ('URGENT', 'CRITICAL') " +
+                     "WHERE r.priority = 'URGENT' " +
                      "ORDER BY r.created_at DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {

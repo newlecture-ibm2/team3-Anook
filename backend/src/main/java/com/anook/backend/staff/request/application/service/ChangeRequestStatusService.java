@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+
 
 @Slf4j
 @Service
@@ -91,14 +91,14 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         String oldDepartmentId = request.getDomainCode() != null ? request.getDomainCode().name() : null;
 
         // DomainCode 변환
-        com.anook.backend.request.domain.model.DomainCode newDomainCode = 
-            com.anook.backend.request.domain.model.DomainCode.from(toDepartmentId);
+        com.anook.backend.request.domain.model.DomainCode newDomainCode = com.anook.backend.request.domain.model.DomainCode
+                .from(toDepartmentId);
 
         // 부서 이관
         request.transferDepartment(newDomainCode, reason);
 
         requestRepositoryPort.save(request);
-        log.info("요청 부서 전달 완료: requestId={}, staffId={}, from={}, to={}, reason={}", 
+        log.info("요청 부서 전달 완료: requestId={}, staffId={}, from={}, to={}, reason={}",
                 requestId, staffId, oldDepartmentId, toDepartmentId, reason);
 
         // WebSocket 알림 (고객에게 상태 변경 알림)
@@ -110,12 +110,11 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getRoomNo()
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
-        
         // 새 부서에 알림
         if (request.getDomainCode() != null) {
             dispatchPort.dispatchToDepartment(request.getDomainCode().name(), payload);
         }
-        
+
         // 이전 부서에도 상태 업데이트 알림 (태스크 보드에서 사라지도록)
         if (oldDepartmentId != null && !oldDepartmentId.equals(toDepartmentId)) {
             dispatchPort.dispatchToDepartment(oldDepartmentId, payload);
