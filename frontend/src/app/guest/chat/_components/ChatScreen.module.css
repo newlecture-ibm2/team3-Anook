@@ -4,12 +4,29 @@
   width: 100%;
   max-width: 480px;
   /* Mobile standard max width */
-  height: 100dvh;
-  /* Use dvh for mobile browser URL bar compatibility */
+  height: 100%;
+  /* Use 100% so it fills its container (e.g. 100dvh wrapper or a fixed div) */
   background-color: var(--color-bg);
   margin: 0 auto;
   box-shadow: 0 0 20px rgba(0,0,0,0.05);
   position: relative;
+  transition: background-color var(--transition);
+}
+
+.bgNormal {
+  background-color: var(--color-bg);
+}
+
+.bgEmergency {
+  background-color: var(--color-tag-background-red);
+}
+
+.bgEscalated {
+  background-color: var(--color-tag-background-violet);
+}
+
+.bgProgress {
+  background-color: var(--color-tag-background-gray);
 }
 
 .header {
@@ -34,7 +51,7 @@
   padding: var(--space-24);
   gap: var(--space-16);
   overflow-y: auto;
-  background-color: var(--color-white);
+  background-color: transparent;
 }
 
 .footer {
