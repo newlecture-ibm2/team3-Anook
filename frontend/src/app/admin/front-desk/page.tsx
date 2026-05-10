@@ -28,8 +28,8 @@ export default function FrontDeskPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   // 상세 모달 상태
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  // Chat Modal 자동 완료 모드
-  const [autoCompleteRoom, setAutoCompleteRoom] = useState<{ roomNumber: string, requestId: number } | null>(null);
+  // Chat Modal 상태
+  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number } | null>(null);
   // 승인/반려 모달 상태
   const [approveTarget, setApproveTarget] = useState<number | null>(null);
   const [rejectTarget, setRejectTarget] = useState<number | null>(null);
@@ -114,15 +114,15 @@ export default function FrontDeskPage() {
 
   const getPrimaryActionText = () => {
     if (activeTab === 'escalation') return t.adminPage.frontDesk.actions.approve;
-    if (activeTab === 'inProgress') return '상담 완료';
+    if (activeTab === 'inProgress') return '상담 계속하기';
     if (activeTab === 'completed') return '상담 기록 보기';
     return t.adminPage.frontDesk.actions.startChat;
   };
 
   const getSecondaryActionText = () => {
     if (activeTab === 'escalation') return t.adminPage.frontDesk.actions.reject;
-    if (activeTab === 'inProgress') return '다시 채팅하기';
-    if (activeTab === 'completed') return undefined;
+    if (activeTab === 'inProgress') return '수동 배정';
+    if (activeTab === 'completed') return '';
     return t.adminPage.frontDesk.actions.manualAssign;
   };
 
@@ -175,14 +175,15 @@ export default function FrontDeskPage() {
                 secondaryActionText={getSecondaryActionText()}
                 onPrimaryAction={
                   activeTab === 'escalation' ? () => setApproveTarget(req.id) : 
-                  activeTab === 'inProgress' ? () => setAutoCompleteRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
+                  activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
                   undefined
                 }
                 onSecondaryAction={
                   activeTab === 'escalation' ? () => setRejectTarget(req.id) :
-                  activeTab === 'inProgress' || activeTab === 'completed' ? () => handleCardClick(req.id) /* Wait, RequestCard already opens ChatModal internally. We need to pass the chat modal props down. Actually, let's just let RequestCard open ChatModal normally. */ :
+                  activeTab === 'inProgress' ? () => handleCardClick(req.id) :
                   () => handleCardClick(req.id)
                 }
+                reverseActions={activeTab === 'inProgress' || activeTab === 'unhandled' || activeTab === 'escalation'}
                 onCardClick={() => handleCardClick(req.id)}
                 // custom props to pass to ChatModal through RequestCard
                 requestId={req.id}
@@ -231,16 +232,16 @@ export default function FrontDeskPage() {
         onReject={handleRejectEscalationSubmit}
       />
 
-      {/* 상담 완료 처리를 위한 자동 ChatModal */}
-      {autoCompleteRoom && (
+      {/* 상담 계속하기 처리를 위한 ChatModal */}
+      {activeChatRoom && (
         <ChatModal
           isOpen={true}
-          onClose={() => setAutoCompleteRoom(null)}
-          roomNumber={autoCompleteRoom.roomNumber}
-          requestId={autoCompleteRoom.requestId}
+          onClose={() => setActiveChatRoom(null)}
+          roomNumber={activeChatRoom.roomNumber}
+          requestId={activeChatRoom.requestId}
           status="IN_PROGRESS"
           onStatusChange={handleStatusChange}
-          autoComplete={true}
+          autoComplete={false}
         />
       )}
     </div>

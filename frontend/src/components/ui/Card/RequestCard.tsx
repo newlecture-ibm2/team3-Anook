@@ -21,6 +21,7 @@ export interface RequestCardProps {
   requestId?: number;
   status?: string;
   onStatusChange?: (id: number, newStatus: string) => Promise<void>;
+  reverseActions?: boolean;
 }
 
 export default function RequestCard({
@@ -39,7 +40,8 @@ export default function RequestCard({
   variant = 'default',
   requestId,
   status,
-  onStatusChange
+  onStatusChange,
+  reverseActions
 }: RequestCardProps) {
   const isWarning = variant === 'warning';
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -78,6 +80,7 @@ export default function RequestCard({
 
         <div 
           className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''} ${(!primaryActionText || !secondaryActionText) ? styles.actionSectionSingle : ''}`} 
+          style={reverseActions ? { flexDirection: 'column-reverse' } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           {primaryActionText && (
