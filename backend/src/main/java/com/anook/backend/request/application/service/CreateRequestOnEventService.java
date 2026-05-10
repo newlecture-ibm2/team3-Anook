@@ -120,7 +120,7 @@ public class CreateRequestOnEventService {
             }
         }
 
-        // [AN-125] 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
+        // 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
         // 긴 문장일 경우에는 원문과 AI가 추출한 상세 내역을 모두 표시하여 직원의 가독성을 높임.
         String finalRawText = event.getRawText();
         String formattedEntities = formatEntities(event.getEntities());
