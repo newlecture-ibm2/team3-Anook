@@ -15,5 +15,6 @@ public record StaffTaskResult(
         LocalDateTime createdAt,
         Integer version,
         boolean cancelRequested,
-        LocalDateTime cancelRequestedAt
+        LocalDateTime cancelRequestedAt,
+        java.util.Map<String, Object> entities
 ) {}

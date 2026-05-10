@@ -1,9 +1,9 @@
-from app.infrastructure.gemini.client import call_gemini
+from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     
@@ -38,7 +38,7 @@ def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini One-pass 호출
-    raw = call_gemini(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT)
 
     # 5. Pydantic 검증 (HotelRequestSchema)
     if "request_id" not in raw or raw["request_id"] == "auto":
@@ -53,8 +53,7 @@ def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list
     # 6. analyze.py 응답 형태로 변환
     # 되묻기(needs_clarification)일 때는 domain_code=None → 백엔드가 request를 생성하지 않음
     return {
-        "guest_reply": result.clarification_question if result.needs_clarification
-                       else f"네, {result.entities.get('item', '요청하신 물품')}을(를) 객실로 보내드리겠습니다.",
+        "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
         "domain_code": None if result.needs_clarification else "HK",
         "priority": result.priority,

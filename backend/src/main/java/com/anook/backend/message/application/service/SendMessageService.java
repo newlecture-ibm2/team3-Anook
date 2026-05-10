@@ -2,6 +2,7 @@ package com.anook.backend.message.application.service;
 
 import com.anook.backend.message.application.port.out.MessageDispatchPort;
 import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
+import com.anook.backend.message.application.event.RequestStatusCheckByGuestEvent;
 import com.anook.backend.message.application.event.RequestDetectedEvent;
 import com.anook.backend.message.application.dto.request.SendMessageCommand;
 import com.anook.backend.message.application.dto.response.SendMessageResult;
@@ -18,6 +19,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,13 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 메시지 전송 서비스
  *
  * 흐름 (비동기):
- *   [동기] 1. 디바운스 검증 (같은 객실 1초 내 연타 방지)
- *   [동기] 2. 고객 메시지 저장 (GUEST) → 즉시 HTTP 응답 반환
- *   [비동기] 3. AI 분석 호출 (MessageAiPort)
- *   [비동기] 4. AI 응답 메시지 저장 (AI)
- *   [비동기] 5. WebSocket Push → /topic/room/{roomNo} (AI_RESPONSE)
- *   [비동기] 6. 태스크형 요청 감지 시 RequestDetectedEvent 발행
- *   [비동기] 7. AI 로그 분리 저장 (AsyncAiLoggingService)
+ * [동기] 1. 디바운스 검증 (같은 객실 1초 내 연타 방지)
+ * [동기] 2. 고객 메시지 저장 (GUEST) → 즉시 HTTP 응답 반환
+ * [비동기] 3. AI 분석 호출 (MessageAiPort)
+ * [비동기] 4. AI 응답 메시지 저장 (AI)
+ * [비동기] 5. WebSocket Push → /topic/room/{roomNo} (AI_RESPONSE)
+ * [비동기] 6. 태스크형 요청 감지 시 RequestDetectedEvent 발행
+ * [비동기] 7. AI 로그 분리 저장 (AsyncAiLoggingService)
  *
  * ❌ JPA Repository 직접 import 금지 → Port(Out)만 의존
  * ❌ Request 도메인 직접 접근 금지 → 이벤트로 통신
@@ -48,6 +51,10 @@ public class SendMessageService implements SendMessageUseCase {
     private final MessageDispatchPort dispatchPort;
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncAiLoggingService asyncAiLoggingService;
+
+    @Autowired
+    @Lazy
+    private SendMessageService self;
 
     /** 디바운스: 객실별 마지막 메시지 전송 시간 (roomNo → timestamp) */
     private final ConcurrentHashMap<String, Long> lastSendTimeMap = new ConcurrentHashMap<>();
@@ -72,8 +79,8 @@ public class SendMessageService implements SendMessageUseCase {
                 "messageId", guestMsg.getId(),
                 "content", cmd.content()));
 
-        // 3. AI 처리는 비동기로 위임
-        processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
+        // 3. AI 처리는 비동기로 위임 (self 주입을 통해 프록시 우회 방지)
+        self.processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -82,10 +89,8 @@ public class SendMessageService implements SendMessageUseCase {
      * AI 호출 + 응답 저장 + WebSocket Push + 이벤트 발행 (비동기)
      *
      * @Async → aiTaskExecutor 스레드풀에서 실행
-     *        ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않지만,
-     *        여기서는 self-invocation이므로 별도 빈 분리 대신
-     *        Spring의 프록시 우회 없이 직접 @Async를 적용합니다.
-     *        (프로젝트 규모에서 충분한 구조)
+     *        ⚠️ @Async는 같은 클래스 내부 호출 시 프록시를 타지 않으므로,
+     *        @Lazy로 주입받은 self 인스턴스를 통해 호출하여 프록시를 통과하게 합니다.
      */
     @Async("aiTaskExecutor")
     @Transactional
@@ -112,59 +117,76 @@ public class SendMessageService implements SendMessageUseCase {
                     .toList();
 
             // AI 호출
-            MessageAiResult analysis = aiPort.analyze(content, roomNo, language, chatHistory);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory);
 
             // 4. AI 응답 메시지 저장
-            Message aiMsg = Message.createAiReply(roomNo, guestId, analysis.guestReply());
+            String combinedReply = analyses.stream()
+                    .map(MessageAiResult::guestReply)
+                    .filter(reply -> reply != null && !reply.isBlank())
+                    .distinct()
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            
+            if (combinedReply.isEmpty()) {
+                combinedReply = "알겠습니다.";
+            }
+
+            Message aiMsg = Message.createAiReply(roomNo, guestId, combinedReply);
             aiMsg = messagePort.save(aiMsg);
-            log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), analysis.guestReply());
+            log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), combinedReply);
 
             // 5. WebSocket Push → 고객 채팅 화면에 AI 응답 실시간 전달
             dispatchPort.sendToRoom(roomNo, Map.of(
                     "type", "AI_RESPONSE",
                     "messageId", aiMsg.getId(),
-                    "content", analysis.guestReply()));
+                    "content", combinedReply));
 
             // 6. 태스크형 요청 감지 시 이벤트 발행 (여기서 message 책임 끝!)
-            if (analysis.domainCode() != null) {
-                boolean escalated = analysis.confidence() < 0.7;
+            for (MessageAiResult analysis : analyses) {
+                if ("CANCEL_ALL_REQUESTS".equals(analysis.action())) {
+                    eventPublisher.publishEvent(new com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent(this, roomNo, guestId));
+                    log.info("[Message] AllRequestsCancelledByGuestEvent 발행 — room: {}", roomNo);
+                } else if ("CANCEL_REQUEST".equals(analysis.action())) {
+                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode()));
+                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}", roomNo, analysis.domainCode());
+                } else if (analysis.domainCode() != null) {
+                    boolean escalated = analysis.confidence() < 0.7;
 
-                eventPublisher.publishEvent(new RequestDetectedEvent(
-                        this,
-                        roomNo,
-                        guestId,
-                        analysis.domainCode(),
-                        analysis.priority(),
-                        analysis.entities(),
-                        analysis.confidence(),
-                        content,
-                        analysis.summary(),
-                        escalated,
-                        analysis.actionType()));
-                log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
-                        analysis.domainCode(), escalated, analysis.actionType());
-            } else if ("CANCEL_REQUEST".equals(analysis.action())) {
-                eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId));
-                log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}", roomNo);
-            }
+                    eventPublisher.publishEvent(new RequestDetectedEvent(
+                            this,
+                            roomNo,
+                            guestId,
+                            analysis.domainCode(),
+                            analysis.priority(),
+                            analysis.entities(),
+                            analysis.confidence(),
+                            content,
+                            analysis.summary(),
+                            escalated,
+                            analysis.actionType()));
+                    log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}",
+                            analysis.domainCode(), escalated, analysis.actionType());
+                } else if ("STATUS_CHECK".equals(analysis.action())) {
+                    eventPublisher.publishEvent(new RequestStatusCheckByGuestEvent(this, roomNo, guestId, content));
+                    log.info("[Message] RequestStatusCheckByGuestEvent 발행 — room: {}", roomNo);
+                }
 
-            // 7. AI 로그 비동기 분리 저장
-            if (analysis.aiLogMeta() != null) {
-                Map<String, Object> meta = analysis.aiLogMeta();
-                AiLog aiLog = AiLog.builder()
-                        .requestId(null) // 요청 ID는 나중에 동기화하거나 null로 허용 (비즈니스 요구사항에 따라 다름)
-                        .modelName((String) meta.get("model_name"))
-                        .rawPrompt((String) meta.get("raw_prompt"))
-                        .rawResponse((String) meta.get("raw_response"))
-                        .promptTokens(meta.get("prompt_tokens") != null ? ((Number) meta.get("prompt_tokens")).intValue() : 0)
-                        .completionTokens(meta.get("completion_tokens") != null ? ((Number) meta.get("completion_tokens")).intValue() : 0)
-                        .latencyMs(meta.get("latency_ms") != null ? ((Number) meta.get("latency_ms")).intValue() : 0)
-                        .isFallback(meta.get("is_fallback") != null && (Boolean) meta.get("is_fallback"))
-                        .build();
-                        
-                asyncAiLoggingService.saveAiLogAsync(aiLog);
+                // 7. AI 로그 비동기 분리 저장
+                if (analysis.aiLogMeta() != null) {
+                    Map<String, Object> meta = analysis.aiLogMeta();
+                    AiLog aiLog = AiLog.builder()
+                            .requestId(null)
+                            .modelName((String) meta.get("model_name"))
+                            .rawPrompt((String) meta.get("raw_prompt"))
+                            .rawResponse((String) meta.get("raw_response"))
+                            .promptTokens(meta.get("prompt_tokens") != null ? ((Number) meta.get("prompt_tokens")).intValue() : 0)
+                            .completionTokens(meta.get("completion_tokens") != null ? ((Number) meta.get("completion_tokens")).intValue() : 0)
+                            .latencyMs(meta.get("latency_ms") != null ? ((Number) meta.get("latency_ms")).intValue() : 0)
+                            .isFallback(meta.get("is_fallback") != null && (Boolean) meta.get("is_fallback"))
+                            .build();
+                            
+                    asyncAiLoggingService.saveAiLogAsync(aiLog);
+                }
             }
-            
         } catch (Exception e) {
             log.error("[Message] AI 비동기 처리 실패 — room: {}, error: {}", roomNo, e.getMessage(), e);
 

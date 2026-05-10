@@ -25,6 +25,16 @@ public interface RequestJpaRepository extends JpaRepository<RequestJpaEntity, Lo
     java.util.Optional<RequestJpaEntity> findFirstByRoomNoAndGuestIdAndStatusInOrderByCreatedAtDesc(String roomNo, Long guestId, List<String> statuses);
 
     /**
+     * 특정 객실, 투숙객의 모든 취소 가능 상태의 요청 목록 조회
+     */
+    List<RequestJpaEntity> findByRoomNoAndGuestIdAndStatusIn(String roomNo, Long guestId, List<String> statuses);
+
+    /**
+     * 특정 객실, 투숙객, 특정 부서의 가장 최근 생성된 취소 가능 상태의 요청 1건 조회
+     */
+    java.util.Optional<RequestJpaEntity> findFirstByRoomNoAndGuestIdAndDepartmentIdAndStatusInOrderByCreatedAtDesc(String roomNo, Long guestId, String departmentId, List<String> statuses);
+
+    /**
      * [Cancel & Replace] 같은 객실, 투숙객, 부서의 PENDING 상태 요청 목록 조회
      */
     List<RequestJpaEntity> findByRoomNoAndGuestIdAndDepartmentIdAndStatus(String roomNo, Long guestId, String departmentId, String status);

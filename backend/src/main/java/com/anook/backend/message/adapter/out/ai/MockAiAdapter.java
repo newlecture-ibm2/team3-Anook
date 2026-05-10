@@ -24,7 +24,7 @@ import java.util.Map;
 public class MockAiAdapter implements MessageAiPort {
 
     @Override
-    public MessageAiResult analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory) {
+    public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory) {
         log.info("[MockAI] 분석 요청 — room: {}, text: {}", roomNo, text);
 
         // 1초 딜레이 (AI 처리 시간 시뮬레이션)
@@ -37,7 +37,7 @@ public class MockAiAdapter implements MessageAiPort {
         // 하우스키핑 요청
         if (containsAny(text, "수건", "물", "베개", "이불", "가운", "슬리퍼", "어메니티")) {
             String item = extractItem(text);
-            return new MessageAiResult(
+            return java.util.List.of(new MessageAiResult(
                     "요청하신 물품을 객실로 곧 가져다 드리겠습니다!",
                     "물품 요청 (" + item + ")",
                     "HK", "NORMAL",
@@ -46,12 +46,12 @@ public class MockAiAdapter implements MessageAiPort {
                     null,
                     "ADD",
                     null
-            );
+            ));
         }
 
         // 시설 수리 요청
         if (containsAny(text, "에어컨", "고장", "수리", "안 돼", "작동")) {
-            return new MessageAiResult(
+            return java.util.List.of(new MessageAiResult(
                     "시설 점검 요청을 접수했습니다. 엔지니어가 곧 방문드릴 예정입니다.",
                     "에어컨 점검 요청",
                     "FACILITY", "HIGH",
@@ -60,12 +60,12 @@ public class MockAiAdapter implements MessageAiPort {
                     null,
                     "ADD",
                     null
-            );
+            ));
         }
 
         // 룸서비스 요청
         if (containsAny(text, "룸서비스", "음식", "주문", "먹")) {
-            return new MessageAiResult(
+            return java.util.List.of(new MessageAiResult(
                     "룸서비스 주문을 접수하겠습니다. 메뉴를 확인 중입니다.",
                     "룸서비스 주문",
                     "FB", "NORMAL",
@@ -74,15 +74,15 @@ public class MockAiAdapter implements MessageAiPort {
                     null,
                     "ADD",
                     null
-            );
+            ));
         }
 
         // 단순 대화 (domainCode = null → 이벤트 발행 안 함)
-        return new MessageAiResult(
+        return java.util.List.of(new MessageAiResult(
                 "안녕하세요! 아눅 호텔 컨시어지입니다. 무엇이든 편하게 말씀해 주세요.",
                 null,
                 null, null, Map.of(), 0.0, null, "ADD", null
-        );
+        ));
     }
 
     @Override

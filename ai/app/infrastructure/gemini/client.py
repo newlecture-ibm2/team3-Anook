@@ -7,6 +7,8 @@ Gemini API 공통 클라이언트
 
 import json
 import time
+import asyncio
+import contextvars
 import google.generativeai as genai
 from contextvars import ContextVar
 from app.core.config import settings
@@ -90,3 +92,28 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
             f"원본 응답: {raw_text}\n"
             f"파싱 에러: {e}"
         )
+
+async def call_gemini_async(
+    prompt: str,
+    system_instruction: str,
+    model_name: str = "gemini-2.5-flash",
+    temperature: float = 0.2,
+) -> Union[dict, list]:
+    """
+    call_gemini의 비동기 버전.
+    독립된 ContextVar 내에서 실행하여 asyncio.gather 병렬 처리 시 로깅 메타데이터 충돌을 방지합니다.
+    """
+    ctx = contextvars.copy_context()
+    
+    def _run():
+        return call_gemini(prompt, system_instruction, model_name, temperature)
+        
+    result = await asyncio.to_thread(ctx.run, _run)
+    
+    # 해당 스레드(컨텍스트)에서 갱신된 로깅 메타데이터를 추출하여 결과에 임시 주입
+    # (analyze.py에서 pop하여 사용)
+    meta = ctx.get(ai_log_meta_ctx)
+    if meta and isinstance(result, dict):
+        result["__ai_log_meta"] = meta
+        
+    return result

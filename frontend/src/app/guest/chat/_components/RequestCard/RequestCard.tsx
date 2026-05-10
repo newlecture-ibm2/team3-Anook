@@ -85,23 +85,29 @@ export default function RequestCard({
       return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
     }
     // Fallback if no specific format matched, maybe raw text or other entity props
+    const HIDDEN_KEYS = ['intent', 'emergency_category', 'matched_keyword', 'severity'];
     const parts = [];
     if (entities.menu) parts.push(`${entities.menu}`);
     if (entities.symptom) parts.push(`${entities.symptom}`);
+    // 시스템 내부용 키만 있는 경우 빈 문자열 반환
+    if (parts.length === 0) {
+      const visibleEntries = Object.entries(entities).filter(([key]) => !HIDDEN_KEYS.includes(key));
+      if (visibleEntries.length === 0) return null;
+    }
     return parts.join(', ');
   };
 
   const detailsText = renderDetails();
 
   return (
-    <div className={`${styles.card} ${isUrgent ? styles.urgentCard : ''} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
+    <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.badge} style={{ backgroundColor: domainInfo.color }}>
           {domainInfo.icon} {domainInfo.label}
         </div>
         <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : isUrgent ? '긴급 접수' : '대기 중'}
+          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : '대기 중'}
         </div>
       </div>
 
@@ -121,6 +127,9 @@ export default function RequestCard({
       {/* Grace Period Timer & Buttons */}
       {showButtons && (
         <>
+          <div className={styles.guideText}>
+            <strong>잠시 후 자동으로 접수됩니다.</strong>
+          </div>
           <div className={styles.timerContainer}>
             <div className={styles.timerBarBg}>
               <div 
@@ -147,10 +156,6 @@ export default function RequestCard({
           ) : isEscalatedChat ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
               💬 프론트 직원이 채팅으로 응대할 예정입니다.
-            </div>
-          ) : isUrgent ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-error)' }}>
-              🔴 즉시 대응팀에 전달되었습니다
             </div>
           ) : (
             <div className={styles.completionMessage}>

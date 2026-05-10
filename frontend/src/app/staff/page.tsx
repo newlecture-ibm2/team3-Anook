@@ -167,6 +167,7 @@ function DashboardContent() {
                             e.stopPropagation();
                             completeTask(task.id, task.version);
                           } : undefined}
+                          entities={task.entities}
                         />
                       </div>
                     ))}
@@ -196,6 +197,6 @@ function DashboardContent() {
 }
 
 function mapPriority(p: string): 'NORMAL' | 'URGENT' {
-  if (p === 'HIGH' || p === 'URGENT' || p === 'CRITICAL') return 'URGENT';
+  if (p === 'HIGH' || p === 'URGENT') return 'URGENT';
   return 'NORMAL';
 }

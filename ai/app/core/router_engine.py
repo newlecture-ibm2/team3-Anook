@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 # ── 상수 ──
 CONFIDENCE_THRESHOLD = 0.7
 FALLBACK_DOMAIN = "FRONT"
-VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON"}
-VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL"}
+VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
+VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL", "STATUS_CHECK"}
 
 
 from typing import List
@@ -72,6 +72,11 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
         # ── 2) Pydantic 스키마 검증 ──
         result = RouterOutputSchema(**item)
 
+        # ── 2.5) 긴급 상황 예외 처리 ──
+        if result.mode == "EMERGENCY" or result.domain == "EMERGENCY":
+            result.mode = "TASK"
+            result.domain = "EMERGENCY"
+
         # ── 3) mode 유효성 검증 ──
         if result.mode not in VALID_MODES:
             logger.warning(f"[Router] 알 수 없는 mode '{result.mode}' → CLARIFICATION으로 Fallback")
@@ -95,8 +100,8 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
                 result.domain = FALLBACK_DOMAIN
                 result.reasoning += f" (confidence {result.confidence:.2f} 미달로 FRONT Fallback 적용)"
 
-        # ── 5) CHITCHAT/CLARIFICATION/CANCEL일 때 domain은 반드시 null ──
-        if result.mode in ("CHITCHAT", "CLARIFICATION", "CANCEL"):
+        # ── 5) CHITCHAT/CLARIFICATION/STATUS_CHECK일 때 domain은 반드시 null ──
+        if result.mode in ("CHITCHAT", "CLARIFICATION", "STATUS_CHECK"):
             result.domain = None
 
         logger.info(

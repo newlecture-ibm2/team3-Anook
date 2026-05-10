@@ -15,6 +15,13 @@ export interface TaskTicketProps {
   onAccept?: (e: React.MouseEvent) => void;
   onComplete?: (e: React.MouseEvent) => void;
   isCancelled?: boolean;
+  entities?: {
+    is_contactless?: boolean;
+    target_time?: string;
+    items?: Array<{ item: string; count: number }>;
+    tasks?: string[];
+    [key: string]: any;
+  };
 }
 
 export default function TaskTicket({
@@ -28,7 +35,8 @@ export default function TaskTicket({
   cancelRequested = false,
   onAccept,
   onComplete,
-  isCancelled = false
+  isCancelled = false,
+  entities
 }: TaskTicketProps) {
   let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
   if (priority === 'URGENT') {
@@ -57,7 +65,7 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={styles.taskTicket}>
+    <div className={`${styles.taskTicket} ${priority === 'URGENT' ? styles.urgentTicket : ''}`}>
       <div className={styles.header}>
         {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -77,6 +85,17 @@ export default function TaskTicket({
         </div>
       </div>
       
+      {(entities?.is_contactless || entities?.target_time) && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', marginTop: '-4px' }}>
+          {entities.is_contactless && (
+            <StatusBadge variant="purple">비대면 배달</StatusBadge>
+          )}
+          {entities.target_time && (
+            <StatusBadge variant="gray">희망 시간: {entities.target_time}</StatusBadge>
+          )}
+        </div>
+      )}
+
       <div className={styles.content}>
         <h3 className={styles.title}>{title}</h3>
         <p className={styles.description}>{description}</p>

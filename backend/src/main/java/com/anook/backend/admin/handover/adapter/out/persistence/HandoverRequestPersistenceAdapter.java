@@ -25,7 +25,7 @@ public class HandoverRequestPersistenceAdapter implements HandoverRequestQueryPo
                 "FROM request r " +
                 "LEFT JOIN pms_guest g ON r.room_no = g.room_no " +
                 "WHERE r.created_at >= ? AND r.created_at < ? " +
-                "  AND ( r.status = 'ESCALATED' OR r.priority IN ('CRITICAL', 'URGENT') ) " +
+                "  AND ( r.status = 'ESCALATED' OR r.priority = 'URGENT' ) " +
                 "ORDER BY r.created_at DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {

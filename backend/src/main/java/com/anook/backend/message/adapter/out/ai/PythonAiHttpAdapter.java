@@ -44,11 +44,11 @@ public class PythonAiHttpAdapter implements MessageAiPort {
     }
 
     @Override
-    public MessageAiResult analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory) {
+    public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory) {
         log.info("[PythonAI] 분석 요청 — room: {}, lang: {}, text: {}", roomNo, language, text);
 
         try {
-            Map<String, Object> response = webClient.post()
+            java.util.List<Map<String, Object>> responses = webClient.post()
                     .uri("/analyze")
                     .bodyValue(Map.of(
                             "text", text,
@@ -57,42 +57,47 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                             "chat_history", chatHistory
                     ))
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<java.util.List<Map<String, Object>>>() {})
                     .timeout(Duration.ofSeconds(30))
                     .block();
 
-            if (response == null) {
-                log.warn("[PythonAI] 응답이 null — 폴백 응답 반환");
+            if (responses == null || responses.isEmpty()) {
+                log.warn("[PythonAI] 응답이 null 또는 비어있음 — 폴백 응답 반환");
                 return fallbackResult();
             }
 
-            String guestReply = (String) response.getOrDefault("guest_reply", "죄송합니다. 잠시 후 다시 시도해 주세요.");
-            String summary = (String) response.get("summary");
-            String domainCode = (String) response.get("domain_code");
-            String priority = (String) response.getOrDefault("priority", "NORMAL");
+            java.util.List<MessageAiResult> results = new java.util.ArrayList<>();
+            for (Map<String, Object> response : responses) {
+                String guestReply = (String) response.getOrDefault("guest_reply", "죄송합니다. 잠시 후 다시 시도해 주세요.");
+                String summary = (String) response.get("summary");
+                String domainCode = (String) response.get("domain_code");
+                String priority = (String) response.getOrDefault("priority", "NORMAL");
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> entities = response.containsKey("entities")
-                    ? (Map<String, Object>) response.get("entities")
-                    : Collections.emptyMap();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> entities = response.containsKey("entities")
+                        ? (Map<String, Object>) response.get("entities")
+                        : Collections.emptyMap();
 
-            double confidence = response.containsKey("confidence")
-                    ? ((Number) response.get("confidence")).doubleValue()
-                    : 0.0;
+                double confidence = response.containsKey("confidence")
+                        ? ((Number) response.get("confidence")).doubleValue()
+                        : 0.0;
 
-            String action = (String) response.get("action");
+                String action = (String) response.get("action");
 
-            String actionType = (String) response.getOrDefault("action_type", "ADD");
+                String actionType = (String) response.getOrDefault("action_type", "ADD");
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> aiLogMeta = response.containsKey("ai_log_meta")
-                    ? (Map<String, Object>) response.get("ai_log_meta")
-                    : null;
+                @SuppressWarnings("unchecked")
+                Map<String, Object> aiLogMeta = response.containsKey("ai_log_meta")
+                        ? (Map<String, Object>) response.get("ai_log_meta")
+                        : null;
 
-            log.info("[PythonAI] 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}",
-                    domainCode, confidence, action, actionType);
+                log.info("[PythonAI] 개별 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}",
+                        domainCode, confidence, action, actionType);
 
-            return new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta);
+                results.add(new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta));
+            }
+
+            return results;
 
         } catch (WebClientResponseException e) {
             log.error("[PythonAI] HTTP 에러 — status: {}, body: {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -107,8 +112,8 @@ public class PythonAiHttpAdapter implements MessageAiPort {
      * AI 서버 장애 시 폴백 응답
      * 고객에게 직원 연결 안내 메시지를 보내고, FRONT 부서로 티켓을 생성한다.
      */
-    private MessageAiResult fallbackResult() {
-        return new MessageAiResult(
+    private java.util.List<MessageAiResult> fallbackResult() {
+        return java.util.List.of(new MessageAiResult(
                 "안내에 어려움이 있어 프론트 데스크 직원을 연결해 드리겠습니다. 잠시만 기다려 주세요.",
                 "AI 분석 실패 (직원 연결)", 
                 "FRONT", 
@@ -118,7 +123,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                 "ADD", 
                 "ADD", 
                 null
-        );
+        ));
     }
 
     @Override

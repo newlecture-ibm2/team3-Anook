@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
           version: item.version,
           cancelRequested: item.cancelRequested ?? false,
           cancelRequestedAt: item.cancelRequestedAt ?? null,
+          entities: item.entities ?? null,
         }));
         return NextResponse.json(mappedData);
       }
