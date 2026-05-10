@@ -22,6 +22,8 @@ import ChatScreen from '@/app/guest/chat/_components/ChatScreen';
 import Pill from '@/components/ui/Pill/Pill';
 import StatusCard from '@/app/guest/chat/_components/StatusCard';
 import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
+import GuestRequestCard from '@/app/guest/chat/_components/RequestCard/RequestCard';
+import RequestStatusBar from '@/app/guest/chat/_components/RequestStatusBar/RequestStatusBar';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
@@ -395,6 +397,41 @@ export default function ComponentShowcasePage() {
                     <ComponentLabel path="app/guest/chat/_components/TypingIndicator.tsx" />
                     <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
                       <TypingIndicator />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 'var(--space-24)' }}>
+                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Guest Request Card (10초 타이머)</h4>
+                    <ComponentLabel path="app/guest/chat/_components/RequestCard/RequestCard.tsx" />
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
+                      <GuestRequestCard
+                        requestId={1001}
+                        domainCode="HK"
+                        summary="수건 2장 추가 요청"
+                        entities={{ item: "수건", count: "2" }}
+                        status="PENDING"
+                        progress={0}
+                        graceRemaining={10}
+                        priority="NORMAL"
+                        createdAt={new Date().toISOString()}
+                        onAccept={() => alert('요청 접수')}
+                        onCancel={() => alert('취소')}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 'var(--space-24)' }}>
+                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Request Status Bar (상태 진행바)</h4>
+                    <ComponentLabel path="app/guest/chat/_components/RequestStatusBar/RequestStatusBar.tsx" />
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
+                      <RequestStatusBar
+                        requestId={1001}
+                        domainCode="HK"
+                        summary="수건 추가 요청"
+                        status="IN_PROGRESS"
+                        progress={testProgress}
+                        entities={{ item: "수건", count: "2" }}
+                      />
                     </div>
                   </div>
                 </div>

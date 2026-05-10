@@ -21,18 +21,46 @@
 }
 
 .received {
-  background-color: var(--color-gray-100);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 0 12px rgba(255, 255, 255, 0.6),
+    0 4px 16px rgba(31, 38, 135, 0.05);
   color: var(--color-gray-900);
-  border-radius: var(--radius-md) var(--radius-xl) var(--radius-xl) var(--radius-xl);
+  border-radius: 4px 24px 24px 24px;
 }
 
 .sent {
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  border-radius: var(--radius-xl) var(--radius-md) var(--radius-xl) var(--radius-xl);
+  background: linear-gradient(135deg, rgba(161, 196, 253, 0.7), rgba(194, 233, 251, 0.7));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.5),
+    0 4px 16px rgba(31, 38, 135, 0.05);
+  color: var(--color-gray-900);
+  border-radius: 24px 4px 24px 24px;
 }
 
 .fallback {
-  border: 1px solid #f59e0b; /* Yellow border */
-  background-color: #fffbeb; /* Light yellow background */
+  background: linear-gradient(120deg, 
+    rgba(255, 225, 205, 0.4) 0%,   /* Very light peach/apricot */
+    rgba(255, 215, 230, 0.4) 33%,  /* Very light pink */
+    rgba(255, 225, 205, 0.4) 66%,  /* Very light peach/apricot */
+    rgba(255, 215, 230, 0.4) 100%); /* Very light pink */
+  background-size: 200% 100%;
+  animation: waitingBubble 3s linear infinite;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    inset 2px 2px 6px rgba(255, 255, 255, 0.9),
+    inset -2px -2px 8px rgba(250, 200, 150, 0.3),
+    0 4px 16px rgba(31, 38, 135, 0.05);
+  color: var(--color-gray-900);
+}
+
+@keyframes waitingBubble {
+  0% { background-position: 200% 50%; }
+  100% { background-position: 0% 50%; }
 }

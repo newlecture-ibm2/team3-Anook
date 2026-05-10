@@ -6,10 +6,13 @@
   /* Mobile standard max width */
   height: 100%;
   /* Use 100% so it fills its container (e.g. 100dvh wrapper or a fixed div) */
-  background-color: var(--color-bg);
+  background: 
+    radial-gradient(150% 50% at 50% 100%, rgba(130, 170, 255, 0.18) 0%, rgba(160, 140, 255, 0) 70%),
+    var(--color-bg);
   margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   position: relative;
+  overflow: hidden;
   transition: background-color var(--transition);
 }
 
@@ -27,6 +30,48 @@
 
 .bgProgress {
   background-color: var(--color-tag-background-gray);
+}
+
+/* Deeper blue background gradient when input is focused */
+.chatScreen::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(150% 60% at 50% 100%, rgba(110, 150, 255, 0.12) 0%, rgba(140, 110, 255, 0) 80%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.chatScreen:has(input:focus)::before {
+  opacity: 1;
+}
+
+/* AI 생각 중 (Thinking) 상태 추가! */
+.chatScreen::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(150% 60% at 50% 100%, rgba(255, 150, 200, 0.6) 0%, rgba(180, 130, 255, 0.5) 40%, transparent 80%);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  animation: breathe 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 빈 클래스를 선언해야 React에서 styles.thinking 을 사용할 수 있습니다 */
+.thinking {
+}
+
+.chatScreen.thinking::after {
+  opacity: 1 !important;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
 }
 
 .header {
@@ -57,8 +102,8 @@
 .footer {
   padding: var(--space-16);
   padding-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--color-surface);
-  background-color: var(--color-white);
+  border-top: none;
+  background-color: transparent;
   position: sticky;
   bottom: 0;
   z-index: 10;

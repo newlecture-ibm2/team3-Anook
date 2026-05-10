@@ -2,52 +2,123 @@
 .wrapper {
   display: flex;
   align-items: center;
-  gap: var(--space-12);
   width: 100%;
+  background-color: transparent;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-full);
+  padding: var(--space-8);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+.wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg,
+      #ff9a9e,
+      #fecfef,
+      #a1c4fd,
+      #c2e9fb,
+      #ff9a9e);
+  background-size: 200% 100%;
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  filter: blur(6px);
+}
+
+.wrapper:focus-within::before {
+  opacity: 0.9;
+  animation: spreadingGlow 4s ease-in-out infinite;
+}
+
+.wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-white);
+  border-radius: var(--radius-full);
+  z-index: -1;
+}
+
+@keyframes spreadingGlow {
+  0% {
+    background-position: 0% 50%;
+    filter: blur(6px);
+  }
+
+  50% {
+    background-position: 100% 50%;
+    filter: blur(12px);
+  }
+
+  100% {
+    background-position: 200% 50%;
+    filter: blur(6px);
+  }
 }
 
 .input {
   flex: 1;
-  background-color: var(--color-surface);
-  /* #F3F4F6 */
+  background: transparent;
   border: none;
-  border-radius: var(--radius-full);
-  padding: var(--space-12) var(--space-24);
+  padding: var(--space-8) var(--space-16);
   font: var(--text-body-regular);
   color: var(--color-gray-900);
   outline: none;
   min-height: 48px;
-  box-sizing: border-box;
 }
 
 .input::placeholder {
   color: var(--color-gray-500);
 }
 
-.input:focus {
-  /* 접근성 및 사용성을 위해 포커스 효과 부여, 필요에 따라 조정 가능 */
-  box-shadow: 0 0 0 2px var(--color-gray-300);
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-right: var(--space-4);
 }
 
-.sendButton {
+.iconButton {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: var(--radius-full);
-  background-color: var(--color-primary);
-  /* 검은색 버튼 */
-  border: none;
+  border: 2px solid #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #f0ebf8 100%);
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 1),
+    4px 6px 14px rgba(160, 150, 190, 0.35),
+    inset 0 2px 6px rgba(255, 255, 255, 1);
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform var(--transition), opacity var(--transition);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sendButton:active {
+.iconButton:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #e8e0f5 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    -4px -4px 12px rgba(255, 255, 255, 1),
+    6px 8px 18px rgba(160, 150, 190, 0.45),
+    inset 0 2px 6px rgba(255, 255, 255, 1);
+}
+
+.iconButton:active {
   transform: scale(0.95);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    inset 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.sendButton:hover {
-  opacity: 0.9;
-}
+/* Remove old specific button styles as they now share the same glass look */
+.sendButton {}
+
+.micButton {}

@@ -1,17 +1,72 @@
 .card {
-  background-color: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-16);
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: var(--space-24);
   width: 280px;
-  align-self: flex-start;
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-12);
-  box-shadow: var(--shadow-sm);
+  /* removed box-shadow and animation from here */
+  box-shadow: 0 0 32px rgba(150, 100, 250, 0.1);
+  /* x:0 y:0 static outer glow */
+  border: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-16);
+  position: relative;
 }
+
+/* Subtle background lines/gradient to match the image's inner texture */
+.cardTexture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 40%, rgba(240, 230, 255, 0.4) 100%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: var(--radius-xl);
+}
+
+/* Soft flowing glow behind the card (No sharp stroke) */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  /* Pull it out slightly to create the spreading light effect */
+  border-radius: calc(var(--radius-xl) + 2px);
+  background: conic-gradient(from var(--spin),
+      transparent 0%,
+      transparent 40%,
+      rgba(80, 110, 255, 0.8) 70%,
+      rgba(130, 40, 255, 1) 100%);
+  animation: spinConic 4s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(10px);
+  /* Makes it a soft, spreading light instead of a line */
+}
+
+@keyframes spinConic {
+  from {
+    --spin: 0deg;
+  }
+
+  to {
+    --spin: 360deg;
+  }
+}
+
+.header,
+.content,
+.meta,
+.timerContainer,
+.buttonGroup,
+.completionMessage,
+.progressContainer {
+  position: relative;
+  z-index: 1;
+}
+
+
 
 .urgentCard {
   border: 1px solid var(--color-error);
@@ -104,8 +159,13 @@
 }
 
 @keyframes countdown {
-  from { width: 100%; }
-  to { width: 0%; }
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
 }
 
 .timerText {
@@ -123,19 +183,22 @@
 
 .actionButton {
   flex: 1;
-  padding: var(--space-8);
-  border-radius: var(--radius-md);
-  font: var(--text-caption-medium);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-full);
+  font: var(--text-body-bold);
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
-  color: var(--color-gray-700);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  color: var(--color-gray-900);
   text-align: center;
 }
 
 .actionButton:hover {
-  background-color: var(--color-gray-100);
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* Progress */

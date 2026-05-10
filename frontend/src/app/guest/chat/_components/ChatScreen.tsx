@@ -49,11 +49,7 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
   }
 
   return (
-    <div className={`${styles.chatScreen} ${backgroundClass}`}>
-      <div className={styles.header}>
-        <div className={styles.logo}>Anook</div>
-      </div>
-      
+    <div className={`${styles.chatScreen} ${backgroundClass} ${isTyping ? styles.thinking : ''}`}>
       {/* 고정 상태 바 컨테이너 */}
       {activeRequests && activeRequests.length > 0 && (
         <div style={{ 
@@ -153,9 +149,7 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
           );
         })}
         {isTyping && (
-          <ChatBubble variant="received">
-            <TypingIndicator />
-          </ChatBubble>
+          <TypingIndicator />
         )}
         <div ref={messagesEndRef} />
       </div>

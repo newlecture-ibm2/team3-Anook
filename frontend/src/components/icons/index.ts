@@ -26,3 +26,4 @@ export { default as FilterIcon } from './FilterIcon';
 export { default as CodeIcon } from './CodeIcon';
 export { default as TimerIcon } from './TimerIcon';
 export { default as SparklesIcon } from './SparklesIcon';
+export { default as MicIcon } from './MicIcon';
