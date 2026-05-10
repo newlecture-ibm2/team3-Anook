@@ -12,6 +12,7 @@ import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 export interface ChatMessage {
   id: string;
   variant: 'sent' | 'received'; // Staff perspective: 'sent' = staff/AI, 'received' = guest
+  senderType: 'GUEST' | 'AI' | 'STAFF';
   content: string;
 }
 
@@ -49,6 +50,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
         const mapped: ChatMessage[] = data.map((msg: any) => ({
           id: String(msg.id),
           variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
+          senderType: msg.senderType,
           content: msg.content,
         }));
 
@@ -84,11 +86,12 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
           // 낙관적 업데이트로 인한 중복 방지 (내용으로 비교)
           if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp'))) {
             // tempId를 실제 messageId로 교체
-            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent } : m);
+            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent, senderType: 'STAFF' } : m);
           }
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
             variant: 'sent',
+            senderType: type === 'STAFF_MESSAGE' ? 'STAFF' : 'AI',
             content: displayContent,
           }];
         });
@@ -98,6 +101,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
             variant: 'received',
+            senderType: 'GUEST',
             content,
           }];
         });
@@ -117,7 +121,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
   const handleSend = async (text: string) => {
     // 1. 낙관적 업데이트 (즉시 화면에 표시)
     const tempId = `temp-${Date.now()}`;
-    const newMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
+    const newMsg: ChatMessage = { id: tempId, variant: 'sent', senderType: 'STAFF', content: text };
     setMessages(prev => [...prev, newMsg]);
 
     // 2. 백엔드로 전송
@@ -146,7 +150,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
     if (requestId && onStatusChange && status !== 'COMPLETED') {
       await onStatusChange(requestId, 'COMPLETED');
     }
-    const staffMessages = messages.filter(m => m.variant === 'sent');
+    const staffMessages = messages.filter(m => m.senderType === 'STAFF');
     if (staffMessages.length > 0) {
       setIsRagConfirmOpen(true);
     } else {
@@ -197,7 +201,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
   // 상담 내용에서 초기 질문/답변 추출
   const extractInitialContent = () => {
     const staffMessages = messages
-      .filter(m => m.variant === 'sent')
+      .filter(m => m.senderType === 'STAFF')
       .map(m => m.content);
 
     return {
