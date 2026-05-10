@@ -176,17 +176,23 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         is_clarification = (response.get("domain_code") is None) and ("?" in guest_reply)
         
         if is_clarification:
-            consecutive_questions = 0
+            # ── [동일 키 되묻기 카운터] ──
+            # 고객 답변(user 메시지)을 기준으로 사이클을 리셋합니다.
+            # AI 질문 → 고객 답변 → AI 질문: 서로 다른 JSON key 질문 → 카운터 리셋 (이관 X)
+            # 고객 답변 없이 AI 질문만 3회 이상 반복: 같은 정보 재시도 → FD 이관
+            same_key_questions = 0
             for msg in reversed(request.chat_history):
-                if msg.get("role") == "ai":
-                    content = msg.get("content", "").strip()
-                    if "?" in content:
-                        consecutive_questions += 1
-                    else:
-                        break
-            
-            if consecutive_questions >= 3:
-                print(f"\n[Analyze] 🚨 연속 질문(되묻기) {consecutive_questions}회 누적으로 인한 FRONT 강제 이관 발동")
+                role = msg.get("role")
+                if role == "user":
+                    # 고객이 답변한 시점 → 이전 사이클이므로 카운트 중단
+                    break
+                if role == "ai":
+                    content_msg = msg.get("content", "").strip()
+                    if "?" in content_msg:
+                        same_key_questions += 1
+
+            if same_key_questions >= 3:
+                print(f"\n[Analyze] 🚨 동일 정보 재시도 질문 {same_key_questions}회 누적으로 인한 FRONT 강제 이관 발동")
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
                     "summary": "추가 확인 실패 (강제 이관)",
