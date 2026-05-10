@@ -46,6 +46,7 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
                Keywords: "아니", "아니요", "아니다", "바꿔", "변경", "대신", "말고", "instead", "change", "actually", "never mind the previous"
                Example: "수건 2장 줘" → "아니 3장으로 줘" = REPLACE
                Example: "수건 줘" → "물도 줘" = ADD (different item)
+               **CRITICAL RULE FOR ONGOING MODIFICATIONS**: If the user initiated a modification in a previous turn (e.g., "콜라말고 오렌지 주스로") and the AI asked a clarification question (e.g., "몇 개 준비해드릴까요?" or "접수해드릴까요?"), and the user is now just answering that question (e.g., "2개", "응"), you MUST maintain the `action_type` as "REPLACE". Check the chat history carefully to see if the current conversation is a continuation of an order modification.
 - If mode is NOT "TASK", action_type should always be "ADD".
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
