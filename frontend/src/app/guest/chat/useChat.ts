@@ -334,6 +334,18 @@ export function useChat() {
   // 3. 메시지 전송
   const sendMessage = async (text: string) => {
     if (!roomNo) return;
+    if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
+
+    // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const errorMsg: ChatMessage = {
+        id: `error-${Date.now()}`,
+        variant: 'received',
+        content: '현재 오프라인 상태입니다. 네트워크 연결을 확인한 후 다시 전송해 주세요.',
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      return;
+    }
 
     const tempId = `temp-${Date.now()}`;
     const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };

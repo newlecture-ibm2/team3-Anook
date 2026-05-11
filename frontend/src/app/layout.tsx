@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import Toast from "@/components/ui/Modal/Toast";
+import NetworkStatusListener from "@/app/NetworkStatusListener";
 
 export const metadata: Metadata = {
   title: "아늑 (Aneuk) — AI 호텔 관리 시스템",
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <NetworkStatusListener />
         {children}
         <Toast />
       </body>
