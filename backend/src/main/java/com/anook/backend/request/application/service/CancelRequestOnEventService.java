@@ -12,7 +12,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+
 import java.util.Optional;
 
 /**
@@ -32,8 +32,20 @@ public class CancelRequestOnEventService {
     @EventListener
     @Transactional
     public void onGuestCancel(RequestCancelledByGuestEvent event) {
-        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}", event.getRoomNo(), event.getGuestId(), event.getDomainCode());
+        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}, targetKeyword: {}",
+                event.getRoomNo(), event.getGuestId(), event.getDomainCode(), event.getTargetKeyword());
 
+        // [Keyword Targeting] targetKeyword가 있으면 키워드 매칭으로 대상 탐색
+        if (event.getTargetKeyword() != null && !event.getTargetKeyword().isBlank()) {
+            Optional<Request> matched = findByKeyword(event.getRoomNo(), event.getGuestId(), event.getTargetKeyword());
+            if (matched.isPresent()) {
+                cancelSingleRequest(matched.get(), event.getRoomNo());
+                return;
+            }
+            log.info("[Request] 키워드 '{}' 매칭 실패 → 최신 건 폴백", event.getTargetKeyword());
+        }
+
+        // 키워드 없거나 매칭 실패 시 기존 로직 (최신 건 취소)
         Optional<Request> latestRequest;
         if (event.getDomainCode() != null && !event.getDomainCode().isBlank()) {
             latestRequest = requestPort.findLatestCancellableByRoomNoAndGuestIdAndDomainCode(event.getRoomNo(), event.getGuestId(), event.getDomainCode());
@@ -46,6 +58,18 @@ public class CancelRequestOnEventService {
         } else {
             log.info("[Request] 취소 가능한 요청이 없습니다 — room: {}", event.getRoomNo());
         }
+    }
+
+    /**
+     * [Keyword Targeting] summary에 키워드가 포함된 취소 가능 요청을 찾는다.
+     * 여러 건이 매칭되면 가장 최근 것을 반환한다.
+     */
+    private Optional<Request> findByKeyword(String roomNo, Long guestId, String keyword) {
+        java.util.List<Request> cancellable = requestPort.findAllCancellableByRoomNoAndGuestId(roomNo, guestId);
+        String lowerKeyword = keyword.toLowerCase();
+        return cancellable.stream()
+                .filter(r -> r.getSummary() != null && r.getSummary().toLowerCase().contains(lowerKeyword))
+                .findFirst(); // findAllCancellableByRoomNoAndGuestId는 최신순 정렬
     }
 
     private void cancelSingleRequest(Request request, String roomNo) {

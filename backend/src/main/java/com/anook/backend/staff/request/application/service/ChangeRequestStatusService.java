@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
+import java.util.List;
 
 @Slf4j
 @Service
@@ -162,6 +162,33 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
 
         requestRepositoryPort.save(request);
         log.info("요청 취소 반려 완료: requestId={}, staffId={}", requestId, staffId);
+
+        // [Cancel&Replace] 취소 반려 시, 변경 목적으로 생성된 PENDING 주문을 자동 취소
+        // 기존 주문이 살아있으므로 대체 주문은 더 이상 필요 없음
+        if (request.getDomainCode() != null) {
+            String deptId = request.getDomainCode().getDeptId();
+            List<Request> pendingReplacements = requestRepositoryPort
+                    .findPendingByRoomNoAndGuestIdAndDepartmentId(request.getRoomNo(), request.getGuestId(), deptId);
+
+            for (Request pending : pendingReplacements) {
+                try {
+                    pending.changeStatus(RequestStatus.CANCELLED);
+                    requestRepositoryPort.save(pending);
+                    log.info("[Cancel&Replace] 취소 반려로 인한 변경 주문 자동 취소 — id: {}, summary: {}",
+                            pending.getId(), pending.getSummary());
+
+                    RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
+                            pending.getId(),
+                            RequestStatus.CANCELLED.name(),
+                            pending.getDomainCode() != null ? pending.getDomainCode().name() : null,
+                            pending.getSummary(),
+                            pending.getRoomNo());
+                    dispatchPort.dispatchToRoom(request.getRoomNo(), cancelPayload);
+                } catch (IllegalStateException e) {
+                    log.warn("[Cancel&Replace] 변경 주문 취소 실패 — id: {}, reason: {}", pending.getId(), e.getMessage());
+                }
+            }
+        }
 
         RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRejected(
                 request.getId(),

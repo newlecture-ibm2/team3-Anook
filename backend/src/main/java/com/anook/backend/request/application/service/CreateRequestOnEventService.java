@@ -49,14 +49,79 @@ public class CreateRequestOnEventService {
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
 
+        boolean forceEscalate = false;
         // [Cancel & Replace] AI가 기존 요청을 '수정(REPLACE)'하는 문맥이라고 판단했을 때만 자동 취소
         // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
         // "수건 줘" → "물도 줘" = ADD (기존 요청 유지)
         if ("REPLACE".equalsIgnoreCase(event.getActionType())) {
-            cancelExistingPendingRequests(event.getRoomNo(), event.getGuestId(), domainCode);
+            // [Keyword Targeting] targetKeyword가 있으면 키워드 매칭으로 대상 탐색
+            java.util.Optional<Request> targetRequest = java.util.Optional.empty();
+            
+            if (event.getTargetKeyword() != null && !event.getTargetKeyword().isBlank()) {
+                List<Request> cancellable = requestRepositoryPort.findAllCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
+                String lowerKeyword = event.getTargetKeyword().toLowerCase();
+                targetRequest = cancellable.stream()
+                        .filter(r -> r.getDomainCode() == domainCode)
+                        .filter(r -> r.getSummary() != null && r.getSummary().toLowerCase().contains(lowerKeyword))
+                        .findFirst();
+                
+                if (targetRequest.isEmpty()) {
+                    log.info("[Cancel&Replace] 키워드 '{}' 매칭 실패 → 최신 건 폴백", event.getTargetKeyword());
+                }
+            }
+            
+            // 키워드 매칭 실패 시 최신 건 폴백
+            if (targetRequest.isEmpty()) {
+                targetRequest = requestRepositoryPort.findLatestCancellableByRoomNoAndGuestIdAndDomainCode(
+                        event.getRoomNo(), event.getGuestId(), domainCode.name());
+            }
+            
+            if (targetRequest.isPresent()) {
+                Request existing = targetRequest.get();
+                if (existing.getStatus() == RequestStatus.PENDING) {
+                    try {
+                        existing.changeStatus(RequestStatus.CANCELLED);
+                        requestRepositoryPort.save(existing);
+
+                        log.info("[Cancel&Replace] PENDING 요청 자동 취소 — id: {}, summary: {}, keyword: {}",
+                                existing.getId(), existing.getSummary(), event.getTargetKeyword());
+
+                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
+                                existing.getId(),
+                                RequestStatus.CANCELLED.name(),
+                                existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
+                                existing.getSummary(),
+                                existing.getRoomNo());
+                        dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
+                    } catch (Exception e) {
+                        log.warn("[Cancel&Replace] 기존 요청 자동 취소 실패: {}", e.getMessage());
+                    }
+                } else if (existing.getStatus() == RequestStatus.IN_PROGRESS) {
+                    // IN_PROGRESS 상태의 요청을 변경하려는 경우 — 취소 승인 대기 처리만 하고
+                    // 새 요청은 일반 PENDING으로 생성 (forceEscalate 하지 않음: URGENT는 직원 대시보드에서 필터링됨)
+                    try {
+                        existing.requestCancellation();
+                        requestRepositoryPort.save(existing);
+                        
+                        log.info("[Cancel&Replace] IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", existing.getId());
+                        
+                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.cancelRequestReceived(
+                                existing.getId(),
+                                existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
+                                existing.getSummary(), 
+                                existing.getRoomNo());
+                        dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
+                        if (existing.getDepartmentId() != null) {
+                            dispatchPort.dispatchToDepartment(existing.getDepartmentId(), cancelPayload);
+                        }
+                    } catch (Exception e) {
+                        log.warn("[Cancel&Replace] 기존 요청 취소 대기 실패 — id: {}, reason: {}", existing.getId(), e.getMessage());
+                    }
+                }
+            }
         }
 
-        // [AN-125] 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
+        // 무의미하게 짧은 단답("응", "네")은 숨기고 상세 내역만 표시.
         // 긴 문장일 경우에는 원문과 AI가 추출한 상세 내역을 모두 표시하여 직원의 가독성을 높임.
         String finalRawText = event.getRawText();
         String formattedEntities = formatEntities(event.getEntities());
@@ -82,7 +147,8 @@ public class CreateRequestOnEventService {
         boolean isEmergencyDetected = event.getEntities() != null
                 && event.getEntities().containsKey("emergency_category");
 
-        boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7;
+        // 에스컬레이션 조건: confidence < 0.7 이거나 event.isEscalated() 가 true인 경우, 또는 forceEscalate 가 true인 경우
+        boolean isEscalated = event.isEscalated() || event.getConfidence() < 0.7 || forceEscalate;
 
         if (isEmergencyDetected) {
             log.warn("🚨 [EMERGENCY] 긴급 상황 자동 에스컬레이션 — category: {}",
@@ -134,42 +200,7 @@ public class CreateRequestOnEventService {
         }
     }
 
-    /**
-     * [Cancel & Replace] 같은 객실+게스트+부서의 PENDING 요청을 자동 취소
-     *
-     * 고객이 "수건 2장 줘" 후 "아니 3장으로 바꿔줘"라고 하면,
-     * AI 라우터가 새 TASK(HK, 수건 3장)를 생성하는데,
-     * 이때 기존 PENDING(HK, 수건 2장) 요청을 자동 취소하여
-     * 중복 요청이 직원에게 전달되지 않도록 합니다.
-     */
-    private void cancelExistingPendingRequests(String roomNo, Long guestId, DomainCode domainCode) {
-        String deptId = domainCode.getDeptId();
-        List<Request> existingPending = requestRepositoryPort.findPendingByRoomNoAndGuestIdAndDepartmentId(roomNo,
-                guestId, deptId);
 
-        for (Request existing : existingPending) {
-            try {
-                existing.changeStatus(RequestStatus.CANCELLED);
-                requestRepositoryPort.save(existing);
-
-                log.info("[Cancel&Replace] 기존 PENDING 요청 자동 취소 — id: {}, summary: {}",
-                        existing.getId(), existing.getSummary());
-
-                // 고객 UI에 기존 카드 취소 반영
-                RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
-                        existing.getId(),
-                        RequestStatus.CANCELLED.name(),
-                        existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
-                        existing.getSummary(),
-                        existing.getRoomNo());
-                dispatchPort.dispatchToRoom(roomNo, cancelPayload);
-
-            } catch (IllegalStateException e) {
-                log.warn("[Cancel&Replace] 기존 요청 취소 실패 (이미 상태 변경됨) — id: {}, reason: {}",
-                        existing.getId(), e.getMessage());
-            }
-        }
-    }
 
     private String formatEntities(Map<String, Object> entities) {
         if (entities == null || entities.isEmpty()) return "";

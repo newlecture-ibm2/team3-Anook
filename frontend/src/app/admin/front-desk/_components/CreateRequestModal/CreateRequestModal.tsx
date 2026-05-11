@@ -6,29 +6,17 @@ import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import { CancelIcon } from '@/components/icons';
+import useCreateRequest from './useCreateRequest';
 
 interface Department {
   id: string;
   name: string;
 }
 
-interface StaffMember {
-  id: number;
-  name: string;
-  departmentId: string;
-}
-
 interface CreateRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (payload: {
-    departmentId: string;
-    roomNo: string;
-    summary: string;
-    rawText?: string;
-    priority?: string;
-  }) => Promise<boolean>;
-  loading?: boolean;
+  onSuccess?: () => void;
 }
 
 const PRIORITIES = [
@@ -41,9 +29,9 @@ const PRIORITIES = [
 export default function CreateRequestModal({
   isOpen,
   onClose,
-  onCreate,
-  loading = false,
+  onSuccess,
 }: CreateRequestModalProps) {
+  const { createRequest, loading } = useCreateRequest();
   const [departmentId, setDepartmentId] = useState('');
   const [roomNo, setRoomNo] = useState('');
   const [summary, setSummary] = useState('');
@@ -78,10 +66,12 @@ export default function CreateRequestModal({
     if (!departmentId || !roomNo || !summary) return;
     const payload: any = { departmentId, roomNo, summary, priority };
     if (rawText) payload.rawText = rawText;
-    const success = await onCreate(payload);
+    
+    const success = await createRequest(payload);
     if (success) {
       resetForm();
       onClose();
+      if (onSuccess) onSuccess();
     }
   };
 

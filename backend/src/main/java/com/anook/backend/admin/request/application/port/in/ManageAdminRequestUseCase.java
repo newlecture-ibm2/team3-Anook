@@ -82,6 +82,7 @@ public interface ManageAdminRequestUseCase {
      * 고객의 취소 요청 반려
      *
      * @param id 요청 ID
+     * @param rejectionReason 반려 사유
      */
-    void rejectCancellation(Long id);
+    void rejectCancellation(Long id, String rejectionReason);
 }

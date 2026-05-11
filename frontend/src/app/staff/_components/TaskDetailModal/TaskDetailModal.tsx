@@ -5,6 +5,7 @@ import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
 import styles from './TaskDetailModal.module.css';
 import { StaffTask } from '../../useTasks';
+import { useUiStore } from '@/stores/useUiStore';
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   const [toDepartmentId, setToDepartmentId] = useState('');
   const [transferReason, setTransferReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useUiStore();
 
   if (!isOpen || !task) return null;
 
@@ -42,17 +44,17 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
   const handleTransferSubmit = async () => {
     if (!toDepartmentId || !transferReason.trim()) {
-      alert('전달할 부서와 사유를 모두 입력해주세요.');
+      showToast('전달할 부서와 사유를 모두 입력해주세요.', 'error');
       return;
     }
     if (onTransfer) {
       setIsSubmitting(true);
       try {
         await onTransfer(task.id, task.version, toDepartmentId, transferReason);
-        alert('부서 전달이 완료되었습니다.');
+        showToast('부서 전달이 완료되었습니다.', 'success');
         handleClose();
       } catch (err) {
-        alert(err instanceof Error ? err.message : '부서 전달 중 오류가 발생했습니다.');
+        showToast(err instanceof Error ? err.message : '부서 전달 중 오류가 발생했습니다.', 'error');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -67,7 +69,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         await onAccept(task.id, task.version);
         handleClose();
       } catch (err) {
-        alert(err instanceof Error ? err.message : '요청 수락 중 오류가 발생했습니다.');
+        showToast(err instanceof Error ? err.message : '요청 수락 중 오류가 발생했습니다.', 'error');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -82,7 +84,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         await onComplete(task.id, task.version);
         handleClose();
       } catch (err) {
-        alert(err instanceof Error ? err.message : '요청 완료 중 오류가 발생했습니다.');
+        showToast(err instanceof Error ? err.message : '요청 완료 중 오류가 발생했습니다.', 'error');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -95,10 +97,10 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
       setIsSubmitting(true);
       try {
         await onApproveCancellation(task.id, task.version);
-        alert('취소가 승인되었습니다.');
+        showToast('취소가 승인되었습니다.', 'success');
         handleClose();
       } catch (err) {
-        alert(err instanceof Error ? err.message : '취소 승인 중 오류가 발생했습니다.');
+        showToast(err instanceof Error ? err.message : '취소 승인 중 오류가 발생했습니다.', 'error');
         handleClose();
       } finally {
         setIsSubmitting(false);
@@ -111,10 +113,10 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
       setIsSubmitting(true);
       try {
         await onRejectCancellation(task.id, task.version);
-        alert('취소가 반려되었습니다.');
+        showToast('취소가 반려되었습니다.', 'success');
         handleClose();
       } catch (err) {
-        alert(err instanceof Error ? err.message : '취소 반려 중 오류가 발생했습니다.');
+        showToast(err instanceof Error ? err.message : '취소 반려 중 오류가 발생했습니다.', 'error');
         handleClose();
       } finally {
         setIsSubmitting(false);
