@@ -27,6 +27,7 @@ export function useChat() {
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { t } = useTranslation();
   const setLanguage = useUiStore((state) => state.setLanguage);
@@ -78,12 +79,6 @@ export function useChat() {
               variant: 'received',
               type: 'WELCOME',
               content: t.guestChat.welcomeMessage,
-            },
-            {
-              id: 'idle-1',
-              variant: 'received',
-              type: 'QUICK_REPLY',
-              content: t.guestChat.quickReplyPrompt,
               meta: { options: t.guestChat.quickReplyOptions }
             }
           ]);
@@ -342,9 +337,13 @@ export function useChat() {
 
     const tempId = `temp-${Date.now()}`;
     const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
-    setMessages(prev => [...prev, newUserMsg]);
+    setMessages(prev => {
+      const filtered = prev.filter(m => m.type !== 'WELCOME');
+      return [...filtered, newUserMsg];
+    });
 
     setIsTyping(true);
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await fetch(`/api/chat/${roomNo}/messages`, {
@@ -353,6 +352,7 @@ export function useChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ content: text }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -372,10 +372,22 @@ export function useChat() {
         msg.id === tempId ? { ...msg, id: data.guestMessageId.toString() } : msg
       ));
 
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Message generation stopped by user');
+      } else {
+        console.error('Error sending message:', error);
+      }
       setIsTyping(false);
     }
+  };
+
+  const stopMessage = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsTyping(false);
   };
 
   // 4. Cancel Request Action
@@ -414,6 +426,7 @@ export function useChat() {
     sendMessage,
     activeRequests,
     cancelRequest,
-    confirmRequest
+    confirmRequest,
+    stopMessage
   };
 }

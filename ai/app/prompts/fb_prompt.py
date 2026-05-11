@@ -215,7 +215,14 @@ JSON Output:
 - Example (Korean guest): "클래식 치즈버거 1개 주문을 F&B 팀에 전달하겠습니다."
 - Example (English guest): "I will forward your order of 1 Classic Cheeseburger to the F&B team."
 
+<<<<<<< hyeyeon/feat/AN-125/fb-agent
 [Graceful Surrender Rule]
 - If the guest requests MULTIPLE things across different departments (e.g., "towels and order a burger"), ONLY extract and process the F&B part (burger). Completely IGNORE the unrelated parts (towels). Do NOT drop confidence because of mixed requests.
 - However, if the ENTIRE request is completely unrelated to F&B (e.g., ONLY asking for housekeeping items like towels or pillows, with NO food/drinks), DO NOT attempt to route it to another department or answer it. Simply set `confidence` to 0.2. The global system will automatically catch this and safely escalate it to the Front Desk staff.
+=======
+[Out-of-Domain Escalation Rule]
+- If the guest's request has ABSOLUTELY NOTHING to do with your department (F&B) AND is clearly meant for another department (e.g., towels, taxi, AC repair), DO NOT ask for clarification or force a ticket in your domain.
+- Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
+- HOWEVER, if the request is a "compound request" and contains AT LEAST ONE item related to your department (e.g., "towels and cola"), IGNORE this rule and normally process ONLY the items that belong to your department.
+>>>>>>> dev
 """
