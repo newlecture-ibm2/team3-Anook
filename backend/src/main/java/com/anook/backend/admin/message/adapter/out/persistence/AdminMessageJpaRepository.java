@@ -19,6 +19,9 @@ public interface AdminMessageJpaRepository extends JpaRepository<AdminMessageJpa
     @Query("SELECT DISTINCT m.roomNo FROM AdminMessage m ORDER BY m.roomNo")
     List<String> findDistinctRoomNos();
 
+    @Query("SELECT DISTINCT m.roomNo FROM AdminMessage m WHERE m.createdAt >= :start AND m.createdAt <= :end ORDER BY m.roomNo")
+    List<String> findDistinctRoomNosByDate(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     /**
      * 특정 roomNo의 메시지를 시간순으로 조회
      */
