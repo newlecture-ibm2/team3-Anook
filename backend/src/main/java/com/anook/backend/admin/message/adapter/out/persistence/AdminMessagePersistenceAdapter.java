@@ -34,6 +34,20 @@ public class AdminMessagePersistenceAdapter implements AdminMessageQueryPort {
     }
 
     @Override
+    public List<Map<String, Object>> findRoomsWithMessages(java.time.LocalDate date) {
+        java.time.LocalDateTime start = date.atStartOfDay();
+        java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
+        
+        List<String> roomNos = jpaRepository.findDistinctRoomNosByDate(start, end);
+
+        return roomNos.stream().map(roomNo -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("roomNo", roomNo);
+            return map;
+        }).toList();
+    }
+
+    @Override
     public List<Map<String, Object>> findMessagesByRoomNo(String roomNo) {
         List<AdminMessageJpaEntity> entities = jpaRepository.findByRoomNoOrderByCreatedAtAsc(roomNo);
 

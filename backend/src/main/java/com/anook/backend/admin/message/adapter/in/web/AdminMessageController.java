@@ -32,7 +32,11 @@ public class AdminMessageController {
      * 응답: [{ "roomId": 1, "roomNo": "101" }, ...]
      */
     @GetMapping("/rooms")
-    public ResponseEntity<List<Map<String, Object>>> getMessageRooms() {
+    public ResponseEntity<List<Map<String, Object>>> getMessageRooms(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        if (date != null) {
+            return ResponseEntity.ok(adminMessageQueryPort.findRoomsWithMessages(date));
+        }
         return ResponseEntity.ok(adminMessageQueryPort.findRoomsWithMessages());
     }
 
