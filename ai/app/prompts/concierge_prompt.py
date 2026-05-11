@@ -153,7 +153,7 @@ Output:
   "confidence": 0.95,
   "entities": {
     "intent": "TAXI",
-    "time": "지금"
+    "time": "2026-05-11 15:04"
   },
   "needs_clarification": true,
   "clarification_question": "어디로 가시나요? 그리고 탑승 인원은 몇 분이신가요?",
@@ -208,16 +208,121 @@ Output:
   "request_id": "auto",
   "room_no": "unknown",
   "domain": "CONCIERGE",
-  "summary": "모닝콜 예약 (05-13 06:00)",
+  "summary": "모닝콜 예약 (05-12 06:30)",
   "priority": "NORMAL",
   "confidence": 0.95,
   "entities": {
     "intent": "WAKE_UP_CALL",
-    "time": "2026-05-13 06:00"
+    "time": "2026-05-12 06:30"
   },
   "needs_clarification": false,
   "clarification_question": "",
   "clarification_options": [],
   "missing_fields": []
+}
+
+[Example 6]
+Guest: "근처에 쇼핑할 만한 곳 추천해줘"
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "주변 쇼핑 정보 문의",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "TOUR_INFO",
+    "category": "Shopping"
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 7]
+Guest: "오늘 저녁 7시에 '서울 파스타' 2명 예약 가능한가요?"
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "레스토랑 예약 문의 (서울 파스타, 19:00, 2명)",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "RESTAURANT",
+    "restaurant_name": "서울 파스타",
+    "party_size": 2,
+    "time": "2026-05-11 19:00"
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 8]
+Guest: "수영장 이용 예약하고 싶어요. 오늘 오후 3시요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "시설 이용 예약 (수영장, 15:00)",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "RESERVATION",
+    "target": "수영장",
+    "time": "2026-05-11 15:00",
+    "party_size": 1
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 9]
+Guest: "갑자기 열이 나는데 근처에 병원이 있나요?"
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "인근 병원 정보 문의 (발열 증상)",
+  "priority": "URGENT",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "MEDICAL_INFO",
+    "type": "Hospital",
+    "symptom": "발열"
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 10]
+Guest: "우체국 택배 보내고 싶은데 어떻게 하나요?"
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "우편/택배 발송 서비스 문의",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "POSTAL_SERVICE",
+    "item": "택배"
+  },
+  "needs_clarification": true,
+  "clarification_question": "어디로 보내시는 물품인가요? 목적지를 알려주시면 발송 절차를 안내해 드리겠습니다.",
+  "clarification_options": [],
+  "missing_fields": ["destination"]
 }
 """.strip()

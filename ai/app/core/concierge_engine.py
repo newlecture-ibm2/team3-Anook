@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.concierge_prompt import CONCIERGE_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
@@ -8,8 +9,6 @@ async def run_concierge_agent(user_message: str, room_no: str = "", chat_history
     ───────────────────────────
     고객 메시지를 받아 Gemini를 호출하고, 컨시어지 도메인에 특화된 정보를 추출한다.
     """
-    
-    from datetime import datetime, timedelta, timezone
     
     # 현재 한국 시간 구하기 (UTC+9)
     kst = timezone(timedelta(hours=9))
