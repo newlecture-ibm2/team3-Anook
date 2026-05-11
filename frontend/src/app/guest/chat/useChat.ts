@@ -27,6 +27,7 @@ export function useChat() {
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { t } = useTranslation();
   const setLanguage = useUiStore((state) => state.setLanguage);
@@ -78,12 +79,6 @@ export function useChat() {
               variant: 'received',
               type: 'WELCOME',
               content: t.guestChat.welcomeMessage,
-            },
-            {
-              id: 'idle-1',
-              variant: 'received',
-              type: 'QUICK_REPLY',
-              content: t.guestChat.quickReplyPrompt,
               meta: { options: t.guestChat.quickReplyOptions }
             }
           ]);
@@ -289,11 +284,13 @@ export function useChat() {
                 setMessages(prev => {
                   const msgId = `system-cancel-reject-${payload.requestId}`;
                   if (prev.some(m => m.id === msgId)) return prev;
+                  const content = '안내: 이미 업무가 진행 중이라 취소/변경이 어렵습니다. 기존 요청대로 진행됩니다. 추가로 필요하신 부분이 있다면 언제든 말씀해 주세요!';
+
                   return [...prev, {
                     id: msgId,
                     variant: 'received',
                     type: 'TEXT',
-                    content: '안내: 직원이 이미 해당 위치로 출발하여 취소가 반려되었습니다. 예정대로 서비스가 진행됩니다.',
+                    content,
                   }];
                 });
               }
@@ -340,9 +337,13 @@ export function useChat() {
 
     const tempId = `temp-${Date.now()}`;
     const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
-    setMessages(prev => [...prev, newUserMsg]);
+    setMessages(prev => {
+      const filtered = prev.filter(m => m.type !== 'WELCOME');
+      return [...filtered, newUserMsg];
+    });
 
     setIsTyping(true);
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await fetch(`/api/chat/${roomNo}/messages`, {
@@ -351,6 +352,7 @@ export function useChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ content: text }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -370,10 +372,22 @@ export function useChat() {
         msg.id === tempId ? { ...msg, id: data.guestMessageId.toString() } : msg
       ));
 
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Message generation stopped by user');
+      } else {
+        console.error('Error sending message:', error);
+      }
       setIsTyping(false);
     }
+  };
+
+  const stopMessage = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsTyping(false);
   };
 
   // 4. Cancel Request Action
@@ -412,6 +426,7 @@ export function useChat() {
     sendMessage,
     activeRequests,
     cancelRequest,
-    confirmRequest
+    confirmRequest,
+    stopMessage
   };
 }

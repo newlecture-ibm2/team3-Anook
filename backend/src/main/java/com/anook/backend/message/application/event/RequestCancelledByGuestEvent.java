@@ -13,11 +13,14 @@ public class RequestCancelledByGuestEvent extends ApplicationEvent {
     private final String roomNo;
     private final Long guestId;
     private final String domainCode;
+    /** [Keyword Targeting] 취소 대상 아이템 키워드 (예: "콜라"). 미지정 시 null → 최신 건 취소 */
+    private final String targetKeyword;
 
-    public RequestCancelledByGuestEvent(Object source, String roomNo, Long guestId, String domainCode) {
+    public RequestCancelledByGuestEvent(Object source, String roomNo, Long guestId, String domainCode, String targetKeyword) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
         this.domainCode = domainCode;
+        this.targetKeyword = targetKeyword;
     }
 }

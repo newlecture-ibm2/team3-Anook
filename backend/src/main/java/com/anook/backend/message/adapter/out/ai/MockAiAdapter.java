@@ -45,6 +45,7 @@ public class MockAiAdapter implements MessageAiPort {
                     0.92,
                     null,
                     "ADD",
+                    null,
                     null
             ));
         }
@@ -59,6 +60,7 @@ public class MockAiAdapter implements MessageAiPort {
                     0.88,
                     null,
                     "ADD",
+                    null,
                     null
             ));
         }
@@ -73,6 +75,7 @@ public class MockAiAdapter implements MessageAiPort {
                     0.85,
                     null,
                     "ADD",
+                    null,
                     null
             ));
         }
@@ -81,7 +84,7 @@ public class MockAiAdapter implements MessageAiPort {
         return java.util.List.of(new MessageAiResult(
                 "안녕하세요! 아눅 호텔 컨시어지입니다. 무엇이든 편하게 말씀해 주세요.",
                 null,
-                null, null, Map.of(), 0.0, null, "ADD", null
+                null, null, Map.of(), 0.0, null, "ADD", null, null
         ));
     }
 

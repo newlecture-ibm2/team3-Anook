@@ -92,7 +92,8 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
    - Set "needs_clarification": true
    - "clarification_question": A polite question.
    - "clarification_options": 3-4 specific choices for the guest to pick.
-3. OUTPUT LANGUAGE: summary and description MUST be in KOREAN.
+3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
+4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT JSON STRUCTURE
@@ -112,5 +113,115 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "clarification_question": "string (in guest's language)",
   "clarification_options": ["option1", "option2"],
   "missing_fields": ["field_name"]
+}
+
+[Out-of-Domain Escalation Rule]
+- If the guest's request has ABSOLUTELY NOTHING to do with your department (Concierge) AND is clearly meant for another department (e.g., room service food, towels, AC repair), DO NOT ask for clarification or force a ticket in your domain.
+- Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
+- HOWEVER, if the request is a "compound request" and contains AT LEAST ONE item related to your department (e.g., "towels and call a taxi"), IGNORE this rule and normally process ONLY the items that belong to your department.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[Example 1]
+Guest: "내일 아침 8시에 서울역 가는 택시 예약해주세요. 2명 탈 거에요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "택시 예약 (05-13 08:00, 서울역, 2명)",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "TAXI",
+    "destination": "서울역",
+    "time": "2026-05-13 08:00",
+    "passenger_count": 2
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 2]
+Guest: "지금 택시 좀 불러주세요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "택시 호출 목적지 및 인원 확인 중",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "TAXI",
+    "time": "지금"
+  },
+  "needs_clarification": true,
+  "clarification_question": "어디로 가시나요? 그리고 탑승 인원은 몇 분이신가요?",
+  "clarification_options": [],
+  "missing_fields": ["destination", "passenger_count"]
+}
+
+[Example 3]
+Guest: "체크아웃하고 짐 좀 맡길게요. 3개요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "짐 보관 요청 (3개)",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "LUGGAGE_STORAGE",
+    "action": "store",
+    "count": 3
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
+}
+
+[Example 4]
+Guest: "배달 시켰는데, 로비에 도착하면 객실로 좀 올려주세요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "배달 음식 객실 전달 요청 확인 중",
+  "priority": "NORMAL",
+  "confidence": 0.9,
+  "entities": {
+    "intent": "DELIVERY"
+  },
+  "needs_clarification": true,
+  "clarification_question": "어떤 배달 음식(또는 물품)인지, 그리고 주문하신 식당(또는 플랫폼) 이름을 알려주시면 도착 시 바로 객실로 안내해 드리겠습니다.",
+  "clarification_options": [],
+  "missing_fields": ["item", "store_name"]
+}
+
+[Example 5]
+Guest: "내일 오전 6시에 모닝콜 부탁해요."
+Output:
+{
+  "request_id": "auto",
+  "room_no": "unknown",
+  "domain": "CONCIERGE",
+  "summary": "모닝콜 예약 (05-13 06:00)",
+  "priority": "NORMAL",
+  "confidence": 0.95,
+  "entities": {
+    "intent": "WAKE_UP_CALL",
+    "time": "2026-05-13 06:00"
+  },
+  "needs_clarification": false,
+  "clarification_question": "",
+  "clarification_options": [],
+  "missing_fields": []
 }
 """.strip()

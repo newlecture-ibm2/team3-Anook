@@ -32,9 +32,7 @@ export default function ProgressIndicator({ domains = [] }: ProgressIndicatorPro
   return (
     <ChatBubble variant="received">
       <div className={styles.content}>
-        <div className={styles.iconWrapper}>
-          <SparklesIcon />
-        </div>
+
         <span className={styles.description}>{getLabelText()}</span>
       </div>
     </ChatBubble>

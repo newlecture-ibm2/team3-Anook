@@ -39,11 +39,14 @@ services:
       - POSTGRES_USER=anook_user
       - POSTGRES_PASSWORD=anook2026
       - POSTGRES_HOST=db
+      - BACKEND_URL=http://host.docker.internal:8080
     volumes:
       - ./ai:/app # 파이썬 코드 수정 시 즉시 반영 (Hot Reload)
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   local-db-data:

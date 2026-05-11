@@ -125,8 +125,11 @@ public class AdminRequestController {
      * PATCH /admin/requests/{id}/cancellation/reject
      */
     @PatchMapping("/{id}/cancellation/reject")
-    public ResponseEntity<Void> rejectCancellation(@PathVariable Long id) {
-        manageAdminRequestUseCase.rejectCancellation(id);
+    public ResponseEntity<Void> rejectCancellation(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("rejectionReason") : null;
+        manageAdminRequestUseCase.rejectCancellation(id, reason);
         return ResponseEntity.noContent().build();
     }
 

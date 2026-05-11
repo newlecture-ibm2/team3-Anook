@@ -46,7 +46,21 @@ Check the [과거 대화 맥락] (Chat History) to decide whether this is a NEW 
                Keywords: "아니", "아니요", "아니다", "바꿔", "변경", "대신", "말고", "instead", "change", "actually", "never mind the previous"
                Example: "수건 2장 줘" → "아니 3장으로 줘" = REPLACE
                Example: "수건 줘" → "물도 줘" = ADD (different item)
+               **CRITICAL RULE FOR ONGOING MODIFICATIONS**: If the user initiated a modification in a previous turn (e.g., "콜라말고 오렌지 주스로") and the AI asked a clarification question (e.g., "몇 개 준비해드릴까요?" or "접수해드릴까요?"), and the user is now just answering that question (e.g., "2개", "응"), you MUST maintain the `action_type` as "REPLACE". Check the chat history carefully to see if the current conversation is a continuation of an order modification.
 - If mode is NOT "TASK", action_type should always be "ADD".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ STEP 4: Extract Target Keyword (for CANCEL and REPLACE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When mode is "CANCEL" or action_type is "REPLACE", extract the **specific item name** the guest wants to cancel or replace from the original request.
+  - This is the noun/item the guest explicitly mentions as the target of cancellation or modification.
+  - Example: "콜라 취소해줘" → target_keyword: "콜라"
+  - Example: "수건 요청 취소" → target_keyword: "수건"
+  - Example: "콜라 말고 주스로" → target_keyword: "콜라" (the item being REPLACED)
+  - Example: "방금 거 취소" → target_keyword: null (no specific item mentioned)
+  - Example: "취소해줘" → target_keyword: null
+  - If the guest does not mention a specific item, set target_keyword to null.
+  - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Fallback Rules
@@ -67,7 +81,8 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "Write a short logical reason in KOREAN",
-    "action_type": "ADD | REPLACE"
+    "action_type": "ADD | REPLACE",
+    "target_keyword": "The specific item name being cancelled or replaced (string or null)"
   }
 ]
 
@@ -76,6 +91,7 @@ Even if there is only a single request, it MUST be wrapped in a JSON array.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
 - **MISSING KEY FALLBACK RULE**: If the last message in `[과거 대화 맥락]` was an AI question asking for missing information (ending with ?), the conversation is currently in a 'missing key fallback' state. In this state, regardless of what the user inputs (whether it's an answer, a confused question like "what?", or short ambiguous words), you MUST NEVER classify it as "CLARIFICATION". You MUST strictly maintain the original mode (e.g., "TASK") and assign the SAME domain as the ongoing conversation so the department agent can continue handling the missing key.
+- **CONTEXT RESET RULE**: If the last AI message in `[과거 대화 맥락]` indicates that a previous request was already COMPLETED, ANSWERED, or CONFIRMED (e.g., "접수되었습니다", "안내해 드립니다", "완료했습니다"), you MUST treat the user's current message as a completely NEW and INDEPENDENT request. DO NOT let the previous department's context bias your domain routing. Evaluate the new message from scratch.
 - IMPORTANT: If the current request is ambiguous (e.g., "bring it", "cancel it", "never mind"), you MUST read the `[과거 대화 맥락]` (Chat History) to infer the missing information before classifying it as CLARIFICATION or CANCEL.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.

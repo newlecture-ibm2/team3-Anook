@@ -6,30 +6,35 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import styles from './RejectEscalationModal.module.css';
 
+import useRejectEscalation from './useRejectEscalation';
+
 export interface RejectEscalationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onReject: (reason: string) => Promise<boolean>;
-  loading?: boolean;
+  requestId: number;
+  onSuccess?: () => void;
 }
 
 export default function RejectEscalationModal({
   isOpen,
   onClose,
-  onReject,
-  loading = false,
+  requestId,
+  onSuccess,
 }: RejectEscalationModalProps) {
   const [reason, setReason] = useState('');
-  const [saving, setSaving] = useState(false);
+  const { rejectEscalation, loading } = useRejectEscalation();
 
   const handleReject = async () => {
     if (!reason.trim()) {
       alert('고객에게 안내할 반려 사유를 입력해주세요.');
       return;
     }
-    setSaving(true);
-    await onReject(reason);
-    setSaving(false);
+    const success = await rejectEscalation(requestId, reason);
+    if (success) {
+      setReason('');
+      onClose();
+      if (onSuccess) onSuccess();
+    }
   };
 
   return (
@@ -48,17 +53,17 @@ export default function RejectEscalationModal({
             className={styles.textarea}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            disabled={saving || loading}
+            disabled={loading}
             placeholder="예: 죄송합니다. 현재 하우스키핑 부서의 재고가 모두 소진되어..."
             rows={5}
           />
         </div>
 
         <div className={styles.buttonGroup}>
-          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={saving || loading}>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
             아니오
           </Button>
-          <Button variant="danger" style={{ flex: 1 }} onClick={handleReject} disabled={saving || loading}>
+          <Button variant="danger" style={{ flex: 1 }} onClick={handleReject} disabled={loading}>
             반려 및 전송
           </Button>
         </div>

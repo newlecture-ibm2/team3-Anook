@@ -6,6 +6,8 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import styles from './ApproveEscalationModal.module.css';
 
+import useApproveEscalation from './useApproveEscalation';
+
 interface Department {
   id: string;
   name: string;
@@ -14,20 +16,20 @@ interface Department {
 export interface ApproveEscalationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApprove: (departmentId: string, priority: string) => Promise<boolean>;
-  loading?: boolean;
+  requestId: number;
+  onSuccess?: () => void;
 }
 
 export default function ApproveEscalationModal({
   isOpen,
   onClose,
-  onApprove,
-  loading = false,
+  requestId,
+  onSuccess,
 }: ApproveEscalationModalProps) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('URGENT');
-  const [saving, setSaving] = useState(false);
+  const { approveEscalation, loading } = useApproveEscalation();
 
   useEffect(() => {
     if (isOpen) {
@@ -43,9 +45,11 @@ export default function ApproveEscalationModal({
 
   const handleApprove = async () => {
     if (!selectedDept || !selectedPriority) return;
-    setSaving(true);
-    await onApprove(selectedDept, selectedPriority);
-    setSaving(false);
+    const success = await approveEscalation(requestId, selectedDept, selectedPriority);
+    if (success) {
+      onClose();
+      if (onSuccess) onSuccess();
+    }
   };
 
   return (
@@ -62,7 +66,7 @@ export default function ApproveEscalationModal({
             className={styles.select}
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value)}
-            disabled={saving || loading}
+            disabled={loading}
           >
             {departments.map(dept => (
               <option key={dept.id} value={dept.id}>{dept.name}</option>
@@ -76,7 +80,7 @@ export default function ApproveEscalationModal({
             className={styles.select}
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            disabled={saving || loading}
+            disabled={loading}
           >
             <option value="LOW">낮음 (LOW)</option>
             <option value="NORMAL">보통 (NORMAL)</option>
@@ -86,10 +90,10 @@ export default function ApproveEscalationModal({
         </div>
 
         <div className={styles.buttonGroup}>
-          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={saving || loading}>
+          <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
             아니오
           </Button>
-          <Button variant="primary" style={{ flex: 1 }} onClick={handleApprove} disabled={saving || loading}>
+          <Button variant="primary" style={{ flex: 1 }} onClick={handleApprove} disabled={loading}>
             승인하기
           </Button>
         </div>
