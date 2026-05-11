@@ -113,4 +113,9 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "clarification_options": ["option1", "option2"],
   "missing_fields": ["field_name"]
 }
+
+[Out-of-Domain Escalation Rule]
+- If the guest's request has ABSOLUTELY NOTHING to do with your department (Concierge) AND is clearly meant for another department (e.g., room service food, towels, AC repair), DO NOT ask for clarification or force a ticket in your domain.
+- Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
+- HOWEVER, if the request is a "compound request" and contains AT LEAST ONE item related to your department (e.g., "towels and call a taxi"), IGNORE this rule and normally process ONLY the items that belong to your department.
 """.strip()

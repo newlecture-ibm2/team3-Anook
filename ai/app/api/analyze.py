@@ -93,6 +93,10 @@ STATIC_REPLIES = {
     "COMPLAINT": {
         "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
         "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution."
+    },
+    "FALLBACK_FAILURE": {
+        "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
+        "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'."
     }
 }
 
@@ -188,8 +192,12 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
             }
             
             current_keywords = []
-            for field in current_missing:
-                current_keywords.extend(keyword_map.get(field, []))
+            if current_missing:
+                for field in current_missing:
+                    current_keywords.extend(keyword_map.get(field, []))
+            else:
+                # 라우터 CLARIFICATION인 경우, 이전 AI 응답도 일반 되묻기 멘트였는지 확인
+                current_keywords = ["어떤 말씀이신지", "자세히", "알려주시겠어요", "도와드릴까요", "tell me a bit more", "clarify"]
             
             for msg in reversed(request.chat_history):
                 role = msg.get("role")
@@ -221,11 +229,11 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
 
             if should_escalate:
                 response = {
-                    "guest_reply": _get_static_reply("ESCALATION", request.language),
-                    "summary": "추가 확인 실패 (강제 이관)",
-                    "domain_code": "FRONT",
+                    "guest_reply": _get_static_reply("FALLBACK_FAILURE", request.language),
+                    "summary": "요청 처리 실패 (접수 불가)",
+                    "domain_code": None,
                     "priority": "NORMAL",
-                    "entities": {"intent": "ESCALATION"},
+                    "entities": {},
                     "confidence": 0.0,
                 }
         
@@ -693,12 +701,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_guest_reply = agent_result.get("guest_reply", "요청을 접수하였습니다.")
             final_summary = agent_result.get("summary", f"{domain} 요청")
 
-            # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
-            if agent_confidence < 0.4:
-                final_domain_code = "FRONT"
-                final_entities["intent"] = "ESCALATION"
-                if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
-                    final_guest_reply = _get_static_reply("ESCALATION", request.language)
+            # (이전의 글로벌 이관 로직은 삭제됨: 잘못된 배정은 직원이 수동 이관함)
 
             # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
             if agent_result.get("missing_fields"):
