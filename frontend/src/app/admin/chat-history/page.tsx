@@ -13,38 +13,8 @@ import { useTranslation } from '@/app/useTranslation';
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [inputText, setInputText] = useState('');
-  const [targetLang, setTargetLang] = useState('en');
-  const [isSending, setIsSending] = useState(false);
-  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages } = useChatHistory();
+  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages, fetchRooms } = useChatHistory();
   const { t } = useTranslation();
-
-  const handleSend = async () => {
-    if (!inputText.trim() || !selectedRoom) return;
-    setIsSending(true);
-    try {
-      const res = await fetch('/api/staff/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomNo: selectedRoom,
-          content: inputText,
-          targetLanguage: targetLang,
-        }),
-      });
-      if (res.ok) {
-        setInputText('');
-        fetchMessages(selectedRoom);
-      } else {
-        alert(t.adminPage.chatHistory.sendFail);
-      }
-    } catch (e) {
-      console.error(e);
-      alert(t.common.error);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   // API 데이터를 ChatHistory 컴포넌트 형식으로 매핑
   const chatRooms: ChatHistoryData[] = rooms.map(r => ({
@@ -52,6 +22,16 @@ export default function ChatHistoryPage() {
     roomNumber: r.roomNo,
     statusText: r.lastMessage ? t.adminPage.chatHistory.activeChat : t.adminPage.chatHistory.archived,
   }));
+
+  const [targetDate, setTargetDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+
+  // targetDate가 변경될 때마다 방 목록 새로고침
+  React.useEffect(() => {
+    fetchRooms(targetDate);
+  }, [targetDate, fetchRooms]);
 
   return (
     <div className={styles.container}>
@@ -61,6 +41,12 @@ export default function ChatHistoryPage() {
           <h1 className={styles.title}>{t.adminPage.chatHistory.title}</h1>
         </div>
         <div className={styles.headerActions}>
+          <input 
+            type="date" 
+            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+          />
           <InputField
             variant="search"
             placeholder={t.adminPage.chatHistory.searchPlaceholder}
@@ -137,35 +123,6 @@ export default function ChatHistoryPage() {
             )}
           </div>
 
-          {/* Chat Input Area */}
-          {selectedRoom && (
-            <div className={styles.chatInputContainer} style={{ padding: '20px', borderTop: '1px solid var(--color-gray-200)', display: 'flex', gap: '10px' }}>
-              <select
-                value={targetLang}
-                onChange={(e) => setTargetLang(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
-              >
-                <option value="en">🇺🇸 영어</option>
-                <option value="ko">🇰🇷 한국어</option>
-              </select>
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder={t.adminPage.chatHistory.sendPlaceholder}
-                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--color-gray-300)' }}
-                disabled={isSending}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isSending || !inputText.trim()}
-                style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer' }}
-              >
-                {isSending ? t.adminPage.chatHistory.sending : t.adminPage.chatHistory.send}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

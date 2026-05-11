@@ -23,26 +23,31 @@ export default function useChatHistory() {
   const [error, setError] = useState<string | null>(null);
 
   // 객실 목록 가져오기
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        setLoadingRooms(true);
-        const res = await fetch('/api/admin/messages/rooms');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: ChatRoom[] = await res.json();
-        setRooms(data);
-        // 첫 번째 객실 자동 선택
-        if (data.length > 0 && !selectedRoom) {
-          setSelectedRoom(data[0].roomNo);
-        }
-      } catch (err: any) {
-        setError(err.message || '객실 목록 로딩 실패');
-      } finally {
-        setLoadingRooms(false);
+  const fetchRooms = useCallback(async (date?: string) => {
+    try {
+      setLoadingRooms(true);
+      const url = date ? `/api/admin/messages/rooms?date=${date}` : '/api/admin/messages/rooms';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: ChatRoom[] = await res.json();
+      setRooms(data);
+      // 첫 번째 객실 자동 선택
+      if (data.length > 0 && !selectedRoom) {
+        setSelectedRoom(data[0].roomNo);
+      } else if (data.length === 0) {
+        setSelectedRoom(null);
       }
-    };
+    } catch (err: any) {
+      setError(err.message || '객실 목록 로딩 실패');
+      setRooms([]);
+    } finally {
+      setLoadingRooms(false);
+    }
+  }, [selectedRoom]);
+
+  useEffect(() => {
     fetchRooms();
-  }, []);
+  }, [fetchRooms]);
 
   // 선택된 객실의 메시지 가져오기
   const fetchMessages = useCallback(async (roomNo: string) => {
@@ -73,6 +78,6 @@ export default function useChatHistory() {
   return {
     rooms, messages, selectedRoom,
     loadingRooms, loadingMessages, error,
-    selectRoom, fetchMessages,
+    selectRoom, fetchMessages, fetchRooms,
   };
 }
