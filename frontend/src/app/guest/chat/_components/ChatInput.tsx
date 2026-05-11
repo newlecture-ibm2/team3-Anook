@@ -21,7 +21,7 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
   }, [isFocused, value, onUserTyping]);
 
   const handleSend = () => {
-    if (value.trim() && onSend) {
+    if (value.trim() && onSend && !isTyping) {
       onSend(value);
       setValue('');
     }

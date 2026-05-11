@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button/Button';
 import styles from './TaskDetailModal.module.css';
 import { StaffTask } from '../../useTasks';
 import { useUiStore } from '@/stores/useUiStore';
+import { useNetworkStore } from '@/stores/useNetworkStore';
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   const [transferReason, setTransferReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useUiStore();
+  const isOnline = useNetworkStore((state) => state.isOnline);
 
   if (!isOpen || !task) return null;
 
@@ -263,7 +265,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 </div>
                 <div className={styles.transferActions}>
                   <Button variant="outlined" onClick={() => setShowTransferForm(false)} disabled={isSubmitting}>취소</Button>
-                  <Button variant="primary" onClick={handleTransferSubmit} disabled={isSubmitting}>전달하기</Button>
+                  <Button variant="primary" onClick={handleTransferSubmit} disabled={isSubmitting || !isOnline} title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}>전달하기</Button>
                 </div>
               </div>
             )}
@@ -277,7 +279,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     variant="outlined"
                     onClick={() => setShowTransferForm(true)}
                     className={styles.actionButton}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isOnline}
+                    title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                   >
                     부서 전달
                   </Button>
@@ -285,7 +288,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     variant="primary"
                     onClick={handleAccept}
                     className={styles.actionButton}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isOnline}
+                    title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                   >
                     업무 수락
                   </Button>
@@ -297,7 +301,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                   variant="primary"
                   onClick={handleComplete}
                   className={styles.actionButton}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isOnline}
+                  title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                 >
                   업무 완료
                 </Button>
@@ -309,7 +314,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     variant="outlined"
                     onClick={handleRejectCancellation}
                     className={styles.actionButton}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isOnline}
+                    title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                   >
                     취소 반려
                   </Button>
@@ -317,7 +323,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     variant="primary"
                     onClick={handleApproveCancellation}
                     className={styles.actionButton}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isOnline}
+                    title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                   >
                     취소 승인
                   </Button>
