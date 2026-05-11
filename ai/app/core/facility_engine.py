@@ -65,5 +65,6 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
-        "clarification_options": result.clarification_options,
+        "missing_fields": result.missing_fields,
+        "clarification_options": getattr(result, "clarification_options", []),
     }

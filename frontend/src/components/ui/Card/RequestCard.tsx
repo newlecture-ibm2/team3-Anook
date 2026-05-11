@@ -18,6 +18,10 @@ export interface RequestCardProps {
   onSecondaryAction?: () => void;
   onCardClick?: () => void;
   variant?: 'default' | 'warning';
+  requestId?: number;
+  status?: string;
+  onStatusChange?: (id: number, newStatus: string) => Promise<void>;
+  reverseActions?: boolean;
 }
 
 export default function RequestCard({
@@ -33,13 +37,17 @@ export default function RequestCard({
   onPrimaryAction,
   onSecondaryAction,
   onCardClick,
-  variant = 'default'
+  variant = 'default',
+  requestId,
+  status,
+  onStatusChange,
+  reverseActions
 }: RequestCardProps) {
   const isWarning = variant === 'warning';
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handlePrimaryClick = () => {
-    if (primaryActionText === '상담 시작') {
+    if (primaryActionText === '상담 시작' || primaryActionText === '상담 기록 보기') {
       setIsChatOpen(true);
     }
     if (onPrimaryAction) {
@@ -70,7 +78,11 @@ export default function RequestCard({
           {description && <p className={styles.description}>{description}</p>}
         </div>
 
-        <div className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div 
+          className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''} ${(!primaryActionText || !secondaryActionText) ? styles.actionSectionSingle : ''}`} 
+          style={reverseActions ? { flexDirection: 'column-reverse' } : undefined}
+          onClick={(e) => e.stopPropagation()}
+        >
           {primaryActionText && (
             <Button variant="primary" className={styles.actionButton} onClick={handlePrimaryClick}>
               {primaryActionText}
@@ -88,6 +100,9 @@ export default function RequestCard({
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 
         roomNumber={roomNumber.toString()} 
+        requestId={requestId}
+        status={status}
+        onStatusChange={onStatusChange}
       />
     </>
   );

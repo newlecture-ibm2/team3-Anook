@@ -63,6 +63,11 @@ public interface AdminRequestQueryPort {
     void escalate(Long requestId, String departmentId, String priority);
 
     /**
+     * 상태 변경 (프론트데스크 상담 라이프사이클 처리용)
+     */
+    void updateStatus(Long requestId, String status);
+
+    /**
      * 에스컬레이션 대상 목록 (ESCALATED 상태)
      */
     List<AdminRequest> findEscalations();

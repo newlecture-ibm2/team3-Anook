@@ -131,6 +131,7 @@
       },
       "sections": {
         "unhandled": "Unhandled / Exception Requests",
+        "inProgress": "Requests In Progress",
         "escalation": "Requests Pending Approval"
       },
       "empty": "No requests found.",
@@ -165,6 +166,29 @@
       "sending": "Sending...",
       "send": "Send",
       "sendFail": "Failed to send message."
+    }
+  },
+  "guestChat": {
+    "welcomeMessage": "Hello! I am the Grand Hotel Smart Assistant. 🏨\nI'll help make your stay as comfortable as possible.",
+    "quickReplyPrompt": "How can I help you? Choose an option below or type your request!",
+    "quickReplyOptions": [
+      "🛏️ Please bring more towels",
+      "🍳 What time is breakfast?",
+      "🧹 Please clean my room",
+      "🔑 Is late checkout possible?"
+    ],
+    "progress": {
+      "checking": "Checking your request...",
+      "forwardingPrefix": "Forwarding to the ",
+      "forwardingSuffix": " team...",
+      "domains": {
+        "HK": "Housekeeping",
+        "FB": "Room Service",
+        "FACILITY": "Facility",
+        "CONCIERGE": "Concierge",
+        "FRONT": "Front Desk",
+        "EMERGENCY": "Emergency"
+      }
     }
   }
 }

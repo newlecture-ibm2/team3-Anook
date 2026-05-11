@@ -131,6 +131,7 @@
       },
       "sections": {
         "unhandled": "미처리 / 예외 요청",
+        "inProgress": "처리 중인 요청",
         "escalation": "승인 대기 요청"
       },
       "empty": "요청이 없습니다.",
@@ -165,6 +166,29 @@
       "sending": "전송중...",
       "send": "전송",
       "sendFail": "메시지 전송에 실패했습니다."
+    }
+  },
+  "guestChat": {
+    "welcomeMessage": "안녕하세요! 그랜드 호텔 스마트 도우미입니다. 🏨\n머무시는 동안 편안한 휴식이 될 수 있도록 도와드릴게요.",
+    "quickReplyPrompt": "무엇을 도와드릴까요? 아래에서 선택하시거나 직접 말씀해 주세요!",
+    "quickReplyOptions": [
+      "🛏️ 수건을 더 가져다주세요",
+      "🍳 조식 시간을 알려주세요",
+      "🧹 방 청소를 부탁해요",
+      "🔑 레이트 체크아웃이 가능한가요?"
+    ],
+    "progress": {
+      "checking": "요청하신 내용을 확인하고 있습니다...",
+      "forwardingPrefix": "",
+      "forwardingSuffix": " 팀에 내용을 전달하고 있습니다...",
+      "domains": {
+        "HK": "하우스키핑",
+        "FB": "룸서비스",
+        "FACILITY": "시설관리",
+        "CONCIERGE": "컨시어지",
+        "FRONT": "프론트데스크",
+        "EMERGENCY": "긴급 대응"
+      }
     }
   }
 }

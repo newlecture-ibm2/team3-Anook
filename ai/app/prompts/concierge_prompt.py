@@ -90,7 +90,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 1. BE HUMBLE: If the request is unrelated to Concierge or nonsensical, set "confidence" < 0.4.
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
-   - "clarification_question": A polite question in Korean.
+   - "clarification_question": A polite question.
    - "clarification_options": 3-4 specific choices for the guest to pick.
 3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
 4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
@@ -110,7 +110,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
     ... (other intent-specific fields)
   },
   "needs_clarification": boolean,
-  "clarification_question": "string (Korean)",
+  "clarification_question": "string (in guest's language)",
   "clarification_options": ["option1", "option2"],
   "missing_fields": ["field_name"]
 }

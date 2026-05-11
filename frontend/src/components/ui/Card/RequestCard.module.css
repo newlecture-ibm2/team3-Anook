@@ -82,6 +82,11 @@
   align-self: flex-end;
 }
 
+.actionSectionSingle {
+  align-self: stretch;
+  justify-content: flex-end;
+}
+
 .roomBoxWarning {
   background: var(--color-error);
   border-color: var(--color-error);
