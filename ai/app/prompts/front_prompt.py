@@ -32,8 +32,8 @@ RULES:
 - If the guest's request is ambiguous and you are unsure which department should handle it (Confidence between 0.4 and 0.7):
   1. Set `intent` to "AMBIGUOUS".
   2. Set `needs_clarification` to true.
-  3. Set `clarification_question` to a polite, direct question in the SAME LANGUAGE as the guest's input asking the guest to clarify their request.
-  4. Set `clarification_options` to a list of 2-3 concise, clickable options (Pill Tabs) for the guest to choose from, translated into the SAME LANGUAGE as the guest's input.
+  3. Set `clarification_question` to a polite, direct question asking the guest to clarify their request.
+  4. Set `clarification_options` to a list of 2-3 concise, clickable options (Pill Tabs) for the guest to choose from.
 
 [AN-198: Fallback Escalation Rule]
 - If the request is completely out of scope, a severe complaint, explicitly asks for a human staff, or if confidence is extremely low (< 0.4):
