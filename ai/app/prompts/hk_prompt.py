@@ -67,4 +67,9 @@ JSON Output:
     "final_reply": "I apologize for the inconvenience. I will immediately forward your request for wine stain cleaning to the Housekeeping team.",
     "missing_fields": []
 }
+
+[Out-of-Domain Escalation Rule]
+- If the guest's request has ABSOLUTELY NOTHING to do with your department (Housekeeping) AND is clearly meant for another department (e.g., ordering food, booking a taxi), DO NOT ask for clarification or force a ticket in your domain.
+- Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
+- HOWEVER, if the request is a "compound request" and contains AT LEAST ONE item related to your department (e.g., "towels and cola"), IGNORE this rule and normally process ONLY the items that belong to your department.
 """

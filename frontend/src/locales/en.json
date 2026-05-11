@@ -169,13 +169,13 @@
     }
   },
   "guestChat": {
-    "welcomeMessage": "Hello! I am the Grand Hotel Smart Assistant. 🏨\nI'll help make your stay as comfortable as possible.",
+    "welcomeMessage": "Hello! I am the Hotel AI Assistant.\nI will help you have a comfortable stay.\nPlease let me know whatever you need!",
     "quickReplyPrompt": "How can I help you? Choose an option below or type your request!",
     "quickReplyOptions": [
-      "🛏️ Please bring more towels",
-      "🍳 What time is breakfast?",
-      "🧹 Please clean my room",
-      "🔑 Is late checkout possible?"
+      "🛏️ Extra towels",
+      "🍳 Breakfast time",
+      "🧹 Room cleaning",
+      "🔑 Late checkout"
     ],
     "progress": {
       "checking": "Checking your request...",
