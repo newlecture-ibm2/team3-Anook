@@ -10,6 +10,7 @@ import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
+import com.anook.backend.global.util.PiiMaskingUtil;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,19 +69,24 @@ public class SendMessageService implements SendMessageUseCase {
         // 1. 디바운스 검증
         checkDebounce(cmd.roomNo());
 
-        // 2. Guest 메시지 저장 → 즉시 반환
-        Message guestMsg = Message.createGuestMessage(cmd.roomNo(), cmd.guestId(), cmd.content());
+        // ★ PII 마스킹 선처리: 이후 로직(DB 저장, 웹소켓 전송, AI 호출)에서 모두 마스킹된 텍스트를 사용
+        String originalContent = cmd.content();
+        String maskedContent = PiiMaskingUtil.maskPii(originalContent);
+        boolean piiDetected = originalContent != null && !originalContent.equals(maskedContent);
+
+        // 2. Guest 메시지 저장 (마스킹된 텍스트로 DB 저장) → 즉시 반환
+        Message guestMsg = Message.createGuestMessage(cmd.roomNo(), cmd.guestId(), maskedContent);
         guestMsg = messagePort.save(guestMsg);
         log.info("[Message] Guest 메시지 저장 완료 — id: {}, room: {}", guestMsg.getId(), cmd.roomNo());
 
-        // 2-1. WebSocket Push → 직원 ChatModal에 고객 메시지 실시간 전달
+        // 2-1. WebSocket Push → 직원 ChatModal에 고객 메시지 실시간 전달 (직원도 마스킹된 내용 확인)
         dispatchPort.sendToRoom(cmd.roomNo(), Map.of(
                 "type", "GUEST_MESSAGE",
                 "messageId", guestMsg.getId(),
-                "content", cmd.content()));
+                "content", maskedContent));
 
-        // 3. AI 처리는 비동기로 위임 (self 주입을 통해 프록시 우회 방지)
-        self.processAiAsync(cmd.roomNo(), cmd.guestId(), cmd.content(), cmd.guestLanguage());
+        // 3. AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
+        self.processAiAsync(cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected);
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -94,7 +100,7 @@ public class SendMessageService implements SendMessageUseCase {
      */
     @Async("aiTaskExecutor")
     @Transactional
-    public void processAiAsync(String roomNo, Long guestId, String content, String language) {
+    public void processAiAsync(String roomNo, Long guestId, String content, String language, boolean piiDetected) {
         try {
             // 3. AI 호출을 위해 최근 10개 메시지 조회 (대화 맥락 확장)
             java.util.List<Message> recentMessages = new java.util.ArrayList<>(
@@ -128,6 +134,10 @@ public class SendMessageService implements SendMessageUseCase {
             
             if (combinedReply.isEmpty()) {
                 combinedReply = "알겠습니다.";
+            }
+
+            if (piiDetected) {
+                combinedReply += "\n\n[안내] 개인정보보호법에 의해 고객님의 개인정보는 열람 및 저장이 불가하여 안전하게 마스킹(***) 처리되었습니다. 상세한 문의나 긴급 연락은 객실 내선 전화를 통해 프론트데스크로 문의해 주시기 바랍니다.";
             }
 
             Message aiMsg = Message.createAiReply(roomNo, guestId, combinedReply);
