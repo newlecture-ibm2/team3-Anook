@@ -1,4 +1,4 @@
-package com.anook.backend.global.util;
+package com.anook.backend.message.application.util;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
