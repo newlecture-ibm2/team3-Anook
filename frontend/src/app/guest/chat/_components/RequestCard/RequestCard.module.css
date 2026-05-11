@@ -182,3 +182,17 @@
   align-items: center;
   gap: var(--space-4);
 }
+
+.guideText {
+  margin-top: var(--space-8);
+  font: var(--text-caption-regular);
+  color: var(--color-gray-500);
+  background-color: var(--color-gray-50);
+  padding: var(--space-8);
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
+}
+.guideText strong {
+  font-weight: 600;
+  color: var(--color-primary);
+}

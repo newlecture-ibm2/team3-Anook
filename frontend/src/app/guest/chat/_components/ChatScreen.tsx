@@ -9,12 +9,13 @@ import StatusCard from './StatusCard';
 import FeedbackCard from './FeedbackCard';
 import RequestCard from './RequestCard/RequestCard';
 import RequestStatusBar from './RequestStatusBar/RequestStatusBar';
+import ProgressIndicator from './ProgressIndicator/ProgressIndicator';
 import { ActiveRequest } from '../useChat';
 
 export interface ChatMessage {
   id: string;
   variant: 'sent' | 'received';
-  type?: 'TEXT' | 'WELCOME' | 'QUICK_REPLY' | 'STATUS_CARD' | 'FALLBACK' | 'FEEDBACK' | 'REQUEST_CARD';
+  type?: 'TEXT' | 'WELCOME' | 'QUICK_REPLY' | 'STATUS_CARD' | 'FALLBACK' | 'FEEDBACK' | 'REQUEST_CARD' | 'AI_PROGRESS';
   content?: string;
   meta?: Record<string, unknown>;
 }
@@ -72,6 +73,14 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
 
       <div className={styles.messageList}>
         {messages.map((msg) => {
+          if (msg.type === 'AI_PROGRESS') {
+            return (
+              <ProgressIndicator
+                key={msg.id}
+                domains={msg.meta?.domains as string[]}
+              />
+            );
+          }
           if (msg.type === 'FALLBACK') {
             return (
               <ChatBubble key={msg.id} variant="received" isFallback>

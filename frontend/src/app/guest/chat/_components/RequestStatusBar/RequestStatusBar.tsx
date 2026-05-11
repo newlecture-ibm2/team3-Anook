@@ -27,6 +27,7 @@ const STATUS_TEXT: Record<string, string> = {
   COMPLETED: '처리 완료',
   CANCELLED: '취소됨',
   CANCEL_PENDING: '취소 대기 중',
+  ESCALATED: '긴급 대기 중',
 };
 
 export default function RequestStatusBar({
@@ -139,6 +140,7 @@ export default function RequestStatusBar({
                 <span className={styles.detailValue}>{detailsText}</span>
               </div>
             )}
+
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import Header from './Header';
 import Sidebar, { SidebarProps } from './Sidebar';
+import GlobalEmergencyListener from './GlobalEmergencyListener';
 import { useUiStore } from '@/stores/useUiStore';
 import styles from './DashboardLayout.module.css';
 
@@ -16,6 +17,7 @@ export default function DashboardLayout({ children, role = 'admin' }: DashboardL
 
   return (
     <div className={styles.layout}>
+      <GlobalEmergencyListener />
       <Header className={styles.header} />
       
       <div className={styles.body}>

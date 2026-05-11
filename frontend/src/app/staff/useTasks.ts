@@ -29,6 +29,13 @@ export interface StaffTask {
   };
 }
 
+export interface EmergencyAlert {
+  requestId: number;
+  roomNo: string;
+  summary: string;
+  category: string;
+}
+
 interface UseTasksReturn {
   tasks: StaffTask[];
   loading: boolean;
@@ -157,12 +164,21 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const derivedDepartmentId = tasks.length > 0 ? tasks[0].departmentId : 'HK';
   useEffect(() => {
     const handleEvent = (data: unknown) => {
-      const event = data as { type?: string };
+      const event = data as {
+        type?: string;
+        priority?: string;
+        entities?: Record<string, unknown>;
+        requestId?: number;
+        roomNo?: string;
+        summary?: string;
+      };
       if (!event || !event.type) return;
 
       if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(event.type)) {
         fetchTasks(true);
       }
+
+      // 긴급 상황 감지 로직은 GlobalEmergencyListener(어드민 레이아웃)로 이동됨
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);

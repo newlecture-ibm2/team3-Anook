@@ -15,12 +15,16 @@
   entities는 빈 객체({})로 내려보냅니다.
 """
 
+import random
+import re
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 from app.domains.rag import service as rag_service
 from app.core.router_engine import route
-from app.infrastructure.gemini.client import call_gemini, ai_log_meta_ctx
+from app.infrastructure.gemini.client import call_gemini, call_gemini_async, ai_log_meta_ctx
 from app.utils.pii_masking import mask_pii, has_pii
 
 router = APIRouter()
@@ -39,18 +43,20 @@ from app.core.facility_engine import run_facility_agent
 from app.core.hk_engine import run_hk_agent
 from app.core.concierge_engine import run_concierge_agent
 from app.core.fb_engine import run_fb_agent
+from app.core.emergency_engine import run_emergency_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
     "FB": run_fb_agent,
-    # "FRONT": run_front_agent,
-    # "EMERGENCY": run_emergency_agent,
+    "EMERGENCY": run_emergency_agent,
 }
 
 
 # ── 다국어 정적 멘트 딕셔너리 ──
+_background_tasks = set()
+
 STATIC_REPLIES = {
     "ESCALATION": {
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
@@ -99,6 +105,12 @@ STATIC_REPLIES = {
         "en": "A problem occurred while processing your request. Please try again later.",
         "ja": "リクエストの処理中に問題が発生しました。しばらくしてからもう一度お試しください。",
         "zh": "处理您的请求时出现问题。请稍后再试。"
+    },
+    "COMPLAINT": {
+        "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
+        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution.",
+        "ja": "ご不便をおかけして大変申し訳ございません。担当スタッフに即座にお伝えし、迅速に対応いたします。",
+        "zh": "非常抱歉给您带来不便。我们会立即通知工作人员，尽快为您解决。"
     }
 }
 
@@ -106,7 +118,19 @@ def _get_static_reply(key: str, lang: str) -> str:
     lang = lang.lower()
     if lang not in ["ko", "en", "ja", "zh"]:
         lang = "en"
-    return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES[key]["en"])
+    return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES.get(key, {}).get("en", "We are processing your request."))
+
+
+def _fallback_response(guest_reply: str) -> dict:
+    """에러 발생 시 안전한 폴백 응답을 생성합니다."""
+    return {
+        "guest_reply": guest_reply,
+        "summary": "시스템 오류",
+        "domain_code": None,
+        "priority": "NORMAL",
+        "entities": {},
+        "confidence": 0.0,
+    }
 
 
 @router.post("/analyze")
@@ -149,11 +173,13 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                 }
         
         # ── [비동기 로깅 메타데이터 주입] ──
-        meta = ai_log_meta_ctx.get()
-        if meta:
-            meta_copy = meta.copy()
-            meta_copy["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
-            response["ai_log_meta"] = meta_copy
+        # STEP 4에서 이미 에이전트별 메타가 세팅되었으면 스킵 (이중 주입 방지)
+        if "ai_log_meta" not in response:
+            meta = ai_log_meta_ctx.get()
+            if meta:
+                meta_copy = meta.copy()
+                meta_copy["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
+                response["ai_log_meta"] = meta_copy
             
         final_responses.append(response)
         
@@ -161,31 +187,19 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
 
 
 async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]:
-    print(f"\n[Analyze] 📩 요청 수신 - Room: {request.room_no}, Text: '{request.text}'")
-
-    # ── [PII 마스킹] 개인정보 선제 방어 ──
-    original_text = request.text
-    if has_pii(request.text):
-        request.text = mask_pii(request.text)
-        print(f"[Analyze] 🛡️ PII 마스킹 적용: '{original_text}' → '{request.text}'")
-
-    if request.chat_history:
-        print(f"[Analyze] 📚 수신된 대화 맥락({len(request.chat_history)}개): {request.chat_history}")
-    else:
-        print("[Analyze] 📚 수신된 대화 맥락: 없음 (첫 대화 또는 DB 조회 실패)")
+    # ── [비동기 로깅 메타데이터 처리 보류] ──
+    # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
     # ──────────────────────────────────────────────
-    # STEP 1: RAG 지식 검색 (COMMON 도메인 우선)
+    # STEP 1: 지식 베이스 검색 (RAG)
     # ──────────────────────────────────────────────
     try:
-        rag_results = rag_service.search_similar(
-            query=request.text, domain_code="COMMON", top_k=1, threshold=0.7
-        )
+        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.85)
         if rag_results:
             best = rag_results[0]
             response = {
                 "guest_reply": best["answer"],
-                "summary": "지식 기반 응답",
+                "summary": "AI 자동 답변 (RAG)",
                 "domain_code": None,
                 "priority": "NORMAL",
                 "entities": {},
@@ -196,6 +210,22 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             return [response]
     except Exception as e:
         print(f"[Analyze] ⚠️ RAG 검색 실패 (무시하고 라우터로 진행): {e}")
+
+    # ──────────────────────────────────────────────
+    # STEP 1-5: [초기 Progress Indicator] 라우터 분석 시작 알림
+    # ──────────────────────────────────────────────
+    import httpx
+    import os
+    try:
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
+        async with httpx.AsyncClient(timeout=2.0) as http_client:
+            # 빈 배열([])을 보내면 프론트엔드에서 "요청하신 내용을 확인하고 있습니다..." 출력
+            await http_client.post(f"{base_url}/chat/{request.room_no}/progress", json={
+                "domains": [],
+                "status": "ANALYZING"
+            })
+    except Exception as e:
+        print(f"[Analyze] ⚠️ 초기 Progress 이벤트 전송 실패 (무시): {e}")
 
     # ──────────────────────────────────────────────
     # STEP 2: 라우터 엔진으로 도메인 분류
@@ -209,6 +239,27 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
     final_responses = []
     processed_domains = set()
+    agent_tasks = []  # (domain, primary, coroutine)
+
+    # ──────────────────────────────────────────────
+    # STEP 2-5: [Progress Indicator] 라우터 결과 기반 진행 상태 전송
+    # ──────────────────────────────────────────────
+    # ⚠️ 에이전트 실행 전에 반드시 전송 완료되어야 하므로 await로 직접 호출합니다.
+    #    (create_task 사용 시, 응답이 먼저 도착하여 Progress UI가 표시되지 않는 레이스 컨디션 발생)
+    task_domains = [r.domain for r in router_results if r.mode == "TASK" and r.domain]
+    
+    import httpx
+    import os
+    try:
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
+        async with httpx.AsyncClient(timeout=2.0) as http_client:
+            resp = await http_client.post(f"{base_url}/chat/{request.room_no}/progress", json={
+                "domains": task_domains,
+                "status": "ANALYZING"
+            })
+            print(f"[Analyze] ✅ Progress 이벤트 전송 성공 (status: {resp.status_code})")
+    except Exception as e:
+        print(f"[Analyze] ⚠️ Progress 이벤트 전송 실패 (무시): {e}")
 
     # ──────────────────────────────────────────────
     # STEP 3: 모든 분류 결과 순회하며 에이전트 실행 (멀티 인텐트 처리)
@@ -225,42 +276,13 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # 부서별 에이전트가 등록되어 있으면 호출
             if domain in DOMAIN_AGENTS:
-                try:
-                    agent_result = DOMAIN_AGENTS[domain](
-                        user_message=request.text, 
-                        room_no=request.room_no, 
-                        chat_history=request.chat_history
-                    )
-                    agent_confidence = agent_result.get("confidence", primary.confidence)
-                    final_domain_code = agent_result.get("domain_code", domain)
-                    final_entities = agent_result.get("entities", {})
-                    final_guest_reply = agent_result.get("guest_reply", "요청을 접수하였습니다.")
-                    final_summary = agent_result.get("summary", f"{domain} 요청")
-
-                    # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
-                    if agent_confidence < 0.4:
-                        final_domain_code = "FRONT"
-                        final_entities["intent"] = "ESCALATION"
-                        if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
-                            final_guest_reply = _get_static_reply("ESCALATION", request.language)
-
-                    response = {
-                        "guest_reply": final_guest_reply,
-                        "summary": final_summary,
-                        "domain_code": final_domain_code,
-                        "priority": agent_result.get("priority", "NORMAL"),
-                        "entities": final_entities,
-                        "confidence": agent_confidence,
-                    }
-                    if hasattr(primary, 'action_type'):
-                        response["action_type"] = primary.action_type
-                        
-                    print(f"[Analyze] ✅ {domain} 에이전트 처리 완료")
-                    print(f"[Analyze] 응답: {response}\n")
-                    final_responses.append(response)
-                    continue
-                except Exception as e:
-                    print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {e}")
+                coro = DOMAIN_AGENTS[domain](
+                    user_message=request.text, 
+                    room_no=request.room_no, 
+                    chat_history=request.chat_history
+                )
+                agent_tasks.append((domain, primary, coro))
+                continue
 
             # 에이전트 미등록 시 → 기본 응답
             response = {
@@ -282,7 +304,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-b: CHITCHAT → 일상 대화 응답
         if primary.mode == "CHITCHAT":
             try:
-                raw = call_gemini(
+                raw = await call_gemini_async(
                     prompt=f"고객 메시지: {request.text}",
                     system_instruction=(
                         f"당신은 아눅(Anook) 호텔의 친절한 AI 컨시어지입니다. "
@@ -325,11 +347,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
         if primary.mode == "INFO":
             domain = primary.domain or "FRONT"
-
+            
             # ── FB 도메인 INFO는 에이전트에게 위임 (메뉴 기반 알러지 추천 등) ──
             if domain == "FB" and "FB" in DOMAIN_AGENTS:
                 try:
-                    agent_result = DOMAIN_AGENTS["FB"](
+                    agent_result = await DOMAIN_AGENTS["FB"](
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
@@ -337,7 +359,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
                         "summary": agent_result.get("summary", "FB 정보 문의"),
-                        "domain_code": None,  # INFO이므로 요청 미생성
+                        "domain_code": None,
                         "priority": "NORMAL",
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
@@ -350,17 +372,98 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     print(f"[Analyze] ⚠️ FB 에이전트 INFO 위임 실패, RAG 폴백: {e}")
 
             try:
-                rag_results = rag_service.search_similar(request.text, domain_code=domain, top_k=3, threshold=0.5)
+                # 🧠 [지능형 쿼리 확장]
+                rewrite_prompt = f"다음 손님의 질문을 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성해줘: '{request.text}'"
+                search_query_raw = await call_gemini_async(
+                    prompt=rewrite_prompt,
+                    system_instruction=(
+                        "당신은 호텔 검색 엔진 최적화 전문가입니다. "
+                        "사용자의 질문을 호텔 지식 베이스 검색에 가장 적합한 문장으로 확장하세요. "
+                        "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름(삼겹살, 파스타 등)이나 카테고리를 재작성된 문장에 절대로 포함하지 마세요. "
+                        "질문의 의도만 자연스럽게 살려 구체화하세요. "
+                        "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
+                    )
+                )
+                search_query = search_query_raw.get("reply", request.text) if isinstance(search_query_raw, dict) else request.text
+                print(f"[Analyze] 🔍 검색어 확장: '{request.text}' → '{search_query}'")
+
+                # 🛠️ [검색 엔진 고도화]
+                top_k = 10 if domain == "CONCIERGE" else 3
+                threshold = 0.3 if domain == "CONCIERGE" else 0.5
+                
+                rag_results = rag_service.search_similar(search_query, domain_code=domain, top_k=top_k, threshold=threshold)
+                
+                # 🎨 [컨시어지 전용 리랭킹/셔플/네거티브 필터링]
+                additional_instructions = ""
+                import random
+                if domain == "CONCIERGE" and rag_results:
+                    rag_results = [r for r in rag_results if r.get('similarity', 1.0) >= 0.3]
+                    
+                    mentioned_places = []
+                    if request.chat_history:
+                        for msg in request.chat_history[-4:]:
+                            if msg.get('role') == 'ai':
+                                content = msg.get('content', '')
+                                all_answers = rag_service.get_all_answers_by_domain("CONCIERGE")
+                                all_places = set()
+                                for ans in all_answers:
+                                    found = re.findall(r"'([^']+)'", ans)
+                                    for f in found:
+                                        all_places.add(f)
+                                
+                                for place in all_places:
+                                    if place in content:
+                                        mentioned_places.append(place)
+                    
+                    fresh_results = [r for r in rag_results if not any(p in r['answer'] for p in mentioned_places)]
+                    already_said = [r for r in rag_results if any(p in r['answer'] for p in mentioned_places)]
+                    
+                    fact_results = [r for r in fresh_results if "[fact]" in r['question'] and r.get('similarity', 0) >= 0.7]
+                    rec_results = [r for r in fresh_results if "[recommendation]" in r['question']]
+                    other_results = [r for r in fresh_results if "[fact]" not in r['question'] and "[recommendation]" not in r['question']]
+                    
+                    is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
+                    if not is_reconfirm:
+                        random.shuffle(rec_results)
+                    
+                    rag_results = fact_results + rec_results + other_results + already_said
+                    
+                    last_place = mentioned_places[-1] if mentioned_places else None
+                    is_another_request = any(word in request.text for word in ["다른", "또", "더", "다음에", "더보기"])
+                    
+                    last_category = None
+                    if last_place:
+                        from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
+                        for k in CONCIERGE_KNOWLEDGE:
+                            if last_place in k['answer']:
+                                last_category = k.get('category')
+                                break
+                    
+                    if is_another_request and last_category:
+                        rag_results.sort(key=lambda x: 0 if x.get('category') == last_category else 1)
+
+                    is_fact_included = any("[fact]" in r['question'] for r in rag_results)
+                    fact_instruction = "\n- **중요**: [fact] 태그 정보는 질문에 대한 확정적 답변이므로 즉시 활용하세요." if is_fact_included else ""
+
+                    last_mention_instruction = f"방금 '{last_place}'를 추천했음을 인지하고, " if last_place else ""
+                    additional_instructions = (
+                        f"\n- 답변 시 마크다운 강조(**)를 사용하지 말고 평문으로 작성하세요. {fact_instruction}"
+                        f"\n- {last_mention_instruction}사용자의 요청 흐름에 맞춰 자연스럽게 대화를 이어가세요. "
+                        f"\n- 안내한 내용이 택시 호출, 꽃배달, 짐 보관 등 '요청이나 예약'이 가능한 서비스라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스로 이어지는 질문을 포함하세요."
+                        f"\n- 예: '파스타 외에 다른 맛집을 찾으신다면 ~는 어떠세요?', '택시는 정문에서 이용 가능합니다. 지금 바로 호출해 드릴까요?' 등"
+                        "\n- 이전 대화와 중복되는 장소 추천은 절대 피하세요."
+                    )
+
                 if rag_results:
                     knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
                     info_prompt = (
                         f"고객 질문: {request.text}\n\n"
-                        f"아래 제공된 [호텔 지식]만을 바탕으로, 반드시 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. "
+                        f"아래 제공된 [호텔 지식]만을 바탕으로, 반드시 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
                         f"만약 [호텔 지식]에 고객의 질문에 대한 명확한 답이 없다면, 절대 유추하거나 지어내지 말고 "
                         f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
                         f"[호텔 지식]\n{knowledge}"
                     )
-                    raw = call_gemini(
+                    raw = await call_gemini_async(
                         prompt=info_prompt, 
                         system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
                     )
@@ -368,7 +471,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 else:
                     if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
                         print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
-                        agent_result = DOMAIN_AGENTS["CONCIERGE"](
+                        agent_result = await DOMAIN_AGENTS["CONCIERGE"](
                             user_message=request.text,
                             room_no=request.room_no,
                             chat_history=request.chat_history
@@ -377,7 +480,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     else:
                         guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
             except Exception as e:
-                print(f"[Analyze] ⚠️ INFO 처리 중 에러 발생 (RAG/Fallback): {e}")
+                print(f"[Analyze] ⚠️ INFO 처리 중 에러 발생: {e}")
                 guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
 
             info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
@@ -425,46 +528,107 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 response = {
                     "guest_reply": _get_static_reply(reply_key, request.language),
                     "summary": "요청 취소",
-                    "domain_code": primary.domain,
+                    "domain_code": primary.domain if primary.domain else None,
                     "priority": "NORMAL",
-                    "entities": {},
+                    "entities": {"intent": "CANCEL"},
                     "confidence": primary.confidence,
                     "action": "CANCEL_REQUEST",
                 }
-            print(f"[Analyze] 🚫 CANCEL 응답 (is_all={is_all})")
+                if hasattr(primary, 'action_type'):
+                    response["action_type"] = primary.action_type
+            
+            print(f"[Analyze] 🛑 CANCEL 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+            
+        # STEP 3-f: COMPLAINT → 불편 사항 (우선순위 URGENT)
+        if primary.mode == "COMPLAINT":
+            domain_code = primary.domain or "FRONT"
+            response = {
+                "guest_reply": _get_static_reply("COMPLAINT", request.language),
+                "summary": f"{domain_code} 관련 불편 사항",
+                "domain_code": domain_code,
+                "priority": "URGENT",
+                "entities": {"intent": "COMPLAINT"},
+                "confidence": primary.confidence,
+            }
+            if hasattr(primary, 'action_type'):
+                response["action_type"] = primary.action_type
+                
+            print(f"[Analyze] 🚨 COMPLAINT 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
             continue
 
-        # STEP 3-f: STATUS_CHECK → 진행 상태 확인
-        if primary.mode == "STATUS_CHECK":
+    # ──────────────────────────────────────────────
+    # STEP 3-g: 병렬 실행 대기 및 결과 합치기
+    # ──────────────────────────────────────────────
+    if agent_tasks:
+        import asyncio
+        coroutines = [coro for _, _, coro in agent_tasks]
+        results = await asyncio.gather(*coroutines, return_exceptions=True)
+        
+        for (domain, primary, _), agent_result in zip(agent_tasks, results):
+            if isinstance(agent_result, Exception):
+                print(f"[Analyze] ⚠️ {domain} 에이전트 실패: {agent_result}")
+                continue
+
+            agent_confidence = agent_result.get("confidence", primary.confidence)
+            final_domain_code = agent_result.get("domain_code", domain)
+            final_entities = agent_result.get("entities", {})
+            final_guest_reply = agent_result.get("guest_reply", "요청을 접수하였습니다.")
+            final_summary = agent_result.get("summary", f"{domain} 요청")
+
+            # 🚨 [글로벌 이관 로직] 부서 에이전트의 확신도가 0.4 미만이면 무조건 프론트 직원에게 강제 이관
+            if agent_confidence < 0.4:
+                final_domain_code = "FRONT"
+                final_entities["intent"] = "ESCALATION"
+                if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
+                    final_guest_reply = _get_static_reply("ESCALATION", request.language)
+
             response = {
-                "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
-                "summary": "진행 상태 확인",
-                "domain_code": None,
-                "priority": "NORMAL",
-                "entities": {},
-                "confidence": primary.confidence,
-                "action": "STATUS_CHECK",
+                "guest_reply": final_guest_reply,
+                "summary": final_summary,
+                "domain_code": final_domain_code,
+                "priority": agent_result.get("priority", "NORMAL"),
+                "entities": final_entities,
+                "confidence": agent_confidence,
             }
-            print(f"[Analyze] 🔍 STATUS_CHECK 응답")
+            if "__ai_log_meta" in agent_result:
+                response["__ai_log_meta"] = agent_result["__ai_log_meta"]
+                
+            if hasattr(primary, 'action_type'):
+                response["action_type"] = primary.action_type
+                
+            print(f"[Analyze] ✅ {domain} 에이전트 병렬 처리 완료")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
-            continue
 
     if not final_responses:
         return [_fallback_response(_get_static_reply("ERROR", request.language))]
 
+    # ──────────────────────────────────────────────
+    # STEP 4: 최종 응답 조립 및 메타데이터 복원
+    # ──────────────────────────────────────────────
+    for response in final_responses:
+        # __ai_log_meta 추출 및 변환
+        meta = response.pop("__ai_log_meta", None)
+        if not meta:
+            meta = ai_log_meta_ctx.get()
+        if meta:
+            meta_copy = meta.copy()
+            meta_copy["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
+            response["ai_log_meta"] = meta_copy
+
+    # "아래 접수 내역을 확인해 주세요" 공통 문구 1회 추가
+    task_responses = [r for r in final_responses if r.get("domain_code") and r.get("domain_code") != "FRONT"]
+    if task_responses:
+        last_task = task_responses[-1]
+        append_msg = "아래 접수 내역을 확인해 주세요." if request.language == "ko" else "Please check the request details below."
+        if last_task.get("guest_reply"):
+            last_task["guest_reply"] = f"{last_task['guest_reply']}\n{append_msg}"
+        else:
+            last_task["guest_reply"] = append_msg
+
     return final_responses
-
-
-def _fallback_response(message: str) -> Dict[str, Any]:
-    """에러 발생 시 안전한 폴백 응답"""
-    return {
-        "guest_reply": message,
-        "summary": "에러 발생",
-        "domain_code": None,
-        "priority": "NORMAL",
-        "entities": {},
-        "confidence": 0.0,
-    }

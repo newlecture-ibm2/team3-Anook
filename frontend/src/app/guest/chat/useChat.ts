@@ -110,18 +110,35 @@ export function useChat() {
           if (message.body) {
             const payload = JSON.parse(message.body);
 
+            if (payload.type === 'AI_PROGRESS') {
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                return [...filtered, {
+                  id: `progress-${Date.now()}`,
+                  variant: 'received',
+                  type: 'AI_PROGRESS',
+                  content: '',
+                  meta: { domains: payload.domains }
+                }];
+              });
+              return;
+            }
+
             if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
               setIsTyping(false);
 
-              const newAiMsg: ChatMessage = {
-                id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
-                variant: 'received',
-                content: payload.content,
-                type: payload.uiType || 'TEXT',
-                meta: payload.meta || {},
-              };
-
-              setMessages(prev => [...prev, newAiMsg]);
+              // 진행 상태 메시지 제거
+              setMessages(prev => {
+                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+                const newAiMsg: ChatMessage = {
+                  id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
+                  variant: 'received',
+                  content: payload.content,
+                  type: payload.uiType || 'TEXT',
+                  meta: payload.meta || {},
+                };
+                return [...filtered, newAiMsg];
+              });
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
@@ -141,7 +158,7 @@ export function useChat() {
               });
             } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
               const progressMap: Record<string, number> = {
-                'PENDING': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+                'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
               const isCancelled = payload.status === 'CANCELLED';
               const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
@@ -183,7 +200,8 @@ export function useChat() {
 
               setMessages(prev => {
                 const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
-                const existingGrace = existingIdx >= 0 ? (prev[existingIdx].meta?.graceRemaining || 0) : 0;
+                const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
+                const existingGrace = existingMeta.graceRemaining || 0;
                 
                 // Remove the existing card from the list
                 const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
@@ -194,6 +212,8 @@ export function useChat() {
                   id: `request-${payload.requestId}-${Date.now()}`, // Force re-render at the bottom
                   meta: {
                     ...requestMsg.meta,
+                    entities: payload.entities || existingMeta.entities,
+                    priority: payload.priority || existingMeta.priority,
                     graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                   }
                 }];
