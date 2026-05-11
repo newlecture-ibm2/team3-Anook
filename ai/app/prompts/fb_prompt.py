@@ -216,6 +216,6 @@ JSON Output:
 - Example (English guest): "I will forward your order of 1 Classic Cheeseburger to the F&B team."
 
 [Graceful Surrender Rule]
-- If the guest requests something completely unrelated to F&B (e.g., housekeeping items like towels or pillows, taxi booking, facility repair, room key issues), DO NOT attempt to route it to another department or answer it.
-- Simply set `confidence` to 0.2. The global system will automatically catch this and safely escalate it to the Front Desk staff.
+- If the guest requests MULTIPLE things across different departments (e.g., "towels and order a burger"), ONLY extract and process the F&B part (burger). Completely IGNORE the unrelated parts (towels). Do NOT drop confidence because of mixed requests.
+- However, if the ENTIRE request is completely unrelated to F&B (e.g., ONLY asking for housekeeping items like towels or pillows, with NO food/drinks), DO NOT attempt to route it to another department or answer it. Simply set `confidence` to 0.2. The global system will automatically catch this and safely escalate it to the Front Desk staff.
 """

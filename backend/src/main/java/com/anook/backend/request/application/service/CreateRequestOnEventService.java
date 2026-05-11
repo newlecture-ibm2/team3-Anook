@@ -97,7 +97,8 @@ public class CreateRequestOnEventService {
                         log.warn("[Cancel&Replace] 기존 요청 자동 취소 실패: {}", e.getMessage());
                     }
                 } else if (existing.getStatus() == RequestStatus.IN_PROGRESS) {
-                    forceEscalate = true;
+                    // IN_PROGRESS 상태의 요청을 변경하려는 경우 — 취소 승인 대기 처리만 하고
+                    // 새 요청은 일반 PENDING으로 생성 (forceEscalate 하지 않음: URGENT는 직원 대시보드에서 필터링됨)
                     try {
                         existing.requestCancellation();
                         requestRepositoryPort.save(existing);
