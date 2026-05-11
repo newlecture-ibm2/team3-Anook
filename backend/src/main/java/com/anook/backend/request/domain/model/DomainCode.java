@@ -15,7 +15,8 @@ public enum DomainCode {
     FB("FB"),
     FACILITY("FACILITY"),
     CONCIERGE("CONCIERGE"),
-    FRONT("FRONT");
+    FRONT("FRONT"),
+    EMERGENCY("EMERGENCY");
 
     private final String code;
 

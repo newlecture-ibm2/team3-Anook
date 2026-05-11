@@ -68,11 +68,13 @@ export default function AllRequestsPage() {
                 <TaskTicket 
                   key={req.id}
                   ticketId={req.id}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
                   description={`${req.roomNo}호`}
                   status={mapStatus(req.status)}
                   createdAt={req.createdAt}
+                  entities={req.entities}
                 />
               ))}
             </TaskColumn>
@@ -85,12 +87,14 @@ export default function AllRequestsPage() {
                 <TaskTicket 
                   key={req.id}
                   ticketId={req.id}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
                   description={`${req.roomNo}호${req.assignedStaffName ? ` · ${req.assignedStaffName}` : ''}`}
                   status={mapStatus(req.status)}
                   createdAt={req.createdAt}
                   updatedAt={req.updatedAt}
+                  entities={req.entities}
                 />
               ))}
             </TaskColumn>
@@ -103,11 +107,13 @@ export default function AllRequestsPage() {
                 <TaskTicket 
                   key={req.id}
                   ticketId={req.id}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
                   description={`${req.roomNo}호`}
                   status={mapStatus(req.status)}
                   createdAt={req.createdAt}
+                  entities={req.entities}
                 />
               ))}
             </TaskColumn>

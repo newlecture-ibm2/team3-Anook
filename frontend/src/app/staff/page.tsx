@@ -146,6 +146,7 @@ function DashboardContent() {
                         onClick={() => setSelectedTask(task)}
                       >
                         <TaskTicket
+                          department={task.departmentId}
                           priority={mapPriority(task.priority)}
                           title={`[${task.roomNumber}호] ${task.summary}`}
                           description={(() => {

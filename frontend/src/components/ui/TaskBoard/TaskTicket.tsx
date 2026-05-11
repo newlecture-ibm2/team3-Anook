@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button/Button';
 export interface TaskTicketProps {
   ticketId?: string | number;
   priority?: 'NORMAL' | 'URGENT';
+  department?: string;
   title: string;
   description: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
@@ -27,6 +28,7 @@ export interface TaskTicketProps {
 export default function TaskTicket({
   ticketId,
   priority = 'NORMAL',
+  department,
   title,
   description,
   status = 'TODO',
@@ -38,11 +40,49 @@ export default function TaskTicket({
   isCancelled = false,
   entities
 }: TaskTicketProps) {
-  let badgeVariant: 'red' | 'purple' | 'green' | 'gray' | 'black' = 'gray';
-  if (priority === 'URGENT') {
-    badgeVariant = 'red';
-  } else {
-    badgeVariant = 'gray';
+
+
+  let borderColor = 'var(--color-surface)';
+  let badgeBgColor = '#F3F4F6';
+  let badgeTextColor = '#374151';
+  let displayDept = department;
+
+  let deptUpper = department ? department.toUpperCase() : '';
+
+  if (department) {
+    if (deptUpper.includes('HK') || deptUpper.includes('하우스키핑')) {
+      borderColor = '#93C5FD'; // Blue-300
+      badgeBgColor = '#EFF6FF'; // Blue-50
+      badgeTextColor = '#1E40AF'; // Blue-800
+      displayDept = '하우스키핑';
+    } else if (deptUpper.includes('FACILITY') || deptUpper.includes('시설')) {
+      borderColor = '#FDBA74'; // Orange-300
+      badgeBgColor = '#FFF7ED'; // Orange-50
+      badgeTextColor = '#9A3412'; // Orange-800
+      displayDept = '시설관리';
+    } else if (deptUpper.includes('FB') || deptUpper.includes('식음료')) {
+      borderColor = '#F9A8D4'; // Pink-300
+      badgeBgColor = '#FDF2F8'; // Pink-50
+      badgeTextColor = '#9D174D'; // Pink-800
+      displayDept = 'F&B';
+    } else if (deptUpper.includes('CONCIERGE') || deptUpper.includes('컨시어지')) {
+      borderColor = '#86EFAC'; // Green-300
+      badgeBgColor = '#F0FDF4'; // Green-50
+      badgeTextColor = '#166534'; // Green-800
+      displayDept = '컨시어지';
+    } else {
+      borderColor = '#93C5FD';
+      badgeBgColor = '#EFF6FF';
+      displayDept = '프런트';
+    }
+  }
+
+  // 긴급 부서(EMERGENCY)로 배정된 경우 뱃지 덮어쓰기
+  if (deptUpper && (deptUpper.includes('EMERGENCY') || deptUpper.includes('긴급대응팀'))) {
+    borderColor = '#FCA5A5'; // Red-300
+    badgeBgColor = '#FEF2F2'; // Red-50
+    badgeTextColor = '#991B1B'; // Red-800
+    displayDept = '🚨 응급상황';
   }
 
   let timeDisplay = '';
@@ -65,9 +105,17 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={`${styles.taskTicket} ${priority === 'URGENT' ? styles.urgentTicket : ''}`}>
+    <div className={styles.taskTicket}>
+      <div className={styles.topColorBar} style={{ backgroundColor: borderColor }} />
       <div className={styles.header}>
-        {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {department && (
+            <div className={styles.deptBadge} style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}>
+              {displayDept}
+            </div>
+          )}
+          {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
+        </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {isCancelled && (
             <StatusBadge variant="gray">
@@ -79,9 +127,11 @@ export default function TaskTicket({
               취소 대기
             </StatusBadge>
           )}
-          <StatusBadge variant={badgeVariant}>
-            {priority}
-          </StatusBadge>
+          {priority === 'URGENT' && (
+            <StatusBadge variant="red">
+              긴급
+            </StatusBadge>
+          )}
         </div>
       </div>
       

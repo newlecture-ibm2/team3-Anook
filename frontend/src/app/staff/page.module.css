@@ -82,4 +82,4 @@
   height: 200px;
   font: var(--text-body-regular);
   color: var(--color-gray-500);
-}.ticketWrapper { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; border-radius: 8px; } .ticketWrapper:hover { transform: translateY(-2px); }
+}.ticketWrapper { cursor: pointer; border-radius: 8px; }

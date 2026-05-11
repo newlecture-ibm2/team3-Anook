@@ -14,6 +14,7 @@ interface AdminRequest {
   updatedAt: string;
   cancelRequested: boolean;
   cancelRequestedAt: string | null;
+  entities?: Record<string, any>;
 }
 
 export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all') {
