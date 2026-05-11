@@ -12,10 +12,13 @@ import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import Tabs from '@/components/ui/Tab/Tabs';
 import Pagination from '@/components/ui/Pagenation/Pagination';
 import RequestCard from '@/components/ui/Card/RequestCard';
+import GuestRequestCard from '@/app/guest/chat/_components/RequestCard/RequestCard';
+import RequestStatusBar from '@/app/guest/chat/_components/RequestStatusBar/RequestStatusBar';
 import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
-import TypingIndicator from '@/app/guest/chat/_components/TypingIndicator';
+
+import ChatScreen from '@/app/guest/chat/_components/ChatScreen';
 import Pill from '@/components/ui/Pill/Pill';
 import StatusCard from '@/app/guest/chat/_components/StatusCard';
 import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
@@ -67,6 +70,7 @@ export default function ComponentShowcasePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [chatScreenStatus, setChatScreenStatus] = useState<'normal' | 'emergency' | 'escalated' | 'progress'>('normal');
 
   const sampleRooms = [
     { id: '1001', roomNumber: '1001', statusText: '보관됨' },
@@ -386,11 +390,39 @@ export default function ComponentShowcasePage() {
                     </div>
                   </div>
 
+
                   <div style={{ marginTop: 'var(--space-24)' }}>
-                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Typing Indicator (AI Thinking)</h4>
-                    <ComponentLabel path="app/guest/chat/_components/TypingIndicator.tsx" />
-                    <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
-                      <TypingIndicator />
+                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Guest Request Card (10초 타이머)</h4>
+                    <ComponentLabel path="app/guest/chat/_components/RequestCard/RequestCard.tsx" />
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
+                      <GuestRequestCard
+                        requestId={1001}
+                        domainCode="HK"
+                        summary="수건 2장 추가 요청"
+                        entities={{ item: "수건", count: "2" }}
+                        status="PENDING"
+                        progress={0}
+                        graceRemaining={10}
+                        priority="NORMAL"
+                        createdAt={new Date().toISOString()}
+                        onAccept={() => alert('요청 접수')}
+                        onCancel={() => alert('취소')}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 'var(--space-24)' }}>
+                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Request Status Bar (상태 진행바)</h4>
+                    <ComponentLabel path="app/guest/chat/_components/RequestStatusBar/RequestStatusBar.tsx" />
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
+                      <RequestStatusBar
+                        requestId={1001}
+                        domainCode="HK"
+                        summary="수건 추가 요청"
+                        status="IN_PROGRESS"
+                        progress={testProgress}
+                        entities={{ item: "수건", count: "2" }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -443,6 +475,53 @@ export default function ComponentShowcasePage() {
                   </div>
                 </div>
               </div>
+
+              <div style={{ display: 'flex', gap: 'var(--space-32)', flexWrap: 'wrap', marginTop: 'var(--space-24)' }}>
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Guest Request Card (게스트용)</h4>
+                  <ComponentLabel path="app/guest/chat/_components/RequestCard/RequestCard.tsx" />
+                  <div style={{ width: '100%' }}>
+                    <GuestRequestCard 
+                      requestId={1}
+                      domainCode="HK"
+                      summary="수건 2장 요청"
+                      status="PENDING"
+                      progress={0}
+                      graceRemaining={5}
+                      priority="NORMAL"
+                      entities={{ item: "수건", count: 2 }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Request Status Bar (게스트용 진행상황)</h4>
+                  <ComponentLabel path="app/guest/chat/_components/RequestStatusBar/RequestStatusBar.tsx" />
+                  <div style={{ width: '100%' }}>
+                    <RequestStatusBar 
+                      requestId={1}
+                      domainCode="FB"
+                      summary="룸서비스 예약"
+                      status="IN_PROGRESS"
+                      progress={50}
+                      entities={{ menu: "조식 세트" }}
+                    />
+                  </div>
+                </div>
+                
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Chat Modal (직원 상담용)</h4>
+                  <ComponentLabel path="components/ui/Modal/ChatModal.tsx" />
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+                    <Button variant="primary" onClick={() => setIsChatModalOpen(true)}>직접 Chat Modal 열기</Button>
+                    <p style={{ font: 'var(--text-caption-medium)', color: 'var(--color-gray-500)' }}>
+                      * Group 5의 RequestCard '상담 시작' 버튼으로도 열립니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+
             </div>
 
             {/* Group 5: Data Display & Cards */}
@@ -499,16 +578,6 @@ export default function ComponentShowcasePage() {
                       </div>
                     </div>
                     
-                    <div style={{ flex: 1 }}>
-                      <h5 style={{ font: 'var(--text-caption-bold)', color: 'var(--color-gray-500)', marginBottom: 'var(--space-8)' }}>Chat Modal (직원 상담용)</h5>
-                      <ComponentLabel path="components/ui/Modal/ChatModal.tsx" />
-                      <div style={{ width: '100%', display: 'flex', gap: 'var(--space-16)' }}>
-                        <Button variant="primary" onClick={() => setIsChatModalOpen(true)}>직접 Chat Modal 열기</Button>
-                      </div>
-                      <p style={{ font: 'var(--text-caption-medium)', color: 'var(--color-gray-500)', marginTop: 'var(--space-8)' }}>
-                        * 위 RequestCard의 '상담 시작' 버튼을 눌러도 모달이 열립니다.
-                      </p>
-                    </div>
                     <div style={{ flex: 1 }}>
                       <h5 style={{ font: 'var(--text-caption-bold)', color: 'var(--color-gray-500)', marginBottom: 'var(--space-8)' }}>Summary Card</h5>
                       <ComponentLabel path="components/ui/Card/SummaryCard.tsx" />

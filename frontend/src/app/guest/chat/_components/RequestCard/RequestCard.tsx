@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestCard.module.css';
+import Button from '@/components/ui/Button/Button';
+import Tag from '@/components/ui/StatusBadge/StatusBadge';
 
 export interface RequestCardProps {
   requestId: number;
@@ -17,14 +19,14 @@ export interface RequestCardProps {
   onAccept?: () => void;
 }
 
-const DOMAIN_MAP: Record<string, { icon: string; label: string; color: string }> = {
-  HK: { icon: '🏨', label: '하우스키핑', color: '#E8F5E9' },
-  FB: { icon: '🍽️', label: '식음료', color: '#FFF3E0' },
-  FACILITY: { icon: '🔧', label: '시설관리', color: '#FFF8E1' },
-  CONCIERGE: { icon: '🛎️', label: '컨시어지', color: '#E3F2FD' },
-  FRONT: { icon: '🏢', label: '프론트', color: '#F3E5F5' },
-  EMERGENCY: { icon: '🚨', label: '긴급', color: '#FFEBEE' },
-  UNKNOWN: { icon: '📋', label: '기타 요청', color: '#F3F4F6' },
+const DOMAIN_MAP: Record<string, { icon: string; label: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
+  HK: { icon: '🏨', label: '하우스키핑', variant: 'green' },
+  FB: { icon: '🍽️', label: '식음료', variant: 'gray' },
+  FACILITY: { icon: '🔧', label: '시설관리', variant: 'gray' },
+  CONCIERGE: { icon: '🛎️', label: '컨시어지', variant: 'purple' },
+  FRONT: { icon: '🏢', label: '프론트', variant: 'purple' },
+  EMERGENCY: { icon: '🚨', label: '긴급', variant: 'red' },
+  UNKNOWN: { icon: '📋', label: '기타 요청', variant: 'gray' },
 };
 
 export default function RequestCard({
@@ -103,9 +105,9 @@ export default function RequestCard({
     <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       {/* Header */}
       <div className={styles.header}>
-        <div className={styles.badge} style={{ backgroundColor: domainInfo.color }}>
+        <Tag variant={domainInfo.variant}>
           {domainInfo.icon} {domainInfo.label}
-        </div>
+        </Tag>
         <div className={styles.statusText}>
           {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : '대기 중'}
         </div>
@@ -140,8 +142,8 @@ export default function RequestCard({
             <div className={styles.timerText}>{timeLeft}초</div>
           </div>
           <div className={styles.buttonGroup}>
-            <button className={styles.actionButton} onClick={onAccept}>바로등록</button>
-            <button className={styles.actionButton} onClick={onCancel}>취소하기</button>
+            <Button variant="primary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onAccept}>바로등록</Button>
+            <Button variant="secondary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onCancel}>취소하기</Button>
           </div>
         </>
       )}
