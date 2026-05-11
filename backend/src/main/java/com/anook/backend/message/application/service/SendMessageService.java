@@ -10,7 +10,7 @@ import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
-import com.anook.backend.message.application.util.PiiMaskingUtil;
+import com.anook.backend.global.util.PiiMaskingUtil;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

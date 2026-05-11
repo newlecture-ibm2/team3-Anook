@@ -1,4 +1,4 @@
-package com.anook.backend.message.application.util;
+package com.anook.backend.global.util;
 
 import java.util.regex.Pattern;
 
