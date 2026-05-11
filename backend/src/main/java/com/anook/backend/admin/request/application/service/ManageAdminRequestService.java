@@ -137,11 +137,16 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void rejectCancellation(Long id) {
-        adminRequestQueryPort.findById(id)
+    public void rejectCancellation(Long id, String rejectionReason) {
+        AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.rejectCancellation(id);
+
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            String formattedMessage = "[취소 반려] " + rejectionReason;
+            adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), formattedMessage);
+        }
     }
 
     @Override

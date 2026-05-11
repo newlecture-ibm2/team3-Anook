@@ -7,39 +7,35 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import { CancelIcon } from '@/components/icons';
 
-interface StaffMember {
-  id: number;
-  name: string;
-  departmentId: string;
-}
+import useAssignRequest from './useAssignRequest';
 
 interface AssignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAssign: (staffId: number) => Promise<boolean>;
-  staffList: StaffMember[];
+  requestId: number;
   requestSummary: string;
   roomNo: string;
-  loading?: boolean;
+  onSuccess?: () => void;
 }
 
 export default function AssignModal({
   isOpen,
   onClose,
-  onAssign,
-  staffList,
+  requestId,
   requestSummary,
   roomNo,
-  loading = false,
+  onSuccess,
 }: AssignModalProps) {
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const { staffList, assignRequest, loading } = useAssignRequest();
 
   const handleAssign = async () => {
     if (selectedStaffId === null) return;
-    const success = await onAssign(selectedStaffId);
+    const success = await assignRequest(requestId, selectedStaffId);
     if (success) {
       setSelectedStaffId(null);
       onClose();
+      if (onSuccess) onSuccess();
     }
   };
 

@@ -37,7 +37,9 @@ public record MessageAiResult(
         String actionType,
         
         /** AI 로그 저장을 위한 메타데이터 (토큰, 소요시간 등) */
-        Map<String, Object> aiLogMeta
+        Map<String, Object> aiLogMeta,
+
+        /** [Keyword Targeting] 취소/변경 대상 아이템 키워드 (예: "콜라", "수건"). 미지정 시 null */
+        String targetKeyword
 ) {
 }
-

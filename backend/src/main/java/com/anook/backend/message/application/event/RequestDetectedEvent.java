@@ -49,6 +49,9 @@ public class RequestDetectedEvent extends ApplicationEvent {
     /** 요청 유형: "ADD"(새 요청 추가) 또는 "REPLACE"(기존 요청 수정) */
     private final String actionType;
 
+    /** [Keyword Targeting] 변경 대상 아이템 키워드 (예: "콜라"). 미지정 시 null → 최신 건 변경 */
+    private final String targetKeyword;
+
     public RequestDetectedEvent(Object source,
                                  String roomNo,
                                  Long guestId,
@@ -59,7 +62,8 @@ public class RequestDetectedEvent extends ApplicationEvent {
                                  String rawText,
                                  String summary,
                                  boolean escalated,
-                                 String actionType) {
+                                 String actionType,
+                                 String targetKeyword) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
@@ -71,6 +75,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
         this.summary = summary;
         this.escalated = escalated;
         this.actionType = actionType;
+        this.targetKeyword = targetKeyword;
     }
 }
 
