@@ -5,29 +5,33 @@ import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import Button from '@/components/ui/Button/Button';
 import useAdminRequests from '../useAdminRequests';
-import useCreateRequest from './useCreateRequest';
-import useRequestDetail from './useRequestDetail';
+
 import useEscalations from './useEscalations';
 import CreateRequestModal from './_components/CreateRequestModal/CreateRequestModal';
 import RequestDetailModal from './_components/RequestDetailModal/RequestDetailModal';
 import ApproveEscalationModal from './_components/ApproveEscalationModal/ApproveEscalationModal';
 import RejectEscalationModal from './_components/RejectEscalationModal/RejectEscalationModal';
+import ApproveCancellationModal from './_components/ApproveCancellationModal/ApproveCancellationModal';
+import RejectCancellationModal from './_components/RejectCancellationModal/RejectCancellationModal';
 import ChatModal from '@/components/ui/Modal/ChatModal';
+import RegisterTrainingModal from './_components/RegisterTrainingModal/RegisterTrainingModal';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
-  const { requests, pending, inProgress, cancelPending, completed, loading, error, refetch } = useAdminRequests('FRONT');
-  const { createRequest, loading: creating } = useCreateRequest();
-  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, approveCancellation, rejectCancellation } = useRequestDetail();
-  const { escalations, approveEscalation, rejectEscalation } = useEscalations();
+  const { requests, loading, error, refetch } = useAdminRequests();
+  
+  const pending = requests.filter(r => r.status === 'PENDING' && r.departmentId === 'FRONT');
+  const inProgress = requests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested && r.departmentId === 'FRONT');
+  const cancelPending = requests.filter(r => r.cancelRequested);
+  const completed = requests.filter(r => (r.status === 'COMPLETED' || r.status === 'CANCELLED') && r.departmentId === 'FRONT');
+
+  const { escalations } = useEscalations();
   const { t } = useTranslation();
 
   // 요청 생성 모달 상태
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  // 상세 모달 상태
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   // Chat Modal 상태
   const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number } | null>(null);
   // 승인/반려 모달 상태
@@ -49,25 +53,6 @@ export default function FrontDeskPage() {
     return status;
   };
 
-  const handleApproveEscalationSubmit = async (departmentId: string, priority: string) => {
-    if (!approveTarget) return false;
-    const ok = await approveEscalation(approveTarget, departmentId, priority);
-    if (ok) {
-      setApproveTarget(null);
-      refetch && refetch();
-    }
-    return ok;
-  };
-
-  const handleRejectEscalationSubmit = async (reason: string) => {
-    if (!rejectTarget) return false;
-    const ok = await rejectEscalation(rejectTarget, reason);
-    if (ok) {
-      setRejectTarget(null);
-      refetch && refetch();
-    }
-    return ok;
-  };
 
   const handleStatusChange = async (id: number, newStatus: string) => {
     try {
@@ -93,15 +78,9 @@ export default function FrontDeskPage() {
   };
   const filteredRequests = getFilteredRequests();
 
-  const handleCreate = async (payload: any) => {
-    const success = await createRequest(payload);
-    if (success && refetch) refetch();
-    return success;
-  };
 
-  const handleCardClick = async (requestId: number) => {
-    await fetchDetail(requestId);
-    setIsDetailOpen(true);
+  const handleCardClick = (requestId: number) => {
+    setDetailTarget(requestId);
   };
 
   // 탭에 따른 섹션 제목
@@ -112,17 +91,24 @@ export default function FrontDeskPage() {
     activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
     t.adminPage.frontDesk.sections.unhandled;
 
+  const [detailTarget, setDetailTarget] = useState<number | null>(null);
+  const [cancelApproveTarget, setCancelApproveTarget] = useState<number | null>(null);
+  const [cancelRejectTarget, setCancelRejectTarget] = useState<number | null>(null);
+  const [trainingTarget, setTrainingTarget] = useState<any | null>(null);
+
   const getPrimaryActionText = () => {
     if (activeTab === 'escalation') return t.adminPage.frontDesk.actions.approve;
+    if (activeTab === 'cancelPending') return '취소 승인';
     if (activeTab === 'inProgress') return '상담 계속하기';
-    if (activeTab === 'completed') return '상담 기록 보기';
+    if (activeTab === 'completed') return '학습 관리 등록';
     return t.adminPage.frontDesk.actions.startChat;
   };
 
   const getSecondaryActionText = () => {
     if (activeTab === 'escalation') return t.adminPage.frontDesk.actions.reject;
+    if (activeTab === 'cancelPending') return '취소 반려';
     if (activeTab === 'inProgress') return '수동 배정';
-    if (activeTab === 'completed') return '';
+    if (activeTab === 'completed') return '상담 기록 보기';
     return t.adminPage.frontDesk.actions.manualAssign;
   };
 
@@ -142,9 +128,9 @@ export default function FrontDeskPage() {
           options={[
             { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
+            { label: '상담 완료', value: 'completed', count: completed.length },
             { label: '취소 승인 대기', value: 'cancelPending', count: cancelPending.length },
-            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length },
-            { label: '상담 완료', value: 'completed', count: completed.length }
+            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}
@@ -175,15 +161,19 @@ export default function FrontDeskPage() {
                 secondaryActionText={getSecondaryActionText()}
                 onPrimaryAction={
                   activeTab === 'escalation' ? () => setApproveTarget(req.id) : 
+                  activeTab === 'cancelPending' ? () => setCancelApproveTarget(req.id) :
                   activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
+                  activeTab === 'completed' ? () => setTrainingTarget(req) :
                   undefined
                 }
                 onSecondaryAction={
                   activeTab === 'escalation' ? () => setRejectTarget(req.id) :
+                  activeTab === 'cancelPending' ? () => setCancelRejectTarget(req.id) :
                   activeTab === 'inProgress' ? () => handleCardClick(req.id) :
+                  activeTab === 'completed' ? () => handleCardClick(req.id) :
                   () => handleCardClick(req.id)
                 }
-                reverseActions={activeTab === 'inProgress' || activeTab === 'unhandled' || activeTab === 'escalation'}
+                reverseActions={activeTab === 'inProgress' || activeTab === 'unhandled' || activeTab === 'escalation' || activeTab === 'cancelPending' || activeTab === 'completed'}
                 onCardClick={() => handleCardClick(req.id)}
                 // custom props to pass to ChatModal through RequestCard
                 requestId={req.id}
@@ -199,37 +189,64 @@ export default function FrontDeskPage() {
       <CreateRequestModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onCreate={handleCreate}
-        loading={creating}
+        onSuccess={() => refetch && refetch()}
       />
 
       {/* 요청 상세 모달 (우선순위 + 부서 배정 관리) */}
-      <RequestDetailModal
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        detail={detail}
-        onChangePriority={changePriority}
-        onChangeDepartment={changeDepartment}
-        onCancel={cancelRequest}
-        onApproveEscalation={approveEscalation}
-        onRejectEscalation={rejectEscalation}
-        onApproveCancellation={approveCancellation}
-        onRejectCancellation={rejectCancellation}
-        onUpdate={() => refetch && refetch()}
-      />
-
-      {/* 에스컬레이션 승인 모달 */}
-      <ApproveEscalationModal
-        isOpen={approveTarget !== null}
-        onClose={() => setApproveTarget(null)}
-        onApprove={handleApproveEscalationSubmit}
-      />
+      {detailTarget !== null && (
+        <RequestDetailModal
+          isOpen={true}
+          onClose={() => setDetailTarget(null)}
+          requestId={detailTarget}
+          onUpdate={() => refetch && refetch()}
+        />
+      )}
+      {approveTarget !== null && (
+        <ApproveEscalationModal
+          isOpen={true}
+          onClose={() => setApproveTarget(null)}
+          requestId={approveTarget}
+          onSuccess={() => refetch && refetch()}
+        />
+      )}
 
       {/* 에스컬레이션 반려 모달 */}
-      <RejectEscalationModal
-        isOpen={rejectTarget !== null}
-        onClose={() => setRejectTarget(null)}
-        onReject={handleRejectEscalationSubmit}
+      {rejectTarget !== null && (
+        <RejectEscalationModal
+          isOpen={true}
+          onClose={() => setRejectTarget(null)}
+          requestId={rejectTarget}
+          onSuccess={() => refetch && refetch()}
+        />
+      )}
+
+      {/* 취소 승인 모달 */}
+      {cancelApproveTarget !== null && (
+        <ApproveCancellationModal
+          isOpen={true}
+          onClose={() => setCancelApproveTarget(null)}
+          requestId={cancelApproveTarget}
+          onSuccess={() => refetch && refetch()}
+        />
+      )}
+
+      {/* 취소 반려 모달 */}
+      {cancelRejectTarget !== null && (
+        <RejectCancellationModal
+          isOpen={true}
+          onClose={() => setCancelRejectTarget(null)}
+          requestId={cancelRejectTarget}
+          onSuccess={() => refetch && refetch()}
+        />
+      )}
+
+      {/* 학습 데이터 등록 모달 */}
+      <RegisterTrainingModal
+        isOpen={trainingTarget !== null}
+        onClose={() => setTrainingTarget(null)}
+        departmentId={trainingTarget?.departmentId}
+        summary={trainingTarget?.summary}
+        roomNo={trainingTarget?.roomNo?.toString()}
       />
 
       {/* 상담 계속하기 처리를 위한 ChatModal */}
