@@ -9,15 +9,21 @@ async def run_concierge_agent(user_message: str, room_no: str = "", chat_history
     고객 메시지를 받아 Gemini를 호출하고, 컨시어지 도메인에 특화된 정보를 추출한다.
     """
     
+    from datetime import datetime, timedelta, timezone
+    
+    # 현재 한국 시간 구하기 (UTC+9)
+    kst = timezone(timedelta(hours=9))
+    now_str = datetime.now(kst).strftime('%Y-%m-%d %H:%M')
+    
     # 대화 맥락 조립 (최근 5개 메시지)
     if chat_history:
         context = "\n".join([
             f"{'고객' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
             for m in chat_history[-5:]
         ])
-        prompt = f"[대화 맥락]\n{context}\n\n[현재 요청]\n고객: {user_message}"
+        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n[대화 맥락]\n{context}\n\n[현재 요청]\n고객: {user_message}"
     else:
-        prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
+        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n고객 객실: {room_no}\n고객 메시지: {user_message}"
     
     try:
         # Gemini 호출
