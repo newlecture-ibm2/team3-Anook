@@ -20,9 +20,7 @@ interface CreateRequestModalProps {
 }
 
 const PRIORITIES = [
-  { value: 'LOW', label: '낮음' },
   { value: 'NORMAL', label: '보통' },
-  { value: 'HIGH', label: '높음' },
   { value: 'URGENT', label: '긴급' },
 ];
 
@@ -130,17 +128,18 @@ export default function CreateRequestModal({
           {/* 하단 2열: 우선순위 + 배정 부서 */}
           <div className={styles.row}>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="cr-priority">우선순위</label>
-              <select
-                id="cr-priority"
-                className={styles.select}
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-              >
-                {PRIORITIES.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
+              <label className={styles.label}>우선순위</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
+                <input
+                  type="checkbox"
+                  checked={priority === 'URGENT'}
+                  onChange={(e) => setPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: priority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
+                  긴급 작업으로 설정
+                </span>
+              </label>
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="cr-dept">배정 부서 <span className={styles.required}>*</span></label>

@@ -76,17 +76,18 @@ export default function ApproveEscalationModal({
 
         <div className={styles.inputGroup}>
           <label className={styles.label}>우선순위</label>
-          <select
-            className={styles.select}
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
-            disabled={loading}
-          >
-            <option value="LOW">낮음 (LOW)</option>
-            <option value="NORMAL">보통 (NORMAL)</option>
-            <option value="HIGH">높음 (HIGH)</option>
-            <option value="URGENT">긴급 (URGENT)</option>
-          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
+            <input
+              type="checkbox"
+              checked={selectedPriority === 'URGENT'}
+              onChange={(e) => setSelectedPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
+              disabled={loading}
+              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
+            />
+            <span style={{ fontSize: '14px', fontWeight: selectedPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
+              긴급 작업으로 재배정
+            </span>
+          </label>
         </div>
 
         <div className={styles.buttonGroup}>

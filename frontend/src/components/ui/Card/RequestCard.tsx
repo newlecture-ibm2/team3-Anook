@@ -62,7 +62,7 @@ export default function RequestCard({
           <span className={`${styles.roomType} ${isWarning ? styles.textWhite : ''}`}>{roomType}</span>
           <span className={`${styles.roomNumber} ${isWarning ? styles.textWhite : ''}`}>{roomNumber}</span>
         </div>
-        
+
         <div className={styles.contentSection}>
           <div className={styles.contentHeader}>
             <StatusBadge variant={statusVariant}>{statusText}</StatusBadge>
@@ -78,8 +78,8 @@ export default function RequestCard({
           {description && <p className={styles.description}>{description}</p>}
         </div>
 
-        <div 
-          className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''} ${(!primaryActionText || !secondaryActionText) ? styles.actionSectionSingle : ''}`} 
+        <div
+          className={`${styles.actionSection} ${isWarning ? styles.actionSectionWarning : ''} ${(!primaryActionText || !secondaryActionText) ? styles.actionSectionSingle : ''}`}
           style={reverseActions ? { flexDirection: 'column-reverse' } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
@@ -96,10 +96,10 @@ export default function RequestCard({
         </div>
       </div>
 
-      <ChatModal 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-        roomNumber={roomNumber.toString()} 
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        roomNumber={roomNumber.toString()}
         requestId={requestId}
         status={status}
         onStatusChange={onStatusChange}

@@ -21,7 +21,7 @@ import { useTranslation } from '@/app/useTranslation';
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, loading, error, refetch } = useAdminRequests();
-  
+
   const pending = requests.filter(r => r.status === 'PENDING' && r.departmentId === 'FRONT');
   const inProgress = requests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested && r.departmentId === 'FRONT');
   const cancelPending = requests.filter(r => r.cancelRequested);
@@ -84,12 +84,12 @@ export default function FrontDeskPage() {
   };
 
   // 탭에 따른 섹션 제목
-  const sectionTitle = 
-    activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation : 
-    activeTab === 'cancelPending' ? '취소 승인 대기' : 
-    activeTab === 'completed' ? '상담 완료' :
-    activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
-    t.adminPage.frontDesk.sections.unhandled;
+  const sectionTitle =
+    activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation :
+      activeTab === 'cancelPending' ? '취소 승인 대기' :
+        activeTab === 'completed' ? '상담 완료' :
+          activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
+            t.adminPage.frontDesk.sections.unhandled;
 
   const [detailTarget, setDetailTarget] = useState<number | null>(null);
   const [cancelApproveTarget, setCancelApproveTarget] = useState<number | null>(null);
@@ -124,7 +124,7 @@ export default function FrontDeskPage() {
 
       {/* Tabs Section */}
       <div className={styles.tabSection}>
-        <Tabs 
+        <Tabs
           options={[
             { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
@@ -140,7 +140,7 @@ export default function FrontDeskPage() {
       {/* Content Section */}
       <div className={styles.contentSection}>
         <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
-        
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
         ) : error ? (
@@ -160,18 +160,18 @@ export default function FrontDeskPage() {
                 primaryActionText={getPrimaryActionText()}
                 secondaryActionText={getSecondaryActionText()}
                 onPrimaryAction={
-                  activeTab === 'escalation' ? () => setApproveTarget(req.id) : 
-                  activeTab === 'cancelPending' ? () => setCancelApproveTarget(req.id) :
-                  activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
-                  activeTab === 'completed' ? () => setTrainingTarget(req) :
-                  undefined
+                  activeTab === 'escalation' ? () => setApproveTarget(req.id) :
+                    activeTab === 'cancelPending' ? () => setCancelApproveTarget(req.id) :
+                      activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
+                        activeTab === 'completed' ? () => setTrainingTarget(req) :
+                          undefined
                 }
                 onSecondaryAction={
                   activeTab === 'escalation' ? () => setRejectTarget(req.id) :
-                  activeTab === 'cancelPending' ? () => setCancelRejectTarget(req.id) :
-                  activeTab === 'inProgress' ? () => handleCardClick(req.id) :
-                  activeTab === 'completed' ? () => handleCardClick(req.id) :
-                  () => handleCardClick(req.id)
+                    activeTab === 'cancelPending' ? () => setCancelRejectTarget(req.id) :
+                      activeTab === 'inProgress' ? () => handleCardClick(req.id) :
+                        activeTab === 'completed' ? () => handleCardClick(req.id) :
+                          () => handleCardClick(req.id)
                 }
                 reverseActions={activeTab === 'inProgress' || activeTab === 'unhandled' || activeTab === 'escalation' || activeTab === 'cancelPending' || activeTab === 'completed'}
                 onCardClick={() => handleCardClick(req.id)}
