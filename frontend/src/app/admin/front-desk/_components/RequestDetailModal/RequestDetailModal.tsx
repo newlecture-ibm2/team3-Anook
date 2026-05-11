@@ -257,9 +257,109 @@ export default function RequestDetailModal({
               <div className={styles.confidenceBadge}>
                 신뢰도: {Math.round(detail.confidence * 100)}%
               </div>
-              <pre className={styles.jsonBlock}>
-                {JSON.stringify(detail.entities, null, 2)}
-              </pre>
+              {(() => {
+                const entities = detail.entities!;
+                if (detail.departmentId === 'FB' || detail.departmentId === 'HK') {
+                  return (
+                    <div className={styles.entityList}>
+                      {entities.items && entities.items.length > 0 && (
+                        <div className={styles.entityItem}>
+                          <strong>요청 품목:</strong>
+                          <ul>
+                            {entities.items.map((it: any, idx: number) => (
+                              <li key={idx}>{it.item} {it.count}개</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {entities.tasks && entities.tasks.length > 0 && (
+                        <div className={styles.entityItem}>
+                          <strong>요청 작업:</strong>
+                          <ul>
+                            {entities.tasks.map((task: string, idx: number) => (
+                              <li key={idx}>{task}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {entities.is_contactless && (
+                        <div className={styles.entityItem}>
+                          <StatusBadge variant="purple">비대면 배달 요청됨</StatusBadge>
+                        </div>
+                      )}
+                      {entities.target_time && (
+                        <div className={styles.entityItem}>
+                          <strong>희망 시간:</strong> {entities.target_time}
+                        </div>
+                      )}
+                      {/* 폴백: items, tasks 모두 없으면 raw JSON 출력 */}
+                      {(!entities.items?.length && !entities.tasks?.length && !entities.is_contactless && !entities.target_time) && (
+                         <pre className={styles.jsonBlock}>
+                           {JSON.stringify(entities, null, 2)}
+                         </pre>
+                      )}
+                    </div>
+                  );
+                } else if (detail.departmentId === 'FACILITY') {
+                  return (
+                    <div className={styles.entityList}>
+                      {entities.location && (
+                        <div className={styles.entityItem}>
+                          <strong>위치:</strong> {entities.location}
+                        </div>
+                      )}
+                      {entities.issue && (
+                        <div className={styles.entityItem}>
+                          <strong>문제/증상:</strong> {entities.issue}
+                        </div>
+                      )}
+                      {entities.priority && (
+                        <div className={styles.entityItem}>
+                          <strong>예상 긴급도:</strong> {entities.priority}
+                        </div>
+                      )}
+                      {/* 폴백 */}
+                      {(!entities.location && !entities.issue && !entities.priority) && (
+                         <pre className={styles.jsonBlock}>
+                           {JSON.stringify(entities, null, 2)}
+                         </pre>
+                      )}
+                    </div>
+                  );
+                } else if (detail.departmentId === 'CONCIERGE') {
+                  return (
+                    <div className={styles.entityList}>
+                      {entities.topic && (
+                        <div className={styles.entityItem}>
+                          <strong>주제:</strong> {entities.topic}
+                        </div>
+                      )}
+                      {entities.question && (
+                        <div className={styles.entityItem}>
+                          <strong>질문:</strong> {entities.question}
+                        </div>
+                      )}
+                      {entities.language && (
+                        <div className={styles.entityItem}>
+                          <strong>언어:</strong> {entities.language}
+                        </div>
+                      )}
+                      {/* 폴백 */}
+                      {(!entities.topic && !entities.question && !entities.language) && (
+                         <pre className={styles.jsonBlock}>
+                           {JSON.stringify(entities, null, 2)}
+                         </pre>
+                      )}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <pre className={styles.jsonBlock}>
+                      {JSON.stringify(entities, null, 2)}
+                    </pre>
+                  );
+                }
+              })()}
             </div>
           </div>
         )}
