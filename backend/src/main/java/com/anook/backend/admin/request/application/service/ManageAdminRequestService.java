@@ -91,6 +91,15 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
+    public void changeStatus(Long id, String status) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.updateStatus(id, status.toUpperCase());
+    }
+
+    @Override
+    @Transactional
     public void cancelRequest(Long id, String rejectionReason) {
         AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));

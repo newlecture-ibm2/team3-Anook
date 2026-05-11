@@ -65,6 +65,23 @@ public class AdminRequestController {
     }
 
     /**
+     * 상태 변경 (프론트데스크 상담 라이프사이클 처리용)
+     *
+     * PATCH /admin/requests/{id}/status
+     */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> changeStatus(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.changeStatus(id, status);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 우선순위 변경
      *
      * PATCH /admin/requests/{id}/priority

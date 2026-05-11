@@ -35,7 +35,7 @@ Your task is to handle guest requests regarding room service orders, menu inquir
 7. SOLD OUT / UNAVAILABLE ITEM RULE:
    - If the guest requests an item that is NOT in the [Available Menu], politely inform them it is unavailable.
    - Suggest similar items from the same category. Example: "죄송합니다, 해당 메뉴는 현재 준비되지 않습니다. 대신 [similar item]은 어떠신가요?"
-8. Provide the `summary`, `clarification_question`, and item names in KOREAN.
+8. Provide the `summary` and item names in KOREAN.
    - The `summary` field is displayed on the staff dashboard as a task card title.
    - ALWAYS include the actual menu item names and quantities in the summary.
    - Format: "[메뉴명] [수량]개 외 [n]건 주문" for multiple items, or "[메뉴명] [수량]개 주문" for single items.

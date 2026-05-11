@@ -101,6 +101,8 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
             "priority": "URGENT",
             "entities": {"intent": "OTHER"},
             "confidence": 0.9,
+            "missing_fields": [],
+            "clarification_options": [],
         }
 
     return {
@@ -110,4 +112,6 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
         "priority": "URGENT",
         "entities": result.entities,
         "confidence": result.confidence,
+        "missing_fields": getattr(result, "missing_fields", []),
+        "clarification_options": getattr(result, "clarification_options", []),
     }

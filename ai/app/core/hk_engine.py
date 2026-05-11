@@ -59,4 +59,6 @@ async def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
+        "missing_fields": result.missing_fields,
+        "clarification_options": getattr(result, "clarification_options", []),
     }

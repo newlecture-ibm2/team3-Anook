@@ -110,12 +110,19 @@ public class PythonAiHttpAdapter implements MessageAiPort {
 
     /**
      * AI 서버 장애 시 폴백 응답
-     * 고객에게는 안내 메시지를 반환하고, domainCode=null로 이벤트를 발행하지 않는다.
+     * 고객에게 직원 연결 안내 메시지를 보내고, FRONT 부서로 티켓을 생성한다.
      */
     private java.util.List<MessageAiResult> fallbackResult() {
         return java.util.List.of(new MessageAiResult(
-                "죄송합니다. AI 서비스에 일시적인 문제가 발생했습니다. 프론트 데스크(내선 0번)로 연락 부탁드립니다.",
-                null, null, null, Collections.emptyMap(), 0.0, null, "ADD", null
+                "안내에 어려움이 있어 프론트 데스크 직원을 연결해 드리겠습니다. 잠시만 기다려 주세요.",
+                "AI 분석 실패 (직원 연결)", 
+                "FRONT", 
+                "URGENT", 
+                Collections.emptyMap(), 
+                0.0, 
+                "ADD", 
+                "ADD", 
+                null
         ));
     }
 

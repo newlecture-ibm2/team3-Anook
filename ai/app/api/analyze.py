@@ -60,69 +60,75 @@ _background_tasks = set()
 STATIC_REPLIES = {
     "ESCALATION": {
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
-        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
-        "ja": "私ではすぐにお答えするのが難しいため、すぐにフロントデスクのスタッフにお繋ぎいたしますね。少々お待ちくださいませ！",
-        "zh": "这个问题我马上为您连接前台工作人员，请您稍等片刻！"
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!"
     },
     "CLARIFICATION": {
-        "ko": "죄송합니다, 조금 더 자세히 말씀해 주시겠어요? 어떤 도움이 필요하신지 알려주시면 바로 도와드리겠습니다.",
-        "en": "I'm sorry, could you please provide more details? Let us know how we can help you, and we will assist you right away.",
-        "ja": "申し訳ありませんが、もう少し詳しく教えていただけますか？どのようなご用件かお知らせいただければ、すぐに対応いたします。",
-        "zh": "对不起，您能再详细说明一下吗？请告诉我们您需要什么帮助，我们会立即为您处理。"
+        "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
+        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
     },
     "CANCEL": {
-        "ko": "네, 가장 최근 요청을 취소 처리하겠습니다.",
-        "en": "Okay, I will cancel your most recent request.",
-        "ja": "はい、直近のリクエストをキャンセルいたします。",
-        "zh": "好的，我将取消您最近的请求。"
+        "ko": "네, 방금 말씀하신 요청은 바로 취소해 드릴게요.",
+        "en": "Sure, I'll go ahead and cancel your most recent request."
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
-        "en": "I will check the status of your most recent request right now.",
-        "ja": "現在の直近のリクエストの進捗状況を確認いたします。",
-        "zh": "我现在将为您查询最近一次请求的处理状态。"
+        "en": "I will check the status of your most recent request right now."
     },
     "TARGETED_CANCEL": {
         "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
-        "en": "Okay, I will cancel the specific request you mentioned.",
-        "ja": "はい、ご指定のリクエストをキャンセルいたします。",
-        "zh": "好的，我将取消您指定的请求。"
+        "en": "Okay, I will cancel the specific request you mentioned."
     },
     "TASK_WAIT": {
-        "ko": "네, 알겠습니다. 담당 부서에 요청을 전달하겠습니다. 잠시만 기다려 주세요.",
-        "en": "Understood. I will forward your request to the department in charge. Please wait a moment.",
-        "ja": "承知いたしました。担当部署にリクエストを転送いたします。少々お待ちください。",
-        "zh": "好的，我将把您的请求转交给相关部门。请稍等片刻。"
+        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
+        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment."
     },
     "INFO_NOT_FOUND": {
-        "ko": "죄송합니다, 해당 정보를 찾지 못했습니다. 프론트 데스크(내선 0번)로 문의해 주세요.",
-        "en": "I'm sorry, I couldn't find that information. Please contact the front desk (extension 0).",
-        "ja": "申し訳ありませんが、その情報が見つかりませんでした。フロントデスク（内線0番）までお問い合わせください。",
-        "zh": "抱歉，我没有找到相关信息。请联系前台（分机0）。"
+        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
+        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly."
     },
     "ERROR": {
-        "ko": "요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-        "en": "A problem occurred while processing your request. Please try again later.",
-        "ja": "リクエストの処理中に問題が発生しました。しばらくしてからもう一度お試しください。",
-        "zh": "处理您的请求时出现问题。请稍后再试。"
+        "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
+        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?"
     },
     "COMPLAINT": {
         "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
-        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution.",
-        "ja": "ご不便をおかけして大変申し訳ございません。担当スタッフに即座にお伝えし、迅速に対応いたします。",
-        "zh": "非常抱歉给您带来不便。我们会立即通知工作人员，尽快为您解决。"
+        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution."
     }
 }
 
 def _get_static_reply(key: str, lang: str) -> str:
     lang = lang.lower()
-    if lang not in ["ko", "en", "ja", "zh"]:
+    if lang not in ["ko", "en"]:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES.get(key, {}).get("en", "We are processing your request."))
 
+def _summarize_from_context(current_text: str, chat_history: list, fallback: str) -> str:
+    try:
+        recent = chat_history[-6:] if len(chat_history) > 6 else chat_history
+        context_lines = []
+        for msg in recent:
+            role = "고객" if msg.get("role") == "user" else "AI"
+            context_lines.append(f"{role}: {msg.get('content', '')}")
+        context_lines.append(f"고객: {current_text}")
+        context_str = "\n".join(context_lines)
+
+        raw = call_gemini(
+            prompt=(
+                f"아래 호텔 고객과 AI 컨시어지의 대화를 읽고, "
+                f"고객이 원하는 것을 15자 이내의 한국어 명사형으로 한줄 요약해 주세요.\n\n"
+                f"[대화]\n{context_str}"
+            ),
+            system_instruction='반드시 {"summary": "요약내용"} 형식의 JSON으로만 출력하세요. 예: {"summary": "아기 침대 객실 배치 요청"}'
+        )
+        summary = raw.get("summary", "").strip()
+        if summary:
+            print(f"[Analyze] 📝 맥락 기반 요약 생성: '{summary}'")
+            return summary
+    except Exception as e:
+        print(f"[Analyze] ⚠️ 맥락 요약 생성 실패 (폴백 사용): {e}")
+    return fallback
 
 def _fallback_response(guest_reply: str) -> dict:
-    """에러 발생 시 안전한 폴백 응답을 생성합니다."""
     return {
         "guest_reply": guest_reply,
         "summary": "시스템 오류",
@@ -132,13 +138,20 @@ def _fallback_response(guest_reply: str) -> dict:
         "confidence": 0.0,
     }
 
-
 @router.post("/analyze")
 async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
     """
     백엔드 PythonAiHttpAdapter가 호출하는 단일 분석 엔드포인트.
     멀티 인텐트를 처리하기 위해 배열(List)을 반환합니다.
     """
+    # 사용자가 실제로 입력한 텍스트를 기반으로 언어 덮어쓰기 (크롬 설정 무시)
+    def _detect_language(text: str, default: str) -> str:
+        if any('\uac00' <= char <= '\ud7a3' for char in text): return "ko"
+        if any('a' <= char.lower() <= 'z' for char in text): return "en"
+        return default
+        
+    request.language = _detect_language(request.text, request.language)
+
     # 요청마다 컨텍스트 초기화
     ai_log_meta_ctx.set({})
     
@@ -152,17 +165,61 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         is_clarification = (response.get("domain_code") is None) and ("?" in guest_reply)
         
         if is_clarification:
-            consecutive_questions = 0
-            for msg in reversed(request.chat_history):
-                if msg.get("role") == "ai":
-                    content = msg.get("content", "").strip()
-                    if "?" in content:
-                        consecutive_questions += 1
-                    else:
-                        break
+            # ── [Option A + 폴백 라운드 카운팅 혼합 이관 카운터] ──
+            # 우선순위:
+            #   1. 에이전트가 missing_fields를 내려보낸 경우 → 해당 key가 3라운드 미해소면 이관
+            #   2. missing_fields가 없는 경우 (라우터-CLARIFICATION) → 라운드 카운팅으로 이관
+            current_missing = response.get("missing_fields", [])
+
+            # 현재 턴도 하나의 clarification 라운드로 간주하므로 1부터 시작 (고객의 현재 메시지가 history에서 빠져있기 때문)
+            clarification_rounds = 1
+            last_was_ai_question = False
             
-            if consecutive_questions >= 3:
-                print(f"\n[Analyze] 🚨 연속 질문(되묻기) {consecutive_questions}회 누적으로 인한 FRONT 강제 이관 발동")
+            # missing_fields별 관련 키워드 (다국어 지원을 위해 영어 키워드 추가)
+            keyword_map = {
+                "quantity": ["몇", "수량", "개수", "얼마나", "개", "how many", "quantity", "amount", "number"],
+                "menu_items": ["어떤", "메뉴", "무엇을", "음식", "음료", "what", "menu", "food", "drink", "beverage", "which"],
+                "item": ["어떤", "무엇을", "용품", "물품", "필요하신", "what", "item", "need", "amenity", "supply"],
+                "temperature": ["따뜻", "차갑", "아이스", "핫", "온도", "hot", "cold", "ice", "iced", "warm", "temperature"],
+                "destination": ["어디", "목적지", "장소", "어느", "where", "destination", "place"],
+                "time": ["시간", "언제", "몇 시", "time", "when"],
+                "symptom": ["증상", "어떻게", "어떤 문제", "고장", "symptom", "problem", "issue", "wrong", "what"],
+                "location": ["어디", "위치", "어느 곳", "where", "location"],
+            }
+            
+            current_keywords = []
+            for field in current_missing:
+                current_keywords.extend(keyword_map.get(field, []))
+            
+            for msg in reversed(request.chat_history):
+                role = msg.get("role")
+                if role == "ai":
+                    msg_content = msg.get("content", "").strip()
+                    if "?" in msg_content:
+                        # 에이전트가 특정 필수값을 찾고 있다면, 이전 질문들도 그 필수값 관련 키워드를 포함해야만 같은 루프로 인정
+                        msg_content_lower = msg_content.lower()
+                        if current_keywords and not any(kw in msg_content_lower for kw in current_keywords):
+                            break # 이전 질문은 다른 것을 물어봤으므로 연속 루프가 아님!
+                        last_was_ai_question = True
+                    else:
+                        break # AI가 질문을 안 했으면 되묻기 사이클 단절
+                elif role == "user":
+                    if last_was_ai_question:
+                        # 이전 사이클(AI질문->고객답변) 1라운드 추가
+                        clarification_rounds += 1
+                        last_was_ai_question = False
+
+            should_escalate = False
+            if current_missing and clarification_rounds > 3:
+                # Case 1: 에이전트가 missing_fields를 명시했고 3번 물어봤는데도(4라운드째) 미해소
+                print(f"\n[Analyze] 🚨 missing_fields {current_missing} 미해소 {clarification_rounds}라운드 → FRONT 강제 이관")
+                should_escalate = True
+            elif not current_missing and clarification_rounds > 3:
+                # Case 2: 라우터-CLARIFICATION이 3번 물어봤는데도(4라운드째) 반복
+                print(f"\n[Analyze] 🚨 라우터-CLARIFICATION {clarification_rounds}라운드 반복 → FRONT 강제 이관")
+                should_escalate = True
+
+            if should_escalate:
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
                     "summary": "추가 확인 실패 (강제 이관)",
@@ -277,17 +334,18 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             # 부서별 에이전트가 등록되어 있으면 호출
             if domain in DOMAIN_AGENTS:
                 coro = DOMAIN_AGENTS[domain](
-                    user_message=request.text, 
-                    room_no=request.room_no, 
+                    user_message=request.text,
+                    room_no=request.room_no,
                     chat_history=request.chat_history
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
 
-            # 에이전트 미등록 시 → 기본 응답
+            # 에이전트 미등록 시 → domain_code만 찍어서 전달 (인프라 기본 동작)
+            context_summary = _summarize_from_context(request.text, request.chat_history, f"{domain} 부서 요청 접수")
             response = {
                 "guest_reply": _get_static_reply("TASK_WAIT", request.language),
-                "summary": f"{domain} 부서 요청 접수",
+                "summary": context_summary,
                 "domain_code": domain,
                 "priority": "NORMAL",
                 "entities": {},
@@ -295,7 +353,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             }
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
-                
+
             print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
@@ -331,6 +389,61 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
         # STEP 3-c: CLARIFICATION → 되묻기
         if primary.mode == "CLARIFICATION":
+            # ── [에이전트 재위임 로직] ──
+            # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
+            # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
+            # "어떤 말씀인지 모르겠다" 대신 구체적인 재질문을 생성합니다.
+            last_agent_domain = None
+            recent_ai_msgs = [m for m in request.chat_history[-6:] if m.get("role") == "ai"]
+            if recent_ai_msgs and "?" in recent_ai_msgs[-1].get("content", ""):
+                # 최근 AI 질문 직전의 TASK 도메인을 찾기 위해 에이전트 등록된 도메인 추정
+                # chat_history에 domain 정보가 없으므로, 에이전트 등록 여부로 확인 가능한
+                # 도메인을 router_engine의 이전 히스토리 기반으로 추론합니다.
+                # → 가장 실용적인 방법: 현재 라우터에게 전체 맥락으로 재질의
+                for domain_key in DOMAIN_AGENTS:
+                    # 도메인 키워드가 최근 AI 질문에 포함된 경우 해당 에이전트 재호출
+                    # (예: "오렌지 주스", "수건", "에어컨" 등)
+                    pass
+                # 실용적 접근: 직전에 에이전트가 물어본 맥락이 있으면 가장 최근 TASK 도메인으로 재위임
+                # chat_history를 역순으로 탐색해 마지막 TASK 처리 도메인 흔적을 찾습니다.
+                # 현재 chat_history에 domain 태그가 없으므로, 도메인별 키워드 사전으로 추론합니다.
+                DOMAIN_KEYWORDS = {
+                    "FB": ["주문", "룸서비스", "메뉴", "음식", "음료", "콜라", "주스", "커피", "맥주", "와인", "스테이크", "샐러드"],
+                    "HK": ["수건", "타월", "베개", "이불", "침대", "어메니티", "칫솔", "샴푸", "비누", "슬리퍼"],
+                    "FACILITY": ["에어컨", "TV", "와이파이", "냉장고", "전기", "수도", "변기", "샤워", "조명", "고장"],
+                    "CONCIERGE": ["택시", "맡기", "짐", "레스토랑", "예약", "투어", "관광", "공항", "모닝콜"],
+                }
+                recent_context = " ".join(
+                    m.get("content", "") for m in request.chat_history[-8:]
+                )
+                for domain_key, keywords in DOMAIN_KEYWORDS.items():
+                    if domain_key in DOMAIN_AGENTS and any(kw in recent_context for kw in keywords):
+                        last_agent_domain = domain_key
+                        break
+
+            if last_agent_domain:
+                try:
+                    agent_result = await DOMAIN_AGENTS[last_agent_domain](
+                        user_message=request.text,
+                        room_no=request.room_no,
+                        chat_history=request.chat_history,
+                    )
+                    response = {
+                        "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
+                        "summary": agent_result.get("summary", "추가 확인 필요"),
+                        "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
+                        "priority": agent_result.get("priority", "NORMAL"),
+                        "entities": agent_result.get("entities", {}),
+                        "confidence": agent_result.get("confidence", primary.confidence),
+                        "missing_fields": agent_result.get("missing_fields", []),
+                    }
+                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
+                    print(f"[Analyze] 응답: {response}\n")
+                    final_responses.append(response)
+                    continue
+                except Exception as e:
+                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 정적 응답 폴백: {e}")
+
             response = {
                 "guest_reply": _get_static_reply("CLARIFICATION", request.language),
                 "summary": "추가 확인 필요",
@@ -587,6 +700,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 if not any(word in final_guest_reply for word in ["직원", "연결", "안내", "프런트", "staff", "front", "スタッフ", "前台"]):
                     final_guest_reply = _get_static_reply("ESCALATION", request.language)
 
+            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
+            if agent_result.get("missing_fields"):
+                final_domain_code = None
+
             response = {
                 "guest_reply": final_guest_reply,
                 "summary": final_summary,
@@ -594,6 +711,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": agent_result.get("priority", "NORMAL"),
                 "entities": final_entities,
                 "confidence": agent_confidence,
+                "missing_fields": agent_result.get("missing_fields", []),
+                "clarification_options": agent_result.get("clarification_options", [])
             }
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]
@@ -625,7 +744,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     task_responses = [r for r in final_responses if r.get("domain_code") and r.get("domain_code") != "FRONT"]
     if task_responses:
         last_task = task_responses[-1]
-        append_msg = "아래 접수 내역을 확인해 주세요." if request.language == "ko" else "Please check the request details below."
+        if request.language == "ko":
+            append_msg = "아래 접수 내역을 확인해 주세요."
+        else:
+            append_msg = "Please check the request details below."
         if last_task.get("guest_reply"):
             last_task["guest_reply"] = f"{last_task['guest_reply']}\n{append_msg}"
         else:
