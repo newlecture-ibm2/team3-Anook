@@ -341,7 +341,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ──────────────────────────────────────────────
     try:
         router_results = route(request.text, request.chat_history, request.images)
-        print(f"\n[Analyze] 🔀 라우터 결과: {[{'mode': r.mode, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
+        print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
         return [_fallback_response(_get_static_reply("ERROR", request.language))]
@@ -427,7 +427,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             continue
 
         # STEP 3-c: CLARIFICATION → 되묻기
-        if primary.mode == "CLARIFICATION":
+        if primary.route_type == "CLARIFICATION":
             # ── [에이전트 재위임 로직] ──
             # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
             # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
