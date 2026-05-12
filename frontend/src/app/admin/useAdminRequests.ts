@@ -97,7 +97,15 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   }
 
   const pending = filteredRequests.filter(r => r.status === 'PENDING');
-  const inProgress = filteredRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
+  const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+  
+  // inProgress 배열 내에서 취소 대기(cancelRequested) 항목을 최상단으로 정렬
+  inProgress.sort((a, b) => {
+    if (a.cancelRequested && !b.cancelRequested) return -1;
+    if (!a.cancelRequested && b.cancelRequested) return 1;
+    return 0; // fallback to existing sort (createdAt)
+  });
+
   const cancelPending = filteredRequests.filter(r => r.cancelRequested);
   const completed = filteredRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
