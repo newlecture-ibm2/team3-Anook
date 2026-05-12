@@ -24,6 +24,54 @@ const PRIORITY_OPTIONS = [
   { label: '일반 (NORMAL)', value: 'NORMAL' },
 ];
 
+/** 영문 키 → 한국어 라벨 (카드 미리보기용) */
+const ENTITY_LABELS: Record<string, string> = {
+  is_contactless: '비대면 배달', target_time: '희망 시간',
+  equipment: '대상 설비', symptom: '증상', location: '위치',
+  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
+  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
+  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
+  type: '유형', target: '대상',
+};
+const HIDDEN_KEYS = new Set(['intent', 'allergen_warning']);
+
+/** entities → 카드 미리보기 텍스트 (1~2줄 요약) */
+function formatEntitiesText(entities: Record<string, any>): string {
+  const parts: string[] = [];
+
+  // 정규화: item+count 플랫 → items 배열
+  if (entities.item && entities.count && !entities.items?.length) {
+    entities = { ...entities, items: [{ item: entities.item, count: entities.count }] };
+  }
+
+  // 배열 타입
+  if (entities.items?.length > 0) {
+    parts.push(entities.items.map((it: any) => `${it.item} ${it.count}개`).join(', '));
+  }
+  if (entities.tasks?.length > 0) {
+    parts.push(entities.tasks.join(', '));
+  }
+  if (entities.menu_items?.length > 0) {
+    parts.push(entities.menu_items.map((mi: any) => {
+      let s = `${mi.name} ${mi.quantity}개`;
+      if (mi.selected_option && mi.selected_option !== '없음') s += ` (${mi.selected_option})`;
+      return s;
+    }).join(', '));
+  }
+
+  // 단순 키
+  for (const [key, value] of Object.entries(entities)) {
+    if (HIDDEN_KEYS.has(key)) continue;
+    if (['items', 'tasks', 'menu_items', 'item', 'count'].includes(key)) continue;
+    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+    if (value === true) { parts.push(ENTITY_LABELS[key] || key); continue; }
+    const label = ENTITY_LABELS[key] || key;
+    parts.push(`${label}: ${value}`);
+  }
+
+  return parts.join('\n');
+}
+
 /**
  * [가이드라인 준수] 스태프 대시보드 메인 페이지
  * - URL: /staff
@@ -155,7 +203,10 @@ function DashboardContent() {
                               if (!task.rawText) return '';
                               const main = task.rawText.split('\n|||TRANSFER_REASON|||')[0];
                               const customer = main.split('[주문 상세]')[0].trim();
-                              const detail = main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '';
+                              // entities가 있으면 [주문 상세] 대신 entities 기반 텍스트 사용
+                              const detail = task.entities
+                                ? formatEntitiesText(task.entities)
+                                : (main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '');
                               return customer ? (detail ? `${customer}\n${detail}` : customer) : detail;
                             })()}
                             status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}

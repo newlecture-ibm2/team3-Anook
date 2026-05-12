@@ -33,7 +33,7 @@ export default function FrontDeskPage() {
   // 요청 생성 모달 상태
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   // Chat Modal 상태
-  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number } | null>(null);
+  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number, status: string } | null>(null);
   // 승인/반려 모달 상태
   const [approveTarget, setApproveTarget] = useState<number | null>(null);
   const [rejectTarget, setRejectTarget] = useState<number | null>(null);
@@ -162,7 +162,7 @@ export default function FrontDeskPage() {
                 onPrimaryAction={
                   activeTab === 'escalation' ? () => setApproveTarget(req.id) : 
                   activeTab === 'cancelPending' ? () => setCancelApproveTarget(req.id) :
-                  activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id }) :
+                  activeTab === 'inProgress' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status }) :
                   activeTab === 'completed' ? () => setTrainingTarget(req) :
                   undefined
                 }
@@ -170,7 +170,7 @@ export default function FrontDeskPage() {
                   activeTab === 'escalation' ? () => setRejectTarget(req.id) :
                   activeTab === 'cancelPending' ? () => setCancelRejectTarget(req.id) :
                   activeTab === 'inProgress' ? () => handleCardClick(req.id) :
-                  activeTab === 'completed' ? () => handleCardClick(req.id) :
+                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status }) :
                   () => handleCardClick(req.id)
                 }
                 reverseActions={activeTab === 'inProgress' || activeTab === 'unhandled' || activeTab === 'escalation' || activeTab === 'cancelPending' || activeTab === 'completed'}
@@ -256,7 +256,7 @@ export default function FrontDeskPage() {
           onClose={() => setActiveChatRoom(null)}
           roomNumber={activeChatRoom.roomNumber}
           requestId={activeChatRoom.requestId}
-          status="IN_PROGRESS"
+          status={activeChatRoom.status}
           onStatusChange={handleStatusChange}
           autoComplete={false}
         />
