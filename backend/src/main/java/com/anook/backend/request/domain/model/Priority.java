@@ -6,7 +6,8 @@ package com.anook.backend.request.domain.model;
 public enum Priority {
 
     NORMAL,
-    URGENT;
+    URGENT,
+    EMERGENCY;
 
     /**
      * 문자열 → Priority 변환 (대소문자 무시, null/빈값은 NORMAL)

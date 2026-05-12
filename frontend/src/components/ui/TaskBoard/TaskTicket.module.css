@@ -6,7 +6,8 @@
   flex-direction: column;
   padding: calc(var(--space-24) + 4px) var(--space-24) var(--space-24);
   gap: var(--space-16);
-  border: 1px solid var(--color-surface); /* 연한 회색 테두리 */
+  border: 1px solid var(--color-surface);
+  /* 연한 회색 테두리 */
   border-radius: var(--radius-md);
   background: var(--color-bg);
   box-shadow: var(--shadow-card);
@@ -22,36 +23,86 @@
   left: 0;
   right: 0;
   height: 6px;
-  background-color: var(--color-surface); /* default */
+  background-color: var(--color-surface);
+  /* default */
 }
 
 /* Department Styles */
-.hk .topColorBar { background-color: var(--color-dept-hk-border); }
-.hk .deptBadge { color: var(--color-dept-hk-text); }
-.hk .headerDivider { background-color: var(--color-dept-hk-text); }
+.hk .topColorBar {
+  background-color: var(--color-dept-hk-border);
+}
 
-.facility .topColorBar { background-color: var(--color-dept-facility-border); }
-.facility .deptBadge { color: var(--color-dept-facility-text); }
-.facility .headerDivider { background-color: var(--color-dept-facility-text); }
+.hk .deptBadge {
+  color: var(--color-dept-hk-text);
+}
 
-.fb .topColorBar { background-color: var(--color-dept-fb-border); }
-.fb .deptBadge { color: var(--color-dept-fb-text); }
-.fb .headerDivider { background-color: var(--color-dept-fb-text); }
+.hk .headerDivider {
+  background-color: var(--color-dept-hk-text);
+}
 
-.concierge .topColorBar { background-color: var(--color-dept-concierge-border); }
-.concierge .deptBadge { color: var(--color-dept-concierge-text); }
-.concierge .headerDivider { background-color: var(--color-dept-concierge-text); }
+.facility .topColorBar {
+  background-color: var(--color-dept-facility-border);
+}
 
-.front .topColorBar { background-color: var(--color-dept-front-border); }
-.front .deptBadge { color: var(--color-dept-front-text); }
-.front .headerDivider { background-color: var(--color-dept-front-text); }
+.facility .deptBadge {
+  color: var(--color-dept-facility-text);
+}
 
-.emergency .topColorBar { background-color: var(--color-dept-emergency-border); }
-.emergency .deptBadge { color: var(--color-dept-emergency-text); }
-.emergency .headerDivider { background-color: var(--color-dept-emergency-text); }
+.facility .headerDivider {
+  background-color: var(--color-dept-facility-text);
+}
+
+.fb .topColorBar {
+  background-color: var(--color-dept-fb-border);
+}
+
+.fb .deptBadge {
+  color: var(--color-dept-fb-text);
+}
+
+.fb .headerDivider {
+  background-color: var(--color-dept-fb-text);
+}
+
+.concierge .topColorBar {
+  background-color: var(--color-dept-concierge-border);
+}
+
+.concierge .deptBadge {
+  color: var(--color-dept-concierge-text);
+}
+
+.concierge .headerDivider {
+  background-color: var(--color-dept-concierge-text);
+}
+
+.front .topColorBar {
+  background-color: var(--color-dept-front-border);
+}
+
+.front .deptBadge {
+  color: var(--color-dept-front-text);
+}
+
+.front .headerDivider {
+  background-color: var(--color-dept-front-text);
+}
+
+.emergency .topColorBar {
+  background-color: var(--color-dept-emergency-border);
+}
+
+.emergency .deptBadge {
+  color: var(--color-dept-emergency-text);
+}
+
+.emergency .headerDivider {
+  background-color: var(--color-dept-emergency-text);
+}
 
 .taskTicket.emergency {
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); /* 빨간색, 거리 0 */
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  /* 빨간색, 거리 0 */
 }
 
 .taskTicket:hover {
@@ -65,7 +116,8 @@
   font: var(--text-caption-medium);
   font-weight: 700;
   white-space: nowrap;
-  color: var(--color-gray-700); /* default text */
+  color: var(--color-gray-700);
+  /* default text */
 }
 
 .header {
@@ -179,6 +231,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.4); /* 약간의 회색 오버레이 */
+  background-color: rgba(255, 255, 255, 0.4);
+  /* 약간의 회색 오버레이 */
   pointer-events: none;
 }

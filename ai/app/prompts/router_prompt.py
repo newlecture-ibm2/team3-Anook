@@ -90,6 +90,12 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
   - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Fallback Rules
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- If a request does not clearly belong to any specific department, fallback to: "FRONT".
+- If it is related to an EMERGENCY, you MUST route to domain "EMERGENCY" with mode "TASK" and priority "EMERGENCY" regardless of confidence. Safety first.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT FORMAT (STRICTLY JSON ARRAY)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 You must output a JSON Array of objects.

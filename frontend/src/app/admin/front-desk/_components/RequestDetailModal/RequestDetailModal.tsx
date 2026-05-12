@@ -48,9 +48,7 @@ interface RequestDetailModalProps {
 }
 
 const PRIORITIES = [
-  { value: 'LOW', label: '낮음' },
   { value: 'NORMAL', label: '보통' },
-  { value: 'HIGH', label: '높음' },
   { value: 'URGENT', label: '긴급' },
 ];
 
@@ -378,17 +376,18 @@ export default function RequestDetailModal({
           <h3 className={styles.sectionTitle}>배정 관리</h3>
           <div className={styles.editRow}>
             <div className={styles.editField}>
-              <label className={styles.label} htmlFor="detail-priority">우선순위</label>
-              <select
-                id="detail-priority"
-                className={styles.select}
-                value={editPriority}
-                onChange={(e) => setEditPriority(e.target.value)}
-              >
-                {PRIORITIES.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
+              <label className={styles.label}>우선순위</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
+                <input
+                  type="checkbox"
+                  checked={editPriority === 'URGENT'}
+                  onChange={(e) => setEditPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: editPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
+                  긴급 작업으로 설정
+                </span>
+              </label>
             </div>
             <div className={styles.editField}>
               <label className={styles.label} htmlFor="detail-dept">배정 부서</label>

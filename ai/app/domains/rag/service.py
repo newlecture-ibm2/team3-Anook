@@ -21,16 +21,29 @@ def search_similar(query: str, domain_code: str, top_k: int = 3, threshold: floa
         with conn.cursor() as cur:
             # pgvector의 코사인 거리 연산자 <=> 를 사용 (거리가 작을수록 유사함)
             # 유사도 = 1 - (embedding <=> %s)
-            sql = """
-                SELECT id, question, answer, domain_code, status,
-                       1 - (embedding <=> %s::vector) AS similarity
-                FROM knowledge_entry
-                WHERE domain_code IN (%s, 'COMMON') AND status = 'APPROVED'
-                AND 1 - (embedding <=> %s::vector) >= %s
-                ORDER BY similarity DESC
-                LIMIT %s
-            """
-            cur.execute(sql, (query_embedding, domain_code, query_embedding, threshold, top_k))
+            if domain_code:
+                sql = """
+                    SELECT id, question, answer, domain_code, status,
+                           1 - (embedding <=> %s::vector) AS similarity
+                    FROM knowledge_entry
+                    WHERE domain_code IN (%s, 'COMMON') AND status = 'APPROVED'
+                    AND 1 - (embedding <=> %s::vector) >= %s
+                    ORDER BY similarity DESC
+                    LIMIT %s
+                """
+                cur.execute(sql, (query_embedding, domain_code, query_embedding, threshold, top_k))
+            else:
+                # domain_code가 없으면 전체 도메인에서 검색
+                sql = """
+                    SELECT id, question, answer, domain_code, status,
+                           1 - (embedding <=> %s::vector) AS similarity
+                    FROM knowledge_entry
+                    WHERE status = 'APPROVED'
+                    AND 1 - (embedding <=> %s::vector) >= %s
+                    ORDER BY similarity DESC
+                    LIMIT %s
+                """
+                cur.execute(sql, (query_embedding, query_embedding, threshold, top_k))
             rows = cur.fetchall()
             
             results = []
@@ -42,6 +55,35 @@ def search_similar(query: str, domain_code: str, top_k: int = 3, threshold: floa
                     "domain_code": row[3],
                     "status": row[4],
                     "similarity": row[5]
+                })
+            return results
+    finally:
+        conn.close()
+
+def search_exact(query: str) -> List[Dict[str, Any]]:
+    """
+    질문(question)이 쿼리와 정확히 일치하는 지식 엔트리를 검색합니다.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            sql = """
+                SELECT id, question, answer, domain_code, status
+                FROM knowledge_entry
+                WHERE question = %s AND status = 'APPROVED'
+            """
+            cur.execute(sql, (query,))
+            rows = cur.fetchall()
+            
+            results = []
+            for row in rows:
+                results.append({
+                    "id": row[0],
+                    "question": row[1],
+                    "answer": row[2],
+                    "domain_code": row[3],
+                    "status": row[4],
+                    "similarity": 1.0
                 })
             return results
     finally:

@@ -37,11 +37,15 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   const fetchOptions: RequestInit = {
     method: req.method,
     headers,
+    cache: 'no-store',
   };
 
   // Body 전달 (GET, HEAD 제외)
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    fetchOptions.body = await req.text();
+    const bodyText = await req.text();
+    if (bodyText) {
+      fetchOptions.body = bodyText;
+    }
   }
 
   try {

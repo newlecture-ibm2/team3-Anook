@@ -11,15 +11,16 @@ public class KnowledgeEntry {
     private final Long id;
     private String question;
     private String answer;
-    private final DomainCode domainCode;
+    private DomainCode domainCode;
     private KnowledgeStatus status;
     private final Long approvedBy;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public void updateContent(String question, String answer) {
+    public void updateContent(String question, String answer, DomainCode domainCode) {
         this.question = question;
         this.answer = answer;
+        this.domainCode = domainCode;
         this.updatedAt = LocalDateTime.now();
     }
 }
