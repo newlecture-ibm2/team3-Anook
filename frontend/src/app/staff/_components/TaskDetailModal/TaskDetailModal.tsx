@@ -319,6 +319,15 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
+            {task.imageUrl && (
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.descriptionTitle}>첨부 사진</h3>
+                <div className={styles.descriptionBox} style={{ textAlign: 'center' }}>
+                  <img src={task.imageUrl} alt="첨부 사진" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
+                </div>
+              </div>
+            )}
+
             {transferReasonText && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>업무 전달 사유</h3>

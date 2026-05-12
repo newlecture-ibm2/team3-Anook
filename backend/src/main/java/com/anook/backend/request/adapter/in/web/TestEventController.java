@@ -52,6 +52,7 @@ public class TestEventController {
                 summary,
                 escalated,
                 "ADD",
+                null,
                 null
         );
 

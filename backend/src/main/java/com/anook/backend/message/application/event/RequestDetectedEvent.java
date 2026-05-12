@@ -52,6 +52,9 @@ public class RequestDetectedEvent extends ApplicationEvent {
     /** [Keyword Targeting] 변경 대상 아이템 키워드 (예: "콜라"). 미지정 시 null → 최신 건 변경 */
     private final String targetKeyword;
 
+    /** 고객 이미지 데이터 (Base64) 리스트 */
+    private final java.util.List<String> images;
+
     public RequestDetectedEvent(Object source,
                                  String roomNo,
                                  Long guestId,
@@ -63,7 +66,8 @@ public class RequestDetectedEvent extends ApplicationEvent {
                                  String summary,
                                  boolean escalated,
                                  String actionType,
-                                 String targetKeyword) {
+                                 String targetKeyword,
+                                 java.util.List<String> images) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
@@ -76,6 +80,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
         this.escalated = escalated;
         this.actionType = actionType;
         this.targetKeyword = targetKeyword;
+        this.images = images;
     }
 }
 

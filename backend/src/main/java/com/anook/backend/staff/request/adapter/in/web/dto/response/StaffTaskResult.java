@@ -16,5 +16,6 @@ public record StaffTaskResult(
         Integer version,
         boolean cancelRequested,
         LocalDateTime cancelRequestedAt,
-        java.util.Map<String, Object> entities
+        java.util.Map<String, Object> entities,
+        String imageUrl
 ) {}
