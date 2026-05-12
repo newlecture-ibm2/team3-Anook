@@ -46,19 +46,21 @@ export default function KnowledgeManagementPage() {
             }}
           />
         </div>
-        <div className={styles.subTabs}>
-          <Tabs 
-            options={SUB_TAB_OPTIONS}
-            activeValue={subTab}
-            onChange={(val) => setSubTab(val || 'ALL')}
-          />
-        </div>
+        {mainTab === 'LIBRARY' && (
+          <div className={styles.subTabs}>
+            <Tabs 
+              options={SUB_TAB_OPTIONS}
+              activeValue={subTab}
+              onChange={(val) => setSubTab(val || 'ALL')}
+            />
+          </div>
+        )}
       </div>
 
       {/* Content Section */}
       <div className={styles.contentWrapper}>
         {mainTab === 'REVIEW' ? (
-          <KnowledgeReviewTab domainCode={subTab} />
+          <KnowledgeReviewTab domainCode="ALL" />
         ) : (
           <KnowledgeLibraryTab domainCode={subTab} />
         )}
