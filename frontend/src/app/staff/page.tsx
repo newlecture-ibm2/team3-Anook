@@ -2,8 +2,6 @@
 
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Sidebar from '@/components/layout/Sidebar';
-import GlobalEmergencyListener from '@/components/layout/GlobalEmergencyListener';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
@@ -146,13 +144,7 @@ function DashboardContent() {
   }), [filteredTasks]);
 
   return (
-    <>
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <GlobalEmergencyListener />
-      <div className={styles.container} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
-
-        <main className={styles.mainContent} style={{ overflowY: 'auto' }}>
+    <div className={styles.container}>
           <div className={styles.headerContainer}>
             <header className={styles.header}>
               <h1 className={styles.title}>{departmentName} 관리</h1>
@@ -230,9 +222,6 @@ function DashboardContent() {
             })}
           </section>
           )}
-        </main>
-      </div>
-    </div>
 
         <TaskDetailModal 
           isOpen={selectedTask !== null}
@@ -244,7 +233,7 @@ function DashboardContent() {
           onApproveCancellation={approveCancellation}
           onRejectCancellation={rejectCancellation}
         />
-    </>
+    </div>
   );
 }
 
