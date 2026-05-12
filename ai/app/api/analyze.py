@@ -488,15 +488,23 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     print(f"[Analyze] ⚠️ FB 에이전트 INFO 위임 실패, RAG 폴백: {e}")
 
             try:
-                # 🧠 [지능형 쿼리 확장]
-                rewrite_prompt = f"다음 손님의 질문을 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성해줘: '{request.text}'"
+                context_lines = []
+                for msg in request.chat_history[-3:]:
+                    role = "고객" if msg.get("role") == "user" else "AI"
+                    context_lines.append(f"{role}: {msg.get('content')}")
+                context_str = "\n".join(context_lines)
+
+                rewrite_prompt = (
+                    f"[과거 대화 맥락]\n{context_str}\n\n"
+                    f"[고객의 질문]\n{request.text}\n\n"
+                    f"위 맥락을 참고하여, 고객이 궁극적으로 알고 싶은 '호텔 정책/정보'가 무엇인지 파악하고 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성하세요."
+                )
                 search_query_raw = await call_gemini_async(
                     prompt=rewrite_prompt,
                     system_instruction=(
                         "당신은 호텔 검색 엔진 최적화 전문가입니다. "
-                        "사용자의 질문을 호텔 지식 베이스 검색에 가장 적합한 문장으로 확장하세요. "
-                        "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름(삼겹살, 파스타 등)이나 카테고리를 재작성된 문장에 절대로 포함하지 마세요. "
-                        "질문의 의도만 자연스럽게 살려 구체화하세요. "
+                        "사용자가 특정 사물이나 서비스를 지칭하지 않고 '왜', '얼마야' 등 생략된 표현을 사용했더라도, 반드시 [과거 대화 맥락]을 파악하여 질문 대상을 찾아 명시적으로 포함시키세요. (예: '생수 추가 요금이 발생하는 이유가 무엇인가요?') "
+                        "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름이나 카테고리를 무단으로 추가하지 마세요. "
                         "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
                     )
                 )
