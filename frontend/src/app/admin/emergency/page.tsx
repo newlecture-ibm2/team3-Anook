@@ -84,7 +84,7 @@ export default function EmergencyPage() {
   };
 
   const filteredTasks = tasks.filter(task => 
-    task.priority === 'URGENT' && (
+    task.priority === 'EMERGENCY' && (
       task.title?.toLowerCase().includes(searchValue.toLowerCase()) || 
       task.description?.toLowerCase().includes(searchValue.toLowerCase()) ||
       task.roomNo?.includes(searchValue)
@@ -125,7 +125,7 @@ export default function EmergencyPage() {
           <FilterButton
             filterOptions={[
               { label: t.adminPage.taskBoard.filterAll, value: 'all' },
-              { label: 'URGENT', value: 'urgent' }
+              { label: 'EMERGENCY', value: 'emergency' }
             ]}
             selectedFilter="all"
             onFilterSelect={() => {}}

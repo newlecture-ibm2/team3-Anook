@@ -66,7 +66,7 @@ When mode is "CANCEL" or action_type is "REPLACE", extract the **specific item n
 ■ Fallback Rules
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - If a request does not clearly belong to any specific department, fallback to: "FRONT".
-- If it is related to an EMERGENCY, you MUST route to domain "EMERGENCY" with mode "TASK" regardless of confidence. Safety first.
+- If it is related to an EMERGENCY, you MUST route to domain "EMERGENCY" with mode "TASK" and priority "EMERGENCY" regardless of confidence. Safety first.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT FORMAT (STRICTLY JSON ARRAY)

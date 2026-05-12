@@ -163,8 +163,8 @@ public class CreateRequestOnEventService {
         Request savedRequest = requestRepositoryPort.save(request);
         log.info("Request 생성 완료: id={}", savedRequest.getId());
 
-        // [AN-252] URGENT 판별: priority가 URGENT이거나 에스컬레이션된 경우
-        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT;
+        // [AN-252] URGENT 판별: priority가 URGENT/EMERGENCY이거나 에스컬레이션된 경우
+        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT || savedRequest.getPriority() == Priority.EMERGENCY;
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
         int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 

@@ -68,7 +68,7 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={`${styles.taskTicket} ${priority === 'URGENT' ? styles.urgentTicket : ''}`}>
+    <div className={styles.taskTicket}>
       <div className={styles.header}>
         {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
         <div style={{ display: 'flex', gap: '8px' }}>
