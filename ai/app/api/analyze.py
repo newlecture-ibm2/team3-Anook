@@ -73,16 +73,16 @@ STATIC_REPLIES = {
         "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
     },
     "CANCEL": {
-        "ko": "네, 방금 말씀하신 요청은 바로 취소해 드릴게요.",
-        "en": "Sure, I'll go ahead and cancel your most recent request."
+        "ko": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 경우 담당 부서 확인 후 취소됩니다.",
+        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation."
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
         "en": "I will check the status of your most recent request right now."
     },
     "TARGETED_CANCEL": {
-        "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
-        "en": "Okay, I will cancel the specific request you mentioned."
+        "ko": "지목하신 요청의 취소를 진행합니다. 대기 중인 건은 즉시 취소되며, 처리 중인 건은 부서 확인 후 취소됩니다.",
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation."
     },
     "TASK_WAIT": {
         "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
@@ -497,10 +497,12 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     chat_history=request.chat_history,
                     images=request.images
                 )
+                # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
+                is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
                 response = {
                     "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
                     "summary": agent_result.get("summary", "추가 확인 필요"),
-                    "domain_code": None,
+                    "domain_code": agent_result.get("domain_code") if is_escalation else None,
                     "priority": agent_result.get("priority", "NORMAL"),
                     "entities": agent_result.get("entities", {}),
                     "confidence": agent_result.get("confidence", primary.confidence),
@@ -703,11 +705,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-e: CANCEL → 요청 취소
         if primary.route_type == "CANCEL":
             text_lower = request.text.lower()
-            is_all = any(word in text_lower for word in ["전부", "모두", "다 취소", "전체", "all", "everything"])
+            is_all = any(word in text_lower for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything"])
             
             if is_all:
                 response = {
-                    "guest_reply": "네, 진행 중인 모든 요청을 취소 처리하겠습니다.",
+                    "guest_reply": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다.",
                     "summary": "전체 요청 취소",
                     "domain_code": None,
                     "priority": "NORMAL",
@@ -793,10 +795,20 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]
                 
-            if hasattr(primary, 'action_type'):
+            # 우선순위: 1. 에이전트 entities, 2. 에이전트 루트, 3. 라우터 결과
+            if "action_type" in agent_result.get("entities", {}):
+                response["action_type"] = agent_result["entities"]["action_type"]
+            elif "action_type" in agent_result:
+                response["action_type"] = agent_result["action_type"]
+            elif hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
+
             # [Keyword Targeting] 변경 대상 키워드 전달
-            if hasattr(primary, 'target_keyword') and primary.target_keyword:
+            if "target_keyword" in agent_result.get("entities", {}):
+                response["target_keyword"] = agent_result["entities"]["target_keyword"]
+            elif "target_keyword" in agent_result:
+                response["target_keyword"] = agent_result["target_keyword"]
+            elif hasattr(primary, 'target_keyword') and primary.target_keyword:
                 response["target_keyword"] = primary.target_keyword
                 
             print(f"[Analyze] ✅ {domain} 에이전트 병렬 처리 완료")
