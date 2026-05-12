@@ -3,6 +3,28 @@ import styles from './ChatInput.module.css';
 import { SendIcon, MicIcon, StopIcon, PlusIcon, CancelIcon, CameraIcon, ImageIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+const LABELS = {
+  ko: {
+    placeholder: '무엇이든 물어보세요...',
+    listening: '듣고 있습니다...',
+    camera: '사진 찍기',
+    gallery: '보관함',
+    imageTooLarge: `이미지 크기가 ${MAX_IMAGE_SIZE_MB}MB를 초과합니다. 더 작은 이미지를 선택해 주세요.`,
+    speechUnsupported: '현재 브라우저에서는 음성 인식을 지원하지 않습니다.',
+  },
+  en: {
+    placeholder: 'Ask me anything...',
+    listening: 'Listening...',
+    camera: 'Take Photo',
+    gallery: 'Gallery',
+    imageTooLarge: `Image exceeds ${MAX_IMAGE_SIZE_MB}MB. Please select a smaller image.`,
+    speechUnsupported: 'Speech recognition is not supported in this browser.',
+  },
+};
+
 export interface ChatInputProps {
   placeholder?: string;
   onSend?: (text: string, imageFile?: File) => void;
@@ -11,20 +33,22 @@ export interface ChatInputProps {
   onUserTyping?: (isTyping: boolean) => void;
 }
 
-export default function ChatInput({ placeholder = '무엇이든 물어보세요...', onSend, isTyping, onStop, onUserTyping }: ChatInputProps) {
+export default function ChatInput({ onSend, isTyping, onStop, onUserTyping }: ChatInputProps) {
   const [value, setValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const language = useUiStore((state) => state.language);
+  const language = useUiStore((state) => state.language) as 'ko' | 'en';
+  const l = LABELS[language] || LABELS.ko;
 
   React.useEffect(() => {
     if (onUserTyping) {
@@ -76,7 +100,7 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
-      alert('현재 브라우저에서는 음성 인식을 지원하지 않습니다. (Safari 등에서 지원)');
+      alert(l.speechUnsupported);
       return;
     }
     
@@ -112,6 +136,16 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 파일 크기 검증
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        setSizeError(true);
+        setTimeout(() => setSizeError(false), 4000);
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
+        if (galleryInputRef.current) galleryInputRef.current.value = '';
+        setIsMenuOpen(false);
+        return;
+      }
+      setSizeError(false);
       setImageFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -123,25 +157,44 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
 
   const handleRemoveImage = () => {
     setImageFile(null);
+    setSizeError(false);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  };
+
   return (
     <div className={styles.container}>
+      {/* 용량 초과 에러 토스트 */}
+      {sizeError && (
+        <div className={styles.sizeErrorToast}>
+          {l.imageTooLarge}
+        </div>
+      )}
+
+      {/* 이미지 미리보기 (첨부 성공 시) */}
       {previewUrl && (
         <div className={styles.previewContainer}>
           <img src={previewUrl} alt="Preview" className={styles.previewImage} />
           <button className={styles.removeImageButton} onClick={handleRemoveImage} aria-label="이미지 삭제">
-            <CancelIcon width={16} height={16} color="#fff" />
+            <CancelIcon width={12} height={12} color="#fff" />
           </button>
+          {imageFile && (
+            <span className={styles.previewFileSize}>{formatFileSize(imageFile.size)}</span>
+          )}
         </div>
       )}
+
       <div className={styles.wrapper} ref={menuRef}>
         <button 
-          className={styles.attachButton} 
+          className={`${styles.attachButton} ${isMenuOpen ? styles.attachButtonActive : ''}`}
           onClick={() => setIsMenuOpen(prev => !prev)}
           aria-label="첨부 메뉴 열기"
         >
@@ -152,11 +205,11 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
           <div className={styles.attachMenu}>
             <button className={styles.menuItem} onClick={() => cameraInputRef.current?.click()}>
               <CameraIcon size={20} color="#b4a8c9" />
-              <span>사진 찍기</span>
+              <span>{l.camera}</span>
             </button>
             <button className={styles.menuItem} onClick={() => galleryInputRef.current?.click()}>
               <ImageIcon size={20} color="#b4a8c9" />
-              <span>보관함</span>
+              <span>{l.gallery}</span>
             </button>
           </div>
         )}
@@ -178,7 +231,7 @@ export default function ChatInput({ placeholder = '무엇이든 물어보세요.
         />
         <input 
           className={styles.input} 
-          placeholder={isRecording ? '듣고 있습니다...' : placeholder} 
+          placeholder={isRecording ? l.listening : l.placeholder} 
           value={value} 
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
