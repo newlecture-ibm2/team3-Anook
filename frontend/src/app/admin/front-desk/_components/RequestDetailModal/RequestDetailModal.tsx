@@ -166,7 +166,7 @@ export default function RequestDetailModal({
 }: RequestDetailModalProps) {
   const { approveEscalation } = useApproveEscalation();
   const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, loading } = useRequestDetail();
-  
+
   const [editPriority, setEditPriority] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -192,7 +192,7 @@ export default function RequestDetailModal({
     fetch('/api/admin/departments')
       .then(res => res.json())
       .then(data => setDepartments(data))
-      .catch(() => {});
+      .catch(() => { });
   }, [isOpen]);
 
   if (!detail) return null;
@@ -240,7 +240,7 @@ export default function RequestDetailModal({
 
   const handleApproveEscalation = async () => {
     setConfirmType('none');
-    
+
     setSaving(true);
     // 상세 모달 내에서 직접 승인할 때는 현재 모달에 세팅된 editDeptId와 editPriority 값을 전달합니다.
     const ok = await approveEscalation(detail.id, editDeptId, editPriority);
@@ -319,10 +319,10 @@ export default function RequestDetailModal({
             const customerText = detailParts[0].trim();
             const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
-                // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
-                const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
-                
-                return (
+            // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
+            const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
+
+            return (
               <>
                 {customerText && (
                   <div className={styles.contentBlock}>

@@ -44,7 +44,7 @@ public class RedisImageCacheUtil {
         String roomNo = event.roomNumber();
         String pattern = KEY_PREFIX + roomNo + ":*";
         Set<String> keys = redisTemplate.keys(pattern);
-        
+
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
             log.info("[Redis] {}호 체크아웃 이벤트 수신 -> {}개의 이미지 캐시 영구 삭제 완료", roomNo, keys.size());
