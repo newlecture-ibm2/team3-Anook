@@ -117,7 +117,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
     }
   ];
 
-  const isDepartment = ['housekeeping', 'facility', 'fb', 'concierge'].includes(role);
+  const isDepartment = ['housekeeping', 'facility', 'fb', 'concierge', 'staff'].includes(role);
   const menus = isDepartment ? deptMenus : adminMenus;
 
   const flatMenus = menus.flatMap(g => g.items);

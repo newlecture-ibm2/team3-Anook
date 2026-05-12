@@ -152,7 +152,9 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
           <div className={styles.header}>
             <div className={styles.headerTop}>
               <span className={styles.roomBadge}>[{task.roomNumber}호]</span>
-              <StatusBadge variant={badgeVariant}>{task.priority}</StatusBadge>
+              {task.priority === 'URGENT' && (
+                <StatusBadge variant="red">긴급</StatusBadge>
+              )}
               {task.cancelRequested && (
                 <StatusBadge variant="red">취소 대기중</StatusBadge>
               )}
@@ -167,11 +169,18 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>상태</span>
-              <span className={styles.infoValue}>{task.status}</span>
+              <span className={styles.infoValue}>
+                {task.status === 'PENDING' ? '대기 중' :
+                 task.status === 'IN_PROGRESS' ? '진행 중' :
+                 task.status === 'COMPLETED' ? '완료됨' :
+                 task.status === 'CANCELLED' ? '취소됨' : task.status}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>부서</span>
-              <span className={styles.infoValue}>{task.departmentId}</span>
+              <span className={styles.infoValue}>
+                {DEPARTMENTS.find(d => d.id === task.departmentId)?.name || task.departmentId}
+              </span>
             </div>
 
             {task.cancelRequested && (
@@ -229,7 +238,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
             {transferReasonText && (
               <div className={styles.descriptionSection}>
-                <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>
+                <h3 className={styles.descriptionTitle}>업무 전달 사유</h3>
                 <div className={styles.transferReasonBox}>
                   {transferReasonText}
                 </div>
@@ -238,7 +247,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
             {showTransferForm && (
               <div className={styles.transferForm}>
-                <h3 className={styles.descriptionTitle}>부서 전달 (이관)</h3>
+                <h3 className={styles.descriptionTitle}>업무 전달</h3>
                 <div className={styles.transferFormGroup}>
                   <label className={styles.transferLabel}>전달 대상 부서</label>
                   <select 
@@ -256,7 +265,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                   <label className={styles.transferLabel}>전달 사유</label>
                   <textarea 
                     className={styles.transferTextarea}
-                    placeholder="이관 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
+                    placeholder="전달 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
                     value={transferReason}
                     onChange={e => setTransferReason(e.target.value)}
                   />
@@ -279,7 +288,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     className={styles.actionButton}
                     disabled={isSubmitting}
                   >
-                    부서 전달
+                    업무 전달
                   </Button>
                   <Button
                     variant="primary"

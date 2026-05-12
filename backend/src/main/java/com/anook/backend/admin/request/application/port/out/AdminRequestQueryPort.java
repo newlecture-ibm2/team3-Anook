@@ -18,7 +18,7 @@ public interface AdminRequestQueryPort {
     /**
      * 전체 요청 목록 조회 (필터링 + 정렬)
      */
-    List<AdminRequest> findAll(String status, String departmentId, String priority, String sort);
+    List<AdminRequest> findAll(String status, String departmentId, String priority, List<String> exclude, String sort);
 
     /**
      * 단건 조회

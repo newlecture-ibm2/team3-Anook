@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Sidebar from '@/components/layout/Sidebar';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
@@ -98,10 +97,7 @@ function DashboardContent() {
 
   return (
     <div className={styles.container}>
-      <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
-
-      <main className={styles.mainContent}>
-        <div className={styles.headerContainer}>
+      <div className={styles.headerContainer}>
           <header className={styles.header}>
             <h1 className={styles.title}>{departmentName} 관리</h1>
             <p className={styles.subtitle}>{departmentName} 전용 채널</p>
@@ -137,6 +133,7 @@ function DashboardContent() {
                   key={col.id}
                   title={col.title}
                   count={columnTasks.length}
+                  status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                 >
                   <div className={styles.columnContent}>
                     {columnTasks.map(task => (
@@ -146,16 +143,12 @@ function DashboardContent() {
                         onClick={() => setSelectedTask(task)}
                       >
                         <TaskTicket
+                          ticketId={task.id}
+                          roomNo={task.roomNumber}
                           department={task.departmentId}
                           priority={mapPriority(task.priority)}
-                          title={`[${task.roomNumber}호] ${task.summary}`}
-                          description={(() => {
-                            if (!task.rawText) return '';
-                            const main = task.rawText.split('\n|||TRANSFER_REASON|||')[0];
-                            const customer = main.split('[주문 상세]')[0].trim();
-                            const detail = main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '';
-                            return customer ? (detail ? `${customer}\n${detail}` : customer) : detail;
-                          })()}
+                          title={task.summary}
+                          description=""
                           status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
                           createdAt={task.createdAt}
                           cancelRequested={task.cancelRequested}
@@ -181,7 +174,6 @@ function DashboardContent() {
             })}
           </section>
         )}
-      </main>
 
       <TaskDetailModal 
         isOpen={selectedTask !== null}

@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button/Button';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
+  roomNo?: string | number;
   priority?: 'NORMAL' | 'URGENT';
   department?: string;
   title: string;
@@ -27,6 +28,7 @@ export interface TaskTicketProps {
 
 export default function TaskTicket({
   ticketId,
+  roomNo,
   priority = 'NORMAL',
   department,
   title,
@@ -42,55 +44,39 @@ export default function TaskTicket({
 }: TaskTicketProps) {
 
 
-  let borderColor = 'var(--color-surface)';
-  let badgeBgColor = '#F3F4F6';
-  let badgeTextColor = '#374151';
   let displayDept = department;
+  let deptKey = 'front';
 
   let deptUpper = department ? department.toUpperCase() : '';
 
   if (department) {
     if (deptUpper.includes('HK') || deptUpper.includes('하우스키핑')) {
-      borderColor = '#93C5FD'; // Blue-300
-      badgeBgColor = '#EFF6FF'; // Blue-50
-      badgeTextColor = '#1E40AF'; // Blue-800
+      deptKey = 'hk';
       displayDept = '하우스키핑';
     } else if (deptUpper.includes('FACILITY') || deptUpper.includes('시설')) {
-      borderColor = '#FDBA74'; // Orange-300
-      badgeBgColor = '#FFF7ED'; // Orange-50
-      badgeTextColor = '#9A3412'; // Orange-800
+      deptKey = 'facility';
       displayDept = '시설관리';
     } else if (deptUpper.includes('FB') || deptUpper.includes('식음료')) {
-      borderColor = '#F9A8D4'; // Pink-300
-      badgeBgColor = '#FDF2F8'; // Pink-50
-      badgeTextColor = '#9D174D'; // Pink-800
+      deptKey = 'fb';
       displayDept = 'F&B';
     } else if (deptUpper.includes('CONCIERGE') || deptUpper.includes('컨시어지')) {
-      borderColor = '#86EFAC'; // Green-300
-      badgeBgColor = '#F0FDF4'; // Green-50
-      badgeTextColor = '#166534'; // Green-800
+      deptKey = 'concierge';
       displayDept = '컨시어지';
     } else {
-      borderColor = '#93C5FD';
-      badgeBgColor = '#EFF6FF';
+      deptKey = 'front';
       displayDept = '프런트';
     }
   }
 
   // 긴급 부서(EMERGENCY)로 배정된 경우 뱃지 덮어쓰기
   if (deptUpper && (deptUpper.includes('EMERGENCY') || deptUpper.includes('긴급대응팀'))) {
-    borderColor = '#FCA5A5'; // Red-300
-    badgeBgColor = '#FEF2F2'; // Red-50
-    badgeTextColor = '#991B1B'; // Red-800
-    displayDept = '🚨 응급상황';
+    deptKey = 'emergency';
+    displayDept = '응급상황 🚨';
   }
 
   let timeDisplay = '';
   if (status === 'DONE') {
     let parsedString = createdAt;
-    if (typeof createdAt === 'string' && !createdAt.endsWith('Z') && !createdAt.includes('+')) {
-      parsedString = createdAt + 'Z';
-    }
     const date = new Date(parsedString);
     const hours = date.getHours();
     const mins = String(date.getMinutes()).padStart(2, '0');
@@ -105,32 +91,38 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={styles.taskTicket}>
-      <div className={styles.topColorBar} style={{ backgroundColor: borderColor }} />
+    <div className={`${styles.taskTicket} ${styles[deptKey]} ${isCancelled ? styles.isCancelled : ''}`}>
+      <div className={styles.topColorBar} />
       <div className={styles.header}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {roomNo && (
+            <>
+              <span className={styles.roomNo}>{roomNo}호</span>
+              <div className={styles.headerDivider} />
+            </>
+          )}
           {department && (
-            <div className={styles.deptBadge} style={{ backgroundColor: badgeBgColor, color: badgeTextColor }}>
+            <div className={styles.deptBadge}>
               {displayDept}
             </div>
           )}
-          {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {isCancelled && (
-            <StatusBadge variant="gray">
+            <span className={`${styles.textStatus} ${styles.textStatusCancelled}`}>
               취소됨
-            </StatusBadge>
+            </span>
           )}
           {cancelRequested && (
-            <StatusBadge variant="red">
+            <span className={`${styles.textStatus} ${styles.textStatusCancelPending}`}>
               취소 대기
-            </StatusBadge>
+            </span>
           )}
           {priority === 'URGENT' && (
-            <StatusBadge variant="red">
+            <div className={`${styles.textStatus} ${styles.textStatusUrgent}`}>
               긴급
-            </StatusBadge>
+              <span className={styles.redDot} />
+            </div>
           )}
         </div>
       </div>
@@ -161,35 +153,34 @@ export default function TaskTicket({
           </svg>
           {timeDisplay}
         </span>
-        {status === 'TODO' && onAccept && (
-          <Button 
-            variant="primary"
-            onClick={onAccept}
-            style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
-          >
-            수락하기
-          </Button>
-        )}
-        {status === 'IN_PROGRESS' && onComplete && (
-          <Button 
-            variant="primary"
-            onClick={onComplete}
-            style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
-          >
-            업무 완료
-          </Button>
-        )}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
+          {status === 'TODO' && onAccept && (
+            <Button 
+              variant="primary"
+              onClick={onAccept}
+              style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+            >
+              수락하기
+            </Button>
+          )}
+          {status === 'IN_PROGRESS' && onComplete && (
+            <Button 
+              variant="primary"
+              onClick={onComplete}
+              style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+            >
+              업무 완료
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 function getRelativeTime(dateString: string | Date): string {
-  let parsedString = dateString;
-  if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
-    parsedString = dateString + 'Z';
-  }
-  const date = new Date(parsedString);
+  const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));

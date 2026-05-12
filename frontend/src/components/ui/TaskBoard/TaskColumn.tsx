@@ -6,14 +6,20 @@ export interface TaskColumnProps {
   count?: number;
   children?: React.ReactNode;
   className?: string;
+  status?: 'TODO' | 'IN_PROGRESS' | 'DONE';
 }
 
-export default function TaskColumn({ title, count = 0, children, className = '' }: TaskColumnProps) {
+export default function TaskColumn({ title, count = 0, children, className = '', status }: TaskColumnProps) {
+  let statusClass = '';
+  if (status === 'TODO') statusClass = styles.todo;
+  else if (status === 'IN_PROGRESS') statusClass = styles.inProgress;
+  else if (status === 'DONE') statusClass = styles.done;
+
   return (
-    <div className={`${styles.column} ${className}`.trim()}>
+    <div className={`${styles.column} ${statusClass} ${className}`.trim()}>
       <div className={styles.header}>
         <h3 className={styles.title}>{title}</h3>
-        {count > 0 && <span className={styles.count}>{count}</span>}
+        {count >= 0 && <span className={styles.count}>{count}</span>}
       </div>
       <div className={styles.content}>
         {children}
