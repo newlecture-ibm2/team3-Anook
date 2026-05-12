@@ -2,8 +2,6 @@
 
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Sidebar from '@/components/layout/Sidebar';
-import GlobalEmergencyListener from '@/components/layout/GlobalEmergencyListener';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
@@ -146,12 +144,7 @@ function DashboardContent() {
   }), [filteredTasks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <GlobalEmergencyListener />
-      <div className={styles.container} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
-
-        <main className={styles.mainContent} style={{ overflowY: 'auto' }}>
+    <div className={styles.container}>
           <div className={styles.headerContainer}>
             <header className={styles.header}>
               <h1 className={styles.title}>{departmentName} 관리</h1>
@@ -180,61 +173,55 @@ function DashboardContent() {
           ) : error ? (
             <div className={styles.error}>데이터를 불러오는 데 실패했습니다. ({error})</div>
           ) : (
-            <section className={styles.board}>
-              {COLUMN_CONFIG.map(col => {
-                const columnTasks = boardData[col.status as keyof typeof boardData];
-                return (
-                  <TaskColumn
-                    key={col.id}
-                    title={col.title}
-                    count={columnTasks.length}
-                  >
-                    <div className={styles.columnContent}>
-                      {columnTasks.map(task => (
-                        <div 
-                          key={`${task.roomNumber}-${task.createdAt}`}
-                          className={styles.ticketWrapper}
-                          onClick={() => setSelectedTask(task)}
-                        >
-                          <TaskTicket
-                            priority={mapPriority(task.priority)}
-                            title={`[${task.roomNumber}호] ${task.summary}`}
-                            description={(() => {
-                              if (!task.rawText) return '';
-                              const main = task.rawText.split('\n|||TRANSFER_REASON|||')[0];
-                              const customer = main.split('[주문 상세]')[0].trim();
-                              // entities가 있으면 [주문 상세] 대신 entities 기반 텍스트 사용
-                              const detail = task.entities
-                                ? formatEntitiesText(task.entities)
-                                : (main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '');
-                              return customer ? (detail ? `${customer}\n${detail}` : customer) : detail;
-                            })()}
-                            status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
-                            createdAt={task.createdAt}
-                            cancelRequested={task.cancelRequested}
-                            isCancelled={task.status === 'CANCELLED'}
-                            onAccept={col.status === 'TODO' ? (e) => {
-                              e.stopPropagation();
-                              acceptTask(task.id, task.version);
-                            } : undefined}
-                            onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
-                              e.stopPropagation();
-                              completeTask(task.id, task.version);
-                            } : undefined}
-                            entities={task.entities}
-                          />
-                        </div>
-                      ))}
-                      {columnTasks.length === 0 && (
-                        <div className={styles.empty}>해당하는 작업이 없습니다.</div>
-                      )}
-                    </div>
-                  </TaskColumn>
-                );
-              })}
-            </section>
+          <section className={styles.board}>
+            {COLUMN_CONFIG.map(col => {
+              const columnTasks = boardData[col.status as keyof typeof boardData];
+              return (
+                <TaskColumn
+                  key={col.id}
+                  title={col.title}
+                  count={columnTasks.length}
+                  status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
+                >
+                  <div className={styles.columnContent}>
+                    {columnTasks.map(task => (
+                      <div 
+                        key={`${task.roomNumber}-${task.createdAt}`}
+                        className={styles.ticketWrapper}
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <TaskTicket
+                          ticketId={task.id}
+                          roomNo={task.roomNumber}
+                          department={task.departmentId}
+                          priority={mapPriority(task.priority)}
+                          title={task.summary}
+                          description=""
+                          status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
+                          createdAt={task.createdAt}
+                          cancelRequested={task.cancelRequested}
+                          isCancelled={task.status === 'CANCELLED'}
+                          onAccept={col.status === 'TODO' ? (e) => {
+                            e.stopPropagation();
+                            acceptTask(task.id, task.version);
+                          } : undefined}
+                          onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
+                            e.stopPropagation();
+                            completeTask(task.id, task.version);
+                          } : undefined}
+                          entities={task.entities}
+                        />
+                      </div>
+                    ))}
+                    {columnTasks.length === 0 && (
+                      <div className={styles.empty}>해당하는 작업이 없습니다.</div>
+                    )}
+                  </div>
+                </TaskColumn>
+              );
+            })}
+          </section>
           )}
-        </main>
 
         <TaskDetailModal 
           isOpen={selectedTask !== null}
@@ -246,7 +233,6 @@ function DashboardContent() {
           onApproveCancellation={approveCancellation}
           onRejectCancellation={rejectCancellation}
         />
-      </div>
     </div>
   );
 }

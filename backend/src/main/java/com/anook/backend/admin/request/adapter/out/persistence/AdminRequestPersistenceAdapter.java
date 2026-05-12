@@ -22,14 +22,20 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     private final AdminRequestJpaRepository jpaRepository;
 
     @Override
-    public List<AdminRequest> findAll(String status, String departmentId, String priority, String sort) {
+    public List<AdminRequest> findAll(String status, String departmentId, String priority, List<String> exclude, String sort) {
         List<AdminRequestJpaEntity> entities = jpaRepository.findAllWithFilters(
                 (status != null && !status.isBlank()) ? status.toUpperCase() : null,
                 (departmentId != null && !departmentId.isBlank()) ? departmentId.toUpperCase() : null,
                 (priority != null && !priority.isBlank()) ? priority.toUpperCase() : null
         );
 
-        return entities.stream()
+        java.util.stream.Stream<AdminRequestJpaEntity> stream = entities.stream();
+        
+        if (exclude != null && !exclude.isEmpty()) {
+            stream = stream.filter(e -> !exclude.contains(e.getDepartmentId()));
+        }
+
+        return stream
                 .map(AdminRequestJpaEntity::toDomain)
                 .toList();
     }

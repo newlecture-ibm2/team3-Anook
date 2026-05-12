@@ -65,17 +65,22 @@ export default function AllRequestsPage() {
         <div className={styles.board}>
           {/* Column 1: 대기 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length} status="TODO">
               {pending.map(req => (
                 <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
-                  <TaskTicket 
-                    ticketId={req.id}
-                    priority={mapPriority(req.priority)}
-                    title={req.summary}
-                    description={`${req.roomNo}호`}
-                    status={mapStatus(req.status)}
-                    createdAt={req.createdAt}
-                  />
+                <TaskTicket 
+                  ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
+                  priority={mapPriority(req.priority)}
+                  title={req.summary}
+                  description=""
+                  status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
+                  createdAt={req.createdAt}
+                  entities={req.entities}
+                />
                 </div>
               ))}
             </TaskColumn>
@@ -83,18 +88,23 @@ export default function AllRequestsPage() {
 
           {/* Column 2: 진행 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length} status="IN_PROGRESS">
               {inProgress.map(req => (
                 <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
-                  <TaskTicket 
-                    ticketId={req.id}
-                    priority={mapPriority(req.priority)}
-                    title={req.summary}
-                    description={`${req.roomNo}호${req.assignedStaffName ? ` · ${req.assignedStaffName}` : ''}`}
-                    status={mapStatus(req.status)}
-                    createdAt={req.createdAt}
-                    updatedAt={req.updatedAt}
-                  />
+                <TaskTicket 
+                  ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
+                  priority={mapPriority(req.priority)}
+                  title={req.summary}
+                  description={req.assignedStaffName || ''}
+                  status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
+                  createdAt={req.createdAt}
+                  updatedAt={req.updatedAt}
+                  entities={req.entities}
+                />
                 </div>
               ))}
             </TaskColumn>
@@ -102,17 +112,22 @@ export default function AllRequestsPage() {
 
           {/* Column 3: 완료됨 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length} status="DONE">
               {completed.map(req => (
                 <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
-                  <TaskTicket 
-                    ticketId={req.id}
-                    priority={mapPriority(req.priority)}
-                    title={req.summary}
-                    description={`${req.roomNo}호`}
-                    status={mapStatus(req.status)}
-                    createdAt={req.createdAt}
-                  />
+                <TaskTicket 
+                  ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
+                  priority={mapPriority(req.priority)}
+                  title={req.summary}
+                  description=""
+                  status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
+                  createdAt={req.createdAt}
+                  entities={req.entities}
+                />
                 </div>
               ))}
             </TaskColumn>
