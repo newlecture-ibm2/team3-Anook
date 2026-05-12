@@ -5,6 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
+import RequestDetailModal from '../front-desk/_components/RequestDetailModal/RequestDetailModal';
 import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
@@ -25,8 +26,9 @@ const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
 export default function AllRequestsPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [detailTarget, setDetailTarget] = useState<number | null>(null);
   const { t } = useTranslation();
-  const { pending, inProgress, completed, loading, error } = useAdminRequests('', searchValue, selectedFilter);
+  const { pending, inProgress, completed, loading, error, refetch } = useAdminRequests('', searchValue, selectedFilter);
 
   if (error) return <div className={styles.container}><p>오류: {error}</p></div>;
 
@@ -65,15 +67,16 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length}>
               {pending.map(req => (
-                <TaskTicket 
-                  key={req.id}
-                  ticketId={req.id}
-                  priority={mapPriority(req.priority)}
-                  title={req.summary}
-                  description={`${req.roomNo}호`}
-                  status={mapStatus(req.status)}
-                  createdAt={req.createdAt}
-                />
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
+                  <TaskTicket 
+                    ticketId={req.id}
+                    priority={mapPriority(req.priority)}
+                    title={req.summary}
+                    description={`${req.roomNo}호`}
+                    status={mapStatus(req.status)}
+                    createdAt={req.createdAt}
+                  />
+                </div>
               ))}
             </TaskColumn>
           </div>
@@ -82,16 +85,17 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length}>
               {inProgress.map(req => (
-                <TaskTicket 
-                  key={req.id}
-                  ticketId={req.id}
-                  priority={mapPriority(req.priority)}
-                  title={req.summary}
-                  description={`${req.roomNo}호${req.assignedStaffName ? ` · ${req.assignedStaffName}` : ''}`}
-                  status={mapStatus(req.status)}
-                  createdAt={req.createdAt}
-                  updatedAt={req.updatedAt}
-                />
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
+                  <TaskTicket 
+                    ticketId={req.id}
+                    priority={mapPriority(req.priority)}
+                    title={req.summary}
+                    description={`${req.roomNo}호${req.assignedStaffName ? ` · ${req.assignedStaffName}` : ''}`}
+                    status={mapStatus(req.status)}
+                    createdAt={req.createdAt}
+                    updatedAt={req.updatedAt}
+                  />
+                </div>
               ))}
             </TaskColumn>
           </div>
@@ -100,19 +104,30 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length}>
               {completed.map(req => (
-                <TaskTicket 
-                  key={req.id}
-                  ticketId={req.id}
-                  priority={mapPriority(req.priority)}
-                  title={req.summary}
-                  description={`${req.roomNo}호`}
-                  status={mapStatus(req.status)}
-                  createdAt={req.createdAt}
-                />
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
+                  <TaskTicket 
+                    ticketId={req.id}
+                    priority={mapPriority(req.priority)}
+                    title={req.summary}
+                    description={`${req.roomNo}호`}
+                    status={mapStatus(req.status)}
+                    createdAt={req.createdAt}
+                  />
+                </div>
               ))}
             </TaskColumn>
           </div>
         </div>
+      )}
+
+      {/* 상세 모달 */}
+      {detailTarget !== null && (
+        <RequestDetailModal
+          isOpen={true}
+          onClose={() => setDetailTarget(null)}
+          requestId={detailTarget}
+          onUpdate={() => refetch && refetch()}
+        />
       )}
     </div>
   );

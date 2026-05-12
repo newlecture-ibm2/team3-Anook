@@ -61,6 +61,103 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   ESCALATED: { text: '에스컬레이션', variant: 'red' },
 };
 
+/** 영문 키 → 한국어 라벨 매핑 (모든 부서 통합) */
+const ENTITY_LABELS: Record<string, string> = {
+  is_contactless: '비대면 배달', target_time: '희망 시간',
+  equipment: '대상 설비', symptom: '증상', location: '위치',
+  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
+  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
+  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
+  type: '유형', target: '대상', issue: '문제/증상', priority: '예상 긴급도',
+  topic: '주제', question: '질문', language: '언어',
+};
+
+/** 직원에게 보여줄 필요 없는 내부 키 (섹션 표시 판단 + 순회에서 모두 제외) */
+const HIDDEN_ENTITY_KEYS = new Set(['intent', 'allergen_warning']);
+
+/** 배열 타입 특수 렌더러가 필요한 키 (key-value 순회에서만 스킵, 섹션 표시 판단에서는 포함) */
+const ARRAY_KEYS = new Set(['items', 'tasks', 'menu_items']);
+
+function renderEntities(entities: Record<string, any>): React.ReactNode {
+  const rendered: React.ReactNode[] = [];
+
+  // 0) 정규화: item+count 플랫 키 → items 배열로 통일 (AI 응답 형식 불일치 보정)
+  if (entities.item && entities.count && !entities.items?.length) {
+    entities = { ...entities, items: [{ item: entities.item, count: entities.count }] };
+    delete entities.item;
+    delete entities.count;
+  }
+
+  // 1) 배열 타입 특수 렌더링
+  if (entities.items?.length > 0) {
+    rendered.push(
+      <div key="items" style={{ marginBottom: '12px' }}>
+        <strong>물품 요청:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.items.map((it: any, idx: number) => (
+            <li key={idx}>{it.item} - {it.count}개</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  if (entities.tasks?.length > 0) {
+    rendered.push(
+      <div key="tasks" style={{ marginBottom: '12px' }}>
+        <strong>작업 요청:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.tasks.map((task: string, idx: number) => (
+            <li key={idx}>{task}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  if (entities.menu_items?.length > 0) {
+    rendered.push(
+      <div key="menu_items" style={{ marginBottom: '12px' }}>
+        <strong>주문 메뉴:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.menu_items.map((mi: any, idx: number) => (
+            <li key={idx}>
+              {mi.name} - {mi.quantity}개
+              {mi.selected_option && mi.selected_option !== '없음' && ` (옵션: ${mi.selected_option})`}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // 2) 일반 Key-Value 렌더링
+  for (const [key, value] of Object.entries(entities)) {
+    // 숨길 키이거나 이미 처리된 배열 키면 스킵
+    if (HIDDEN_ENTITY_KEYS.has(key) || ARRAY_KEYS.has(key)) continue;
+    // 값이 비어있으면 스킵
+    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+
+    const label = ENTITY_LABELS[key] || key; // 매핑 없으면 영어 키 그대로 표시 (폴백)
+
+    // boolean true인 경우 라벨만 표시 (예: is_contactless -> "비대면 배달")
+    if (value === true) {
+      rendered.push(
+        <div key={key} style={{ marginBottom: '8px' }}>
+          <strong>{label}</strong>
+        </div>
+      );
+      continue;
+    }
+
+    rendered.push(
+      <div key={key} style={{ marginBottom: '8px' }}>
+        <strong>{label}:</strong> {value}
+      </div>
+    );
+  }
+
+  return rendered.length > 0 ? rendered : <pre className={styles.jsonBlock}>{JSON.stringify(entities, null, 2)}</pre>;
+}
+
 export default function RequestDetailModal({
   isOpen,
   onClose,
@@ -222,7 +319,10 @@ export default function RequestDetailModal({
             const customerText = detailParts[0].trim();
             const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
-            return (
+                // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
+                const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
+                
+                return (
               <>
                 {customerText && (
                   <div className={styles.contentBlock}>
@@ -230,7 +330,7 @@ export default function RequestDetailModal({
                     <p className={styles.rawText}>{customerText}</p>
                   </div>
                 )}
-                {orderDetail && (
+                {orderDetail && !hasValidEntities && (
                   <div className={styles.contentBlock}>
                     <span className={styles.label}>주문/요청 상세</span>
                     <p className={styles.orderDetail}>{orderDetail}</p>
@@ -255,9 +355,18 @@ export default function RequestDetailModal({
               <div className={styles.confidenceBadge}>
                 신뢰도: {Math.round(detail.confidence * 100)}%
               </div>
-              <pre className={styles.jsonBlock}>
-                {JSON.stringify(detail.entities, null, 2)}
-              </pre>
+              {(() => {
+                if (!detail.entities) return null;
+                // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
+                const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
+                if (displayableKeys.length === 0) return null;
+
+                return (
+                  <div className={styles.entityList}>
+                    {renderEntities(detail.entities)}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
