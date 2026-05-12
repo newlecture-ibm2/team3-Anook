@@ -103,8 +103,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
     {
       category: t.adminPage.sidebar.categories.aiSystem,
       items: [
-        { label: t.adminPage.sidebar.menus.aiTraining, href: '/admin/ai-training', icon: Target },
-        { label: t.adminPage.sidebar.menus.rag, href: '/admin/rag', icon: Database },
+        { label: t.adminPage.sidebar.menus.rag, href: '/admin/knowledge', icon: Database },
         { label: t.adminPage.sidebar.menus.aiRouting, href: '/admin/ai-routing', icon: FileSearch },
       ]
     },

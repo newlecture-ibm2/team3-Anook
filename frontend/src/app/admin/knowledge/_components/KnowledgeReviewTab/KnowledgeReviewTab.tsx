@@ -5,15 +5,19 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
-import { useKnowledge, KnowledgeEntry } from '../rag/useKnowledge';
-import styles from './page.module.css';
+import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
+import styles from './KnowledgeReviewTab.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { handleResponse } from '@/lib/api';
 
-export default function AiTrainingPage() {
+interface KnowledgeReviewTabProps {
+  domainCode: string; // 'ALL' 또는 도메인 코드
+}
+
+export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabProps) {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
-  const { data, loading, error, deleteEntry, refresh } = useKnowledge();
+  const { data, loading, error, deleteEntry, refresh } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<KnowledgeEntry | null>(null);
 
@@ -79,7 +83,7 @@ export default function AiTrainingPage() {
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.aiTraining}</h1>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.aiTraining} 관리</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 

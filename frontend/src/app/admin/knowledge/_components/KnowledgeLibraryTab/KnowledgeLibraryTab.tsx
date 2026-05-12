@@ -7,20 +7,17 @@ import KnowledgeItem from '@/components/ui/Knowledge/KnowledgeItem';
 import KnowledgeModal from '@/components/ui/Knowledge/KnowledgeModal';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import Button from '@/components/ui/Button/Button';
-import Tabs from '@/components/ui/Tab/Tabs';
 import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
-import styles from './KnowledgePageContent.module.css';
+import styles from './KnowledgeLibraryTab.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
-interface KnowledgePageContentProps {
-  title: string;
-  domainCode?: string; // 없으면 전체 도메인
+interface KnowledgeLibraryTabProps {
+  domainCode: string; // 'ALL' 또는 도메인 코드
 }
 
-export default function KnowledgePageContent({ title, domainCode: initialDomainCode }: KnowledgePageContentProps) {
+export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState(initialDomainCode || 'ALL');
-  const { data, loading, error, createEntry, updateEntry, deleteEntry } = useKnowledge(activeTab === 'ALL' ? undefined : activeTab);
+  const { data, loading, error, createEntry, updateEntry, deleteEntry } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   
   const [searchValue, setSearchValue] = useState('');
   const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeEntry | null>(null);
@@ -37,14 +34,9 @@ export default function KnowledgePageContent({ title, domainCode: initialDomainC
     { value: 'COMMON', label: t.adminPage.rag.tabs.COMMON }
   ];
 
-  const TAB_OPTIONS = [
-    { value: 'ALL', label: t.adminPage.rag.tabs.ALL },
-    ...ALL_OPTIONS
-  ];
-
-  // 현재 페이지의 특성에 따라 domainOptions 생성 (지식 추가 시 사용)
-  const domainOptions = initialDomainCode 
-    ? ALL_OPTIONS.filter(opt => opt.value === initialDomainCode)
+  // 현재 탭의 특성에 따라 domainOptions 생성 (지식 추가 시 사용)
+  const domainOptions = domainCode && domainCode !== 'ALL'
+    ? ALL_OPTIONS.filter(opt => opt.value === domainCode)
     : ALL_OPTIONS;
 
   // 검색 필터 적용
@@ -58,7 +50,7 @@ export default function KnowledgePageContent({ title, domainCode: initialDomainC
       {/* Header Section */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>{title}</h1>
+          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.rag} 데이터 관리</h1>
         </div>
         <div className={styles.headerActions}>
           <InputField 
@@ -78,15 +70,6 @@ export default function KnowledgePageContent({ title, domainCode: initialDomainC
             className={styles.filterBtn}
           />
         </div>
-      </div>
-
-      {/* Tabs Section */}
-      <div className={styles.tabSection}>
-        <Tabs 
-          options={TAB_OPTIONS}
-          activeValue={activeTab}
-          onChange={(val) => setActiveTab(val || 'ALL')}
-        />
       </div>
 
       {/* Content Section */}
@@ -167,7 +150,7 @@ export default function KnowledgePageContent({ title, domainCode: initialDomainC
             }
           }}
           domainOptions={domainOptions}
-          initialDomainCode={isCreatingNew ? (activeTab === 'ALL' ? 'HK' : activeTab) : selectedKnowledge?.domainCode}
+          initialDomainCode={isCreatingNew ? (domainCode === 'ALL' ? 'HK' : domainCode) : selectedKnowledge?.domainCode}
           initialQuestion={isCreatingNew ? '' : selectedKnowledge?.question}
           initialAnswer={isCreatingNew ? '' : selectedKnowledge?.answer}
           onSave={async (formData) => {
