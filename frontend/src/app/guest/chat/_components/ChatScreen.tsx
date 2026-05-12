@@ -166,10 +166,15 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
                 )}
                 <div style={{ 
                   display: 'flex', 
-                  justifyContent: 'center',
-                  marginBottom: isWelcome ? '-16px' : '0' 
+                  justifyContent: isWelcome ? 'center' : 'flex-start',
+                  marginBottom: isWelcome ? '-16px' : '0',
+                  paddingLeft: isWelcome ? '0' : '48px'
                 }}>
-                  <Pill options={msg.meta?.options as string[]} onSelect={onSendMessage} />
+                  <Pill 
+                    options={msg.meta?.options as string[]} 
+                    onSelect={onSendMessage} 
+                    align={isWelcome ? 'center' : 'flex-start'}
+                  />
                 </div>
               </div>
             );

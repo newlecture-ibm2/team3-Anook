@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Sidebar from '@/components/layout/Sidebar';
+import GlobalEmergencyListener from '@/components/layout/GlobalEmergencyListener';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
@@ -21,6 +23,54 @@ const PRIORITY_OPTIONS = [
   { label: '긴급 (URGENT)', value: 'URGENT' },
   { label: '일반 (NORMAL)', value: 'NORMAL' },
 ];
+
+/** 영문 키 → 한국어 라벨 (카드 미리보기용) */
+const ENTITY_LABELS: Record<string, string> = {
+  is_contactless: '비대면 배달', target_time: '희망 시간',
+  equipment: '대상 설비', symptom: '증상', location: '위치',
+  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
+  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
+  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
+  type: '유형', target: '대상',
+};
+const HIDDEN_KEYS = new Set(['intent', 'allergen_warning']);
+
+/** entities → 카드 미리보기 텍스트 (1~2줄 요약) */
+function formatEntitiesText(entities: Record<string, any>): string {
+  const parts: string[] = [];
+
+  // 정규화: item+count 플랫 → items 배열
+  if (entities.item && entities.count && !entities.items?.length) {
+    entities = { ...entities, items: [{ item: entities.item, count: entities.count }] };
+  }
+
+  // 배열 타입
+  if (entities.items?.length > 0) {
+    parts.push(entities.items.map((it: any) => `${it.item} ${it.count}개`).join(', '));
+  }
+  if (entities.tasks?.length > 0) {
+    parts.push(entities.tasks.join(', '));
+  }
+  if (entities.menu_items?.length > 0) {
+    parts.push(entities.menu_items.map((mi: any) => {
+      let s = `${mi.name} ${mi.quantity}개`;
+      if (mi.selected_option && mi.selected_option !== '없음') s += ` (${mi.selected_option})`;
+      return s;
+    }).join(', '));
+  }
+
+  // 단순 키
+  for (const [key, value] of Object.entries(entities)) {
+    if (HIDDEN_KEYS.has(key)) continue;
+    if (['items', 'tasks', 'menu_items', 'item', 'count'].includes(key)) continue;
+    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+    if (value === true) { parts.push(ENTITY_LABELS[key] || key); continue; }
+    const label = ENTITY_LABELS[key] || key;
+    parts.push(`${label}: ${value}`);
+  }
+
+  return parts.join('\n');
+}
 
 /**
  * [가이드라인 준수] 스태프 대시보드 메인 페이지
@@ -96,35 +146,41 @@ function DashboardContent() {
   }), [filteredTasks]);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.headerContainer}>
-          <header className={styles.header}>
-            <h1 className={styles.title}>{departmentName} 관리</h1>
-            <p className={styles.subtitle}>{departmentName} 전용 채널</p>
-          </header>
+    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <GlobalEmergencyListener />
+      <div className={styles.container} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
 
-          <div className={styles.toolbar}>
-            <div className={styles.searchBox}>
-              <InputField
-                variant="search"
-                placeholder="객실번호 또는 내용 검색..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+        <main className={styles.mainContent} style={{ overflowY: 'auto' }}>
+          <div className={styles.headerContainer}>
+            <header className={styles.header}>
+              <h1 className={styles.title}>{departmentName} 관리</h1>
+              <p className={styles.subtitle}>{departmentName} 전용 채널</p>
+            </header>
+
+            <div className={styles.toolbar}>
+              <div className={styles.searchBox}>
+                <InputField
+                  variant="search"
+                  placeholder="객실번호 또는 내용 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <FilterButton
+                filterOptions={PRIORITY_OPTIONS}
+                selectedFilter={priorityFilter}
+                onFilterSelect={setPriorityFilter}
               />
             </div>
-            <FilterButton
-              filterOptions={PRIORITY_OPTIONS}
-              selectedFilter={priorityFilter}
-              onFilterSelect={setPriorityFilter}
-            />
           </div>
-        </div>
 
-        {loading ? (
-          <div className={styles.loading}>데이터를 불러오는 중...</div>
-        ) : error ? (
-          <div className={styles.error}>데이터를 불러오는 데 실패했습니다. ({error})</div>
-        ) : (
+          {loading ? (
+            <div className={styles.loading}>데이터를 불러오는 중...</div>
+          ) : error ? (
+            <div className={styles.error}>데이터를 불러오는 데 실패했습니다. ({error})</div>
+          ) : (
           <section className={styles.board}>
             {COLUMN_CONFIG.map(col => {
               const columnTasks = boardData[col.status as keyof typeof boardData];
@@ -173,19 +229,22 @@ function DashboardContent() {
               );
             })}
           </section>
-        )}
-
-      <TaskDetailModal 
-        isOpen={selectedTask !== null}
-        onClose={() => setSelectedTask(null)}
-        task={selectedTask}
-        onAccept={acceptTask}
-        onComplete={completeTask}
-        onTransfer={transferTask}
-        onApproveCancellation={approveCancellation}
-        onRejectCancellation={rejectCancellation}
-      />
+          )}
+        </main>
+      </div>
     </div>
+
+        <TaskDetailModal 
+          isOpen={selectedTask !== null}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          onAccept={acceptTask}
+          onComplete={completeTask}
+          onTransfer={transferTask}
+          onApproveCancellation={approveCancellation}
+          onRejectCancellation={rejectCancellation}
+        />
+    </>
   );
 }
 

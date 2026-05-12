@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './TaskTicket.module.css';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
+import { useNetworkStore } from '@/stores/useNetworkStore';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
@@ -42,7 +43,7 @@ export default function TaskTicket({
   isCancelled = false,
   entities
 }: TaskTicketProps) {
-
+  const isOnline = useNetworkStore((state) => state.isOnline);
 
   let displayDept = department;
   let deptKey = 'front';
@@ -160,6 +161,8 @@ export default function TaskTicket({
               variant="primary"
               onClick={onAccept}
               style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+              disabled={!isOnline}
+              title={!isOnline ? "오프라인 상태에서는 변경할 수 없습니다" : undefined}
             >
               수락하기
             </Button>
@@ -169,6 +172,8 @@ export default function TaskTicket({
               variant="primary"
               onClick={onComplete}
               style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
+              disabled={!isOnline}
+              title={!isOnline ? "오프라인 상태에서는 변경할 수 없습니다" : undefined}
             >
               업무 완료
             </Button>

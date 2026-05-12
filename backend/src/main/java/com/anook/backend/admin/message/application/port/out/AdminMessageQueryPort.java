@@ -17,6 +17,14 @@ public interface AdminMessageQueryPort {
      * @return [ { roomId, roomNo } ] 형태의 맵 리스트
      */
     List<Map<String, Object>> findRoomsWithMessages();
+    
+    /**
+     * 특정 날짜에 메시지가 존재하는 객실 목록 조회
+     *
+     * @param date 조회할 날짜
+     * @return [ { roomId, roomNo } ] 형태의 맵 리스트
+     */
+    List<Map<String, Object>> findRoomsWithMessages(java.time.LocalDate date);
 
     /**
      * 특정 객실의 메시지 목록 조회 (시간순)

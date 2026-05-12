@@ -55,6 +55,11 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
     );
   }
 
+  // 부서별 페이지(dept가 있는 경우)에서는 긴급(URGENT) 요청을 숨김 (긴급 대시보드 전용으로 처리)
+  if (dept) {
+    filteredRequests = filteredRequests.filter(r => r.priority !== 'URGENT');
+  }
+
   if (filterType === 'oldest') {
     filteredRequests.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   } else if (filterType === 'latest' || filterType === 'all') {

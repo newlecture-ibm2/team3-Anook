@@ -40,6 +40,9 @@ public record MessageAiResult(
         Map<String, Object> aiLogMeta,
 
         /** [Keyword Targeting] 취소/변경 대상 아이템 키워드 (예: "콜라", "수건"). 미지정 시 null */
-        String targetKeyword
+        String targetKeyword,
+
+        /** UI에 표시할 선택지 (Pill Tab) 목록 */
+        java.util.List<String> clarificationOptions
 ) {
 }

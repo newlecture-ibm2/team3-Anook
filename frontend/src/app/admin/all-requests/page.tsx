@@ -5,6 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
+import RequestDetailModal from '../front-desk/_components/RequestDetailModal/RequestDetailModal';
 import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
@@ -25,8 +26,9 @@ const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
 export default function AllRequestsPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [detailTarget, setDetailTarget] = useState<number | null>(null);
   const { t } = useTranslation();
-  const { pending, inProgress, completed, loading, error } = useAdminRequests('', searchValue, selectedFilter);
+  const { pending, inProgress, completed, loading, error, refetch } = useAdminRequests('', searchValue, selectedFilter);
 
   if (error) return <div className={styles.container}><p>오류: {error}</p></div>;
 
@@ -65,8 +67,8 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length} status="TODO">
               {pending.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
                   roomNo={req.roomNo}
                   department={req.departmentName}
@@ -79,6 +81,7 @@ export default function AllRequestsPage() {
                   createdAt={req.createdAt}
                   entities={req.entities}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
@@ -87,8 +90,8 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length} status="IN_PROGRESS">
               {inProgress.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
                   roomNo={req.roomNo}
                   department={req.departmentName}
@@ -102,6 +105,7 @@ export default function AllRequestsPage() {
                   updatedAt={req.updatedAt}
                   entities={req.entities}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
@@ -110,8 +114,8 @@ export default function AllRequestsPage() {
           <div className={styles.columnWrapper}>
             <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length} status="DONE">
               {completed.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
                   roomNo={req.roomNo}
                   department={req.departmentName}
@@ -124,10 +128,21 @@ export default function AllRequestsPage() {
                   createdAt={req.createdAt}
                   entities={req.entities}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
         </div>
+      )}
+
+      {/* 상세 모달 */}
+      {detailTarget !== null && (
+        <RequestDetailModal
+          isOpen={true}
+          onClose={() => setDetailTarget(null)}
+          requestId={detailTarget}
+          onUpdate={() => refetch && refetch()}
+        />
       )}
     </div>
   );
