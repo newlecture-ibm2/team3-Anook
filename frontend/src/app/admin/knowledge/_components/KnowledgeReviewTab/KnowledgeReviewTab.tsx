@@ -1,8 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
 import InputField from '@/components/ui/Inputfield/InputField';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
@@ -20,6 +19,7 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
   const { data, loading, error, deleteEntry, refresh } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<KnowledgeEntry | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   // PENDING 상태만 필터링
   const pendingItems = data.filter(item => item.status === 'PENDING');
@@ -57,9 +57,11 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
   };
 
   // 제외 (삭제)
-  const handleReject = async (id: number) => {
+  const handleReject = async () => {
+    if (deleteTargetId === null) return;
     try {
-      await deleteEntry(id);
+      await deleteEntry(deleteTargetId);
+      setDeleteTargetId(null);
     } catch (err) {
       console.error('[AiTraining] 제외 실패:', err);
     }
@@ -135,7 +137,7 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => handleReject(item.id)}
+                  onClick={() => setDeleteTargetId(item.id)}
                   style={{ width: '100%', padding: 'var(--space-8)' }}
                 >
                   제외
@@ -160,6 +162,17 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
           onSave={handleApprove}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={handleReject}
+        title="제외 확인"
+        subtitle="이 항목을 정말 검토 목록에서 제외하시겠습니까?"
+        status="danger"
+        confirmText="제외"
+      />
     </div>
   );
 }

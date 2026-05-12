@@ -264,7 +264,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 1: 지식 베이스 검색 (RAG)
     # ──────────────────────────────────────────────
     try:
-        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.85)
+        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.6)
         if rag_results:
             best = rag_results[0]
             response = {
