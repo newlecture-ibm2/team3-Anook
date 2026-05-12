@@ -14,6 +14,7 @@ import java.util.Map;
  * admin/message 모듈의 자체 Port를 통해 message 테이블을 조회합니다.
  * message 모듈의 UseCase/Port를 import하지 않고 독립적으로 동작합니다.
  */
+import com.anook.backend.admin.message.application.port.in.DeleteAdminMessageUseCase;
 import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import com.anook.backend.message.application.dto.request.SendStaffMessageCommand;
 
@@ -24,6 +25,7 @@ public class AdminMessageController {
 
     private final AdminMessageQueryPort adminMessageQueryPort;
     private final SendMessageUseCase sendMessageUseCase;
+    private final DeleteAdminMessageUseCase deleteAdminMessageUseCase;
 
     /**
      * 메시지가 있는 객실 목록 조회
@@ -71,6 +73,16 @@ public class AdminMessageController {
                 new SendStaffMessageCommand(content, roomNo, guestId, "ko")
         );
         
+        return ResponseEntity.ok().build();
+    }
+    /**
+     * 관리자/직원이 특정 객실의 메시지 내역 삭제
+     *
+     * DELETE /admin/messages/rooms/{roomNo}
+     */
+    @DeleteMapping("/rooms/{roomNo}")
+    public ResponseEntity<Void> deleteRoomMessages(@PathVariable String roomNo) {
+        deleteAdminMessageUseCase.deleteRoomMessages(roomNo);
         return ResponseEntity.ok().build();
     }
 }

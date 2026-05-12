@@ -1,6 +1,7 @@
 package com.anook.backend.admin.message.adapter.out.persistence;
 
 import com.anook.backend.admin.message.adapter.out.persistence.entity.AdminMessageJpaEntity;
+import com.anook.backend.admin.message.application.port.out.AdminMessageCommandPort;
 import com.anook.backend.admin.message.application.port.out.AdminMessageQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
-public class AdminMessagePersistenceAdapter implements AdminMessageQueryPort {
+public class AdminMessagePersistenceAdapter implements AdminMessageQueryPort, AdminMessageCommandPort {
 
     private final AdminMessageJpaRepository jpaRepository;
 
@@ -67,5 +68,10 @@ public class AdminMessagePersistenceAdapter implements AdminMessageQueryPort {
         return jpaRepository.findFirstByRoomNoOrderByCreatedAtDesc(roomNo)
                 .map(AdminMessageJpaEntity::getGuestId)
                 .orElse(1L); // fallback
+    }
+
+    @Override
+    public void deleteMessagesByRoomNo(String roomNo) {
+        jpaRepository.deleteByRoomNo(roomNo);
     }
 }

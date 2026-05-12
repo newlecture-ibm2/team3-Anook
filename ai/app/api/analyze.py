@@ -261,10 +261,33 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
     # ──────────────────────────────────────────────
-    # STEP 1: 지식 베이스 검색 (RAG)
+    # STEP 0: 지식 베이스 정확 일치 검색 (Exact Match)
+    # ──────────────────────────────────────────────
+    # "내 이름", "test" 같은 짧은 단어들이 임베딩 유사도에서 밀리는 현상을 방지하기 위해
+    # 사용자의 입력이 지식 베이스의 Question과 100% 일치하면 즉시 답변을 반환합니다.
+    try:
+        exact_results = rag_service.search_exact(request.text.strip())
+        if exact_results:
+            best = exact_results[0]
+            response = {
+                "guest_reply": best["answer"],
+                "summary": "AI 자동 답변 (정확 일치)",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {},
+                "confidence": 1.0,
+            }
+            print(f"\n[Analyze] ✅ Exact Match (100% 일치)")
+            print(f"[Analyze] 응답: {response}\n")
+            return [response]
+    except Exception as e:
+        print(f"[Analyze] ⚠️ Exact Match 검색 실패 (무시하고 RAG로 진행): {e}")
+
+    # ──────────────────────────────────────────────
+    # STEP 1: 지식 베이스 검색 (RAG - 임베딩 기반)
     # ──────────────────────────────────────────────
     try:
-        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.85)
+        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.75)
         if rag_results:
             best = rag_results[0]
             response = {

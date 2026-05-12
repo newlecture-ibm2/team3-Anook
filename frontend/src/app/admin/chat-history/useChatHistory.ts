@@ -75,9 +75,29 @@ export default function useChatHistory() {
     setSelectedRoom(roomNo);
   };
 
+  const deleteRoom = async (roomNo: string) => {
+    try {
+      const res = await fetch(`/api/admin/messages/rooms/${roomNo}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      // 삭제 후 방 목록 새로고침
+      await fetchRooms();
+      
+      // 만약 삭제한 방이 현재 선택된 방이라면 선택 해제
+      if (selectedRoom === roomNo) {
+        setSelectedRoom(null);
+        setMessages([]);
+      }
+    } catch (err: any) {
+      setError(err.message || '채팅 내역 삭제 실패');
+    }
+  };
+
   return {
     rooms, messages, selectedRoom,
     loadingRooms, loadingMessages, error,
-    selectRoom, fetchMessages, fetchRooms,
+    selectRoom, fetchMessages, fetchRooms, deleteRoom
   };
 }
