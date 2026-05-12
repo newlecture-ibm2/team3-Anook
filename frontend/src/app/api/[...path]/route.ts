@@ -41,7 +41,29 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
 
   // Body 전달 (GET, HEAD 제외)
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    fetchOptions.body = await req.text();
+    if (contentType && contentType.includes('multipart/form-data')) {
+      // 프론트에서 FormData로 넘긴 것을 백엔드 호환 JSON으로 변환
+      const formData = await req.formData();
+      const content = formData.get('content') as string || '';
+      
+      const images: string[] = [];
+      for (const [key, value] of formData.entries()) {
+        if (key === 'images' && typeof value === 'string') {
+          images.push(value);
+        } else if (key === 'images' && value instanceof Blob) {
+          // 파일 객체인 경우 (원칙적으로 프론트에서 Base64 변환 후 string으로 넘기길 권장)
+          const arrayBuffer = await value.arrayBuffer();
+          const base64 = Buffer.from(arrayBuffer).toString('base64');
+          images.push(base64);
+        }
+      }
+      
+      const payload = { content, images: images.length > 0 ? images : undefined };
+      fetchOptions.body = JSON.stringify(payload);
+      headers['Content-Type'] = 'application/json';
+    } else {
+      fetchOptions.body = await req.text();
+    }
   }
 
   try {

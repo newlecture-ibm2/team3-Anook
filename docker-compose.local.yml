@@ -25,6 +25,17 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ─── Redis (이미지 임시 캐싱 및 세션용) ─────────────
+  redis:
+    image: redis:alpine
+    container_name: anook-local-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - local-redis-data:/data
+    restart: unless-stopped
+
   # ─── AI 서버 (FastAPI, 로컬 개발용) ─────────────
   ai:
     build:
@@ -51,3 +62,5 @@ services:
 volumes:
   local-db-data:
     name: anook-local-db-data
+  local-redis-data:
+    name: anook-local-redis-data

@@ -66,7 +66,7 @@ JSON Output:
 }
 """
 
-async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_emergency_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     if chat_history:
         context = "\n".join([
             f"{'Guest' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
@@ -78,7 +78,7 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
         
     prompt += f"[Current Request]\nGuest: {user_message}"
     
-    raw = await call_gemini_async(prompt=prompt, system_instruction=EMERGENCY_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=EMERGENCY_SYSTEM_PROMPT, images=images)
 
     if "request_id" not in raw or raw.get("request_id") == "auto":
         raw["request_id"] = "auto"

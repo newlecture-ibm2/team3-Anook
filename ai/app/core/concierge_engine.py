@@ -2,7 +2,7 @@ from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.concierge_prompt import CONCIERGE_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 
-async def run_concierge_agent(user_message: str, room_no: str = "", chat_history: list = None) -> dict:
+async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """
     컨시어지 에이전트 엔진 (Step 0-2)
     ───────────────────────────
@@ -27,7 +27,7 @@ async def run_concierge_agent(user_message: str, room_no: str = "", chat_history
     
     try:
         # Gemini 호출
-        raw = await call_gemini_async(prompt=prompt, system_instruction=CONCIERGE_SYSTEM_PROMPT)
+        raw = await call_gemini_async(prompt=prompt, system_instruction=CONCIERGE_SYSTEM_PROMPT, images=images)
         
         # AI가 null을 반환할 경우를 대비해 데이터 세척 (Pydantic 검증 오류 방지)
         # 문자열 필드에 null이 들어오면 빈 문자열("")로 대체

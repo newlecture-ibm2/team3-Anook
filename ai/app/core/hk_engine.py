@@ -3,7 +3,7 @@ from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     
@@ -38,7 +38,7 @@ async def run_hk_agent(user_message: str, room_no: str = "unknown", chat_history
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini One-pass 호출
-    raw = await call_gemini_async(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT, images=images)
 
     # 5. Pydantic 검증 (HotelRequestSchema)
     if "request_id" not in raw or raw["request_id"] == "auto":

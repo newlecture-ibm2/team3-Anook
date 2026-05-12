@@ -38,6 +38,7 @@ class AnalyzeRequest(BaseModel):
     room_no: str
     language: Optional[str] = "ko"
     chat_history: List[dict] = []
+    images: Optional[List[str]] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -299,7 +300,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history)
+        router_results = route(request.text, request.chat_history, request.images)
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'mode': r.mode, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -345,7 +346,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 coro = DOMAIN_AGENTS[domain](
                     user_message=request.text,
                     room_no=request.room_no,
-                    chat_history=request.chat_history
+                    chat_history=request.chat_history,
+                    images=request.images
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -436,6 +438,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
+                        images=request.images
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
@@ -460,6 +463,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
+                    images=request.images
                 )
                 response = {
                     "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
@@ -501,6 +505,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
+                        images=request.images
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
@@ -620,7 +625,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         agent_result = await DOMAIN_AGENTS["CONCIERGE"](
                             user_message=request.text,
                             room_no=request.room_no,
-                            chat_history=request.chat_history
+                            chat_history=request.chat_history,
+                            images=request.images
                         )
                         guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language))
                     else:

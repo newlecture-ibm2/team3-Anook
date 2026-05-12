@@ -8,6 +8,7 @@ import com.anook.backend.request.domain.model.DomainCode;
 import com.anook.backend.request.domain.model.Priority;
 import com.anook.backend.request.domain.model.Request;
 import com.anook.backend.request.domain.model.RequestStatus;
+import com.anook.backend.global.util.RedisImageCacheUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class CreateRequestOnEventService {
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
     private final GracePeriodScheduler gracePeriodScheduler;
+    private final RedisImageCacheUtil redisImageCacheUtil;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -162,6 +164,13 @@ public class CreateRequestOnEventService {
         // DB 저장
         Request savedRequest = requestRepositoryPort.save(request);
         log.info("Request 생성 완료: id={}", savedRequest.getId());
+
+        if (event.getImages() != null && !event.getImages().isEmpty()) {
+            java.time.Duration ttl = java.time.Duration.ofDays(3); // 최대 3일, 체크아웃 시 자동 파기
+            for (String base64Image : event.getImages()) {
+                redisImageCacheUtil.saveImage(savedRequest.getRoomNo(), savedRequest.getId(), base64Image, ttl);
+            }
+        }
 
         // [AN-252] URGENT 판별: priority가 URGENT이거나 에스컬레이션된 경우
         boolean isUrgent = savedRequest.getPriority() == Priority.URGENT;

@@ -15,9 +15,10 @@ import { ActiveRequest } from '../useChat';
 export interface ChatMessage {
   id: string;
   variant: 'sent' | 'received';
-  type?: 'TEXT' | 'WELCOME' | 'QUICK_REPLY' | 'STATUS_CARD' | 'FALLBACK' | 'FEEDBACK' | 'REQUEST_CARD' | 'AI_PROGRESS';
-  content?: string;
-  meta?: Record<string, unknown>;
+  type?: 'TEXT' | 'REQUEST_CARD' | 'AI_PROGRESS' | 'QUICK_REPLY' | 'FEEDBACK' | 'WELCOME' | 'FALLBACK' | 'STATUS_CARD';
+  content: string;
+  imageUrl?: string;
+  meta?: Record<string, any>;
 }
 
 export interface ChatScreenProps {

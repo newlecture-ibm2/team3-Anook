@@ -9,6 +9,7 @@ import json
 import time
 import asyncio
 import contextvars
+import base64
 import google.generativeai as genai
 from contextvars import ContextVar
 from app.core.config import settings
@@ -27,6 +28,7 @@ def call_gemini(
     system_instruction: str,
     model_name: str = "gemini-2.5-flash",
     temperature: float = 0.2,
+    images: list[str] = None,
 ) -> Union[dict, list]:
     """
     Gemini에게 프롬프트를 보내고, JSON 딕셔너리 또는 리스트로 파싱하여 반환한다.
@@ -61,8 +63,21 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
 
     # 시스템 프롬프트(system_instruction)를 지원하지 않는 버전을 위해 프롬프트 텍스트에 결합
     combined_prompt = f"System Instruction (MUST FOLLOW):\n{final_system_instruction}\n\n---\n\nUser Input:\n{prompt}"
+    
+    contents = [combined_prompt]
+    if images:
+        for b64 in images:
+            # 프론트에서 넘어올 수 있는 "data:image/jpeg;base64," 접두사 제거
+            if b64.startswith("data:image"):
+                b64 = b64.split(",", 1)[1]
+            image_data = base64.b64decode(b64)
+            contents.append({
+                "mime_type": "image/jpeg",
+                "data": image_data
+            })
+            
     start_time = time.time()
-    response = model.generate_content(combined_prompt)
+    response = model.generate_content(contents)
     latency_ms = int((time.time() - start_time) * 1000)
     
     raw_text = response.text.strip()
@@ -98,6 +113,7 @@ async def call_gemini_async(
     system_instruction: str,
     model_name: str = "gemini-2.5-flash",
     temperature: float = 0.2,
+    images: list[str] = None,
 ) -> Union[dict, list]:
     """
     call_gemini의 비동기 버전.
@@ -106,7 +122,7 @@ async def call_gemini_async(
     ctx = contextvars.copy_context()
     
     def _run():
-        return call_gemini(prompt, system_instruction, model_name, temperature)
+        return call_gemini(prompt, system_instruction, model_name, temperature, images)
         
     result = await asyncio.to_thread(ctx.run, _run)
     

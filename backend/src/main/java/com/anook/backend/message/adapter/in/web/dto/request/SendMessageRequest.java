@@ -6,6 +6,7 @@ package com.anook.backend.message.adapter.in.web.dto.request;
  * ❌ @RequestBody Map<String, Object> 사용 금지 → 이 전용 DTO 사용
  */
 public record SendMessageRequest(
-        String content
+        String content,
+        java.util.List<String> images
 ) {
 }

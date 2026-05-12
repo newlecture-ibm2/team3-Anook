@@ -27,7 +27,7 @@ VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL", "STATUS_CH
 
 from typing import List
 
-def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutputSchema]:
+def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None) -> List[RouterOutputSchema]:
     """
     고객 메시지를 분류하여 RouterOutputSchema의 리스트를 반환한다.
     다중 요청(Multi-intent)일 경우 여러 개의 스키마 객체가 반환된다.
@@ -55,6 +55,7 @@ def route(user_message: str, chat_history: List[dict] = None) -> List[RouterOutp
         prompt=final_prompt,
         system_instruction=ROUTER_SYSTEM_PROMPT,
         temperature=0.1,  # 분류 작업이므로 최대한 결정적으로
+        images=images
     )
 
     logger.info(f"[Router] Gemini 최종 프롬프트: {final_prompt}")

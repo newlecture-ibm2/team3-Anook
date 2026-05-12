@@ -36,8 +36,8 @@ interface RequestDetail {
   version: number;
   createdAt: string;
   updatedAt: string;
-  cancelRequested: boolean;
   cancelRequestedAt: string | null;
+  imageUrl?: string | null;
 }
 
 interface RequestDetailModalProps {
@@ -348,6 +348,16 @@ export default function RequestDetailModal({
             );
           })()}
         </div>
+
+        {/* 첨부 사진 */}
+        {detail.imageUrl && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>첨부 사진</h3>
+            <div className={styles.contentBlock} style={{ textAlign: 'center' }}>
+              <img src={detail.imageUrl} alt="첨부 사진" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
+            </div>
+          </div>
+        )}
 
         {/* AI 분석 결과 */}
         {detail.entities && Object.keys(detail.entities).length > 0 && (
