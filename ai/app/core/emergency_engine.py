@@ -108,7 +108,7 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
     return {
         "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
-        "domain_code": "EMERGENCY",
+        "domain_code": "FRONT",
         "priority": "EMERGENCY",
         "entities": result.entities,
         "confidence": result.confidence,

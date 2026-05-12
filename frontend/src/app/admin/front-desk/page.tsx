@@ -22,12 +22,15 @@ export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, loading, error, refetch } = useAdminRequests();
 
-  const pending = requests.filter(r => r.status === 'PENDING' && r.departmentId === 'FRONT');
-  const inProgress = requests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested && r.departmentId === 'FRONT');
-  const cancelPending = requests.filter(r => r.cancelRequested);
-  const completed = requests.filter(r => (r.status === 'COMPLETED' || r.status === 'CANCELLED') && r.departmentId === 'FRONT');
+  const frontDeskRequests = requests.filter(r => r.departmentId === 'FRONT' && r.priority !== 'EMERGENCY');
+
+  const pending = frontDeskRequests.filter(r => r.status === 'PENDING');
+  const inProgress = frontDeskRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
+  const cancelPending = frontDeskRequests.filter(r => r.cancelRequested);
+  const completed = frontDeskRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
   const { escalations } = useEscalations();
+  const nonEmergencyEscalations = escalations.filter(r => r.priority !== 'EMERGENCY');
   const { t } = useTranslation();
 
   // 요청 생성 모달 상태
@@ -72,7 +75,7 @@ export default function FrontDeskPage() {
     if (activeTab === 'unhandled') return pending;
     if (activeTab === 'inProgress') return inProgress;
     if (activeTab === 'cancelPending') return cancelPending;
-    if (activeTab === 'escalation') return escalations;
+    if (activeTab === 'escalation') return nonEmergencyEscalations;
     if (activeTab === 'completed') return completed;
     return pending;
   };
@@ -130,7 +133,7 @@ export default function FrontDeskPage() {
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
             { label: '상담 완료', value: 'completed', count: completed.length },
             { label: '취소 승인 대기', value: 'cancelPending', count: cancelPending.length },
-            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length }
+            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: nonEmergencyEscalations.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}
