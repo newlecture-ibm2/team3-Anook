@@ -145,10 +145,23 @@ public class SendMessageService implements SendMessageUseCase {
             log.info("[Message] AI 응답 저장 완료 — id: {}, reply: {}", aiMsg.getId(), combinedReply);
 
             // 5. WebSocket Push → 고객 채팅 화면에 AI 응답 실시간 전달
-            dispatchPort.sendToRoom(roomNo, Map.of(
+            Map<String, Object> payload = new java.util.HashMap<>(Map.of(
                     "type", "AI_RESPONSE",
                     "messageId", aiMsg.getId(),
-                    "content", combinedReply));
+                    "content", combinedReply
+            ));
+
+            java.util.List<String> options = analyses.stream()
+                    .map(MessageAiResult::clarificationOptions)
+                    .filter(java.util.Objects::nonNull)
+                    .flatMap(java.util.List::stream)
+                    .toList();
+
+            if (!options.isEmpty()) {
+                payload.put("options", options);
+            }
+
+            dispatchPort.sendToRoom(roomNo, payload);
 
             // 6. 태스크형 요청 감지 시 이벤트 발행 (여기서 message 책임 끝!)
             for (MessageAiResult analysis : analyses) {
