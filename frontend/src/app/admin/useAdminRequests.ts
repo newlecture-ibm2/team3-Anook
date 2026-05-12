@@ -14,6 +14,7 @@ interface AdminRequest {
   updatedAt: string;
   cancelRequested: boolean;
   cancelRequestedAt: string | null;
+  entities?: Record<string, any>;
 }
 
 export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all') {
@@ -26,7 +27,7 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
       setLoading(true);
       const url = dept
         ? `/api/admin/requests?dept=${dept}`
-        : '/api/admin/requests';
+        : '/api/admin/requests?exclude=FRONT,EMERGENCY';
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: AdminRequest[] = await res.json();

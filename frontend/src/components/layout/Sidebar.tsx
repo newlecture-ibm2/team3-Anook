@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import styles from './Sidebar.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
@@ -66,7 +66,10 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
 
 export default function Sidebar({ role = 'admin', className = '', fakePathname, onMenuClick }: SidebarProps) {
   const actualPathname = usePathname() || '';
-  const pathname = fakePathname || actualPathname;
+  const searchParams = useSearchParams();
+  const searchString = searchParams?.toString();
+  const fullPathname = searchString ? `${actualPathname}?${searchString}` : actualPathname;
+  const pathname = fakePathname || fullPathname;
   const { t } = useTranslation();
 
   // 부서별 (하우스키핑, 식음료, 시설, 컨시어지) 메뉴 리스트
@@ -116,7 +119,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
     }
   ];
 
-  const isDepartment = ['housekeeping', 'facility', 'fb', 'concierge'].includes(role);
+  const isDepartment = ['housekeeping', 'facility', 'fb', 'concierge', 'staff'].includes(role);
   const menus = isDepartment ? deptMenus : adminMenus;
 
   const flatMenus = menus.flatMap(g => g.items);

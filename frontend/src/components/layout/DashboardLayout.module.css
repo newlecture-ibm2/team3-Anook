@@ -41,7 +41,9 @@
 
 .main {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 페이지 전체 스크롤 방지, 내부 컴포넌트에게 높이 제한 위임 */
   padding: var(--space-32) var(--space-40);
   background-color: var(--color-gray-50);
 }

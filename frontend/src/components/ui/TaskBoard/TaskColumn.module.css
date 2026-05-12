@@ -1,33 +1,50 @@
 .column {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-gray-100);
-  border: 1px solid var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-16);
-  gap: var(--space-16);
+  background-color: transparent;
   flex: 1;
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding-bottom: var(--space-8);
+  padding: 16px;
+  gap: var(--space-8);
+  border-top: 4px solid var(--header-color);
 }
 
 .title {
   font: var(--text-body-medium);
-  color: var(--color-gray-500);
+  font-weight: bold;
   margin: 0;
+  color: var(--header-color);
 }
 
 .count {
-  font: var(--text-body-bold);
-  color: var(--color-gray-500);
+  font: var(--text-caption-regular);
+  color: var(--header-color);
+  background-color: var(--color-surface);
+  border: 1px solid var(--header-color);
+  padding: 0 8px;
+  border-radius: 12px;
+  margin: 2px 0;
+}
+
+.todo {
+  --header-color: var(--color-gray-800);
+}
+
+.inProgress {
+  --header-color: var(--color-gray-500);
+}
+
+.done {
+  --header-color: var(--color-gray-400);
 }
 
 .content {
@@ -36,4 +53,5 @@
   gap: var(--space-16);
   flex: 1;
   overflow-y: auto;
+  padding: var(--space-16);
 }

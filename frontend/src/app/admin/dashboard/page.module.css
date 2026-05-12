@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: var(--space-32); /* 섹션 간격 (카드형 그리드) */
   padding: var(--space-48) var(--space-32); /* 상하 전체 48px, 좌우 전체 32px */
+  flex: 1;
+  overflow-y: auto;
 }
 
 .header {
