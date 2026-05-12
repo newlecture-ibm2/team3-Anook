@@ -23,5 +23,6 @@ public record AdminRequestDetailResult(
         boolean cancelRequested,
         LocalDateTime cancelRequestedAt,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String imageUrl
 ) {}

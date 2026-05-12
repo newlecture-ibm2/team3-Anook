@@ -85,7 +85,8 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
                 rVersion,
                 rCancelRequested,
                 rCancelRequestedAt,
-                rEntities
+                rEntities,
+                null
             );
         }, params.toArray());
     }

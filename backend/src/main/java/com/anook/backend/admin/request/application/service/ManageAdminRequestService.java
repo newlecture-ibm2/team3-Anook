@@ -14,6 +14,7 @@ import com.anook.backend.admin.request.application.port.out.AdminRequestMessageP
 import com.anook.backend.admin.request.domain.model.AdminRequest;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
+import com.anook.backend.global.util.RedisImageCacheUtil;
 import com.anook.backend.global.exception.BusinessException;
 import com.anook.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     private final AdminRequestMessagePort adminRequestMessagePort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
+    private final RedisImageCacheUtil redisImageCacheUtil;
 
     @Override
     public List<AdminRequestListResult> getAllRequests(String status, String departmentId, String priority, List<String> exclude, String sort) {
@@ -60,7 +62,18 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         Map<String, String> deptNameMap = buildDeptNameMap();
         Map<Long, String> staffNameMap = buildStaffNameMap();
 
-        return toDetailResult(request, deptNameMap, staffNameMap);
+        AdminRequestDetailResult detail = toDetailResult(request, deptNameMap, staffNameMap);
+        String base64Image = redisImageCacheUtil.getImage(request.getRoomNo(), request.getId());
+        if (base64Image != null) {
+            String imageUrl = base64Image.startsWith("data:") ? base64Image : "data:image/jpeg;base64," + base64Image;
+            return new AdminRequestDetailResult(
+                    detail.id(), detail.status(), detail.priority(), detail.departmentId(), detail.departmentName(),
+                    detail.entities(), detail.rawText(), detail.summary(), detail.confidence(), detail.roomNo(),
+                    detail.assignedStaffId(), detail.assignedStaffName(), detail.version(), detail.cancelRequested(),
+                    detail.cancelRequestedAt(), detail.createdAt(), detail.updatedAt(), imageUrl
+            );
+        }
+        return detail;
     }
 
     @Override
@@ -372,7 +385,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
                 r.getVersion(),
                 r.isCancelRequested(), r.getCancelRequestedAt(),
-                r.getCreatedAt(), r.getUpdatedAt()
+                r.getCreatedAt(), r.getUpdatedAt(), null
         );
     }
 }

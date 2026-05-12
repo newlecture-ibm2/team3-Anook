@@ -28,3 +28,6 @@ export { default as TimerIcon } from './TimerIcon';
 export { default as SparklesIcon } from './SparklesIcon';
 export { default as MicIcon } from './MicIcon';
 export { default as StopIcon } from './StopIcon';
+export * from './ImageIcon';
+export * from './PlusIcon';
+export * from './CameraIcon';

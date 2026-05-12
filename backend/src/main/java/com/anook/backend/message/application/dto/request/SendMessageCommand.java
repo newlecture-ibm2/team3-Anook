@@ -13,10 +13,13 @@ public record SendMessageCommand(
         /** 고객 메시지 내용 */
         String content,
 
+        /** 고객 이미지 데이터 (Base64) 리스트 */
+        java.util.List<String> images,
+
         /** 고객 언어 코드 (기본값: "ko") */
         String guestLanguage
 ) {
-    public SendMessageCommand(String roomNo, Long guestId, String content) {
-        this(roomNo, guestId, content, "ko");
+    public SendMessageCommand(String roomNo, Long guestId, String content, java.util.List<String> images) {
+        this(roomNo, guestId, content, images, "ko");
     }
 }
