@@ -56,7 +56,7 @@ Assign ONE of the following codes ONLY if route_type is DEPARTMENT, FRONT_ESCALA
 
 | Code       | Department    | Responsibilities (Examples) |
 |------------|---------------|-----------------------------|
-| HK         | Housekeeping  | Towels, amenities (including free water), cleaning, beddings, minibar |
+| HK         | Housekeeping  | Towels, amenities (including free water/생수), cleaning, beddings, minibar |
 | FB         | Food & Bev    | Room service (paid drinks/food), breakfast, restaurant reservation |
 | FACILITY   | Facility Mgt  | Broken AC/TV/lights, equipment repair, plumbing, electrical issues |
 | CONCIERGE  | Concierge     | Tourist/restaurant recommendations, taxi, luggage, external reservations |
@@ -120,6 +120,7 @@ You must output a JSON Array of objects.
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
+- **CLARIFICATION OPTIONS HALLUCINATION RULE**: When route_type is "CLARIFICATION", DO NOT generate specific item names (e.g., "탄산수", "콜라") in the `clarification_options` based on your own general knowledge. You MUST NOT guess the hotel's menu or inventory. Only provide generic category options like ["무료 생수", "유료 룸서비스 음료"] or ask the user to type exactly what they want. If you are not sure what generic options to provide, simply return an empty array [] for `clarification_options`.
 - **AMBIGUOUS DEPARTMENT ROUTING (STATE VS ACTION)**: If the guest describes a "State/Condition" or "Vague Item" without specifying the exact action (e.g., "시끄러워요", "목말라요", "차 주세요", "치워주세요", "예약 변경할게요"), you must pause and think: 'Can this be solved by multiple departments?' (e.g., Noise could be FRONT checking next room OR FACILITY fixing a machine. "목말라요" could be HK bringing free water OR FB providing paid drinks. "차" could be HK tea bags OR CONCIERGE valet parking. "예약" could be FRONT room reservation OR CONCIERGE restaurant reservation). If a request logically overlaps multiple departments or lacks a specific action/item, you MUST classify it as "CLARIFICATION" with `domain: null`. DO NOT GUESS or force-route based on simple keywords. Always ask the user to clarify their exact need.
 - **MISSING KEY FALLBACK RULE**: If the last message in `[과거 대화 맥락]` was an AI question asking for missing information (ending with ?), the conversation is currently in a 'missing key fallback' state. In this state, regardless of what the user inputs (whether it's an answer, a confused question like "what?", or short ambiguous words), you MUST NEVER classify it as "CLARIFICATION" or "SOFT_FALLBACK". You MUST strictly maintain the original route_type (e.g., "DEPARTMENT") and assign the SAME domain as the ongoing conversation so the department agent can continue handling the missing key.
 - **CONTEXT RESET RULE**: If the last AI message in `[과거 대화 맥락]` indicates that a previous request was already COMPLETED, ANSWERED, or CONFIRMED (e.g., "접수되었습니다", "안내해 드립니다", "완료했습니다"), you MUST treat the user's current message as a completely NEW and INDEPENDENT request. DO NOT let the previous department's context bias your domain routing. Evaluate the new message from scratch.

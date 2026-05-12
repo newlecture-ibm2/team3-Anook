@@ -163,7 +163,7 @@ export function useChat() {
                   type: 'TEXT',
                 }];
               });
-            } else if (payload.type === 'NEW_REQUEST' || payload.type === 'STATUS_CHANGED') {
+            } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {
               const progressMap: Record<string, number> = {
                 'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
               };
@@ -227,7 +227,7 @@ export function useChat() {
               });
 
               // --- System messages for cancel flow ---
-              if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
+              if ((payload.type === 'STATUS_CHANGED' || payload.type === 'CANCEL_APPROVED') && payload.status === 'CANCELLED') {
                 const now = Date.now();
                 if (now - lastCancelSuccessTime.current > 500) {
                   lastCancelSuccessTime.current = now;
@@ -235,11 +235,14 @@ export function useChat() {
                     setMessages(prev => {
                       const msgId = `system-cancel-success-${payload.requestId}`;
                       if (prev.some(m => m.id === msgId)) return prev;
+                      const content = payload.initiatedBy === 'STAFF'
+                        ? '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.'
+                        : '안내: 요청이 정상적으로 취소되었습니다.';
                       return [...prev, {
                         id: msgId,
                         variant: 'received',
                         type: 'TEXT',
-                        content: '안내: 요청이 정상적으로 취소되었습니다.',
+                        content: content,
                       }];
                     });
                   }, 600); // 디바운스(500ms)보다 길게 설정하여 모든 카드가 도착한 후 렌더링되게 보장
