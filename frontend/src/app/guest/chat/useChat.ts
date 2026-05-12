@@ -141,8 +141,8 @@ export function useChat() {
                   id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
                   variant: 'received',
                   content: payload.content,
-                  type: payload.uiType || 'TEXT',
-                  meta: payload.meta || {},
+                  type: payload.options && payload.options.length > 0 ? 'QUICK_REPLY' : (payload.uiType || 'TEXT'),
+                  meta: { ...(payload.meta || {}), options: payload.options },
                 };
                 return [...filtered, newAiMsg];
               });

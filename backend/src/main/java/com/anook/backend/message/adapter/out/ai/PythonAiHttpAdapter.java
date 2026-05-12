@@ -93,10 +93,15 @@ public class PythonAiHttpAdapter implements MessageAiPort {
 
                 String targetKeyword = (String) response.get("target_keyword");
 
-                log.info("[PythonAI] 개별 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}, targetKeyword: {}",
-                        domainCode, confidence, action, actionType, targetKeyword);
+                @SuppressWarnings("unchecked")
+                java.util.List<String> clarificationOptions = response.containsKey("clarification_options")
+                        ? (java.util.List<String>) response.get("clarification_options")
+                        : null;
 
-                results.add(new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta, targetKeyword));
+                log.info("[PythonAI] 개별 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}, targetKeyword: {}, options: {}",
+                        domainCode, confidence, action, actionType, targetKeyword, clarificationOptions);
+
+                results.add(new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta, targetKeyword, clarificationOptions));
             }
 
             return results;
@@ -124,6 +129,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                 0.0, 
                 "ADD", 
                 "ADD", 
+                null,
                 null,
                 null
         ));
