@@ -37,8 +37,9 @@ public class AdminRequestController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String dept,
             @RequestParam(required = false) String priority,
+            @RequestParam(required = false) List<String> exclude,
             @RequestParam(required = false, defaultValue = "created_at_desc") String sort) {
-        return ResponseEntity.ok(manageAdminRequestUseCase.getAllRequests(status, dept, priority, sort));
+        return ResponseEntity.ok(manageAdminRequestUseCase.getAllRequests(status, dept, priority, exclude, sort));
     }
 
     /**

@@ -5,6 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
+import RequestDetailModal from '../front-desk/_components/RequestDetailModal/RequestDetailModal';
 import useAdminRequests from '../useAdminRequests';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
@@ -25,8 +26,9 @@ const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
 export default function FacilityPage() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [detailTarget, setDetailTarget] = useState<number | null>(null);
   const { t } = useTranslation();
-  const { pending, inProgress, completed, loading, error } = useAdminRequests('FACILITY', searchValue, selectedFilter);
+  const { pending, inProgress, completed, loading, error, refetch } = useAdminRequests('FACILITY', searchValue, selectedFilter);
 
   if (error) return <div className={styles.container}><p>오류: {error}</p></div>;
 
@@ -63,56 +65,81 @@ export default function FacilityPage() {
         <div className={styles.board}>
           {/* Column 1: 대기 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.pending} count={pending.length} status="TODO">
               {pending.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
-                  description={`${req.roomNo}호`}
+                  description=""
                   status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
 
           {/* Column 2: 진행 중 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.inProgress} count={inProgress.length} status="IN_PROGRESS">
               {inProgress.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
-                  description={`${req.roomNo}호${req.assignedStaffName ? ` · ${req.assignedStaffName}` : ''}`}
+                  description={req.assignedStaffName || ''}
                   status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
                   updatedAt={req.updatedAt}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
 
           {/* Column 3: 완료됨 */}
           <div className={styles.columnWrapper}>
-            <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length}>
+            <TaskColumn title={t.adminPage.taskBoard.columns.completed} count={completed.length} status="DONE">
               {completed.map(req => (
+                <div key={req.id} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                 <TaskTicket 
-                  key={req.id}
                   ticketId={req.id}
+                  roomNo={req.roomNo}
+                  department={req.departmentName}
                   priority={mapPriority(req.priority)}
                   title={req.summary}
-                  description={`${req.roomNo}호`}
+                  description=""
                   status={mapStatus(req.status)}
+                  isCancelled={req.status === 'CANCELLED'}
+                  cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
                 />
+                </div>
               ))}
             </TaskColumn>
           </div>
         </div>
+      )}
+
+      {/* 상세 모달 */}
+      {detailTarget !== null && (
+        <RequestDetailModal
+          isOpen={true}
+          onClose={() => setDetailTarget(null)}
+          requestId={detailTarget}
+          onUpdate={() => refetch && refetch()}
+        />
       )}
     </div>
   );

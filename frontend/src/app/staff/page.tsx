@@ -2,8 +2,6 @@
 
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Sidebar from '@/components/layout/Sidebar';
-import GlobalEmergencyListener from '@/components/layout/GlobalEmergencyListener';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import InputField from '@/components/ui/Inputfield/InputField';
@@ -23,6 +21,54 @@ const PRIORITY_OPTIONS = [
   { label: '긴급 (URGENT)', value: 'URGENT' },
   { label: '일반 (NORMAL)', value: 'NORMAL' },
 ];
+
+/** 영문 키 → 한국어 라벨 (카드 미리보기용) */
+const ENTITY_LABELS: Record<string, string> = {
+  is_contactless: '비대면 배달', target_time: '희망 시간',
+  equipment: '대상 설비', symptom: '증상', location: '위치',
+  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
+  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
+  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
+  type: '유형', target: '대상',
+};
+const HIDDEN_KEYS = new Set(['intent', 'allergen_warning']);
+
+/** entities → 카드 미리보기 텍스트 (1~2줄 요약) */
+function formatEntitiesText(entities: Record<string, any>): string {
+  const parts: string[] = [];
+
+  // 정규화: item+count 플랫 → items 배열
+  if (entities.item && entities.count && !entities.items?.length) {
+    entities = { ...entities, items: [{ item: entities.item, count: entities.count }] };
+  }
+
+  // 배열 타입
+  if (entities.items?.length > 0) {
+    parts.push(entities.items.map((it: any) => `${it.item} ${it.count}개`).join(', '));
+  }
+  if (entities.tasks?.length > 0) {
+    parts.push(entities.tasks.join(', '));
+  }
+  if (entities.menu_items?.length > 0) {
+    parts.push(entities.menu_items.map((mi: any) => {
+      let s = `${mi.name} ${mi.quantity}개`;
+      if (mi.selected_option && mi.selected_option !== '없음') s += ` (${mi.selected_option})`;
+      return s;
+    }).join(', '));
+  }
+
+  // 단순 키
+  for (const [key, value] of Object.entries(entities)) {
+    if (HIDDEN_KEYS.has(key)) continue;
+    if (['items', 'tasks', 'menu_items', 'item', 'count'].includes(key)) continue;
+    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+    if (value === true) { parts.push(ENTITY_LABELS[key] || key); continue; }
+    const label = ENTITY_LABELS[key] || key;
+    parts.push(`${label}: ${value}`);
+  }
+
+  return parts.join('\n');
+}
 
 /**
  * [가이드라인 준수] 스태프 대시보드 메인 페이지
@@ -98,12 +144,7 @@ function DashboardContent() {
   }), [filteredTasks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <GlobalEmergencyListener />
-      <div className={styles.container} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar role={departmentRole} fakePathname={view === 'my' ? '/staff?view=my' : '/staff'} />
-
-        <main className={styles.mainContent} style={{ overflowY: 'auto' }}>
+    <div className={styles.container}>
           <div className={styles.headerContainer}>
             <header className={styles.header}>
               <h1 className={styles.title}>{departmentName} 관리</h1>
@@ -132,58 +173,55 @@ function DashboardContent() {
           ) : error ? (
             <div className={styles.error}>데이터를 불러오는 데 실패했습니다. ({error})</div>
           ) : (
-            <section className={styles.board}>
-              {COLUMN_CONFIG.map(col => {
-                const columnTasks = boardData[col.status as keyof typeof boardData];
-                return (
-                  <TaskColumn
-                    key={col.id}
-                    title={col.title}
-                    count={columnTasks.length}
-                  >
-                    <div className={styles.columnContent}>
-                      {columnTasks.map(task => (
-                        <div 
-                          key={`${task.roomNumber}-${task.createdAt}`}
-                          className={styles.ticketWrapper}
-                          onClick={() => setSelectedTask(task)}
-                        >
-                          <TaskTicket
-                            priority={mapPriority(task.priority)}
-                            title={`[${task.roomNumber}호] ${task.summary}`}
-                            description={(() => {
-                              if (!task.rawText) return '';
-                              const main = task.rawText.split('\n|||TRANSFER_REASON|||')[0];
-                              const customer = main.split('[주문 상세]')[0].trim();
-                              const detail = main.includes('[주문 상세]') ? main.split('[주문 상세]').slice(1).join('').trim() : '';
-                              return customer ? (detail ? `${customer}\n${detail}` : customer) : detail;
-                            })()}
-                            status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
-                            createdAt={task.createdAt}
-                            cancelRequested={task.cancelRequested}
-                            isCancelled={task.status === 'CANCELLED'}
-                            onAccept={col.status === 'TODO' ? (e) => {
-                              e.stopPropagation();
-                              acceptTask(task.id, task.version);
-                            } : undefined}
-                            onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
-                              e.stopPropagation();
-                              completeTask(task.id, task.version);
-                            } : undefined}
-                            entities={task.entities}
-                          />
-                        </div>
-                      ))}
-                      {columnTasks.length === 0 && (
-                        <div className={styles.empty}>해당하는 작업이 없습니다.</div>
-                      )}
-                    </div>
-                  </TaskColumn>
-                );
-              })}
-            </section>
+          <section className={styles.board}>
+            {COLUMN_CONFIG.map(col => {
+              const columnTasks = boardData[col.status as keyof typeof boardData];
+              return (
+                <TaskColumn
+                  key={col.id}
+                  title={col.title}
+                  count={columnTasks.length}
+                  status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
+                >
+                  <div className={styles.columnContent}>
+                    {columnTasks.map(task => (
+                      <div 
+                        key={`${task.roomNumber}-${task.createdAt}`}
+                        className={styles.ticketWrapper}
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <TaskTicket
+                          ticketId={task.id}
+                          roomNo={task.roomNumber}
+                          department={task.departmentId}
+                          priority={mapPriority(task.priority)}
+                          title={task.summary}
+                          description=""
+                          status={col.status as 'TODO' | 'IN_PROGRESS' | 'DONE'}
+                          createdAt={task.createdAt}
+                          cancelRequested={task.cancelRequested}
+                          isCancelled={task.status === 'CANCELLED'}
+                          onAccept={col.status === 'TODO' ? (e) => {
+                            e.stopPropagation();
+                            acceptTask(task.id, task.version);
+                          } : undefined}
+                          onComplete={col.status === 'IN_PROGRESS' && !task.cancelRequested ? (e) => {
+                            e.stopPropagation();
+                            completeTask(task.id, task.version);
+                          } : undefined}
+                          entities={task.entities}
+                        />
+                      </div>
+                    ))}
+                    {columnTasks.length === 0 && (
+                      <div className={styles.empty}>해당하는 작업이 없습니다.</div>
+                    )}
+                  </div>
+                </TaskColumn>
+              );
+            })}
+          </section>
           )}
-        </main>
 
         <TaskDetailModal 
           isOpen={selectedTask !== null}
@@ -195,7 +233,6 @@ function DashboardContent() {
           onApproveCancellation={approveCancellation}
           onRejectCancellation={rejectCancellation}
         />
-      </div>
     </div>
   );
 }

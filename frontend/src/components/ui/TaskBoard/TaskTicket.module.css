@@ -1,11 +1,13 @@
 /* src/components/ui/card/TaskTicket.module.css */
 .taskTicket {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: var(--space-24);
+  padding: calc(var(--space-24) + 4px) var(--space-24) var(--space-24);
   gap: var(--space-16);
   border: 1px solid var(--color-surface); /* 연한 회색 테두리 */
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--color-bg);
   box-shadow: var(--shadow-card);
   width: 100%;
@@ -14,13 +16,56 @@
   transition: border-color var(--transition);
 }
 
-.urgentTicket {
-  border: 1px solid var(--color-error);
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+.topColorBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-color: var(--color-surface); /* default */
+}
+
+/* Department Styles */
+.hk .topColorBar { background-color: var(--color-dept-hk-border); }
+.hk .deptBadge { color: var(--color-dept-hk-text); }
+.hk .headerDivider { background-color: var(--color-dept-hk-text); }
+
+.facility .topColorBar { background-color: var(--color-dept-facility-border); }
+.facility .deptBadge { color: var(--color-dept-facility-text); }
+.facility .headerDivider { background-color: var(--color-dept-facility-text); }
+
+.fb .topColorBar { background-color: var(--color-dept-fb-border); }
+.fb .deptBadge { color: var(--color-dept-fb-text); }
+.fb .headerDivider { background-color: var(--color-dept-fb-text); }
+
+.concierge .topColorBar { background-color: var(--color-dept-concierge-border); }
+.concierge .deptBadge { color: var(--color-dept-concierge-text); }
+.concierge .headerDivider { background-color: var(--color-dept-concierge-text); }
+
+.front .topColorBar { background-color: var(--color-dept-front-border); }
+.front .deptBadge { color: var(--color-dept-front-text); }
+.front .headerDivider { background-color: var(--color-dept-front-text); }
+
+.emergency .topColorBar { background-color: var(--color-dept-emergency-border); }
+.emergency .deptBadge { color: var(--color-dept-emergency-text); }
+.emergency .headerDivider { background-color: var(--color-dept-emergency-text); }
+
+.taskTicket.emergency {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); /* 빨간색, 거리 0 */
 }
 
 .taskTicket:hover {
   border-color: var(--color-gray-300);
+}
+
+.deptBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--text-caption-medium);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--color-gray-700); /* default text */
 }
 
 .header {
@@ -30,8 +75,28 @@
 }
 
 .ticketId {
-  font: var(--text-body-bold);
-  color: var(--color-gray-500);
+  font: var(--text-caption-medium);
+  color: var(--color-gray-400);
+}
+
+.roomNo {
+  font: var(--text-h3-medium);
+  color: var(--color-gray-700);
+  white-space: nowrap;
+  padding: 6px 8px;
+  border: 1.5px solid var(--color-gray-500);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerDivider {
+  width: 1px;
+  height: 12px;
+  background-color: var(--color-gray-300);
+  margin: 0 var(--space-2);
 }
 
 .content {
@@ -57,7 +122,8 @@
   height: 1px;
   background-color: var(--color-surface);
   width: 100%;
-  margin: var(--space-8) 0;
+  /* 부모 컨테이너(taskTicket)의 gap(16px)을 상쇄하기 위해 음수 마진 적용 */
+  margin: calc(var(--space-8) * -1) 0;
 }
 
 .footer {
@@ -74,6 +140,45 @@
   gap: var(--space-4);
 }
 
+.textStatus {
+  font: var(--text-caption-medium);
+  font-weight: 600;
+}
 
+.textStatusCancelled {
+  color: var(--color-gray-500);
+}
 
+.textStatusCancelPending {
+  color: #ef4444;
+}
 
+.textStatusUrgent {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.redDot {
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.isCancelled {
+  opacity: 0.7;
+}
+
+.isCancelled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.4); /* 약간의 회색 오버레이 */
+  pointer-events: none;
+}

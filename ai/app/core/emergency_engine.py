@@ -19,7 +19,7 @@ Output ONLY a valid JSON object matching the HotelRequestSchema. Do not include 
 [JSON Output Requirements]
 - request_id: "auto"
 - room_no: "unknown"
-- domain: "FRONT"
+- domain: "EMERGENCY"
 - summary: A short 3-line summary of the emergency in KOREAN.
 - priority: "URGENT" (MUST be URGENT)
 - status: "PENDING"
@@ -36,7 +36,7 @@ JSON Output:
 {
     "request_id": "auto",
     "room_no": "unknown",
-    "domain": "FRONT",
+    "domain": "EMERGENCY",
     "summary": "의료 지원 및 구급상자 요청",
     "priority": "URGENT",
     "status": "PENDING",
@@ -53,7 +53,7 @@ JSON Output:
 {
     "request_id": "auto",
     "room_no": "unknown",
-    "domain": "FRONT",
+    "domain": "EMERGENCY",
     "summary": "천장 누수 발생",
     "priority": "URGENT",
     "status": "PENDING",
@@ -85,7 +85,7 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
     if "room_no" not in raw or raw.get("room_no") == "unknown":
         raw["room_no"] = room_no
     if "domain" not in raw:
-        raw["domain"] = "FRONT"
+        raw["domain"] = "EMERGENCY"
     if "priority" not in raw or raw.get("priority") != "URGENT":
         raw["priority"] = "URGENT"
         
@@ -97,7 +97,7 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
         return {
             "guest_reply": "긴급 상황이 접수되었습니다. 즉시 직원이 출동하겠습니다.",
             "summary": "긴급 상황 접수",
-            "domain_code": "FRONT",
+            "domain_code": "EMERGENCY",
             "priority": "URGENT",
             "entities": {"intent": "OTHER"},
             "confidence": 0.9,
@@ -108,7 +108,7 @@ async def run_emergency_agent(user_message: str, room_no: str = "unknown", chat_
     return {
         "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
-        "domain_code": "FRONT",
+        "domain_code": "EMERGENCY",
         "priority": "URGENT",
         "entities": result.entities,
         "confidence": result.confidence,

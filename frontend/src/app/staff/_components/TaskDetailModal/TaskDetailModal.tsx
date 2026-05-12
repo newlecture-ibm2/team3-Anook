@@ -27,6 +27,104 @@ const DEPARTMENTS = [
   { id: 'CONCIERGE', name: '컨시어지' }
 ];
 
+/** 영문 키 → 한국어 라벨 매핑 (여기에 한 줄 추가하면 자동으로 예쁘게 표시됨) */
+const ENTITY_LABELS: Record<string, string> = {
+  // HK
+  is_contactless: '비대면 배달', target_time: '희망 시간',
+  // FACILITY
+  equipment: '대상 설비', symptom: '증상', location: '위치',
+  // CONCIERGE
+  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
+  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
+  // 공통
+  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
+  type: '유형', target: '대상',
+};
+
+/** 직원에게 보여줄 필요 없는 내부 키 (섹션 표시 판단 + 순회에서 모두 제외) */
+const HIDDEN_ENTITY_KEYS = new Set(['intent', 'allergen_warning']);
+
+/** 배열 타입 특수 렌더러가 필요한 키 (key-value 순회에서만 스킵, 섹션 표시 판단에서는 포함) */
+const ARRAY_KEYS = new Set(['items', 'tasks', 'menu_items']);
+
+function renderEntities(entities: Record<string, any>): React.ReactNode {
+  const rendered: React.ReactNode[] = [];
+
+  // 0) 정규화: item+count 플랫 키 → items 배열로 통일 (AI 응답 형식 불일치 보정)
+  if (entities.item && entities.count && !entities.items?.length) {
+    entities = { ...entities, items: [{ item: entities.item, count: entities.count }] };
+    // 플랫 키는 items로 흡수되었으므로 제거 (중복 표시 방지)
+    delete entities.item;
+    delete entities.count;
+  }
+
+  // 1) 배열 타입 특수 렌더링
+  if (entities.items?.length > 0) {
+    rendered.push(
+      <div key="items" style={{ marginBottom: '12px' }}>
+        <strong>물품 요청:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.items.map((it: any, idx: number) => (
+            <li key={idx}>{it.item} - {it.count}개</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  if (entities.tasks?.length > 0) {
+    rendered.push(
+      <div key="tasks" style={{ marginBottom: '12px' }}>
+        <strong>수행 업무:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.tasks.map((t: string, idx: number) => (
+            <li key={idx}>{t}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  if (entities.menu_items?.length > 0) {
+    rendered.push(
+      <div key="menu_items" style={{ marginBottom: '12px' }}>
+        <strong>주문 메뉴:</strong>
+        <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+          {entities.menu_items.map((mi: any, idx: number) => (
+            <li key={idx}>
+              {mi.name} {mi.quantity}개
+              {mi.selected_option && mi.selected_option !== '없음' ? ` (${mi.selected_option})` : ''}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // 2) 단순 key-value: 라벨 매핑에 있으면 한국어, 없으면 영문 키 그대로 (폴백)
+  for (const [key, value] of Object.entries(entities)) {
+    if (HIDDEN_ENTITY_KEYS.has(key) || ARRAY_KEYS.has(key)) continue;
+    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+
+    const label = ENTITY_LABELS[key] || key;
+
+    // boolean 타입 (is_contactless 등) 은 뱃지로 표시
+    if (value === true) {
+      rendered.push(
+        <div key={key} style={{ marginBottom: '8px' }}>
+          <StatusBadge variant="purple">{label}</StatusBadge>
+        </div>
+      );
+    } else {
+      rendered.push(
+        <div key={key} style={{ marginBottom: '8px' }}>
+          <strong>{label}:</strong> {String(value)}
+        </div>
+      );
+    }
+  }
+
+  return rendered.length > 0 ? rendered : <span>분석 데이터 없음</span>;
+}
+
 export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onComplete, onTransfer, onApproveCancellation, onRejectCancellation }: TaskDetailModalProps) {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [toDepartmentId, setToDepartmentId] = useState('');
@@ -154,7 +252,9 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
           <div className={styles.header}>
             <div className={styles.headerTop}>
               <span className={styles.roomBadge}>[{task.roomNumber}호]</span>
-              <StatusBadge variant={badgeVariant}>{task.priority}</StatusBadge>
+              {task.priority === 'URGENT' && (
+                <StatusBadge variant="red">긴급</StatusBadge>
+              )}
               {task.cancelRequested && (
                 <StatusBadge variant="red">취소 대기중</StatusBadge>
               )}
@@ -169,11 +269,18 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>상태</span>
-              <span className={styles.infoValue}>{task.status}</span>
+              <span className={styles.infoValue}>
+                {task.status === 'PENDING' ? '대기 중' :
+                 task.status === 'IN_PROGRESS' ? '진행 중' :
+                 task.status === 'COMPLETED' ? '완료됨' :
+                 task.status === 'CANCELLED' ? '취소됨' : task.status}
+              </span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>부서</span>
-              <span className={styles.infoValue}>{task.departmentId}</span>
+              <span className={styles.infoValue}>
+                {DEPARTMENTS.find(d => d.id === task.departmentId)?.name || task.departmentId}
+              </span>
             </div>
 
             {task.cancelRequested && (
@@ -192,7 +299,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
-            {orderDetail && (
+            {/* entities가 없을 때만 rawText 기반 주문 상세 표시 (entities 있으면 중복이므로 숨김) */}
+            {orderDetail && !task.entities && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>주문/요청 상세</h3>
                 <div className={styles.orderDetailBox}>
@@ -201,37 +309,19 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
-            {task.entities && ((task.entities.items?.length ?? 0) > 0 || (task.entities.tasks?.length ?? 0) > 0) && (
+            {/* AI 분석 상세 내역 — 라벨 매핑 + 배열 특수 렌더러 + 폴백 */}
+            {task.entities && Object.keys(task.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0 && (
               <div className={styles.descriptionSection}>
                 <h3 className={styles.descriptionTitle}>AI 분석 상세 내역</h3>
                 <div className={styles.descriptionBox} style={{ backgroundColor: '#f0f4ff' }}>
-                  {task.entities.items && task.entities.items.length > 0 && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <strong>물품 요청:</strong>
-                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
-                        {task.entities.items.map((it: any, idx: number) => (
-                          <li key={idx}>{it.item} - {it.count}개</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {task.entities.tasks && task.entities.tasks.length > 0 && (
-                    <div>
-                      <strong>수행 업무:</strong>
-                      <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
-                        {task.entities.tasks.map((t: string, idx: number) => (
-                          <li key={idx}>{t}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {renderEntities(task.entities)}
                 </div>
               </div>
             )}
 
             {transferReasonText && (
               <div className={styles.descriptionSection}>
-                <h3 className={styles.descriptionTitle}>부서 이관 사유</h3>
+                <h3 className={styles.descriptionTitle}>업무 전달 사유</h3>
                 <div className={styles.transferReasonBox}>
                   {transferReasonText}
                 </div>
@@ -240,7 +330,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
             {showTransferForm && (
               <div className={styles.transferForm}>
-                <h3 className={styles.descriptionTitle}>부서 전달 (이관)</h3>
+                <h3 className={styles.descriptionTitle}>업무 전달</h3>
                 <div className={styles.transferFormGroup}>
                   <label className={styles.transferLabel}>전달 대상 부서</label>
                   <select 
@@ -258,7 +348,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                   <label className={styles.transferLabel}>전달 사유</label>
                   <textarea 
                     className={styles.transferTextarea}
-                    placeholder="이관 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
+                    placeholder="전달 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
                     value={transferReason}
                     onChange={e => setTransferReason(e.target.value)}
                   />
@@ -282,7 +372,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     disabled={isSubmitting || !isOnline}
                     title={!isOnline ? "오프라인 상태에서는 사용할 수 없습니다" : undefined}
                   >
-                    부서 전달
+                    업무 전달
                   </Button>
                   <Button
                     variant="primary"

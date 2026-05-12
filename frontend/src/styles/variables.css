@@ -10,9 +10,13 @@
 
 
   --color-gray-900: #111827;
+  --color-gray-800: #1F2937;
   --color-gray-700: #374151;
+  --color-gray-600: #4B5563;
   --color-gray-500: #6B7280;
+  --color-gray-400: #9CA3AF;
   --color-gray-300: #D1D5DB;
+  --color-gray-200: #E5E7EB;
   --color-gray-100: #F3F4F6;
   --color-gray-50: #F9FAFB;
   --color-white: #FFFFFF;
@@ -34,6 +38,36 @@
   --color-tag-text-gray: #374151;
   --color-tag-text-violet: #5B21B6;
 
+  /* 1. 파스텔 그린 (이미지의 Bottom Middle) -> 하우스키핑 */
+  --color-dept-hk-border: #91EFAD;
+  --color-dept-hk-bg: #C8F7D6;
+  --color-dept-hk-text: #166534;
+
+  /* 2. 파스텔 오렌지/옐로우 (이미지의 Top Right) -> 시설관리 */
+  --color-dept-facility-border: #FAD1A1;
+  --color-dept-facility-bg: #FDE8D0;
+  --color-dept-facility-text: #9A3412;
+
+  /* 3. 파스텔 핑크 (이미지의 Bottom Left) -> F&B */
+  --color-dept-fb-border: #F9B5D9;
+  --color-dept-fb-bg: #FCDAEC;
+  --color-dept-fb-text: #9D174D;
+
+  /* 4. 파스텔 퍼플 (이미지의 Top Middle) -> 컨시어지 */
+  --color-dept-concierge-border: #C3ADF5;
+  --color-dept-concierge-bg: #E1D5FA;
+  --color-dept-concierge-text: #5B21B6;
+
+  /* 5. 파스텔 블루 (이미지의 Top Left) -> 프런트 */
+  --color-dept-front-border: #A9C9F9;
+  --color-dept-front-bg: #D4E4FC;
+  --color-dept-front-text: #1E40AF;
+
+  /* 긴급 상황 (기존 유지) */
+  --color-dept-emergency-border: #ff7272;
+  --color-dept-emergency-bg: #FEF2F2;
+  --color-dept-emergency-text: #991B1B;
+
   /* Typography Tokens (font: weight size/line-height font-family) */
   --font-sans: 'Pretendard', 'Inter', -apple-system, sans-serif;
   --main-line-height: 1.5;
@@ -53,6 +87,7 @@
   --text-caption-regular: 400 0.75rem/1.5 var(--font-sans);
 
   /* Spacing */
+  --space-2: 0.15rem;
   --space-4: 0.25rem;
   --space-8: 0.5rem;
   --space-12: 0.75rem;
