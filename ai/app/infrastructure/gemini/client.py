@@ -1,8 +1,8 @@
 """
-Gemini API 공통 클라이언트
-─────────────────────────
+Gemini API 공통 클라이언트 (Google GenAI SDK v1 적용)
+──────────────────────────────────────────────────
 모든 AI 모듈(라우터, 도메인 에이전트 등)이 공유하는 Gemini 호출 래퍼.
-팀원들도 이 클라이언트를 import해서 자기 부서 에이전트에 사용합니다.
+기존 google-generativeai 대신 최신 google-genai SDK를 사용합니다.
 """
 
 import json
@@ -10,40 +10,29 @@ import time
 import asyncio
 import contextvars
 import base64
-import google.generativeai as genai
+from typing import Union, List, Dict, Any, Optional
 from contextvars import ContextVar
+
+from google import genai
+from google.genai import types
 from app.core.config import settings
 
 # 로깅용 메타데이터 전역 컨텍스트 변수 (스레드/비동기 안전)
 ai_log_meta_ctx: ContextVar[dict] = ContextVar("ai_log_meta", default={})
 
-# ── 모듈 로드 시 1회만 API 키 설정 ──
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# ── 클라이언트 초기화 (Singleton 패턴처럼 사용) ──
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-
-from typing import Union
 
 def call_gemini(
     prompt: str,
     system_instruction: str,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-2.5-flash", # 최신 모델명으로 권장
     temperature: float = 0.2,
-    images: list[str] = None,
-) -> Union[dict, list]:
+    images: List[str] = None,
+) -> Union[Dict[str, Any], List[Any]]:
     """
     Gemini에게 프롬프트를 보내고, JSON 딕셔너리 또는 리스트로 파싱하여 반환한다.
-
-    Args:
-        prompt: 사용자 입력 또는 가공된 프롬프트 문자열
-        system_instruction: 시스템 프롬프트 (역할 지시)
-        model_name: 사용할 Gemini 모델명
-        temperature: 창의성 조절 (0.0=결정적, 1.0=창의적). 분류 작업은 낮게.
-
-    Returns:
-        파싱된 JSON 딕셔너리
-
-    Raises:
-        ValueError: Gemini 응답이 유효한 JSON이 아닐 경우
     """
     
     # [백엔드 아키텍처 해킹]: 다국어 룰 강제 주입
@@ -54,45 +43,55 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
 """
     final_system_instruction = system_instruction + "\n" + global_i18n_rule
 
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        generation_config=genai.GenerationConfig(
-            temperature=temperature,
-        ),
-    )
-
-    # 시스템 프롬프트(system_instruction)를 지원하지 않는 버전을 위해 프롬프트 텍스트에 결합
-    combined_prompt = f"System Instruction (MUST FOLLOW):\n{final_system_instruction}\n\n---\n\nUser Input:\n{prompt}"
+    # ── 콘텐츠 구성 (텍스트 + 이미지) ──
+    contents = []
     
-    contents = [combined_prompt]
+    # 1. 텍스트 프롬프트 추가
+    contents.append(prompt)
+    
+    # 2. 이미지 데이터 추가 (Base64 -> Bytes)
     if images:
         for b64 in images:
-            # 프론트에서 넘어올 수 있는 "data:image/jpeg;base64," 접두사 제거
             if b64.startswith("data:image"):
                 b64 = b64.split(",", 1)[1]
             image_data = base64.b64decode(b64)
-            contents.append({
-                "mime_type": "image/jpeg",
-                "data": image_data
-            })
+            contents.append(
+                types.Part.from_bytes(data=image_data, mime_type="image/jpeg")
+            )
             
     start_time = time.time()
-    response = model.generate_content(contents)
+    
+    # ── Gemini 호출 (신규 SDK 방식) ──
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=final_system_instruction,
+            temperature=temperature,
+            response_mime_type="application/json", # JSON 출력 강제 (SDK 기능 활용)
+        ),
+    )
+    
     latency_ms = int((time.time() - start_time) * 1000)
     
+    # 응답 텍스트 추출
     raw_text = response.text.strip()
+    
+    # 마크다운 코드 블록 제거 (JSON 응답 시 발생 가능)
     if raw_text.startswith("```"):
         raw_text = raw_text.strip("`").lstrip("json").strip()
         
+    # 토큰 사용량 정보 추출
     prompt_tokens = 0
     completion_tokens = 0
-    if hasattr(response, "usage_metadata") and response.usage_metadata:
-        prompt_tokens = response.usage_metadata.prompt_token_count
-        completion_tokens = response.usage_metadata.candidates_token_count
+    if response.usage_metadata:
+        prompt_tokens = response.usage_metadata.prompt_token_count or 0
+        completion_tokens = response.usage_metadata.candidates_token_count or 0
         
+    # 로깅 메타데이터 설정
     ai_log_meta_ctx.set({
         "model_name": model_name,
-        "raw_prompt": combined_prompt,
+        "raw_prompt": prompt,
         "raw_response": raw_text,
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
@@ -108,26 +107,25 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
             f"파싱 에러: {e}"
         )
 
+
 async def call_gemini_async(
     prompt: str,
     system_instruction: str,
     model_name: str = "gemini-2.5-flash",
     temperature: float = 0.2,
-    images: list[str] = None,
-) -> Union[dict, list]:
+    images: List[str] = None,
+) -> Union[Dict[str, Any], List[Any]]:
     """
     call_gemini의 비동기 버전.
-    독립된 ContextVar 내에서 실행하여 asyncio.gather 병렬 처리 시 로깅 메타데이터 충돌을 방지합니다.
     """
     ctx = contextvars.copy_context()
     
     def _run():
         return call_gemini(prompt, system_instruction, model_name, temperature, images)
         
+    # 신규 SDK는 아직 완전한 비동기 클라이언트를 지원하지 않을 수 있으므로 thread에서 실행
     result = await asyncio.to_thread(ctx.run, _run)
     
-    # 해당 스레드(컨텍스트)에서 갱신된 로깅 메타데이터를 추출하여 결과에 임시 주입
-    # (analyze.py에서 pop하여 사용)
     meta = ctx.get(ai_log_meta_ctx)
     if meta and isinstance(result, dict):
         result["__ai_log_meta"] = meta
