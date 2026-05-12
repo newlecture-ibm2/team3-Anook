@@ -55,9 +55,10 @@ public class KnowledgeJpaEntity {
         this.approvedBy = approvedBy;
     }
 
-    public void updateFields(String question, String answer, String status) {
+    public void updateFields(String question, String answer, DomainCode domainCode, String status) {
         this.question = question;
         this.answer = answer;
+        this.domainCode = domainCode;
         if (status != null) {
             this.status = status;
         }

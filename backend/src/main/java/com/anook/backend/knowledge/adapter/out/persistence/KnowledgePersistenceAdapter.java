@@ -49,6 +49,7 @@ public class KnowledgePersistenceAdapter implements KnowledgeRepositoryPort {
         entity.updateFields(
                 entry.getQuestion(),
                 entry.getAnswer(),
+                entry.getDomainCode(),
                 entry.getStatus() != null ? entry.getStatus().name() : KnowledgeStatus.PENDING.name()
         );
 

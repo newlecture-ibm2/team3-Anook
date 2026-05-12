@@ -10,10 +10,13 @@ import useChatHistory from './useChatHistory';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages, fetchRooms } = useChatHistory();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const { rooms, messages, selectedRoom, loadingRooms, loadingMessages, error, selectRoom, fetchMessages, fetchRooms, deleteRoom } = useChatHistory();
   const { t } = useTranslation();
 
   // API 데이터를 ChatHistory 컴포넌트 형식으로 매핑
@@ -32,6 +35,14 @@ export default function ChatHistoryPage() {
   React.useEffect(() => {
     fetchRooms(targetDate);
   }, [targetDate, fetchRooms]);
+
+  const handleDeleteConfirm = async () => {
+    if (selectedRoom) {
+      await deleteRoom(selectedRoom);
+      setIsDeleteModalOpen(false);
+      setIsPopoverOpen(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -89,11 +100,18 @@ export default function ChatHistoryPage() {
               <h2 className={styles.chatTitle}>{selectedRoom ? `${selectedRoom}${t.adminPage.chatHistory.roomLog}` : t.adminPage.chatHistory.selectRoom}</h2>
               <span className={styles.chatSubtitle}>{t.adminPage.chatHistory.fullLog}</span>
             </div>
-            <div className={styles.chatHeaderActions} onClick={() => setIsPopoverOpen(!isPopoverOpen)}>
-              <MoreVertical size={24} />
-              {isPopoverOpen && (
+            <div className={styles.chatHeaderActions} onClick={() => selectedRoom && setIsPopoverOpen(!isPopoverOpen)}>
+              <MoreVertical size={24} style={{ cursor: selectedRoom ? 'pointer' : 'default', opacity: selectedRoom ? 1 : 0.5 }} />
+              {isPopoverOpen && selectedRoom && (
                 <div className={styles.popoverMenu}>
-                  <div className={styles.popoverItem}>
+                  <div 
+                    className={styles.popoverItem} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDeleteModalOpen(true);
+                      setIsPopoverOpen(false);
+                    }}
+                  >
                     {t.adminPage.chatHistory.delete}
                   </div>
                 </div>
@@ -125,6 +143,16 @@ export default function ChatHistoryPage() {
 
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="채팅 내역 삭제"
+        subtitle={`정말 ${selectedRoom}호의 채팅 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
+        status="danger"
+        confirmText="삭제"
+      />
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function TaskTicket({
           )}
         </div>
       </div>
-      
+
       {(entities?.is_contactless || entities?.target_time) && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', marginTop: '-4px' }}>
           {entities.is_contactless && (
@@ -143,9 +143,9 @@ export default function TaskTicket({
         <h3 className={styles.title}>{title}</h3>
         <p className={styles.description}>{description}</p>
       </div>
-      
+
       <div className={styles.divider} />
-      
+
       <div className={styles.footer}>
         <span className={styles.timeText}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,7 +157,7 @@ export default function TaskTicket({
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {ticketId && <span className={styles.ticketId}>#{ticketId}</span>}
           {status === 'TODO' && onAccept && (
-            <Button 
+            <Button
               variant="primary"
               onClick={onAccept}
               style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}
@@ -168,7 +168,7 @@ export default function TaskTicket({
             </Button>
           )}
           {status === 'IN_PROGRESS' && onComplete && (
-            <Button 
+            <Button
               variant="primary"
               onClick={onComplete}
               style={{ padding: '4px 12px', minHeight: 'auto', fontSize: '12px' }}

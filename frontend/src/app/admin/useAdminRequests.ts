@@ -45,19 +45,14 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
 
   // 클라이언트 사이드 검색 및 필터링
   let filteredRequests = [...requests];
-  
+
   if (searchQuery) {
     const lowerQ = searchQuery.toLowerCase();
-    filteredRequests = filteredRequests.filter(r => 
+    filteredRequests = filteredRequests.filter(r =>
       (r.summary && r.summary.toLowerCase().includes(lowerQ)) ||
       (r.roomNo && r.roomNo.includes(lowerQ)) ||
       (r.assignedStaffName && r.assignedStaffName.toLowerCase().includes(lowerQ))
     );
-  }
-
-  // 부서별 페이지(dept가 있는 경우)에서는 긴급(URGENT) 요청을 숨김 (긴급 대시보드 전용으로 처리)
-  if (dept) {
-    filteredRequests = filteredRequests.filter(r => r.priority !== 'URGENT');
   }
 
   if (filterType === 'oldest') {

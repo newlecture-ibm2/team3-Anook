@@ -20,10 +20,9 @@ interface CreateRequestModalProps {
 }
 
 const PRIORITIES = [
-  { value: 'LOW', label: '낮음' },
   { value: 'NORMAL', label: '보통' },
-  { value: 'HIGH', label: '높음' },
-  { value: 'URGENT', label: '긴급' },
+  { value: 'URGENT', label: '긴급(Urgent)' },
+  { value: 'EMERGENCY', label: '비상(Emergency)' },
 ];
 
 export default function CreateRequestModal({

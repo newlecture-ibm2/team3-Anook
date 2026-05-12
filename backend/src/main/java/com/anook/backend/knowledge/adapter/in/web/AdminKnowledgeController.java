@@ -60,7 +60,8 @@ public class AdminKnowledgeController {
         UpdateKnowledgeCommand updateCommand = new UpdateKnowledgeCommand(
                 id,
                 command.getQuestion(),
-                command.getAnswer()
+                command.getAnswer(),
+                command.getDomainCode()
         );
         updateKnowledgeUseCase.update(updateCommand);
         return ResponseEntity.ok().build();

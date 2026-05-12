@@ -172,8 +172,15 @@ public class CreateRequestOnEventService {
             }
         }
 
-        // [AN-252] URGENT 판별: priority가 URGENT이거나 에스컬레이션된 경우
-        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT;
+        if (event.getImages() != null && !event.getImages().isEmpty()) {
+            java.time.Duration ttl = java.time.Duration.ofDays(3); // 최대 3일, 체크아웃 시 자동 파기
+            for (String base64Image : event.getImages()) {
+                redisImageCacheUtil.saveImage(savedRequest.getRoomNo(), savedRequest.getId(), base64Image, ttl);
+            }
+        }
+
+        // [AN-252] URGENT 판별: priority가 URGENT/EMERGENCY이거나 에스컬레이션된 경우
+        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT || savedRequest.getPriority() == Priority.EMERGENCY;
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
         int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 

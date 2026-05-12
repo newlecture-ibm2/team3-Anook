@@ -21,7 +21,7 @@ Output ONLY a valid JSON object matching the HotelRequestSchema. Do not include 
 - room_no: "unknown"
 - domain: "EMERGENCY"
 - summary: A short 3-line summary of the emergency in KOREAN.
-- priority: "URGENT" (MUST be URGENT)
+- priority: "EMERGENCY" (MUST be EMERGENCY)
 - status: "PENDING"
 - confidence: A float between 0.0 and 1.0 representing your confidence.
 - entities: A JSON object containing {"intent": "<category>", "details": "<extracted details>"}.
@@ -38,7 +38,7 @@ JSON Output:
     "room_no": "unknown",
     "domain": "EMERGENCY",
     "summary": "의료 지원 및 구급상자 요청",
-    "priority": "URGENT",
+    "priority": "EMERGENCY",
     "status": "PENDING",
     "confidence": 0.99,
     "entities": {"intent": "MEDICAL_ASSIST", "details": "피가 많이 남, 구급상자 필요"},
@@ -55,7 +55,7 @@ JSON Output:
     "room_no": "unknown",
     "domain": "EMERGENCY",
     "summary": "천장 누수 발생",
-    "priority": "URGENT",
+    "priority": "EMERGENCY",
     "status": "PENDING",
     "confidence": 0.98,
     "entities": {"intent": "WATER_LEAK", "details": "water leaking from the ceiling"},

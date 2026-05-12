@@ -12,6 +12,7 @@ interface ModalOverlayProps {
 
 export default function ModalOverlay({ isOpen, onClose, children }: ModalOverlayProps) {
   const [mounted, setMounted] = useState(false);
+  const [isMouseDownOnOverlay, setIsMouseDownOnOverlay] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -31,7 +32,20 @@ export default function ModalOverlay({ isOpen, onClose, children }: ModalOverlay
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className={styles.overlay} onClick={onClose}>
+    <div 
+      className={styles.overlay} 
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          setIsMouseDownOnOverlay(true);
+        }
+      }}
+      onMouseUp={(e) => {
+        if (isMouseDownOnOverlay && e.target === e.currentTarget) {
+          onClose();
+        }
+        setIsMouseDownOnOverlay(false);
+      }}
+    >
       {children}
     </div>,
     document.body

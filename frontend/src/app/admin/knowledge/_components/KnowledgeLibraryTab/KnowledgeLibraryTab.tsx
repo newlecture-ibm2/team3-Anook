@@ -6,6 +6,7 @@ import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import KnowledgeItem from '@/components/ui/Knowledge/KnowledgeItem';
 import KnowledgeModal from '@/components/ui/Knowledge/KnowledgeModal';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import Button from '@/components/ui/Button/Button';
 import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
 import styles from './KnowledgeLibraryTab.module.css';
@@ -23,6 +24,7 @@ export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabP
   const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeEntry | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const ALL_OPTIONS = [
     { value: 'HK', label: t.adminPage.rag.tabs.HK },
@@ -108,10 +110,8 @@ export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabP
                     setSelectedKnowledge(item);
                     setIsEditModalOpen(true);
                   }}
-                  onDelete={async () => {
-                    if (confirm(t.adminPage.rag.deleteConfirm)) {
-                      await deleteEntry(item.id);
-                    }
+                  onDelete={() => {
+                    setDeleteTargetId(item.id);
                   }}
                 />
               ))
@@ -130,11 +130,8 @@ export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabP
           answer={selectedKnowledge.answer}
           updatedAt={new Date(selectedKnowledge.updatedAt).toLocaleDateString()}
           onEdit={() => setIsEditModalOpen(true)}
-          onDelete={async () => {
-            if (confirm(t.adminPage.rag.deleteConfirm)) {
-              await deleteEntry(selectedKnowledge.id);
-              setSelectedKnowledge(null);
-            }
+          onDelete={() => {
+            setDeleteTargetId(selectedKnowledge.id);
           }}
         />
       )}
@@ -145,6 +142,7 @@ export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabP
           isOpen={isEditModalOpen}
           onClose={() => {
             setIsEditModalOpen(false);
+            setSelectedKnowledge(null);
             if (isCreatingNew) {
               setIsCreatingNew(false);
             }
@@ -165,6 +163,25 @@ export default function KnowledgeLibraryTab({ domainCode }: KnowledgeLibraryTabP
           }}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={async () => {
+          if (deleteTargetId !== null) {
+            await deleteEntry(deleteTargetId);
+            setDeleteTargetId(null);
+            if (selectedKnowledge && selectedKnowledge.id === deleteTargetId) {
+              setSelectedKnowledge(null);
+            }
+          }
+        }}
+        title="삭제 확인"
+        subtitle={t.adminPage.rag.deleteConfirm}
+        status="danger"
+        confirmText="삭제"
+      />
     </div>
   );
 }

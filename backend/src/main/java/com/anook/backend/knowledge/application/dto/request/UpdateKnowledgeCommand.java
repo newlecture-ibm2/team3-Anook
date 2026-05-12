@@ -11,4 +11,5 @@ public class UpdateKnowledgeCommand {
     private Long id;
     private String question;
     private String answer;
+    private String domainCode;
 }

@@ -21,7 +21,7 @@ import re
 from fastapi import APIRouter
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, Awaitable
 import httpx
 import os
 
@@ -50,7 +50,7 @@ from app.core.fb_engine import run_fb_agent
 from app.core.emergency_engine import run_emergency_agent
 from app.core.front_engine import run_front_agent
 
-DOMAIN_AGENTS: Dict[str, Any] = {
+DOMAIN_AGENTS: Dict[str, Callable[..., Awaitable[Dict[str, Any]]]] = {
     "FACILITY": run_facility_agent,
     "HK": run_hk_agent,
     "CONCIERGE": run_concierge_agent,
@@ -225,23 +225,40 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
 
             should_escalate = False
             if current_missing and clarification_rounds > 3:
-                # Case 1: 에이전트가 missing_fields를 명시했고 3번 물어봤는데도(4라운드째) 미해소
-                print(f"\n[Analyze] 🚨 missing_fields {current_missing} 미해소 {clarification_rounds}라운드 → FRONT 강제 이관")
+                print(f"\n[Analyze] 🚨 missing_fields {current_missing} 미해소 {clarification_rounds}라운드 → SOFT_FALLBACK 강제 전환")
                 should_escalate = True
             elif not current_missing and clarification_rounds > 3:
-                # Case 2: 라우터-CLARIFICATION이 3번 물어봤는데도(4라운드째) 반복
-                print(f"\n[Analyze] 🚨 라우터-CLARIFICATION {clarification_rounds}라운드 반복 → FRONT 강제 이관")
+                print(f"\n[Analyze] 🚨 라우터-CLARIFICATION {clarification_rounds}라운드 반복 → SOFT_FALLBACK 강제 전환")
                 should_escalate = True
 
             if should_escalate:
-                response = {
-                    "guest_reply": _get_static_reply("FALLBACK_FAILURE", request.language),
-                    "summary": "요청 처리 실패 (접수 불가)",
-                    "domain_code": None,
-                    "priority": "NORMAL",
-                    "entities": {},
-                    "confidence": 0.0,
-                }
+                # 하드코딩된 대화 종료 멘트 대신, Gemini를 호출하여 정중하고 유연한 SOFT_FALLBACK 안내 멘트를 생성합니다.
+                try:
+                    import asyncio
+                    recent_chat = "\n".join([f"{m.get('role', 'user')}: {m.get('content', '')}" for m in request.chat_history[-4:]])
+                    escalation_prompt = (
+                        f"고객과의 대화에서 AI가 여러 번 질문을 던졌지만, 고객이 명확한 답을 주지 않고 계속 겉도는 상황입니다.\n"
+                        f"정중하게 '요청하신 내용을 정확히 파악하기 어렵습니다. 원하시는 서비스를 다시 말씀해 주시거나, 프론트 연결을 원하시면 말씀해 주세요.' 라는 뉘앙스로 자연스럽게 안내하고 대화를 종료하세요.\n"
+                        f"반드시 고객의 언어(주 언어: {request.language})로 작성하세요.\n\n"
+                        f"[최근 대화]\n{recent_chat}"
+                    )
+                    raw_fallback = call_gemini(
+                        prompt=escalation_prompt,
+                        system_instruction='반드시 {"reply": "..."} 형태의 JSON으로만 응답하세요.'
+                    )
+                    generated_reply = raw_fallback.get("reply", _get_static_reply("FALLBACK_FAILURE", request.language))
+                except Exception as e:
+                    print(f"[Analyze] ⚠️ Fallback 멘트 생성 실패: {e}")
+                    generated_reply = _get_static_reply("FALLBACK_FAILURE", request.language)
+
+                response["guest_reply"] = generated_reply
+                response["summary"] = "안내 및 거절 (입력 오류 누적)"
+                response["domain_code"] = None
+                response["priority"] = "NORMAL"
+                response["entities"] = {}
+                response["confidence"] = 0.0
+                response["missing_fields"] = []
+                response["clarification_options"] = []
         
         # ── [비동기 로깅 메타데이터 주입] ──
         # STEP 4에서 이미 에이전트별 메타가 세팅되었으면 스킵 (이중 주입 방지)
@@ -262,10 +279,33 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
     # ──────────────────────────────────────────────
-    # STEP 1: 지식 베이스 검색 (RAG)
+    # STEP 0: 지식 베이스 정확 일치 검색 (Exact Match)
+    # ──────────────────────────────────────────────
+    # "내 이름", "test" 같은 짧은 단어들이 임베딩 유사도에서 밀리는 현상을 방지하기 위해
+    # 사용자의 입력이 지식 베이스의 Question과 100% 일치하면 즉시 답변을 반환합니다.
+    try:
+        exact_results = rag_service.search_exact(request.text.strip())
+        if exact_results:
+            best = exact_results[0]
+            response = {
+                "guest_reply": best["answer"],
+                "summary": "AI 자동 답변 (정확 일치)",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {},
+                "confidence": 1.0,
+            }
+            print(f"\n[Analyze] ✅ Exact Match (100% 일치)")
+            print(f"[Analyze] 응답: {response}\n")
+            return [response]
+    except Exception as e:
+        print(f"[Analyze] ⚠️ Exact Match 검색 실패 (무시하고 RAG로 진행): {e}")
+
+    # ──────────────────────────────────────────────
+    # STEP 1: 지식 베이스 검색 (RAG - 임베딩 기반)
     # ──────────────────────────────────────────────
     try:
-        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.85)
+        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.75)
         if rag_results:
             best = rag_results[0]
             response = {
@@ -315,7 +355,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ──────────────────────────────────────────────
     # ⚠️ 에이전트 실행 전에 반드시 전송 완료되어야 하므로 await로 직접 호출합니다.
     #    (create_task 사용 시, 응답이 먼저 도착하여 Progress UI가 표시되지 않는 레이스 컨디션 발생)
-    task_domains = [r.domain for r in router_results if r.mode == "TASK" and r.domain]
+    task_domains = [r.domain for r in router_results if r.route_type in ("DEPARTMENT", "FRONT_ESCALATION", "INFO", "CANCEL") and r.domain]
     
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
@@ -333,7 +373,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ──────────────────────────────────────────────
     for primary in router_results:
         # STEP 3-a: TASK → 부서로 라우팅
-        if primary.mode == "TASK" and primary.domain:
+        if primary.route_type == "DEPARTMENT" and primary.domain:
             domain = primary.domain
             
             # 🚨 중복된 부서(Domain)는 한 번만 호출하도록 처리
@@ -365,35 +405,23 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
 
-            print(f"[Analyze] 📌 TASK → domain: {domain} (에이전트 미등록, 기본 응답)")
+            print(f"[Analyze] 📌 DEPARTMENT → domain: {domain} (에이전트 미등록, 기본 응답)")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
             continue
 
-        # STEP 3-b: CHITCHAT → 일상 대화 응답
-        if primary.mode == "CHITCHAT":
-            try:
-                raw = await call_gemini_async(
-                    prompt=f"고객 메시지: {request.text}",
-                    system_instruction=(
-                        f"당신은 아눅(Anook) 호텔의 친절한 AI 컨시어지입니다. "
-                        f"고객의 인사나 일상 대화에 따뜻하고 간결하게 답변하되, 반드시 고객이 사용한 언어(또는 {request.language} 언어)로 대답하세요. "
-                        f'반드시 {{"reply": "답변내용"}} 형식의 JSON으로만 출력하세요.'
-                    ),
-                )
-                guest_reply = raw.get("reply", "Hello! I am the Anook Hotel Concierge. Please let me know how I can help you.")
-            except Exception:
-                guest_reply = "Hello! I am the Anook Hotel Concierge. Please let me know how I can help you."
-
+        # STEP 3-b: SOFT_FALLBACK / NON_ACTIONABLE → 티켓 생성 없이 답변만
+        if primary.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE"):
+            guest_reply = primary.reply or _get_static_reply("FALLBACK_FAILURE", request.language)
             response = {
                 "guest_reply": guest_reply,
-                "summary": "일상 대화",
+                "summary": "안내 및 거절",
                 "domain_code": None,
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
             }
-            print(f"[Analyze] 💬 CHITCHAT 응답")
+            print(f"[Analyze] 💬 {primary.route_type} 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
             continue
@@ -495,7 +523,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 continue
 
         # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
-        if primary.mode == "INFO":
+        if primary.route_type == "INFO":
             domain = primary.domain or "FRONT"
             
             # ── FB 도메인 INFO는 에이전트에게 위임 (메뉴 기반 알러지 추천 등) ──
@@ -512,8 +540,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         "summary": agent_result.get("summary", "FB 정보 문의"),
                         "domain_code": None,
                         "priority": "NORMAL",
-                        "entities": agent_result.get("entities", {}),
-                        "confidence": agent_result.get("confidence", primary.confidence),
+                        "entities": agent_result.get("entities", {}) if isinstance(agent_result, dict) else {},
+                        "confidence": agent_result.get("confidence", primary.confidence) if isinstance(agent_result, dict) else primary.confidence,
                     }
                     print(f"[Analyze] ℹ️ INFO+FB → FB 에이전트 위임 처리")
                     print(f"[Analyze] 응답: {response}\n")
@@ -618,7 +646,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         prompt=info_prompt, 
                         system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
                     )
-                    guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language))
+                    guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(raw, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
                 else:
                     if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
                         print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
@@ -628,7 +656,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                             chat_history=request.chat_history,
                             images=request.images
                         )
-                        guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language))
+                        guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(agent_result, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
                     else:
                         guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
             except Exception as e:
@@ -661,7 +689,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             continue
 
         # STEP 3-e: CANCEL → 요청 취소
-        if primary.mode == "CANCEL":
+        if primary.route_type == "CANCEL":
             text_lower = request.text.lower()
             is_all = any(word in text_lower for word in ["전부", "모두", "다 취소", "전체", "all", "everything"])
             
@@ -697,24 +725,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
             
-        # STEP 3-f: COMPLAINT → 불편 사항 (우선순위 URGENT)
-        if primary.mode == "COMPLAINT":
-            domain_code = primary.domain or "FRONT"
-            response = {
-                "guest_reply": _get_static_reply("COMPLAINT", request.language),
-                "summary": f"{domain_code} 관련 불편 사항",
-                "domain_code": domain_code,
-                "priority": "URGENT",
-                "entities": {"intent": "COMPLAINT"},
-                "confidence": primary.confidence,
-            }
-            if hasattr(primary, 'action_type'):
-                response["action_type"] = primary.action_type
-                
-            print(f"[Analyze] 🚨 COMPLAINT 응답")
-            print(f"[Analyze] 응답: {response}\n")
-            final_responses.append(response)
-            continue
+        
 
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기

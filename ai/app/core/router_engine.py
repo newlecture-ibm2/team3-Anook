@@ -7,25 +7,20 @@ RouterOutputSchema로 검증된 결과를 반환한다.
 흐름:
   1. 고객 텍스트 → Gemini (시스템 프롬프트: 프론트 데스크)
   2. Gemini JSON 응답 → RouterOutputSchema로 Pydantic 검증
-  3. confidence < 0.7 이면 FRONT(Fallback) 자동 적용
-  4. 검증 완료된 RouterOutputSchema 반환
+  3. 검증 완료된 RouterOutputSchema 반환
 """
 
 import logging
 from app.infrastructure.gemini.client import call_gemini
 from app.prompts.router_prompt import ROUTER_SYSTEM_PROMPT
 from app.schemas.router import RouterOutputSchema
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 # ── 상수 ──
-CONFIDENCE_THRESHOLD = 0.7
-FALLBACK_DOMAIN = "FRONT"
 VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
-VALID_MODES = {"TASK", "CHITCHAT", "CLARIFICATION", "INFO", "CANCEL", "STATUS_CHECK"}
-
-
-from typing import List
+VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK"}
 
 def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None) -> List[RouterOutputSchema]:
     """
@@ -70,43 +65,42 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
     final_results = []
 
     for item in raw_result:
+        # 호환성/방어 로직 (이전 버전의 키가 들어올 경우 변환)
+        if "mode" in item and "route_type" not in item:
+            item["route_type"] = item.pop("mode")
+            if item["route_type"] == "TASK": item["route_type"] = "DEPARTMENT"
+            elif item["route_type"] == "CHITCHAT": item["route_type"] = "SOFT_FALLBACK"
+
         # ── 2) Pydantic 스키마 검증 ──
         result = RouterOutputSchema(**item)
 
         # ── 2.5) 긴급 상황 예외 처리 ──
-        if result.mode == "EMERGENCY" or result.domain == "EMERGENCY":
-            result.mode = "TASK"
+        if result.route_type == "EMERGENCY" or result.domain == "EMERGENCY":
+            result.route_type = "FRONT_ESCALATION"
             result.domain = "EMERGENCY"
+            result.priority = "HIGH"
 
-        # ── 3) mode 유효성 검증 ──
-        if result.mode not in VALID_MODES:
-            logger.warning(f"[Router] 알 수 없는 mode '{result.mode}' → CLARIFICATION으로 Fallback")
-            result.mode = "CLARIFICATION"
+        # ── 3) route_type 유효성 검증 ──
+        if result.route_type not in VALID_ROUTE_TYPES:
+            logger.warning(f"[Router] 알 수 없는 route_type '{result.route_type}' → CLARIFICATION으로 Fallback")
+            result.route_type = "CLARIFICATION"
             result.domain = None
 
-        # ── 4) TASK 모드일 때 도메인 검증 + Fallback ──
-        if result.mode == "TASK":
-            if result.domain is None or result.domain not in VALID_DOMAINS:
+        # ── 4) 도메인 검증 ──
+        if result.route_type in ("DEPARTMENT", "INFO", "CANCEL", "FRONT_ESCALATION"):
+            if result.domain is not None and result.domain not in VALID_DOMAINS:
                 logger.warning(
-                    f"[Router] TASK인데 도메인이 유효하지 않음 "
-                    f"(domain={result.domain}) → {FALLBACK_DOMAIN}로 Fallback"
+                    f"[Router] 유효하지 않은 도메인: {result.domain} → None 처리"
                 )
-                result.domain = FALLBACK_DOMAIN
+                result.domain = None
 
-            if result.confidence < CONFIDENCE_THRESHOLD:
-                logger.warning(
-                    f"[Router] confidence {result.confidence:.2f} < {CONFIDENCE_THRESHOLD} "
-                    f"→ {FALLBACK_DOMAIN}로 Fallback"
-                )
-                result.domain = FALLBACK_DOMAIN
-                result.reasoning += f" (confidence {result.confidence:.2f} 미달로 FRONT Fallback 적용)"
-
-        # ── 5) CHITCHAT/CLARIFICATION/STATUS_CHECK일 때 domain은 반드시 null ──
-        if result.mode in ("CHITCHAT", "CLARIFICATION", "STATUS_CHECK"):
+        # ── 5) 티켓 미생성 유형의 domain 무효화 (보호 처리) ──
+        if result.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", "STATUS_CHECK"):
             result.domain = None
+            result.create_ticket = False
 
         logger.info(
-            f"[Router] 개별 결과: mode={result.mode}, "
+            f"[Router] 개별 결과: route_type={result.route_type}, "
             f"domain={result.domain}, confidence={result.confidence:.2f}"
         )
         final_results.append(result)

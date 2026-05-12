@@ -31,4 +31,11 @@ public interface AdminMessageJpaRepository extends JpaRepository<AdminMessageJpa
      * 특정 roomNo의 최신 메시지 조회 (guestId 추출용)
      */
     java.util.Optional<AdminMessageJpaEntity> findFirstByRoomNoOrderByCreatedAtDesc(String roomNo);
+
+    /**
+     * 특정 roomNo의 모든 메시지 삭제
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM AdminMessage m WHERE m.roomNo = :roomNo")
+    void deleteByRoomNo(String roomNo);
 }

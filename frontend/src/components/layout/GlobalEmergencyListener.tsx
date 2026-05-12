@@ -28,7 +28,7 @@ export default function GlobalEmergencyListener() {
 
       if (
         event.type === 'NEW_REQUEST' &&
-        event.priority === 'URGENT' &&
+        event.priority === 'EMERGENCY' &&
         event.entities &&
         (event.entities.emergency_category || event.entities.intent)
       ) {

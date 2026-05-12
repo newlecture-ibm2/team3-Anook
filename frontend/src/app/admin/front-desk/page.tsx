@@ -21,13 +21,16 @@ import { useTranslation } from '@/app/useTranslation';
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, loading, error, refetch } = useAdminRequests();
-  
-  const pending = requests.filter(r => r.status === 'PENDING' && r.departmentId === 'FRONT');
-  const inProgress = requests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested && r.departmentId === 'FRONT');
-  const cancelPending = requests.filter(r => r.cancelRequested);
-  const completed = requests.filter(r => (r.status === 'COMPLETED' || r.status === 'CANCELLED') && r.departmentId === 'FRONT');
+
+  const frontDeskRequests = requests.filter(r => r.departmentId === 'FRONT' && r.priority !== 'EMERGENCY');
+
+  const pending = frontDeskRequests.filter(r => r.status === 'PENDING');
+  const inProgress = frontDeskRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
+  const cancelPending = frontDeskRequests.filter(r => r.cancelRequested);
+  const completed = frontDeskRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
   const { escalations } = useEscalations();
+  const nonEmergencyEscalations = escalations.filter(r => r.priority !== 'EMERGENCY');
   const { t } = useTranslation();
 
   // 요청 생성 모달 상태
@@ -72,7 +75,7 @@ export default function FrontDeskPage() {
     if (activeTab === 'unhandled') return pending;
     if (activeTab === 'inProgress') return inProgress;
     if (activeTab === 'cancelPending') return cancelPending;
-    if (activeTab === 'escalation') return escalations;
+    if (activeTab === 'escalation') return nonEmergencyEscalations;
     if (activeTab === 'completed') return completed;
     return pending;
   };
@@ -84,12 +87,12 @@ export default function FrontDeskPage() {
   };
 
   // 탭에 따른 섹션 제목
-  const sectionTitle = 
-    activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation : 
-    activeTab === 'cancelPending' ? '취소 승인 대기' : 
-    activeTab === 'completed' ? '상담 완료' :
-    activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
-    t.adminPage.frontDesk.sections.unhandled;
+  const sectionTitle =
+    activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation :
+      activeTab === 'cancelPending' ? '취소 승인 대기' :
+        activeTab === 'completed' ? '상담 완료' :
+          activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
+            t.adminPage.frontDesk.sections.unhandled;
 
   const [detailTarget, setDetailTarget] = useState<number | null>(null);
   const [cancelApproveTarget, setCancelApproveTarget] = useState<number | null>(null);
@@ -124,13 +127,13 @@ export default function FrontDeskPage() {
 
       {/* Tabs Section */}
       <div className={styles.tabSection}>
-        <Tabs 
+        <Tabs
           options={[
             { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
             { label: '상담 완료', value: 'completed', count: completed.length },
             { label: '취소 승인 대기', value: 'cancelPending', count: cancelPending.length },
-            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: escalations.length }
+            { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: nonEmergencyEscalations.length }
           ]}
           activeValue={activeTab}
           onChange={(val) => setActiveTab(val || 'unhandled')}
@@ -140,7 +143,7 @@ export default function FrontDeskPage() {
       {/* Content Section */}
       <div className={styles.contentSection}>
         <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
-        
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
         ) : error ? (
