@@ -739,6 +739,22 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             
         
 
+        # STEP 3-g: STATUS_CHECK → 진행 상태 확인
+        if primary.mode == "STATUS_CHECK":
+            response = {
+                "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
+                "summary": "요청 진행 상태 확인",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {"action": "STATUS_CHECK"},
+                "confidence": primary.confidence,
+                "action": "STATUS_CHECK",
+            }
+            print(f"[Analyze] 🔍 STATUS_CHECK 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
     # ──────────────────────────────────────────────
