@@ -20,16 +20,16 @@ export async function middleware(request: NextRequest) {
       let redirectUrl = "/staff";
       if (session.role === "ADMIN") redirectUrl = "/admin/dashboard";
       if (session.role === "GUEST") redirectUrl = "/guest/chat";
-      
+
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
     return NextResponse.next();
   }
 
   // 2. 보호된 경로 정의
-  const isProtectedPath = 
-    pathname.startsWith("/admin") || 
-    pathname.startsWith("/staff") || 
+  const isProtectedPath =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/staff") ||
     pathname.startsWith("/guest");
 
   // 3. 비로그인 상태로 보호된 경로 접근 시
@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
   // 4. 로그인 상태일 때 세션 유효성 서버 사이드 검증 (중복 로그인 즉시 감지)
   if (isProtectedPath && session.isLoggedIn && session.token) {
     const verifyPath = session.role === 'GUEST' ? '/auth/guest/verify' : '/auth/staff/verify';
-    
+
     try {
       const verifyRes = await fetch(`${BACKEND_URL}${verifyPath}`, {
         headers: { 'Authorization': `Bearer ${session.token}` },
@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/admin") && session.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/staff", request.url));
   }
-  
+
   if (pathname.startsWith("/staff") && (session.role !== "STAFF" && session.role !== "ADMIN")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
