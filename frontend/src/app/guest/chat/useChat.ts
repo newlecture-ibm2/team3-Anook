@@ -39,9 +39,9 @@ export function useChat() {
     }
   }, [setLanguage]);
 
-  // 연속된 시스템 메시지 방지용 Ref
-  const lastCancelSuccessTime = useRef<number>(0);
-  const lastCancelPendingTime = useRef<number>(0);
+  // 연속된 시스템 메시지 방지 및 통합용 Ref
+  const cancelEventsBatch = useRef<Set<'SUCCESS' | 'PENDING' | 'STAFF_SUCCESS'>>(new Set());
+  const cancelBatchTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 0. 세션 정보 가져오기
   useEffect(() => {
@@ -227,45 +227,53 @@ export function useChat() {
               });
 
               // --- System messages for cancel flow ---
+              let hasCancelEvent = false;
               if ((payload.type === 'STATUS_CHANGED' || payload.type === 'CANCEL_APPROVED') && payload.status === 'CANCELLED') {
-                const now = Date.now();
-                if (now - lastCancelSuccessTime.current > 500) {
-                  lastCancelSuccessTime.current = now;
-                  setTimeout(() => {
-                    setMessages(prev => {
-                      const msgId = `system-cancel-success-${payload.requestId}`;
-                      if (prev.some(m => m.id === msgId)) return prev;
-                      const content = payload.initiatedBy === 'STAFF'
-                        ? '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.'
-                        : '안내: 요청이 정상적으로 취소되었습니다.';
-                      return [...prev, {
-                        id: msgId,
-                        variant: 'received',
-                        type: 'TEXT',
-                        content: content,
-                      }];
-                    });
-                  }, 600); // 디바운스(500ms)보다 길게 설정하여 모든 카드가 도착한 후 렌더링되게 보장
+                if (payload.initiatedBy === 'STAFF') {
+                  cancelEventsBatch.current.add('STAFF_SUCCESS');
+                } else {
+                  cancelEventsBatch.current.add('SUCCESS');
                 }
+                hasCancelEvent = true;
+              }
+              if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
+                cancelEventsBatch.current.add('PENDING');
+                hasCancelEvent = true;
               }
 
-              if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
-                const now = Date.now();
-                if (now - lastCancelPendingTime.current > 500) {
-                  lastCancelPendingTime.current = now;
-                  setTimeout(() => {
-                    setMessages(prev => {
-                      const msgId = `system-cancel-pending-${payload.requestId}`;
-                      if (prev.some(m => m.id === msgId)) return prev;
-                      return [...prev, {
-                        id: msgId,
-                        variant: 'received',
-                        type: 'TEXT',
-                        content: '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.',
-                      }];
-                    });
-                  }, 600); // 디바운스(500ms)보다 길게 설정하여 모든 카드가 도착한 후 렌더링되게 보장
-                }
+              if (hasCancelEvent) {
+                if (cancelBatchTimer.current) clearTimeout(cancelBatchTimer.current);
+                
+                cancelBatchTimer.current = setTimeout(() => {
+                  const hasSuccess = cancelEventsBatch.current.has('SUCCESS');
+                  const hasStaffSuccess = cancelEventsBatch.current.has('STAFF_SUCCESS');
+                  const hasPending = cancelEventsBatch.current.has('PENDING');
+                  cancelEventsBatch.current.clear();
+
+                  setMessages(prev => {
+                    const msgId = `system-cancel-batch-${Date.now()}`;
+                    
+                    let content = '';
+                    if (hasStaffSuccess) {
+                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
+                    } else if (hasSuccess && hasPending) {
+                      content = '안내: 대기 중인 요청은 즉시 취소되었으나, 처리 중인 요청은 담당자에게 취소를 요청했습니다.';
+                    } else if (hasSuccess) {
+                      content = '안내: 해당 요청이 정상적으로 취소되었습니다.';
+                    } else if (hasPending) {
+                      content = '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.';
+                    }
+
+                    if (!content) return prev;
+
+                    return [...prev, {
+                      id: msgId,
+                      variant: 'received',
+                      type: 'TEXT',
+                      content: content,
+                    }];
+                  });
+                }, 600); // 모든 카드가 도착한 후 렌더링되게 보장
               }
 
               if (payload.status === 'COMPLETED') {
