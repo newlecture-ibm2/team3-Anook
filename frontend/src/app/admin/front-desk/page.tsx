@@ -20,9 +20,9 @@ import { useTranslation } from '@/app/useTranslation';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
-  const { requests, loading, error, refetch } = useAdminRequests();
+  const { requests, loading, error, refetch } = useAdminRequests('FRONT');
 
-  const frontDeskRequests = requests.filter(r => r.departmentId === 'FRONT' && r.priority !== 'EMERGENCY');
+  const frontDeskRequests = requests.filter(r => r.priority !== 'EMERGENCY');
 
   const pending = frontDeskRequests.filter(r => r.status === 'PENDING');
   const inProgress = frontDeskRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
