@@ -5,13 +5,14 @@ export interface PillProps {
   options: string[];
   selectedOption?: string;
   onSelect: (option: string) => void;
+  align?: 'center' | 'flex-start';
 }
 
-export default function Pill({ options, selectedOption, onSelect }: PillProps) {
+export default function Pill({ options, selectedOption, onSelect, align = 'center' }: PillProps) {
   if (!options || options.length === 0) return null;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} style={{ justifyContent: align }}>
       {options.map((option, index) => (
         <button 
           key={index} 

@@ -22,6 +22,9 @@ from fastapi import APIRouter
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
+import httpx
+import os
+
 from app.domains.rag import service as rag_service
 from app.core.router_engine import route
 from app.infrastructure.gemini.client import call_gemini, call_gemini_async, ai_log_meta_ctx
@@ -44,6 +47,7 @@ from app.core.hk_engine import run_hk_agent
 from app.core.concierge_engine import run_concierge_agent
 from app.core.fb_engine import run_fb_agent
 from app.core.emergency_engine import run_emergency_agent
+from app.core.front_engine import run_front_agent
 
 DOMAIN_AGENTS: Dict[str, Any] = {
     "FACILITY": run_facility_agent,
@@ -51,6 +55,7 @@ DOMAIN_AGENTS: Dict[str, Any] = {
     "CONCIERGE": run_concierge_agent,
     "FB": run_fb_agent,
     "EMERGENCY": run_emergency_agent,
+    "FRONT": run_front_agent,
 }
 
 
@@ -279,8 +284,6 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ──────────────────────────────────────────────
     # STEP 1-5: [초기 Progress Indicator] 라우터 분석 시작 알림
     # ──────────────────────────────────────────────
-    import httpx
-    import os
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
         async with httpx.AsyncClient(timeout=2.0) as http_client:
@@ -313,8 +316,6 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     #    (create_task 사용 시, 응답이 먼저 도착하여 Progress UI가 표시되지 않는 레이스 컨디션 발생)
     task_domains = [r.domain for r in router_results if r.mode == "TASK" and r.domain]
     
-    import httpx
-    import os
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
         async with httpx.AsyncClient(timeout=2.0) as http_client:
@@ -444,26 +445,50 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
                         "missing_fields": agent_result.get("missing_fields", []),
+                        "clarification_options": agent_result.get("clarification_options", [])
                     }
                     print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
                     print(f"[Analyze] 응답: {response}\n")
                     final_responses.append(response)
                     continue
                 except Exception as e:
-                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 정적 응답 폴백: {e}")
+                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 프론트 에이전트로 폴백: {e}")
 
-            response = {
-                "guest_reply": _get_static_reply("CLARIFICATION", request.language),
-                "summary": "추가 확인 필요",
-                "domain_code": None,
-                "priority": "NORMAL",
-                "entities": {},
-                "confidence": primary.confidence,
-            }
-            print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
-            print(f"[Analyze] 응답: {response}\n")
-            final_responses.append(response)
-            continue
+            # last_agent_domain이 없거나 실패한 경우, FRONT 에이전트(기본 라우팅 질문)로 처리
+            try:
+                agent_result = await DOMAIN_AGENTS["FRONT"](
+                    user_message=request.text,
+                    room_no=request.room_no,
+                    chat_history=request.chat_history,
+                )
+                response = {
+                    "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
+                    "summary": agent_result.get("summary", "추가 확인 필요"),
+                    "domain_code": None,
+                    "priority": agent_result.get("priority", "NORMAL"),
+                    "entities": agent_result.get("entities", {}),
+                    "confidence": agent_result.get("confidence", primary.confidence),
+                    "missing_fields": agent_result.get("missing_fields", []),
+                    "clarification_options": agent_result.get("clarification_options", [])
+                }
+                print(f"[Analyze] ❓ CLARIFICATION → FRONT 에이전트 위임 (부서 라우팅 구체화)")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
+            except Exception as e:
+                print(f"[Analyze] ⚠️ FRONT 에이전트 실패, 정적 응답 폴백: {e}")
+                response = {
+                    "guest_reply": _get_static_reply("CLARIFICATION", request.language),
+                    "summary": "추가 확인 필요",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                }
+                print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
 
         # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
         if primary.mode == "INFO":
