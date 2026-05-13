@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useWebSocket } from '../useWebSocket';
 
 interface AdminRequest {
   id: number;
@@ -21,6 +22,7 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { subscribe } = useWebSocket();
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -42,6 +44,39 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
+
+  // 실시간 웹소켓 구독
+  useEffect(() => {
+    const handleEvent = (data: any) => {
+      // 새로운 요청, 상태 변경, 부서 변경 등 관련 이벤트 발생 시 리패치
+      const updateEvents = [
+        'NEW_REQUEST', 
+        'STATUS_CHANGED', 
+        'DEPARTMENT_CHANGED', 
+        'CANCEL_REQUEST_RECEIVED', 
+        'CANCEL_APPROVED', 
+        'CANCEL_REJECTED'
+      ];
+      
+      if (updateEvents.includes(data.type)) {
+        fetchRequests();
+      }
+    };
+
+    // 공통 어드민 채널 구독
+    const unsubAdmin = subscribe('/topic/admin', handleEvent);
+    
+    // 특정 부서 채널 구독 (전달된 dept가 있을 경우)
+    let unsubDept = () => {};
+    if (dept) {
+      unsubDept = subscribe(`/topic/dept/${dept}`, handleEvent);
+    }
+
+    return () => {
+      unsubAdmin();
+      unsubDept();
+    };
+  }, [subscribe, fetchRequests, dept]);
 
   // 클라이언트 사이드 검색 및 필터링
   let filteredRequests = [...requests];

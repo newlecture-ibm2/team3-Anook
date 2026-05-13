@@ -799,8 +799,12 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             meta_copy["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
             response["ai_log_meta"] = meta_copy
 
-    # "아래 접수 내역을 확인해 주세요" 공통 문구 1회 추가
-    task_responses = [r for r in final_responses if r.get("domain_code") and r.get("domain_code") != "FRONT"]
+    # "아래 접수 내역을 확인해 주세요" 공통 문구 1회 추가 (취소 요청은 제외)
+    task_responses = [
+        r for r in final_responses 
+        if r.get("domain_code") and r.get("domain_code") != "FRONT" 
+        and not (r.get("action") and str(r.get("action")).startswith("CANCEL"))
+    ]
     if task_responses:
         last_task = task_responses[-1]
         if request.language == "ko":
