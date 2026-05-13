@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 정산 API — 프론트 직원이 F&B 결제 완료 후 호출
+ * 정산 API — 프론트 직원이 유료 서비스 결제 완료 후 호출 (부서 무관)
  *
  * ❌ /api 접두어 없음 (BFF가 제거)
  */
@@ -19,9 +19,9 @@ public class AdminTaskSettleController {
     private final SettleRequestUseCase settleRequestUseCase;
 
     /**
-     * F&B 정산 처리 — PATCH /admin/tasks/{taskId}/settle
+     * 정산 처리 — PATCH /admin/tasks/{taskId}/settle
      *
-     * COMPLETED 상태의 FB 요청을 SETTLED로 변경
+     * COMPLETED 상태의 요청을 SETTLED로 변경 (부서 무관)
      */
     @PatchMapping("/{taskId}/settle")
     public ResponseEntity<SettleRequestResult> settle(@PathVariable Long taskId) {
