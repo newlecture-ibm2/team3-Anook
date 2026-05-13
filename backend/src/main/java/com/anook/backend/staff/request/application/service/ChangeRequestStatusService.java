@@ -42,7 +42,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
-                request.getRoomNo()
+                request.getRoomNo(),
+                "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         if (request.getDomainCode() != null) {
@@ -70,7 +71,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
-                request.getRoomNo()
+                request.getRoomNo(),
+                "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         if (request.getDomainCode() != null) {
@@ -107,7 +109,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
-                request.getRoomNo()
+                request.getRoomNo(),
+                "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         // 새 부서에 알림
@@ -140,7 +143,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getId(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
-                request.getRoomNo()
+                request.getRoomNo(),
+                "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         if (request.getDomainCode() != null) {
@@ -182,7 +186,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                             RequestStatus.CANCELLED.name(),
                             pending.getDomainCode() != null ? pending.getDomainCode().name() : null,
                             pending.getSummary(),
-                            pending.getRoomNo());
+                            pending.getRoomNo(),
+                            "STAFF");
                     dispatchPort.dispatchToRoom(request.getRoomNo(), cancelPayload);
                 } catch (IllegalStateException e) {
                     log.warn("[Cancel&Replace] 변경 주문 취소 실패 — id: {}, reason: {}", pending.getId(), e.getMessage());
@@ -194,7 +199,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getId(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
-                request.getRoomNo()
+                request.getRoomNo(),
+                "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         if (request.getDomainCode() != null) {
