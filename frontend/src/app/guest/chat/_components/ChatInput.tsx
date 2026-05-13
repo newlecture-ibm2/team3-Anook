@@ -41,6 +41,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping }: Ch
   const [isRecording, setIsRecording] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [sizeError, setSizeError] = useState(false);
+  const [shouldAutoSend, setShouldAutoSend] = useState(false);
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +94,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping }: Ch
 
         recognitionRef.current.onend = () => {
           setIsRecording(false);
+          setShouldAutoSend(true);
         };
       }
     }
@@ -125,6 +127,16 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping }: Ch
       }
     }
   };
+
+  useEffect(() => {
+    if (shouldAutoSend) {
+      if (value.trim()) {
+        handleSend();
+      }
+      setShouldAutoSend(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldAutoSend, value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
