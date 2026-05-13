@@ -46,6 +46,9 @@ public class RequestJpaEntity {
 
     private Float confidence;
 
+    @Column(columnDefinition = "TEXT")
+    private String reasoning;
+
     @Column(name = "room_no", nullable = false)
     private String roomNo;
 
@@ -83,6 +86,7 @@ public class RequestJpaEntity {
         entity.rawText = request.getRawText();
         entity.summary = request.getSummary();
         entity.confidence = (float) request.getConfidence();
+        entity.reasoning = request.getReasoning();
         entity.roomNo = request.getRoomNo();
         entity.guestId = request.getGuestId();
         entity.assignedStaffId = request.getAssignedStaffId();
@@ -106,6 +110,7 @@ public class RequestJpaEntity {
                 this.confidence != null ? this.confidence : 0.0,
                 this.rawText,
                 this.summary,
+                this.reasoning,
                 this.roomNo,
                 this.guestId,
                 this.assignedStaffId,

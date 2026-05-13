@@ -38,6 +38,7 @@ interface RequestDetail {
   updatedAt: string;
   cancelRequestedAt: string | null;
   imageUrl?: string | null;
+  reasoning?: string;
 }
 
 interface RequestDetailModalProps {
@@ -358,7 +359,7 @@ export default function RequestDetailModal({
         )}
 
         {/* AI 분석 결과 */}
-        {detail.entities && Object.keys(detail.entities).length > 0 && (
+        {((detail.entities && Object.keys(detail.entities).length > 0) || detail.reasoning) && (
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>AI 분석 결과</h3>
             <div className={styles.aiInfo}>
@@ -377,6 +378,14 @@ export default function RequestDetailModal({
                   </div>
                 );
               })()}
+              {detail.reasoning && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-gray-200)' }}>
+                  <span className={styles.label} style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>판단 근거</span>
+                  <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-gray-700)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                    {detail.reasoning}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -55,6 +55,9 @@ public class RequestDetectedEvent extends ApplicationEvent {
     /** 고객 이미지 데이터 (Base64) 리스트 */
     private final java.util.List<String> images;
 
+    /** AI 판단 근거 */
+    private final String reasoning;
+
     public RequestDetectedEvent(Object source,
                                  String roomNo,
                                  Long guestId,
@@ -67,7 +70,8 @@ public class RequestDetectedEvent extends ApplicationEvent {
                                  boolean escalated,
                                  String actionType,
                                  String targetKeyword,
-                                 java.util.List<String> images) {
+                                 java.util.List<String> images,
+                                 String reasoning) {
         super(source);
         this.roomNo = roomNo;
         this.guestId = guestId;
@@ -81,6 +85,7 @@ public class RequestDetectedEvent extends ApplicationEvent {
         this.actionType = actionType;
         this.targetKeyword = targetKeyword;
         this.images = images;
+        this.reasoning = reasoning;
     }
 }
 

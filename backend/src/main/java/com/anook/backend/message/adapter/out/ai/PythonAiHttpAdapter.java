@@ -102,10 +102,12 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                         ? (java.util.List<String>) response.get("clarification_options")
                         : null;
 
-                log.info("[PythonAI] 개별 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}, targetKeyword: {}, options: {}",
-                        domainCode, confidence, action, actionType, targetKeyword, clarificationOptions);
+                String reasoning = (String) response.getOrDefault("reasoning", "알 수 없음");
 
-                results.add(new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta, targetKeyword, clarificationOptions));
+                log.info("[PythonAI] 개별 분석 완료 — domain: {}, confidence: {}, action: {}, actionType: {}, targetKeyword: {}, options: {}, reasoning: {}",
+                        domainCode, confidence, action, actionType, targetKeyword, clarificationOptions, reasoning);
+
+                results.add(new MessageAiResult(guestReply, summary, domainCode, priority, entities, confidence, action, actionType, aiLogMeta, targetKeyword, clarificationOptions, reasoning));
             }
 
             return results;
@@ -135,7 +137,8 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                 "ADD", 
                 null,
                 null,
-                null
+                null,
+                "AI 서버 연결 실패 또는 에러 발생으로 인한 폴백(Fallback)"
         ));
     }
 

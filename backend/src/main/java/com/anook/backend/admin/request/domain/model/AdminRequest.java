@@ -23,6 +23,7 @@ public class AdminRequest {
     private final String rawText;
     private final String summary;
     private final double confidence;
+    private final String reasoning;
     private final String roomNo;
     private final Long assignedStaffId;
     private final int version;
@@ -34,7 +35,7 @@ public class AdminRequest {
     public AdminRequest(Long id, String status, String priority,
                         String departmentId,
                         Map<String, Object> entities, String rawText,
-                        String summary, double confidence, String roomNo,
+                        String summary, double confidence, String reasoning, String roomNo,
                         Long assignedStaffId,
                         int version, boolean cancelRequested, LocalDateTime cancelRequestedAt,
                         LocalDateTime createdAt, LocalDateTime updatedAt) {
@@ -46,6 +47,7 @@ public class AdminRequest {
         this.rawText = rawText;
         this.summary = summary;
         this.confidence = confidence;
+        this.reasoning = reasoning;
         this.roomNo = roomNo;
         this.assignedStaffId = assignedStaffId;
         this.version = version;
@@ -98,6 +100,7 @@ public class AdminRequest {
     public String getRawText() { return rawText; }
     public String getSummary() { return summary; }
     public double getConfidence() { return confidence; }
+    public String getReasoning() { return reasoning; }
     public String getRoomNo() { return roomNo; }
     public Long getAssignedStaffId() { return assignedStaffId; }
     public int getVersion() { return version; }

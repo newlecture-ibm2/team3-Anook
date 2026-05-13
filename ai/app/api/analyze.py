@@ -401,6 +401,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
+                "reasoning": getattr(primary, 'reasoning', '알 수 없음'),
             }
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
@@ -476,7 +477,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
                         "missing_fields": agent_result.get("missing_fields", []),
-                        "clarification_options": agent_result.get("clarification_options", [])
+                        "clarification_options": agent_result.get("clarification_options", []),
+                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
                     }
                     print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
                     print(f"[Analyze] 응답: {response}\n")
@@ -501,7 +503,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "entities": agent_result.get("entities", {}),
                     "confidence": agent_result.get("confidence", primary.confidence),
                     "missing_fields": agent_result.get("missing_fields", []),
-                    "clarification_options": agent_result.get("clarification_options", [])
+                    "clarification_options": agent_result.get("clarification_options", []),
+                    "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
                 }
                 print(f"[Analyze] ❓ CLARIFICATION → FRONT 에이전트 위임 (부서 라우팅 구체화)")
                 print(f"[Analyze] 응답: {response}\n")
@@ -768,7 +771,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "entities": final_entities,
                 "confidence": agent_confidence,
                 "missing_fields": agent_result.get("missing_fields", []),
-                "clarification_options": agent_result.get("clarification_options", [])
+                "clarification_options": agent_result.get("clarification_options", []),
+                "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
             }
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]

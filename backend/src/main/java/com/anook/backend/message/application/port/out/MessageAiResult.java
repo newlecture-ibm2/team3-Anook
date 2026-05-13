@@ -43,6 +43,9 @@ public record MessageAiResult(
         String targetKeyword,
 
         /** UI에 표시할 선택지 (Pill Tab) 목록 */
-        java.util.List<String> clarificationOptions
+        java.util.List<String> clarificationOptions,
+
+        /** AI가 이 결정을 내린 판단 근거 (디버깅/업무 상세용) */
+        String reasoning
 ) {
 }
