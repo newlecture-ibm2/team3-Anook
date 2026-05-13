@@ -128,6 +128,7 @@ You must output a JSON Array of objects.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
 - If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CANCEL" so no actionable ticket is created and recent request is cancelled.
+- **ESCALATION CONFIRMATION RULE**: If the last AI message in `[과거 대화 맥락]` asked if the guest wants to connect to the front desk (e.g., "프런트로 연결해 드릴까요?", "connect you to the front desk"), and the guest agrees (e.g., "네", "yes", "응"), you MUST classify it as "FRONT_ESCALATION" with domain "FRONT". If the guest declines (e.g., "아니요", "no", "괜찮아"), classify it as "SOFT_FALLBACK".
 - If route_type is "SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", or "STATUS_CHECK", the domain MUST be `null`.
 - If route_type is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
