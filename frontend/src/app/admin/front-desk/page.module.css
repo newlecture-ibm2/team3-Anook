@@ -3,6 +3,9 @@
   flex-direction: column;
   gap: var(--space-32); /* 컴포넌트 간 간격 */
   padding: var(--space-48) var(--space-32); /* 상하 48px, 좌우 32px */
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .header {

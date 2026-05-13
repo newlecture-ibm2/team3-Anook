@@ -14,6 +14,7 @@ import styles from './KnowledgeEditModal.module.css';
 export interface KnowledgeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: 'register' | 'edit';
   initialDomainCode?: string;
   initialQuestion?: string;
   initialAnswer?: string;
@@ -24,6 +25,7 @@ export interface KnowledgeEditModalProps {
 export default function KnowledgeEditModal({
   isOpen,
   onClose,
+  mode = 'edit',
   initialDomainCode = '',
   initialQuestion = '',
   initialAnswer = '',
@@ -38,6 +40,7 @@ export default function KnowledgeEditModal({
   ],
   onSave
 }: KnowledgeEditModalProps) {
+  const isRegister = mode === 'register';
   const [domainCode, setDomainCode] = useState(initialDomainCode);
   const [question, setQuestion] = useState(initialQuestion);
   const [answer, setAnswer] = useState(initialAnswer);
@@ -51,8 +54,8 @@ export default function KnowledgeEditModal({
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <StatusBadge variant="gray">정보 수정</StatusBadge>
-            <h2 className={styles.title}>지식 정보 수정</h2>
+            <StatusBadge variant={isRegister ? 'green' : 'gray'}>{isRegister ? '신규 등록' : '정보 수정'}</StatusBadge>
+            <h2 className={styles.title}>{isRegister ? '지식 데이터 등록' : '지식 정보 수정'}</h2>
           </div>
           <button className={styles.closeBtn} onClick={() => setIsConfirmOpen(true)}>
             <X size={24} />
@@ -98,9 +101,9 @@ export default function KnowledgeEditModal({
           </Button>
           <Button variant="primary" onClick={() => {
             if (onSave) onSave({ domainCode, question, answer });
-            showToast('지식 정보가 성공적으로 수정되었습니다.', 'success');
+            showToast(isRegister ? '지식 데이터가 성공적으로 등록되었습니다.' : '지식 정보가 성공적으로 수정되었습니다.', 'success');
           }} className={styles.btn}>
-            변경사항 저장하기
+            {isRegister ? '등록하기' : '변경사항 저장하기'}
           </Button>
         </div>
       </ModalCard>
