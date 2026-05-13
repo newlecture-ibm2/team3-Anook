@@ -12,6 +12,8 @@ import com.anook.backend.admin.request.application.port.in.ManageAdminRequestUse
 import com.anook.backend.admin.request.application.port.out.AdminRequestQueryPort;
 import com.anook.backend.admin.request.application.port.out.AdminRequestMessagePort;
 import com.anook.backend.admin.request.domain.model.AdminRequest;
+import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
 import com.anook.backend.global.util.RedisImageCacheUtil;
@@ -39,6 +41,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     private final AdminRequestMessagePort adminRequestMessagePort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
+    private final DispatchPort dispatchPort;
     private final RedisImageCacheUtil redisImageCacheUtil;
 
     @Override
@@ -91,6 +94,13 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 manageStaffUseCase.getById(command.staffId());
 
         adminRequestQueryPort.assignStaff(id, command.staffId(), staff.departmentId());
+        
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, "IN_PROGRESS", staff.departmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(staff.departmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
     }
 
     @Override
@@ -105,10 +115,17 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public void changeStatus(Long id, String status) {
-        adminRequestQueryPort.findById(id)
+        AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.updateStatus(id, status.toUpperCase());
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, status.toUpperCase(), request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
     }
 
     @Override
@@ -123,6 +140,13 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
         adminRequestQueryPort.cancel(id);
 
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, "CANCELLED", request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
+
         // 반려 사유가 있으면 해당 객실의 대화 내역에 STAFF 메시지로 저장
         if (rejectionReason != null && !rejectionReason.isBlank()) {
             String formattedMessage = "[요청 반려] " + rejectionReason;
@@ -133,19 +157,36 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public void changeDepartment(Long id, String departmentId) {
-        adminRequestQueryPort.findById(id)
+        AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.changeDepartment(id, departmentId);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, request.getStatus(), departmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(departmentId, payload);
+        if (!departmentId.equals(request.getDepartmentId())) {
+            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        }
+        dispatchPort.dispatchToAdmin(payload);
     }
 
     @Override
     @Transactional
     public void approveCancellation(Long id) {
-        adminRequestQueryPort.findById(id)
+        AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.approveCancellation(id);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelApproved(
+                id, request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
     }
 
     @Override
@@ -155,6 +196,13 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.rejectCancellation(id);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRejected(
+                id, request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
 
         if (rejectionReason != null && !rejectionReason.isBlank()) {
             String formattedMessage = "[취소 반려] " + rejectionReason;
@@ -177,10 +225,20 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public void escalateRequest(Long id, String departmentId, String priority) {
-        adminRequestQueryPort.findById(id)
+        AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.escalate(id, departmentId, priority);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, request.getStatus(), departmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(departmentId, payload);
+        if (!departmentId.equals(request.getDepartmentId())) {
+            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        }
+        dispatchPort.dispatchToAdmin(payload);
     }
 
     @Override
@@ -194,6 +252,21 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 command.priority(),
                 command.assignedStaffId()
         );
+
+        // [AN-307] 수동 생성 시 WebSocket 알림 발송 (고객 & 부서)
+        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+                saved.getId(),
+                saved.getStatus(),
+                saved.getDepartmentId(),
+                saved.getSummary(),
+                saved.getRoomNo(),
+                saved.getEntities(),
+                0, // 수동 생성은 Grace Period 없음
+                saved.getPriority()
+        );
+        dispatchPort.dispatchToRoom(saved.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(saved.getDepartmentId(), payload);
+        dispatchPort.dispatchToAdmin(payload);
 
         Map<String, String> deptNameMap = buildDeptNameMap();
         Map<Long, String> staffNameMap = buildStaffNameMap();

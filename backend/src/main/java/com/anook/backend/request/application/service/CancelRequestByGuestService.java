@@ -66,7 +66,8 @@ public class CancelRequestByGuestService implements CancelRequestUseCase {
                 RequestStatus.CANCELLED.name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : null,
                 request.getSummary(),
-                request.getRoomNo());
+                request.getRoomNo(),
+                "GUEST");
         dispatchPort.dispatchToRoom(roomNo, payload);
 
         // 5. 이미 Grace Period가 만료되어 직원이 배정된 경우 → 직원에게도 취소 알림

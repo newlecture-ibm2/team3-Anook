@@ -34,10 +34,9 @@ def _fetch_menu_context() -> str:
                 options = m.get("options")
                 allergy_str = f" (알러지: {allergens})" if allergens else ""
                 
-                # 옵션 형식을 "굽기:레어|미디엄|웰던" -> "(옵션: 굽기 - 레어/미디엄/웰던)"으로 변환
+                # 프롬프트의 REQUIRED OPTION RULE에 맞게 포맷 유지: [선택옵션] 카테고리:옵션1|옵션2
                 if options:
-                    formatted_options = options.replace(":", " - ").replace("|", "/")
-                    option_str = f" (옵션: {formatted_options})"
+                    option_str = f" [선택옵션] {options}"
                 else:
                     option_str = ""
                     

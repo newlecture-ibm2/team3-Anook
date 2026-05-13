@@ -23,7 +23,8 @@ public record RequestWebSocketPayload(
                 String roomNo, // 객실 번호
                 Map<String, Object> entities, // AI 추출 데이터 ({item: "수건", count: 2})
                 int graceRemaining, // Grace Period 남은 초 (URGENT=0)
-                String priority // "NORMAL" | "URGENT"
+                String priority, // "NORMAL" | "URGENT"
+                String initiatedBy // 취소/변경 주체 (GUEST, STAFF 등)
 ) {
         /**
          * 신규 요청용 정적 팩토리 (Grace Period 포함)
@@ -33,7 +34,7 @@ public record RequestWebSocketPayload(
                         Map<String, Object> entities,
                         int graceRemaining, String priority) {
                 return new RequestWebSocketPayload("NEW_REQUEST", id, status, domainCode, summary, roomNo,
-                                entities, graceRemaining, priority);
+                                entities, graceRemaining, priority, null);
         }
 
         /**
@@ -41,8 +42,16 @@ public record RequestWebSocketPayload(
          */
         public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo) {
+                return statusChanged(id, status, domainCode, summary, roomNo, null);
+        }
+
+        /**
+         * 상태 변경용 정적 팩토리 (취소 주체 포함)
+         */
+        public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
+                        String summary, String roomNo, String initiatedBy) {
                 return new RequestWebSocketPayload("STATUS_CHANGED", id, status, domainCode, summary, roomNo,
-                                null, 0, null);
+                                null, 0, null, initiatedBy);
         }
 
         /**
@@ -50,24 +59,34 @@ public record RequestWebSocketPayload(
          */
         public static RequestWebSocketPayload graceExpired(Long id, String roomNo) {
                 return new RequestWebSocketPayload("GRACE_EXPIRED", id, null, null, null, roomNo,
-                                null, 0, null);
+                                null, 0, null, null);
         }
 
         public static RequestWebSocketPayload cancelRequestReceived(Long id, String domainCode, String summary,
                         String roomNo) {
                 return new RequestWebSocketPayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary,
-                                roomNo, null, 0, "NORMAL");
+                                roomNo, null, 0, "NORMAL", null);
         }
 
         public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
                         String roomNo) {
+                return cancelApproved(id, domainCode, summary, roomNo, null);
+        }
+
+        public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
+                        String roomNo, String initiatedBy) {
                 return new RequestWebSocketPayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo,
-                                null, 0, "NORMAL");
+                                null, 0, "NORMAL", initiatedBy);
         }
 
         public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
                         String roomNo) {
+                return cancelRejected(id, domainCode, summary, roomNo, null);
+        }
+
+        public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
+                        String roomNo, String initiatedBy) {
                 return new RequestWebSocketPayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo,
-                                null, 0, "NORMAL");
+                                null, 0, "NORMAL", initiatedBy);
         }
 }
