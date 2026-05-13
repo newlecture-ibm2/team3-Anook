@@ -322,6 +322,7 @@ export default function ChatModal({ isOpen, onClose, roomNumber = '1204', reques
             setIsKnowledgeModalOpen(false);
             onClose();
           }}
+          mode="register"
           initialDomainCode="COMMON"
           initialQuestion={initialQuestion}
           initialAnswer={initialAnswer}

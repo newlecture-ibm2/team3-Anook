@@ -11,6 +11,7 @@ import com.anook.backend.admin.request.application.dto.response.AdminRequestStat
 import com.anook.backend.admin.request.application.port.in.ManageAdminRequestUseCase;
 import com.anook.backend.admin.request.application.port.out.AdminRequestQueryPort;
 import com.anook.backend.admin.request.application.port.out.AdminRequestMessagePort;
+import com.anook.backend.admin.request.application.port.out.AdminRequestDispatchPort;
 import com.anook.backend.admin.request.domain.model.AdminRequest;
 import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
@@ -40,6 +41,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     private final AdminRequestQueryPort adminRequestQueryPort;
     private final AdminRequestMessagePort adminRequestMessagePort;
+    private final AdminRequestDispatchPort adminRequestDispatchPort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
     private final DispatchPort dispatchPort;
@@ -214,6 +216,10 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         if (rejectionReason != null && !rejectionReason.isBlank()) {
             String formattedMessage = "[취소 반려] " + rejectionReason;
             adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), formattedMessage);
+            // DB 저장 후 WebSocket으로도 실시간 전송 (게스트 챗봇에 반려 사유 표시)
+            adminRequestDispatchPort.dispatchStaffMessage(
+                    request.getRoomNo(), null, formattedMessage
+            );
         }
     }
 
