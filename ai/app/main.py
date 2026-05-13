@@ -72,5 +72,5 @@ def test_ai(prompt: str = "안녕? 넌 누구야? 짧게 대답해줘."):
         }
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # type: ignore
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
