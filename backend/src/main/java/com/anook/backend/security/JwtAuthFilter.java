@@ -20,10 +20,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort;
+    private final com.anook.backend.guest.application.port.out.GuestRepositoryPort guestRepositoryPort;
 
-    public JwtAuthFilter(JwtProvider jwtProvider, com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort) {
+    public JwtAuthFilter(JwtProvider jwtProvider,
+                         com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort,
+                         com.anook.backend.guest.application.port.out.GuestRepositoryPort guestRepositoryPort) {
         this.jwtProvider = jwtProvider;
         this.staffRepositoryPort = staffRepositoryPort;
+        this.guestRepositoryPort = guestRepositoryPort;
     }
 
     @Override
@@ -40,7 +44,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             boolean isAuthorized = true;
 
-            if ("STAFF".equals(role) || "ADMIN".equals(role)) {
+            if ("GUEST".equals(role)) {
+                // 체크아웃(Hard Delete) 시 DB에서 삭제되므로, 존재 여부만으로 세션 유효성 판단
+                try {
+                    Long guestId = Long.parseLong(identifier);
+                    if (guestRepositoryPort.findById(guestId).isEmpty()) {
+                        log.info("체크아웃된 게스트 토큰 차단: guestId={}", identifier);
+                        isAuthorized = false;
+                    }
+                } catch (Exception e) {
+                    log.error("Guest 검증 중 오류 발생: {}", e.getMessage());
+                    isAuthorized = false;
+                }
+            } else if ("STAFF".equals(role) || "ADMIN".equals(role)) {
                 try {
                     Long staffId = Long.parseLong(identifier);
                     var staffOpt = staffRepositoryPort.findById(staffId);
