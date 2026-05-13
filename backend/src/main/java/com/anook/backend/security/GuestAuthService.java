@@ -36,16 +36,16 @@ public class GuestAuthService {
                 guest.getId().toString(),
                 "GUEST",
                 null,
-                java.util.Map.of("roomNo", guest.getRoomNumber())
-        );
+                java.util.Map.of("roomNo", guest.getRoomNumber()));
 
         // 3. 최종 응답 생성 (투숙객에게 의미 없는 department는 null 처리하여 응답에서 제외)
-        return LoginResponse.builder()
-                .token(token)
-                .role("GUEST")
-                .name(guest.getName())
-                .roomNo(guest.getRoomNumber()) // ★ 프론트엔드 리다이렉트용 객실 번호 추가
-                .department(null) // ★ JsonInclude에 의해 JSON 응답에서 자동 삭제됨
-                .build();
+        return new LoginResponse(
+                token,
+                "GUEST",
+                guest.getName(),
+                null, // departmentName
+                null, // departmentId
+                guest.getRoomNumber() // ★ 프론트엔드 리다이렉트용 객실 번호 추가
+        );
     }
 }
