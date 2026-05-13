@@ -107,6 +107,10 @@ STATIC_REPLIES = {
     "NEED_MORE_INFO": {
         "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
         "en": "Would you like me to connect you to the front desk for more detailed information?"
+    },
+    "EMERGENCY_REPLY": {
+        "ko": "응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 가장 가까운 직원을 파견하겠습니다. 안전한 곳에 머물러 주십시오.",
+        "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe."
     }
 }
 
@@ -286,6 +290,38 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ── [비동기 로깅 메타데이터 처리 보류] ──
     # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
+    # ── [실무 최적화: 역질문 단답형(네/아니요) 강제 라우팅 인터셉트] ──
+    if request.chat_history:
+        last_ai = None
+        for msg in reversed(request.chat_history):
+            if msg.get("role") == "ai":
+                last_ai = msg.get("content", "")
+                break
+        
+        if last_ai and "프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요" in last_ai:
+            text_lower = request.text.lower().replace(" ", "")
+            if any(w in text_lower for w in ["네", "응", "조치해", "필요해", "부탁해", "해주", "yes", "요청"]):
+                print(f"[Analyze] ⚡ 역질문 단답형 '네' 감지 → FRONT_ESCALATION 강제 라우팅")
+                return [{
+                    "guest_reply": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+                    "summary": "프론트 연결 요청 (고객 확인)",
+                    "domain_code": "FRONT",
+                    "priority": "URGENT",
+                    "entities": {"intent": "ESCALATION"},
+                    "confidence": 1.0
+                }]
+            elif any(w in text_lower for w in ["아니", "괜찮", "됐어", "피드백", "no", "의견", "아닙"]):
+                print(f"[Analyze] ⚡ 역질문 단답형 '아니요' 감지 → VOC 강제 라우팅")
+                return [{
+                    "guest_reply": "소중한 의견 감사드립니다. 서비스 개선에 꼭 참고하겠습니다.",
+                    "summary": "고객 피드백 (VOC)",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {"intent": "VOC", "sentiment": "NEGATIVE"},
+                    "confidence": 1.0,
+                    "action": "VOC_FEEDBACK"
+                }]
+
     # ──────────────────────────────────────────────
     # STEP 0: 지식 베이스 정확 일치 검색 (Exact Match)
     # ──────────────────────────────────────────────
@@ -357,6 +393,35 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     final_responses = []
     processed_domains = set()
     agent_tasks = []  # (domain, primary, coroutine)
+
+    # ──────────────────────────────────────────────
+    # STEP 2-1: [FALSE ALARM 감지] 코드 레벨 방어
+    # ──────────────────────────────────────────────
+    # LLM이 "불" 같은 키워드를 보고 부정형("안났어")을 무시하는 문제를 방지.
+    # 직전 AI 응답이 EMERGENCY/ESCALATION 관련이었고, 현재 사용자 메시지에
+    # 부정/정정/취소 패턴이 포함되어 있으면 강제로 CANCEL로 오버라이드합니다.
+    _NEGATION_PATTERNS = ["안났", "안 났", "아니야", "아니요", "아닌데", "장난", "잘못", "취소", "괜찮아", "해결됐", "실수", "오해", "거짓", "뻥이"]
+    _EMERGENCY_CONTEXT_KEYWORDS = ["119", "응급", "보안팀", "긴급 구조", "EMERGENCY", "즉시 119"]
+    
+    has_emergency_context = False
+    if request.chat_history:
+        recent_ai_msgs = [m for m in request.chat_history[-4:] if m.get("role") == "ai"]
+        if recent_ai_msgs:
+            last_ai_content = recent_ai_msgs[-1].get("content", "")
+            has_emergency_context = any(kw in last_ai_content for kw in _EMERGENCY_CONTEXT_KEYWORDS)
+    
+    has_negation = any(pat in request.text for pat in _NEGATION_PATTERNS)
+    
+    if has_emergency_context and has_negation:
+        # 라우터가 EMERGENCY를 반환했더라도 강제 CANCEL로 오버라이드
+        any_emergency = any(r.route_type == "FRONT_ESCALATION" and r.domain == "EMERGENCY" for r in router_results)
+        if any_emergency:
+            print(f"[Analyze] 🛡️ FALSE ALARM 감지 — EMERGENCY → CANCEL 오버라이드 (text: '{request.text}')")
+            for r in router_results:
+                if r.route_type == "FRONT_ESCALATION":
+                    r.route_type = "CANCEL"
+                    r.domain = "EMERGENCY"
+                    r.confidence = 1.0
 
     # ──────────────────────────────────────────────
     # STEP 2-5: [Progress Indicator] 라우터 결과 기반 진행 상태 전송
@@ -477,8 +542,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         images=request.images
                     )
                     response = {
-                        "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
-                        "summary": agent_result.get("summary", "추가 확인 필요"),
+                        "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
+                        "summary": agent_result.get("summary", primary.summary or "추가 확인 필요"),
                         "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
                         "priority": agent_result.get("priority", "NORMAL"),
                         "entities": agent_result.get("entities", {}),
@@ -491,46 +556,22 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     final_responses.append(response)
                     continue
                 except Exception as e:
-                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 프론트 에이전트로 폴백: {e}")
+                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패: {e}")
 
-            # last_agent_domain이 없거나 실패한 경우, FRONT 에이전트(기본 라우팅 질문)로 처리
-            try:
-                agent_result = await DOMAIN_AGENTS["FRONT"](
-                    user_message=request.text,
-                    room_no=request.room_no,
-                    chat_history=request.chat_history,
-                    images=request.images
-                )
-                # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
-                is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
-                response = {
-                    "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
-                    "summary": agent_result.get("summary", "추가 확인 필요"),
-                    "domain_code": agent_result.get("domain_code") if is_escalation else None,
-                    "priority": agent_result.get("priority", "NORMAL"),
-                    "entities": agent_result.get("entities", {}),
-                    "confidence": agent_result.get("confidence", primary.confidence),
-                    "missing_fields": agent_result.get("missing_fields", []),
-                    "clarification_options": agent_result.get("clarification_options", [])
-                }
-                print(f"[Analyze] ❓ CLARIFICATION → FRONT 에이전트 위임 (부서 라우팅 구체화)")
-                print(f"[Analyze] 응답: {response}\n")
-                final_responses.append(response)
-                continue
-            except Exception as e:
-                print(f"[Analyze] ⚠️ FRONT 에이전트 실패, 정적 응답 폴백: {e}")
-                response = {
-                    "guest_reply": _get_static_reply("CLARIFICATION", request.language),
-                    "summary": "추가 확인 필요",
-                    "domain_code": None,
-                    "priority": "NORMAL",
-                    "entities": {},
-                    "confidence": primary.confidence,
-                }
-                print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
-                print(f"[Analyze] 응답: {response}\n")
-                final_responses.append(response)
-                continue
+            # last_agent_domain이 없거나 실패한 경우, 라우터가 생성한 clarification_question을 그대로 사용
+            response = {
+                "guest_reply": primary.clarification_question or _get_static_reply("CLARIFICATION", request.language),
+                "summary": primary.summary or "추가 확인 필요",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {},
+                "confidence": primary.confidence,
+                "clarification_options": primary.clarification_options or []
+            }
+            print(f"[Analyze] ❓ CLARIFICATION → 라우터 명시적 질의 사용")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
 
         # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
         if primary.route_type == "INFO":
@@ -724,7 +765,24 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             text_lower = request.text.lower()
             is_all = any(word in text_lower for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything"])
             
-            if is_all:
+            # FALSE ALARM: EMERGENCY 도메인 취소 (오인 신고 정정)
+            if primary.domain == "EMERGENCY":
+                false_alarm_reply_ko = "확인되었습니다. 긴급 호출을 취소 처리하겠습니다. 혹시 다른 도움이 필요하시면 말씀해 주세요."
+                false_alarm_reply_en = "Understood. The emergency call has been cancelled. Please let us know if you need anything else."
+                response = {
+                    "guest_reply": false_alarm_reply_ko if request.language == "ko" else false_alarm_reply_en,
+                    "summary": "긴급 호출 취소 (오인 신고)",
+                    "domain_code": "EMERGENCY",
+                    "priority": "NORMAL",
+                    "entities": {"intent": "CANCEL"},
+                    "confidence": primary.confidence,
+                    "action": "CANCEL_REQUEST",
+                }
+                print(f"[Analyze] 🛡️ FALSE ALARM CANCEL 응답")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
+            elif is_all:
                 response = {
                     "guest_reply": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다.",
                     "summary": "전체 요청 취소",
@@ -758,18 +816,42 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             
         # STEP 3-f: FRONT_ESCALATION → 명시적인 프론트 데스크 연결 요청
         if primary.route_type == "FRONT_ESCALATION":
+            is_emergency = (primary.domain == "EMERGENCY")
+            reply_key = "EMERGENCY_REPLY" if is_emergency else "ESCALATION"
+            summary_val = "긴급 구조 요청 (119/보안팀)" if is_emergency else "프론트 연결 요청 (고객 확인)"
+            
             response = {
-                "guest_reply": _get_static_reply("ESCALATION", request.language),
-                "summary": "프론트 연결 요청 (고객 확인)",
-                "domain_code": "FRONT",
-                "priority": "NORMAL",
-                "entities": {"intent": "ESCALATION"},
+                "guest_reply": _get_static_reply(reply_key, request.language),
+                "summary": summary_val,
+                "domain_code": "EMERGENCY" if is_emergency else "FRONT",
+                "priority": "EMERGENCY" if is_emergency else "URGENT",
+                "entities": {"intent": "EMERGENCY" if is_emergency else "ESCALATION"},
                 "confidence": 0.0,
             }
             print(f"[Analyze] 🚨 FRONT_ESCALATION 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
             continue
+
+        # STEP 3-f-2: VOC → 단순 피드백 (티켓 생성 X)
+        if primary.route_type == "VOC":
+            sentiment = primary.sentiment if hasattr(primary, 'sentiment') else "POSITIVE"
+            reply_ko = "따뜻한 말씀 감사드립니다! 담당 부서에 꼭 전달하겠습니다." if sentiment == "POSITIVE" else "소중한 의견 감사드립니다. 서비스 개선에 꼭 참고하겠습니다."
+            reply_en = "Thank you for your kind words! We will definitely pass it on to the department." if sentiment == "POSITIVE" else "Thank you for your valuable feedback. We will use it to improve our service."
+            response = {
+                "guest_reply": reply_ko if request.language == "ko" else reply_en,
+                "summary": "고객 피드백 (VOC)",
+                "domain_code": None, # 티켓 생성 안 함
+                "priority": "NORMAL",
+                "entities": {"intent": "VOC", "sentiment": sentiment},
+                "confidence": primary.confidence,
+                "action": "VOC_FEEDBACK"
+            }
+            print(f"[Analyze] 📝 VOC 피드백 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+
 
         # STEP 3-g: STATUS_CHECK → 진행 상태 확인
         if primary.mode == "STATUS_CHECK":
@@ -864,7 +946,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # "아래 접수 내역을 확인해 주세요" 공통 문구 1회 추가 (취소 요청은 제외)
     task_responses = [
         r for r in final_responses 
-        if r.get("domain_code") and r.get("domain_code") != "FRONT" 
+        if r.get("domain_code") 
         and not (r.get("action") and str(r.get("action")).startswith("CANCEL"))
     ]
     if task_responses:
