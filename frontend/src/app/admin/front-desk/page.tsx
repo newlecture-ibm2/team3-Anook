@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import FilterButton from '@/components/ui/FilterButton/FilterButton';
+import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import Button from '@/components/ui/Button/Button';
 import useAdminRequests from '../useAdminRequests';
@@ -20,7 +20,7 @@ import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
 
 export default function FrontDeskPage() {
-  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [activeTab, setActiveTab] = useState('active');
   const { requests, loading, error, refetch } = useAdminRequests('FRONT');
   // 취소 승인 대기: 모든 부서의 취소 요청을 프론트에서 대신 처리하기 위해 전체 조회
   const { requests: allRequests, loading: allLoading, refetch: allRefetch } = useAdminRequests(undefined, '', 'all', true);
@@ -83,20 +83,15 @@ export default function FrontDeskPage() {
     }
   };
 
-  // 필터에 따른 리스트 렌더링
+  // 탭에 따른 필터링
   const getFilteredRequests = () => {
-    let list = frontDeskRequests;
-    if (filterStatus === 'PENDING') {
-      list = pending;
-    } else if (filterStatus === 'IN_PROGRESS') {
-      list = inProgress;
-    } else if (filterStatus === 'COMPLETED') {
-      list = completed;
-    } else {
-      list = [...pending, ...inProgress, ...completed];
+    if (activeTab === 'active') {
+      const activeList = [...pending, ...inProgress];
+      // 최신순 정렬
+      return activeList.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
-    // 최신순 정렬
-    return list.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (activeTab === 'completed') return completed;
+    return [];
   };
   const filteredRequests = getFilteredRequests();
 
@@ -112,12 +107,12 @@ export default function FrontDeskPage() {
   const [trainingTarget, setTrainingTarget] = useState<any | null>(null);
 
   const getPrimaryActionText = (req: any) => {
-    if (req.status === 'COMPLETED') return '학습 관리 등록';
+    if (activeTab === 'completed') return '학습 관리 등록';
     return undefined;
   };
 
   const getSecondaryActionText = (req: any) => {
-    if (req.status === 'COMPLETED') return '상담 기록 보기';
+    if (activeTab === 'completed') return '상담 기록 보기';
     return undefined;
   };
 
@@ -127,17 +122,15 @@ export default function FrontDeskPage() {
       <div className={styles.splitLayout}>
         {/* Left Pane: Request List */}
         <div className={styles.leftPane}>
-          {/* Filter options inside left pane */}
-          <div style={{ marginBottom: 'var(--space-16)', display: 'flex', justifyContent: 'flex-end' }}>
-            <FilterButton
-              filterOptions={[
-                { label: `전체 (${pending.length + inProgress.length + completed.length})`, value: 'ALL' },
-                { label: `대기 중 (${pending.length})`, value: 'PENDING' },
-                { label: `처리 중 (${inProgress.length})`, value: 'IN_PROGRESS' },
-                { label: `상담 완료 (${completed.length})`, value: 'COMPLETED' }
+          {/* Tabs inside left pane */}
+          <div style={{ marginBottom: 'var(--space-16)' }}>
+            <Tabs
+              options={[
+                { label: '💬 진행 중', value: 'active', count: pending.length + inProgress.length },
+                { label: '✅ 상담 완료', value: 'completed', count: completed.length }
               ]}
-              selectedFilter={filterStatus}
-              onFilterSelect={(val) => setFilterStatus(val)}
+              activeValue={activeTab}
+              onChange={(val) => setActiveTab(val || 'active')}
             />
           </div>
 
@@ -162,18 +155,20 @@ export default function FrontDeskPage() {
                 primaryActionText={getPrimaryActionText(req)}
                 secondaryActionText={getSecondaryActionText(req)}
                 onPrimaryAction={() => {
-                  if (req.status === 'PENDING') {
-                    handleStatusChange(req.id, 'IN_PROGRESS');
-                    setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', initialMessage: req.rawText || req.summary });
-                  } else if (req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED') {
-                    handleStatusChange(req.id, 'COMPLETED');
-                    setActiveChatRoom(null);
-                  } else if (req.status === 'COMPLETED') {
+                  if (activeTab === 'active') {
+                    if (req.status === 'PENDING') {
+                      handleStatusChange(req.id, 'IN_PROGRESS');
+                      setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', initialMessage: req.rawText || req.summary });
+                    } else if (req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED') {
+                      handleStatusChange(req.id, 'COMPLETED');
+                      setActiveChatRoom(null);
+                    }
+                  } else if (activeTab === 'completed') {
                     setTrainingTarget(req);
                   }
                 }}
                 onSecondaryAction={
-                  req.status === 'COMPLETED' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, initialMessage: req.rawText || req.summary }) :
+                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, initialMessage: req.rawText || req.summary }) :
                   undefined
                 }
                 reverseActions={true}
