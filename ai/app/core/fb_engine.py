@@ -93,6 +93,9 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         raw["room_no"] = room_no
     if "domain" not in raw:
         raw["domain"] = "FB"
+        
+    # AI가 명시적으로 null을 반환한 경우 키를 제거하여 Pydantic의 기본값이 적용되도록 함
+    raw = {k: v for k, v in raw.items() if v is not None}
 
     result = HotelRequestSchema(**raw)
 

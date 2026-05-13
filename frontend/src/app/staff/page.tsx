@@ -137,11 +137,21 @@ function DashboardContent() {
     });
   }, [tasks, searchQuery, priorityFilter]);
 
-  const boardData = useMemo(() => ({
-    TODO: filteredTasks.filter(t => t.status === 'PENDING'),
-    IN_PROGRESS: filteredTasks.filter(t => t.status === 'IN_PROGRESS'),
-    DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
-  }), [filteredTasks]);
+  const boardData = useMemo(() => {
+    const sortByCancelRequested = (taskList: typeof filteredTasks) => {
+      return [...taskList].sort((a, b) => {
+        if (a.cancelRequested && !b.cancelRequested) return -1;
+        if (!a.cancelRequested && b.cancelRequested) return 1;
+        return 0;
+      });
+    };
+
+    return {
+      TODO: sortByCancelRequested(filteredTasks.filter(t => t.status === 'PENDING')),
+      IN_PROGRESS: sortByCancelRequested(filteredTasks.filter(t => t.status === 'IN_PROGRESS')),
+      DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
+    };
+  }, [filteredTasks]);
 
   return (
     <div className={styles.container}>
