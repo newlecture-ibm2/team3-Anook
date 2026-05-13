@@ -18,6 +18,7 @@ import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
 import com.anook.backend.global.util.RedisImageCacheUtil;
+import com.anook.backend.pms.application.port.in.GenerateReceiptUseCase;
 import com.anook.backend.global.exception.BusinessException;
 import com.anook.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     private final ManageStaffUseCase manageStaffUseCase;
     private final DispatchPort dispatchPort;
     private final RedisImageCacheUtil redisImageCacheUtil;
+    private final GenerateReceiptUseCase generateReceiptUseCase;
 
     @Override
     public List<AdminRequestListResult> getAllRequests(String status, String departmentId, String priority, List<String> exclude, String sort) {
@@ -121,6 +123,11 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.updateStatus(id, status.toUpperCase());
+
+        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            generateReceiptUseCase.generate(request.getRoomNo(), request.getDepartmentId(), request.getEntities());
+        }
 
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
                 id, status.toUpperCase(), request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
