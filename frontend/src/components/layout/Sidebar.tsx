@@ -138,12 +138,12 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       className={`${styles.sidebar} ${className}`.trim()}
       style={{ height: 'calc(100vh - 65px)', overflowY: 'auto' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-16) 0', width: '100%', flex: 1 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-24)' }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
             {group.category && (
               <h4 style={{ 
-                padding: 'var(--space-8) var(--space-16)', 
+                padding: 'var(--space-8) var(--space-24)', 
                 fontSize: '0.75rem', 
                 fontWeight: 600, 
                 color: 'var(--color-gray-500)',
@@ -153,7 +153,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
                 {group.category}
               </h4>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {group.items.map((menu) => {
                 const isActive = activeMenu?.href === menu.href;
                 return (
@@ -172,13 +172,13 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
         ))}
       </div>
 
-      <div style={{ width: '100%', padding: 'var(--space-16) 0', borderTop: '1px solid var(--color-gray-200)', marginTop: 'auto' }}>
+      <div style={{ width: '100%', paddingBottom: 'var(--space-24)', marginTop: 'auto' }}>
         <button
           onClick={async () => {
             await fetch('/api/auth/session', { method: 'DELETE' });
             window.location.href = '/login';
           }}
-          className={`${styles.item} ${styles.default}`}
+          className={`${styles.item} ${styles.danger}`}
           style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
         >
           <LogOut className={styles.icon} />

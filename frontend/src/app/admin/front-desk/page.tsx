@@ -13,7 +13,7 @@ import ApproveEscalationModal from './_components/ApproveEscalationModal/Approve
 import RejectEscalationModal from './_components/RejectEscalationModal/RejectEscalationModal';
 import ApproveCancellationModal from './_components/ApproveCancellationModal/ApproveCancellationModal';
 import RejectCancellationModal from './_components/RejectCancellationModal/RejectCancellationModal';
-import ChatModal from '@/components/ui/Modal/ChatModal';
+import ChatPanel from './_components/ChatPanel/ChatPanel';
 import RegisterTrainingModal from './_components/RegisterTrainingModal/RegisterTrainingModal';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
@@ -143,9 +143,11 @@ export default function FrontDeskPage() {
         />
       </div>
 
-      {/* Content Section */}
-      <div className={styles.contentSection}>
-        <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
+      {/* Content Section (Split Layout) */}
+      <div className={styles.splitLayout}>
+        {/* Left Pane: Request List */}
+        <div className={styles.leftPane}>
+          <h2 className={styles.sectionTitle}>{sectionTitle}</h2>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
@@ -189,6 +191,25 @@ export default function FrontDeskPage() {
             ))}
           </div>
         )}
+        </div>
+
+        {/* Right Pane: Chat Window */}
+        <div className={styles.rightPane}>
+          {activeChatRoom ? (
+            <ChatPanel
+              roomNumber={activeChatRoom.roomNumber}
+              requestId={activeChatRoom.requestId}
+              status={activeChatRoom.status}
+              onStatusChange={handleStatusChange}
+              autoComplete={false}
+              onClose={() => setActiveChatRoom(null)}
+            />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>
+              대화할 요청을 선택해주세요
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 요청 생성 모달 */}
@@ -246,7 +267,6 @@ export default function FrontDeskPage() {
         />
       )}
 
-      {/* 학습 데이터 등록 모달 */}
       <RegisterTrainingModal
         isOpen={trainingTarget !== null}
         onClose={() => setTrainingTarget(null)}
@@ -254,19 +274,6 @@ export default function FrontDeskPage() {
         summary={trainingTarget?.summary}
         roomNo={trainingTarget?.roomNo?.toString()}
       />
-
-      {/* 상담 계속하기 처리를 위한 ChatModal */}
-      {activeChatRoom && (
-        <ChatModal
-          isOpen={true}
-          onClose={() => setActiveChatRoom(null)}
-          roomNumber={activeChatRoom.roomNumber}
-          requestId={activeChatRoom.requestId}
-          status={activeChatRoom.status}
-          onStatusChange={handleStatusChange}
-          autoComplete={false}
-        />
-      )}
     </div>
   );
 }
