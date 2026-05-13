@@ -50,14 +50,16 @@ def health_check():
         "database": db_status
     }
 
-import google.generativeai as genai
+from google import genai
 
 @app.get("/api/v1/test-ai")
 def test_ai(prompt: str = "안녕? 넌 누구야? 짧게 대답해줘."):
     try:
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(prompt)
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
         return {
             "status": "success",
             "prompt": prompt,
