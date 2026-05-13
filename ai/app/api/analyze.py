@@ -162,6 +162,10 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         
     request.language = _detect_language(request.text, request.language)
 
+    # [수정] AI 모델은 이미지를 직접 판독하지 않도록 이미지 데이터를 비웁니다.
+    # 사진은 단순 첨부파일(백엔드가 Redis에 저장) 용도로만 사용하며, AI는 오직 '텍스트'에 집중해 라우팅합니다.
+    request.images = []
+
     # 요청마다 컨텍스트 초기화
     ai_log_meta_ctx.set({})
     
