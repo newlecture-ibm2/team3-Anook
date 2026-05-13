@@ -32,6 +32,17 @@ services:
     networks:
       - Anook-network
 
+  # 2-1. Redis (이미지 임시 캐싱 및 세션용)
+  redis:
+    image: redis:alpine
+    container_name: anook-redis
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+    restart: on-failure
+    networks:
+      - Anook-network
+
   # 3. Spring Boot 백엔드
   backend:
     build:
@@ -45,11 +56,14 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - AI_SERVER_URL=http://ai:8000
+      - SPRING_DATA_REDIS_HOST=redis
     ports:
       - "127.0.0.1:8080:8080"  # 호스트 Nginx만 접근 가능 (외부 차단)
     depends_on:
       db:
         condition: service_healthy   # DB가 실제로 준비된 후에만 시작
+      redis:
+        condition: service_started
     restart: on-failure              # 실패 시 자동 재시작
     networks:
       - Anook-network
@@ -90,6 +104,7 @@ services:
 
 volumes:
   db-data:
+  redis-data:
 
 
 networks:

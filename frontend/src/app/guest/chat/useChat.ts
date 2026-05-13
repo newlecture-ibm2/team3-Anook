@@ -277,6 +277,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'FEEDBACK',
+                      content: '',
                       meta: { requestId: payload.requestId }
                     }];
                   });
@@ -335,7 +336,7 @@ export function useChat() {
   }, [roomNo]);
 
   // 3. 메시지 전송
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, imageFile?: File) => {
     if (!roomNo) return;
     if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
 
@@ -350,8 +351,23 @@ export function useChat() {
       return;
     }
 
+    let base64Image: string | undefined;
+    if (imageFile) {
+      base64Image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+    }
+
     const tempId = `temp-${Date.now()}`;
-    const newUserMsg: ChatMessage = { id: tempId, variant: 'sent', content: text };
+    const newUserMsg: ChatMessage = { 
+      id: tempId, 
+      variant: 'sent', 
+      content: text,
+      imageUrl: base64Image 
+    };
     setMessages(prev => {
       const filtered = prev.filter(m => m.type !== 'WELCOME');
       return [...filtered, newUserMsg];
@@ -361,12 +377,17 @@ export function useChat() {
     abortControllerRef.current = new AbortController();
 
     try {
+      const formData = new FormData();
+      formData.append('content', text);
+      if (base64Image) {
+        formData.append('images', base64Image);
+      }
+
       const response = await fetch(`/api/chat/${roomNo}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: text }),
+        // FormData를 보낼 때는 Content-Type을 수동으로 지정하지 않습니다.
+        // (브라우저가 자동으로 multipart/form-data와 boundary를 설정함)
+        body: formData,
         signal: abortControllerRef.current.signal,
       });
 

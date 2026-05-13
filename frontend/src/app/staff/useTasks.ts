@@ -19,6 +19,7 @@ export interface StaffTask {
   version: number;
   cancelRequested: boolean;
   cancelRequestedAt: string | null;
+  imageUrl?: string | null;
   entities?: {
     intent?: string;
     items?: Array<{ item: string; count: number }>;

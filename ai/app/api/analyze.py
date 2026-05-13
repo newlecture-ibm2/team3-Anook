@@ -38,6 +38,7 @@ class AnalyzeRequest(BaseModel):
     room_no: str
     language: Optional[str] = "ko"
     chat_history: List[dict] = []
+    images: Optional[List[str]] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -339,7 +340,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history)
+        router_results = route(request.text, request.chat_history, request.images)
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -385,7 +386,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 coro = DOMAIN_AGENTS[domain](
                     user_message=request.text,
                     room_no=request.room_no,
-                    chat_history=request.chat_history
+                    chat_history=request.chat_history,
+                    images=request.images
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -424,41 +426,101 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
 
-        # STEP 3-c: CLARIFICATION → 라우터가 던지는 되묻기
+        # STEP 3-c: CLARIFICATION → 되묻기
         if primary.route_type == "CLARIFICATION":
-            response = {
-                "guest_reply": primary.clarification_question or _get_static_reply("CLARIFICATION", request.language),
-                "summary": "추가 확인 필요",
-                "domain_code": None,
-                "priority": "NORMAL",
-                "entities": {},
-                "confidence": primary.confidence,
-                "missing_fields": [],
-                "clarification_options": getattr(primary, 'clarification_options', []) or []
-            }
-            print(f"[Analyze] ❓ CLARIFICATION (라우터 레벨 되묻기)")
-            print(f"[Analyze] 응답: {response}\n")
-            final_responses.append(response)
-            continue
+            # ── [에이전트 재위임 로직] ──
+            # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
+            # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
+            # "어떤 말씀인지 모르겠다" 대신 구체적인 재질문을 생성합니다.
+            last_agent_domain = None
+            recent_ai_msgs = [m for m in request.chat_history[-6:] if m.get("role") == "ai"]
+            if recent_ai_msgs and "?" in recent_ai_msgs[-1].get("content", ""):
+                # 최근 AI 질문 직전의 TASK 도메인을 찾기 위해 에이전트 등록된 도메인 추정
+                # chat_history에 domain 정보가 없으므로, 에이전트 등록 여부로 확인 가능한
+                # 도메인을 router_engine의 이전 히스토리 기반으로 추론합니다.
+                # → 가장 실용적인 방법: 현재 라우터에게 전체 맥락으로 재질의
+                for domain_key in DOMAIN_AGENTS:
+                    # 도메인 키워드가 최근 AI 질문에 포함된 경우 해당 에이전트 재호출
+                    # (예: "오렌지 주스", "수건", "에어컨" 등)
+                    pass
+                # 실용적 접근: 직전에 에이전트가 물어본 맥락이 있으면 가장 최근 TASK 도메인으로 재위임
+                # chat_history를 역순으로 탐색해 마지막 TASK 처리 도메인 흔적을 찾습니다.
+                # 현재 chat_history에 domain 태그가 없으므로, 도메인별 키워드 사전으로 추론합니다.
+                DOMAIN_KEYWORDS = {
+                    "FB": ["주문", "룸서비스", "메뉴", "음식", "음료", "콜라", "주스", "커피", "맥주", "와인", "스테이크", "샐러드"],
+                    "HK": ["수건", "타월", "베개", "이불", "침대", "어메니티", "칫솔", "샴푸", "비누", "슬리퍼"],
+                    "FACILITY": ["에어컨", "TV", "와이파이", "냉장고", "전기", "수도", "변기", "샤워", "조명", "고장"],
+                    "CONCIERGE": ["택시", "맡기", "짐", "레스토랑", "예약", "투어", "관광", "공항", "모닝콜"],
+                }
+                recent_context = " ".join(
+                    m.get("content", "") for m in request.chat_history[-8:]
+                )
+                for domain_key, keywords in DOMAIN_KEYWORDS.items():
+                    if domain_key in DOMAIN_AGENTS and any(kw in recent_context for kw in keywords):
+                        last_agent_domain = domain_key
+                        break
 
-        # STEP 3-cc: FRONT_ESCALATION → 프론트로 긴급 전달
-        if primary.route_type == "FRONT_ESCALATION":
-            domain_code = primary.domain or "FRONT"
-            response = {
-                "guest_reply": _get_static_reply("COMPLAINT", request.language) if primary.priority == "HIGH" else _get_static_reply("ESCALATION", request.language),
-                "summary": primary.summary or f"{domain_code} 관련 불편 사항",
-                "domain_code": domain_code,
-                "priority": "URGENT" if primary.priority == "HIGH" else "NORMAL",
-                "entities": {"intent": "ESCALATION"},
-                "confidence": primary.confidence,
-            }
-            if hasattr(primary, 'action_type'):
-                response["action_type"] = primary.action_type
-                
-            print(f"[Analyze] 🚨 FRONT_ESCALATION 응답")
-            print(f"[Analyze] 응답: {response}\n")
-            final_responses.append(response)
-            continue
+            if last_agent_domain:
+                try:
+                    agent_result = await DOMAIN_AGENTS[last_agent_domain](
+                        user_message=request.text,
+                        room_no=request.room_no,
+                        chat_history=request.chat_history,
+                        images=request.images
+                    )
+                    response = {
+                        "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
+                        "summary": agent_result.get("summary", "추가 확인 필요"),
+                        "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
+                        "priority": agent_result.get("priority", "NORMAL"),
+                        "entities": agent_result.get("entities", {}),
+                        "confidence": agent_result.get("confidence", primary.confidence),
+                        "missing_fields": agent_result.get("missing_fields", []),
+                        "clarification_options": agent_result.get("clarification_options", [])
+                    }
+                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
+                    print(f"[Analyze] 응답: {response}\n")
+                    final_responses.append(response)
+                    continue
+                except Exception as e:
+                    print(f"[Analyze] ⚠️ CLARIFICATION 에이전트 재위임 실패, 프론트 에이전트로 폴백: {e}")
+
+            # last_agent_domain이 없거나 실패한 경우, FRONT 에이전트(기본 라우팅 질문)로 처리
+            try:
+                agent_result = await DOMAIN_AGENTS["FRONT"](
+                    user_message=request.text,
+                    room_no=request.room_no,
+                    chat_history=request.chat_history,
+                    images=request.images
+                )
+                response = {
+                    "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
+                    "summary": agent_result.get("summary", "추가 확인 필요"),
+                    "domain_code": None,
+                    "priority": agent_result.get("priority", "NORMAL"),
+                    "entities": agent_result.get("entities", {}),
+                    "confidence": agent_result.get("confidence", primary.confidence),
+                    "missing_fields": agent_result.get("missing_fields", []),
+                    "clarification_options": agent_result.get("clarification_options", [])
+                }
+                print(f"[Analyze] ❓ CLARIFICATION → FRONT 에이전트 위임 (부서 라우팅 구체화)")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
+            except Exception as e:
+                print(f"[Analyze] ⚠️ FRONT 에이전트 실패, 정적 응답 폴백: {e}")
+                response = {
+                    "guest_reply": _get_static_reply("CLARIFICATION", request.language),
+                    "summary": "추가 확인 필요",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                }
+                print(f"[Analyze] ❓ CLARIFICATION — reasoning: {primary.reasoning}")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
 
         # STEP 3-d: INFO → RAG 지식 기반 답변 (요청 미생성)
         if primary.route_type == "INFO":
@@ -471,6 +533,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
+                        images=request.images
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
@@ -488,15 +551,23 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     print(f"[Analyze] ⚠️ FB 에이전트 INFO 위임 실패, RAG 폴백: {e}")
 
             try:
-                # 🧠 [지능형 쿼리 확장]
-                rewrite_prompt = f"다음 손님의 질문을 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성해줘: '{request.text}'"
+                context_lines = []
+                for msg in request.chat_history[-3:]:
+                    role = "고객" if msg.get("role") == "user" else "AI"
+                    context_lines.append(f"{role}: {msg.get('content')}")
+                context_str = "\n".join(context_lines)
+
+                rewrite_prompt = (
+                    f"[과거 대화 맥락]\n{context_str}\n\n"
+                    f"[고객의 질문]\n{request.text}\n\n"
+                    f"위 맥락을 참고하여, 고객이 궁극적으로 알고 싶은 '호텔 정책/정보'가 무엇인지 파악하고 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성하세요."
+                )
                 search_query_raw = await call_gemini_async(
                     prompt=rewrite_prompt,
                     system_instruction=(
                         "당신은 호텔 검색 엔진 최적화 전문가입니다. "
-                        "사용자의 질문을 호텔 지식 베이스 검색에 가장 적합한 문장으로 확장하세요. "
-                        "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름(삼겹살, 파스타 등)이나 카테고리를 재작성된 문장에 절대로 포함하지 마세요. "
-                        "질문의 의도만 자연스럽게 살려 구체화하세요. "
+                        "사용자가 특정 사물이나 서비스를 지칭하지 않고 '왜', '얼마야' 등 생략된 표현을 사용했더라도, 반드시 [과거 대화 맥락]을 파악하여 질문 대상을 찾아 명시적으로 포함시키세요. (예: '생수 추가 요금이 발생하는 이유가 무엇인가요?') "
+                        "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름이나 카테고리를 무단으로 추가하지 마세요. "
                         "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
                     )
                 )
@@ -590,7 +661,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         agent_result = await DOMAIN_AGENTS["CONCIERGE"](
                             user_message=request.text,
                             room_no=request.room_no,
-                            chat_history=request.chat_history
+                            chat_history=request.chat_history,
+                            images=request.images
                         )
                         guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(agent_result, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
                     else:

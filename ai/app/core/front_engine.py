@@ -5,7 +5,7 @@ from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.front_prompt import FRONT_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 
-async def run_front_agent(user_message: str, room_no: str = "", chat_history: list = None) -> dict:
+async def run_front_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """프론트데스크 에이전트: 고객 메시지에서 프론트 관련 정보를 추출"""
     
     if chat_history:
@@ -17,7 +17,7 @@ async def run_front_agent(user_message: str, room_no: str = "", chat_history: li
     else:
         prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
     
-    raw = await call_gemini_async(prompt=prompt, system_instruction=FRONT_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=FRONT_SYSTEM_PROMPT, images=images)
     
     # 방어 로직: 배열로 오면 첫 번째 요소 추출
     if isinstance(raw, list):

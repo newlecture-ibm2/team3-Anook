@@ -86,7 +86,7 @@ public class SendMessageService implements SendMessageUseCase {
                 "content", maskedContent));
 
         // 3. AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
-        self.processAiAsync(cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected);
+        self.processAiAsync(cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -100,7 +100,7 @@ public class SendMessageService implements SendMessageUseCase {
      */
     @Async("aiTaskExecutor")
     @Transactional
-    public void processAiAsync(String roomNo, Long guestId, String content, String language, boolean piiDetected) {
+    public void processAiAsync(String roomNo, Long guestId, String content, String language, boolean piiDetected, java.util.List<String> images) {
         try {
             // 3. AI 호출을 위해 최근 10개 메시지 조회 (대화 맥락 확장)
             java.util.List<Message> recentMessages = new java.util.ArrayList<>(
@@ -123,7 +123,7 @@ public class SendMessageService implements SendMessageUseCase {
                     .toList();
 
             // AI 호출
-            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images);
 
             // 4. AI 응답 메시지 저장
             String combinedReply = analyses.stream()
@@ -186,7 +186,8 @@ public class SendMessageService implements SendMessageUseCase {
                             analysis.summary(),
                             escalated,
                             analysis.actionType(),
-                            analysis.targetKeyword()));
+                            analysis.targetKeyword(),
+                            images));
                     log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}, targetKeyword: {}",
                             analysis.domainCode(), escalated, analysis.actionType(), analysis.targetKeyword());
                 } else if ("STATUS_CHECK".equals(analysis.action())) {

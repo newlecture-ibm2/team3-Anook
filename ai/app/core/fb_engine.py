@@ -49,7 +49,7 @@ def _fetch_menu_context() -> str:
         print(f"[FB Agent] 메뉴 조회 API 호출 중 오류 발생: {e}")
         return "메뉴 정보를 현재 불러올 수 없습니다. 프론트데스크로 문의 부탁드립니다."
 
-async def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history: list = None) -> dict:
+async def run_fb_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """F&B 에이전트: 메뉴 조회, RAG 지식 결합, 2턴 주문 확인 로직 처리"""
     
     # 1. pms_menu 백엔드 조회
@@ -84,7 +84,7 @@ async def run_fb_agent(user_message: str, room_no: str = "unknown", chat_history
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini 호출
-    raw = await call_gemini_async(prompt=prompt, system_instruction=FB_SYSTEM_PROMPT)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=FB_SYSTEM_PROMPT, images=images)
 
     # 5. Pydantic 검증
     if "request_id" not in raw or raw["request_id"] == "auto":

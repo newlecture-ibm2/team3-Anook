@@ -9,6 +9,11 @@ spring:
     init:
       mode: always                # schema.sql, data.sql 항상 실행
 
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+
   jpa:
     defer-datasource-initialization: true   # SQL 스크립트를 Hibernate 초기화 이후 실행
     hibernate:

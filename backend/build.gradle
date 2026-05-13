@@ -20,6 +20,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient (Python AI 서비스 HTTP 호출)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis' // Redis (임시 이미지 저장용)
 
     // ── JWT (인증 토큰) ──
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
