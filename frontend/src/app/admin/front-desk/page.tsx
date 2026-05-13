@@ -21,12 +21,15 @@ import { useTranslation } from '@/app/useTranslation';
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('unhandled');
   const { requests, loading, error, refetch } = useAdminRequests('FRONT');
+  // 취소 승인 대기: 모든 부서의 취소 요청을 프론트에서 대신 처리하기 위해 전체 조회
+  const { requests: allRequests, loading: allLoading, refetch: allRefetch } = useAdminRequests(undefined, '', 'all', true);
 
   const frontDeskRequests = requests.filter(r => r.priority !== 'EMERGENCY');
 
   const pending = frontDeskRequests.filter(r => r.status === 'PENDING');
   const inProgress = frontDeskRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
-  const cancelPending = frontDeskRequests.filter(r => r.cancelRequested);
+  // 모든 부서의 취소 대기 건 (프론트 데스크가 대신 처리)
+  const cancelPending = allRequests.filter(r => r.cancelRequested);
   const completed = frontDeskRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
 
   const { escalations } = useEscalations();
@@ -64,7 +67,7 @@ export default function FrontDeskPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok && refetch) refetch();
+      if (res.ok && refetch) { refetch(); allRefetch && allRefetch(); }
     } catch (e) {
       console.error(e);
     }
@@ -89,7 +92,7 @@ export default function FrontDeskPage() {
   // 탭에 따른 섹션 제목
   const sectionTitle =
     activeTab === 'escalation' ? t.adminPage.frontDesk.sections.escalation :
-      activeTab === 'cancelPending' ? '취소 승인 대기' :
+      activeTab === 'cancelPending' ? '취소 요청' :
         activeTab === 'completed' ? '상담 완료' :
           activeTab === 'inProgress' ? t.adminPage.frontDesk.sections.inProgress :
             t.adminPage.frontDesk.sections.unhandled;
@@ -132,7 +135,7 @@ export default function FrontDeskPage() {
             { label: t.adminPage.frontDesk.tabs.unhandled, value: 'unhandled', count: pending.length },
             { label: t.adminPage.frontDesk.tabs.inProgress, value: 'inProgress', count: inProgress.length },
             { label: '상담 완료', value: 'completed', count: completed.length },
-            { label: '취소 승인 대기', value: 'cancelPending', count: cancelPending.length },
+            { label: '취소 요청', value: 'cancelPending', count: cancelPending.length },
             { label: t.adminPage.frontDesk.tabs.escalation, value: 'escalation', count: nonEmergencyEscalations.length }
           ]}
           activeValue={activeTab}
@@ -229,7 +232,7 @@ export default function FrontDeskPage() {
           isOpen={true}
           onClose={() => setCancelApproveTarget(null)}
           requestId={cancelApproveTarget}
-          onSuccess={() => refetch && refetch()}
+          onSuccess={() => { refetch && refetch(); allRefetch && allRefetch(); }}
         />
       )}
 
@@ -239,7 +242,7 @@ export default function FrontDeskPage() {
           isOpen={true}
           onClose={() => setCancelRejectTarget(null)}
           requestId={cancelRejectTarget}
-          onSuccess={() => refetch && refetch()}
+          onSuccess={() => { refetch && refetch(); allRefetch && allRefetch(); }}
         />
       )}
 
