@@ -127,12 +127,12 @@
       "tabs": {
         "unhandled": "미처리 대기",
         "inProgress": "처리 중",
-        "escalation": "승인 대기"
+        "escalation": "이관 요청"
       },
       "sections": {
         "unhandled": "미처리 / 예외 요청",
         "inProgress": "처리 중인 요청",
-        "escalation": "승인 대기 요청"
+        "escalation": "이관 요청"
       },
       "empty": "요청이 없습니다.",
       "actions": {
@@ -146,7 +146,7 @@
         "assigned": "배정됨",
         "inProgress": "처리 중",
         "completed": "완료",
-        "escalated": "승인 대기"
+        "escalated": "이관 요청"
       }
     },
     "chatHistory": {
