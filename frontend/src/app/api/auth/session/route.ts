@@ -23,3 +23,13 @@ export async function GET() {
     roomNo: session.roomNo
   });
 }
+
+/**
+ * DELETE /api/auth/session
+ * 현재 세션을 파기합니다. (로그아웃 / 체크아웃 세션 만료)
+ */
+export async function DELETE() {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+  session.destroy();
+  return NextResponse.json({ isLoggedIn: false });
+}

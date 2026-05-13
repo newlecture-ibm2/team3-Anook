@@ -117,6 +117,14 @@ export function useChat() {
           if (message.body) {
             const payload = JSON.parse(message.body);
 
+            // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
+            if (payload.type === 'SESSION_EXPIRED') {
+              // BFF 세션 쿠키 파기
+              fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+              window.location.href = '/login?error=CHECKED_OUT';
+              return;
+            }
+
             if (payload.type === 'AI_PROGRESS') {
               setMessages(prev => {
                 const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
