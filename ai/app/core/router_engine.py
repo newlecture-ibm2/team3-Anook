@@ -78,7 +78,7 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
         if result.route_type == "EMERGENCY" or result.domain == "EMERGENCY":
             result.route_type = "FRONT_ESCALATION"
             result.domain = "EMERGENCY"
-            result.priority = "HIGH"
+            result.priority = "URGENT"
 
         # ── 3) route_type 유효성 검증 ──
         if result.route_type not in VALID_ROUTE_TYPES:

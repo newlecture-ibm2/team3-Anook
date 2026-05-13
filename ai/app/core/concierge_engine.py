@@ -110,5 +110,6 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "needs_clarification": result.needs_clarification,
         "clarification_question": result.clarification_question,
         "clarification_options": result.clarification_options,
-        "missing_fields": result.missing_fields
+        "missing_fields": result.missing_fields,
+        "reasoning": result.reasoning,
     }

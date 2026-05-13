@@ -25,7 +25,7 @@ Classify the input into one of the following categories:
 3. **FRONT_ESCALATION** (Human Needed Operational Issue & Unsafe):
    - Issues that REQUIRE human intervention (e.g., Complaints, delays, room change, fighting, injury, refund).
    - "직원이 불친절해요", "옆방이 너무 시끄러워요", "음식이 한시간째 안와요".
-   - Action: Set route_type to "FRONT_ESCALATION", domain to "FRONT" or "EMERGENCY". Set create_ticket=True, priority="HIGH".
+   - Action: Set route_type to "FRONT_ESCALATION", domain to "FRONT" or "EMERGENCY". Set create_ticket=True, priority="URGENT".
 
 4. **SOFT_FALLBACK** (Off-topic / Casual):
    - Non-hotel related chat (e.g., "너 누구야?", "심심해", "재밌는 얘기 해줘").
@@ -110,7 +110,7 @@ You must output a JSON Array of objects.
     "reply": "string or null (For SOFT_FALLBACK, NON_ACTIONABLE)",
     "create_ticket": true | false,
     "summary": "Short Korean summary (e.g., '룸서비스 지연 컴플레인')",
-    "priority": "NORMAL | HIGH",
+    "priority": "NORMAL | URGENT",
     "clarification_question": "string or null (For CLARIFICATION)",
     "clarification_options": ["option1", "option2"] or []
   }
@@ -134,4 +134,10 @@ You must output a JSON Array of objects.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
 - Regardless of the input language (Korean or English), classify it uniformly based on meaning.
 - The `reasoning` field MUST be written in Korean.
+- **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
+  - “{특정 키워드/문구}” → {의도/증상} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
+  - {분류 로직}: 왜 이 부서로 분류했는지 단계별 설명 (예: 물품 요청이므로 하우스키핑 배정)
+  - {맥락 활용}: 과거 대화나 요청 이력에서 어떤 정보를 참조하여 판단했는지 설명
+  - {특이사항}: 긴급도 판단 근거, 누락된 필수 정보 등 구체적 분석 내용
+  - Confidence: {confidence_value} (점수 부여 이유 요약)
 """.strip()

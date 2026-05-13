@@ -1,0 +1,11 @@
+INFO:     Started server process [164092]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
+[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
+[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
+[Analyze] 응답: {'guest_reply': '에어컨 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '에어컨 작동 불량', 'domain_code': 'FACILITY', 'priority': 'NORMAL', 'entities': {'intent': 'AC_REPAIR', 'equipment': '에어컨', 'symptom': '작동 불량', 'location': '객실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “에어컨이 망가졌어요” → equipment: 에어컨, symptom: 작동 불량 감지\n• 분류 로직: 에어컨 고장 신고이므로 FACILITY 도메인 내 AC_REPAIR 인텐트로 분류\n• 맥락 활용: 이전 대화 맥락은 변기 파손이었으나, 현재 요청은 에어컨으로 명확히 변경되었으므로 현재 요청에 집중\n• 특이사항: 긴급 상황(안전 위협, 대규모 누수 등)에 해당하지 않으므로 NORMAL 우선순위로 판단. 위치 정보가 명시되지 않아 기본값인 '객실'로 설정\n• Confidence: 1.0", 'action_type': 'ADD'}
+
+INFO:     127.0.0.1:47078 - "POST /analyze HTTP/1.1" 200 OK
