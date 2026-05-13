@@ -17,9 +17,10 @@ export interface ChatPanelProps {
   onStatusChange?: (id: number, newStatus: string) => Promise<void>;
   autoComplete?: boolean;
   onClose?: () => void;
+  initialMessage?: string;
 }
 
-export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose }: ChatPanelProps) {
+export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -47,20 +48,36 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           content: msg.content,
         }));
 
-        setMessages(mapped);
+        // 데이터가 없으면 데모용 더미 데이터 삽입
+        if (mapped.length === 0 && initialMessage) {
+          setMessages([
+            { id: 'dummy-1', variant: 'received', senderType: 'GUEST', content: initialMessage },
+            { id: 'dummy-2', variant: 'sent', senderType: 'AI', content: '요청이 접수되었습니다. 프론트데스크 직원이 곧 확인 후 안내해 드리겠습니다.' },
+          ]);
+        } else {
+          setMessages(mapped);
+        }
 
         if (autoComplete) {
           handleCompleteConsultation();
         }
       } catch {
-        setMessages([]);
+        // 에러 발생 시에도 데모용 더미 데이터 삽입
+        if (initialMessage) {
+          setMessages([
+            { id: 'dummy-1', variant: 'received', senderType: 'GUEST', content: initialMessage },
+            { id: 'dummy-2', variant: 'sent', senderType: 'AI', content: '요청이 접수되었습니다. 프론트데스크 직원이 곧 확인 후 안내해 드리겠습니다.' },
+          ]);
+        } else {
+          setMessages([]);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchMessages();
-  }, [roomNumber, autoComplete]);
+  }, [roomNumber, autoComplete, initialMessage]);
 
   // WebSocket 구독: 고객 메시지 및 AI 응답 실시간 수신
   useEffect(() => {
@@ -237,15 +254,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <h3 className={styles.title}>고객 상담</h3>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {!isReadOnly && (
+            {!isReadOnly && status === 'IN_PROGRESS' && (
               <Button variant="primary" onClick={handleCompleteConsultation} style={{ padding: '6px 12px', fontSize: '13px' }}>
                 상담 완료
               </Button>
-            )}
-            {onClose && (
-              <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
-                <CancelIcon width={24} height={24} color="var(--color-gray-500)" />
-              </button>
             )}
           </div>
         </div>
@@ -264,7 +276,20 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           )}
         </div>
 
-        {!isReadOnly && (
+        {!isReadOnly && status === 'PENDING' && (
+          <div className={styles.footer} style={{ justifyContent: 'center' }}>
+            <Button 
+              variant="primary" 
+              size="large"
+              fullWidth
+              onClick={() => onStatusChange && onStatusChange(requestId, 'IN_PROGRESS')} 
+            >
+              상담 시작하기
+            </Button>
+          </div>
+        )}
+
+        {!isReadOnly && status !== 'PENDING' && (
           <div className={styles.footer}>
             <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
           </div>

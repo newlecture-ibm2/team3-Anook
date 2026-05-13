@@ -1,17 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useUiStore } from '@/stores/useUiStore';
 import styles from './Header.module.css';
+import HeaderNotification from './HeaderNotification/HeaderNotification';
+import Button from '@/components/ui/Button/Button';
 
 interface HeaderProps {
   className?: string;
+  role?: 'admin' | 'staff' | 'guest';
 }
 
-export default function Header({ className = '' }: HeaderProps) {
-  const { toggleSidebar } = useUiStore();
+export default function Header({ className = '', role = 'admin' }: HeaderProps) {
+  const { toggleSidebar, openModal } = useUiStore();
 
   return (
     <header className={`${styles.header} ${className}`.trim()}>
@@ -30,7 +33,17 @@ export default function Header({ className = '' }: HeaderProps) {
         </Link>
       </div>
 
-      <div className={styles.right}>
+      <div className={styles.right} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16)' }}>
+        {role === 'admin' && (
+          <>
+            <Button variant="primary" onClick={() => openModal('createRequest')} style={{ padding: '6px 12px', fontSize: '13px' }}>
+              + 요청 생성
+            </Button>
+            <Suspense fallback={<div style={{ width: 24, height: 24 }}></div>}>
+              <HeaderNotification />
+            </Suspense>
+          </>
+        )}
         <LanguageToggle />
       </div>
     </header>

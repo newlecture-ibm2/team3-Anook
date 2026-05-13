@@ -18,7 +18,7 @@ export default function DashboardLayout({ children, role = 'admin' }: DashboardL
   return (
     <div className={styles.layout}>
       <GlobalEmergencyListener />
-      <Header className={styles.header} />
+      <Header className={styles.header} role={role} />
       
       <div className={styles.body}>
         {isSidebarOpen && (
