@@ -754,7 +754,20 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
             
-        
+        # STEP 3-f: FRONT_ESCALATION → 명시적인 프론트 데스크 연결 요청
+        if primary.route_type == "FRONT_ESCALATION":
+            response = {
+                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "summary": "프론트 연결 요청 (고객 확인)",
+                "domain_code": "FRONT",
+                "priority": "NORMAL",
+                "entities": {"intent": "ESCALATION"},
+                "confidence": 0.0,
+            }
+            print(f"[Analyze] 🚨 FRONT_ESCALATION 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
 
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
