@@ -1,88 +1,18 @@
-INFO:     Started server process [164092]
+INFO:     Started server process [219095]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '에어컨 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '에어컨 작동 불량', 'domain_code': 'FACILITY', 'priority': 'NORMAL', 'entities': {'intent': 'AC_REPAIR', 'equipment': '에어컨', 'symptom': '작동 불량', 'location': '객실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “에어컨이 망가졌어요” → equipment: 에어컨, symptom: 작동 불량 감지\n• 분류 로직: 에어컨 고장 신고이므로 FACILITY 도메인 내 AC_REPAIR 인텐트로 분류\n• 맥락 활용: 이전 대화 맥락은 변기 파손이었으나, 현재 요청은 에어컨으로 명확히 변경되었으므로 현재 요청에 집중\n• 특이사항: 긴급 상황(안전 위협, 대규모 누수 등)에 해당하지 않으므로 NORMAL 우선순위로 판단. 위치 정보가 명시되지 않아 기본값인 '객실'로 설정\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:47078 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 0.95}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '부서졌어요', 'location': '화장실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': '• "변기가 부서졌어요" → equipment: "변기", symptom: "부서졌어요" 감지\n• 분류 로직: \'변기\'는 배관 및 위생 설비에 해당하므로 PLUMBING 의도로 분류했습니다. \'부서졌어요\'는 객실 이용에 심각한 불편을 초래할 수 있는 긴급 증상으로 판단했습니다.\n• 맥락 활용: 이전 대화 맥락에서 변기 파손, 에어컨 고장 등 시설 관련 요청이 있었으며, 이번 요청도 명확한 시설 문제로 판단했습니다.\n• 특이사항: 변기 파손은 객실 이용에 필수적인 시설 문제이므로 URGENT 우선순위로 설정했습니다. 변기는 항상 화장실에 위치하므로 location을 \'화장실\'로 특정했습니다.\n• Confidence: 1.0', 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:44764 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 0.9}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '에어컨 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '에어컨 고장', 'domain_code': 'FACILITY', 'priority': 'NORMAL', 'entities': {'intent': 'AC_REPAIR', 'equipment': '에어컨', 'symptom': '고장', 'location': '객실'}, 'confidence': 0.95, 'missing_fields': [], 'clarification_options': [], 'reasoning': '• “에어컨이 망가졌어요” → equipment: "에어컨", symptom: "고장" 감지.\n• 분류 로직: 에어컨 관련 문제이므로 AC_REPAIR 의도로 분류.\n• 맥락 활용: 이전 대화 맥락에서 에어컨 고장 접수 이력이 있었으나, 현재 요청은 독립적인 새로운 요청으로 처리.\n• 특이사항: 위치 정보가 명시되지 않아 "객실"로 기본 설정. 긴급 상황으로 판단할 근거 없음.\n• Confidence: 0.95', 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:34486 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '부서졌어요', 'location': '객실'}, 'confidence': 0.95, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• '변기가 부서졌어요' → equipment: '변기', symptom: '부서졌어요' 감지\n• 분류 로직: '변기'는 배관 설비에 해당하므로 PLUMBING 의도로 분류\n• 맥락 활용: 이전 대화에서 '변기가 부서졌어요'와 유사한 요청이 있었고, 이를 통해 '변기' 관련 문제는 시설팀 업무로 처리하는 것이 확인됨.\n• 특이사항: 변기 문제는 객실 이용이 불가능한 긴급 상황으로 판단하여 priority를 URGENT로 설정. 위치 정보는 객실 내 특정 위치가 언급되지 않아 '객실'로 기본값 설정.\n• Confidence: 0.95", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:40210 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 0.9}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '부서짐', 'location': '객실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• '변기가 부서졌어요' → equipment: 변기, symptom: 부서짐 감지\n• 분류 로직: 변기 관련 문제는 'PLUMBING' intent로 분류하며, 객실 이용에 필수적인 시설이므로 'URGENT' 우선순위로 판단.\n• 맥락 활용: 이전 대화에서 변기 고장 접수 이력이 있었으나, 현재 요청은 독립적인 새로운 요청으로 처리.\n• 특이사항: 변기 고장은 객실 이용에 심각한 불편을 초래하므로 긴급 상황으로 판단. 위치 정보가 명시되지 않아 '객실'로 기본 설정.\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:38156 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'HK', 'confidence': 0.9}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ HK 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '네, 물 1개 요청을 하우스키핑 팀에 전달하겠습니다.', 'summary': '물 1개 요청', 'domain_code': 'HK', 'priority': 'NORMAL', 'entities': {'intent': 'ITEM_REQUEST', 'items': [{'item': 'WATER', 'count': 1}], 'tasks': [], 'is_contactless': False, 'target_time': ''}, 'confidence': 0.95, 'missing_fields': [], 'clarification_options': [], 'reasoning': '• “물 하나 주세요” → 물품 요청 (WATER) 감지\n• 분류 로직: 물품 요청은 하우스키핑(HK) 업무로 분류됩니다.\n• 맥락 활용: 이전 대화는 시설팀 관련이었고, 현재 요청은 독립적인 HK 요청입니다.\n• 특이사항: 수량(1개)이 명확하게 제시되어 추가 확인이 필요 없습니다.\n• Confidence: 0.95', 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:38060 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 파손 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '파손됨', 'location': '화장실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “변기가 파손됐어요” → equipment: 변기, symptom: 파손됨 감지\n• 분류 로직: '변기'는 시설관리(FACILITY) 업무 중 'PLUMBING'에 해당합니다. 변기 파손은 객실 이용에 심각한 불편을 초래하고 누수 등의 추가 피해를 유발할 수 있으므로 'URGENT'로 분류했습니다.\n• 맥락 활용: 이전 대화에서 변기 관련 요청이 있었으나, 현재 요청은 '파손'이라는 명확한 증상을 포함하고 있어 별도의 맥락 참조 없이 처리했습니다.\n• 특이사항: 변기의 특성상 위치는 '화장실'로 추정했습니다. 파손은 긴급 상황으로 판단하여 'URGENT' 우선순위를 부여했습니다.\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:54556 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 0.9}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '에어컨 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '에어컨 고장', 'domain_code': 'FACILITY', 'priority': 'NORMAL', 'entities': {'intent': 'AC_REPAIR', 'equipment': '에어컨', 'symptom': '고장', 'location': '객실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “에어컨 고장났어요” → equipment: “에어컨”, symptom: “고장” 감지\n• 분류 로직: 에어컨 관련 문제이므로 AC_REPAIR 인텐트로 분류\n• 맥락 활용: 이전 대화 맥락에서 시설 관련 요청을 처리했으므로, 이번 요청도 시설 관리(FACILITY) 업무로 분류\n• 특이사항: 긴급 상황(안전, 대규모 피해)에 해당하지 않아 NORMAL 우선순위로 판단. 위치 정보가 명시되지 않아 '객실'로 기본 설정\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:45282 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 파손 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '파손', 'location': '객실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “변기가 부서졌어요” → equipment: 변기, symptom: 파손 감지\n• 분류 로직: 변기 관련 문제이므로 PLUMBING 의도로 분류\n• 맥락 활용: 이전 대화 맥락에서 '변기가 파손됐어요'와 유사한 요청이 있었고, 이를 시설팀으로 전달했음을 확인. 현재 요청도 동일하게 처리\n• 특이사항: 변기 파손은 객실 이용에 심각한 불편을 초래하므로 priority를 URGENT로 설정. 위치는 명시되지 않아 객실로 기본 설정\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:45946 - "POST /analyze HTTP/1.1" 200 OK
-
-[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 0.95}]
-[Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
-[Analyze] 응답: {'guest_reply': '변기 파손 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '깨짐', 'location': '화장실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• '변기가 깨졌어요' → equipment: '변기', symptom: '깨짐' 감지\n• 분류 로직: 변기 관련 문제는 'PLUMBING' 인텐트로 분류하며, 파손은 객실 이용에 심각한 불편을 초래하므로 'URGENT' 우선순위로 판단.\n• 맥락 활용: 이전 대화에서 '변기가 부서졌어요'와 유사한 요청이 있었으며, 동일하게 처리.\n• 특이사항: 변기 파손은 위생 및 안전상 긴급한 조치가 필요하여 'URGENT'로 설정. 위치는 변기의 특성상 '화장실'로 추론.\n• Confidence: 1.0", 'action_type': 'ADD'}
-
-INFO:     127.0.0.1:54184 - "POST /analyze HTTP/1.1" 200 OK
-
 [Analyze] 🔀 라우터 결과: [{'route_type': 'FRONT_ESCALATION', 'domain': 'EMERGENCY', 'confidence': 1.0}]
 [Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] 🚨 FRONT_ESCALATION 응답
-[Analyze] 응답: {'guest_reply': '제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!', 'summary': '프론트 연결 요청 (고객 확인)', 'domain_code': 'FRONT', 'priority': 'NORMAL', 'entities': {'intent': 'ESCALATION'}, 'confidence': 0.0, 'reasoning': '• “연기가 나요” 키워드를 통해 화재 가능성이 있는 긴급 상황임을 감지.\n• 분류 로직: 안전 관련 문제이므로 FRONT_ESCALATION으로 분류하고 EMERGENCY 도메인 및 URGENT 우선순위 배정.\n• 맥락 활용: 과거 대화는 시설 문제였으나, 현재 요청은 완전히 새로운 긴급 상황이므로 이전 맥락과 독립적으로 판단.\n• 특이사항: 생명 및 안전과 직결된 문제이므로 최우선으로 처리해야 함.\n• Confidence: 1.0 (명확한 긴급 상황)'}
+[Analyze] ✅ EMERGENCY 에이전트 병렬 처리 완료
+[Analyze] 응답: {'guest_reply': '객실 내 화재가 발생했군요! 즉시 소방 및 안전팀이 출동하겠습니다. 침착하게 비상 대피로를 통해 대피해 주십시오.', 'summary': '객실 내 화재 발생 신고', 'domain_code': 'EMERGENCY', 'priority': 'EMERGENCY', 'entities': {'intent': 'FIRE', 'details': '방에서 불이 남'}, 'confidence': 0.99, 'missing_fields': [], 'clarification_options': [], 'reasoning': '• "방에서 불 나요" → 화재 발생 감지\n• 분류 로직: 생명과 안전에 직결되는 긴급 상황이므로 FRONT_ESCALATION, EMERGENCY 도메인으로 분류\n• 맥락 활용: 과거 대화에서 동일한 요청에 대해 EMERGENCY로 처리한 이력이 있음. 반복된 요청이지만, 긴급 상황이므로 매번 새로운 티켓을 생성해야 함.\n• 특이사항: 최우선 처리 필요 (URGENT)\n• Confidence: 1.0 (명확한 긴급 상황)', 'action_type': 'ADD'}
 
-INFO:     127.0.0.1:58286 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57190 - "POST /analyze HTTP/1.1" 200 OK
 
-[Analyze] 🔀 라우터 결과: [{'route_type': 'FRONT_ESCALATION', 'domain': 'EMERGENCY', 'confidence': 1.0}]
+[Analyze] 🔀 라우터 결과: [{'route_type': 'DEPARTMENT', 'domain': 'FACILITY', 'confidence': 1.0}]
 [Analyze] ✅ Progress 이벤트 전송 성공 (status: 200)
-[Analyze] 🚨 FRONT_ESCALATION 응답
-[Analyze] 응답: {'guest_reply': '제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!', 'summary': '프론트 연결 요청 (고객 확인)', 'domain_code': 'FRONT', 'priority': 'NORMAL', 'entities': {'intent': 'ESCALATION'}, 'confidence': 0.0, 'reasoning': "• “불 나요” → 화재 발생 감지\n• 분류 로직: 생명과 안전에 직결되는 긴급 상황이므로 FRONT_ESCALATION 및 EMERGENCY 도메인으로 분류\n• 맥락 활용: 이전 대화에서 '방에서 연기가 나요'로 이미 프런트 에스컬레이션이 진행되었으나, 현재 요청은 더 명확한 '불' 키워드로 긴급 상황을 재확인 및 강조함. 새로운 긴급 상황으로 판단하여 처리.\n• 특이사항: 최우선 순위로 처리해야 하는 긴급 상황.\n• Confidence: 1.0 (명확한 긴급 상황)"}
+[Analyze] ✅ FACILITY 에이전트 병렬 처리 완료
+[Analyze] 응답: {'guest_reply': '변기 수리를 위해 시설팀에 내용을 전달하겠습니다.', 'summary': '변기 파손', 'domain_code': 'FACILITY', 'priority': 'URGENT', 'entities': {'intent': 'PLUMBING', 'equipment': '변기', 'symptom': '부서짐', 'location': '화장실'}, 'confidence': 1.0, 'missing_fields': [], 'clarification_options': [], 'reasoning': "• “변기가 부서졌어요” → equipment: “변기”, symptom: “부서짐” 감지.\n• 분류 로직: 변기 파손은 시설 관리(FACILITY) 영역의 배관(PLUMBING) 문제로 분류.\n• 맥락 활용: 객실 707호에서 발생한 문제임을 확인.\n• 특이사항: 변기 파손은 화장실 사용에 심각한 지장을 주므로 priority: URGENT로 판단. 위치는 변기가 있는 '화장실'로 특정.\n• Confidence: 1.0", 'action_type': 'ADD'}
 
-INFO:     127.0.0.1:39302 - "POST /analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50110 - "POST /analyze HTTP/1.1" 200 OK

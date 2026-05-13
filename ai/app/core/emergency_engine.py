@@ -86,8 +86,8 @@ async def run_emergency_agent(user_message: str, room_no: str, chat_history: lis
         raw["room_no"] = room_no
     if "domain" not in raw:
         raw["domain"] = "EMERGENCY"
-    if "priority" not in raw or raw.get("priority") != "URGENT":
-        raw["priority"] = "URGENT"
+    if "priority" not in raw or raw.get("priority") != "EMERGENCY":
+        raw["priority"] = "EMERGENCY"
         
     try:
         result = HotelRequestSchema(**raw)
@@ -98,7 +98,7 @@ async def run_emergency_agent(user_message: str, room_no: str, chat_history: lis
             "guest_reply": "긴급 상황이 접수되었습니다. 즉시 직원이 출동하겠습니다.",
             "summary": "긴급 상황 접수",
             "domain_code": "EMERGENCY",
-            "priority": "URGENT",
+            "priority": "EMERGENCY",
             "entities": {"intent": "OTHER"},
             "confidence": 0.9,
             "missing_fields": [],
@@ -109,7 +109,7 @@ async def run_emergency_agent(user_message: str, room_no: str, chat_history: lis
         "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
         "domain_code": "EMERGENCY",
-        "priority": "URGENT",
+        "priority": "EMERGENCY",
         "entities": result.entities,
         "confidence": result.confidence,
         "missing_fields": getattr(result, "missing_fields", []),

@@ -393,7 +393,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ──────────────────────────────────────────────
     for primary in router_results:
         # STEP 3-a: TASK → 부서로 라우팅
-        if primary.route_type == "DEPARTMENT" and primary.domain:
+        if primary.route_type in ("DEPARTMENT", "FRONT_ESCALATION") and primary.domain:
             domain = primary.domain
             
             # 🚨 중복된 부서(Domain)는 한 번만 호출하도록 처리
