@@ -103,6 +103,10 @@ STATIC_REPLIES = {
     "FALLBACK_FAILURE": {
         "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
         "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'."
+    },
+    "NEED_MORE_INFO": {
+        "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
+        "en": "Would you like me to connect you to the front desk for more detailed information?"
     }
 }
 
@@ -645,8 +649,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
                     info_prompt = (
                         f"고객 질문: {request.text}\n\n"
-                        f"아래 제공된 [호텔 지식]만을 바탕으로, 반드시 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
-                        f"만약 [호텔 지식]에 고객의 질문에 대한 명확한 답이 없다면, 절대 유추하거나 지어내지 말고 "
+                        f"아래 제공된 [호텔 지식]은 고객 질문에 대해 검색된 공식 답변입니다. 반드시 이 지식을 활용하여 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
+                        f"고객이 한 번 더 묻거나 구체적으로 묻더라도, 제공된 [호텔 지식]을 명확한 답으로 간주하고 답변을 작성하세요. "
+                        f"그리고 답변 마지막에 반드시 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장을 덧붙이세요.\n"
+                        f"만약 [호텔 지식]이 고객의 질문과 아예 무관하다면, 절대 유추하거나 지어내지 말고 "
                         f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
                         f"[호텔 지식]\n{knowledge}"
                     )
@@ -672,6 +678,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
 
             info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
+            need_more_info_msg = _get_static_reply("NEED_MORE_INFO", request.language)
             if guest_reply == info_not_found_msg:
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
@@ -680,6 +687,16 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {"intent": "ESCALATION"},
                     "confidence": 0.0,
+                }
+            elif need_more_info_msg in guest_reply:
+                response = {
+                    "guest_reply": guest_reply,
+                    "summary": "추가 정보 필요 (프론트 연결 제안)",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                    "clarification_options": ["네", "아니요"]
                 }
             else:
                 response = {
