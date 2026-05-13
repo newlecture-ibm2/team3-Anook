@@ -32,16 +32,14 @@ services:
     networks:
       - Anook-network
 
-  # Redis (이미지 임시 캐싱 및 세션용)
+  # 2-1. Redis (이미지 임시 캐싱 및 세션용)
   redis:
     image: redis:alpine
     container_name: anook-redis
-    ports:
-      - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis-data:/data
-    restart: unless-stopped
+    restart: on-failure
     networks:
       - Anook-network
 
@@ -58,7 +56,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - AI_SERVER_URL=http://ai:8000
-      - SPRING_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_HOST=redis
     ports:
       - "127.0.0.1:8080:8080"  # 호스트 Nginx만 접근 가능 (외부 차단)
     depends_on:

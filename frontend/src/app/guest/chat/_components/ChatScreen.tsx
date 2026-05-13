@@ -190,7 +190,7 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
           }
           
           return (
-            <ChatBubble key={msg.id} variant={msg.variant} isLatest={isLatest}>
+            <ChatBubble key={msg.id} variant={msg.variant} isLatest={isLatest} imageUrl={msg.imageUrl}>
               {msg.content}
             </ChatBubble>
           );
