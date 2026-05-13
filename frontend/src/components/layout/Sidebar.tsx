@@ -24,7 +24,8 @@ import {
   Monitor,
   Layers,
   FileSearch,
-  FileText
+  FileText,
+  LogOut
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -137,7 +138,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       className={`${styles.sidebar} ${className}`.trim()}
       style={{ height: 'calc(100vh - 65px)', overflowY: 'auto' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-16) 0', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-16) 0', width: '100%', flex: 1 }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
             {group.category && (
@@ -169,6 +170,20 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ width: '100%', padding: 'var(--space-16) 0', borderTop: '1px solid var(--color-gray-200)', marginTop: 'auto' }}>
+        <button
+          onClick={async () => {
+            await fetch('/api/auth/session', { method: 'DELETE' });
+            window.location.href = '/login';
+          }}
+          className={`${styles.item} ${styles.default}`}
+          style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
+        >
+          <LogOut className={styles.icon} />
+          <span className={styles.label}>로그아웃</span>
+        </button>
       </div>
     </aside>
   );

@@ -73,16 +73,16 @@ STATIC_REPLIES = {
         "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
     },
     "CANCEL": {
-        "ko": "네, 방금 말씀하신 요청은 바로 취소해 드릴게요.",
-        "en": "Sure, I'll go ahead and cancel your most recent request."
+        "ko": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 경우 담당 부서 확인 후 취소됩니다.",
+        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation."
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
         "en": "I will check the status of your most recent request right now."
     },
     "TARGETED_CANCEL": {
-        "ko": "네, 지목하신 요청을 취소 처리하겠습니다.",
-        "en": "Okay, I will cancel the specific request you mentioned."
+        "ko": "지목하신 요청의 취소를 진행합니다. 대기 중인 건은 즉시 취소되며, 처리 중인 건은 부서 확인 후 취소됩니다.",
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation."
     },
     "TASK_WAIT": {
         "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
@@ -103,6 +103,10 @@ STATIC_REPLIES = {
     "FALLBACK_FAILURE": {
         "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
         "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'."
+    },
+    "NEED_MORE_INFO": {
+        "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
+        "en": "Would you like me to connect you to the front desk for more detailed information?"
     }
 }
 
@@ -499,10 +503,12 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     chat_history=request.chat_history,
                     images=request.images
                 )
+                # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
+                is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
                 response = {
                     "guest_reply": agent_result.get("guest_reply", _get_static_reply("CLARIFICATION", request.language)),
                     "summary": agent_result.get("summary", "추가 확인 필요"),
-                    "domain_code": None,
+                    "domain_code": agent_result.get("domain_code") if is_escalation else None,
                     "priority": agent_result.get("priority", "NORMAL"),
                     "entities": agent_result.get("entities", {}),
                     "confidence": agent_result.get("confidence", primary.confidence),
@@ -652,8 +658,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
                     info_prompt = (
                         f"고객 질문: {request.text}\n\n"
-                        f"아래 제공된 [호텔 지식]만을 바탕으로, 반드시 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
-                        f"만약 [호텔 지식]에 고객의 질문에 대한 명확한 답이 없다면, 절대 유추하거나 지어내지 말고 "
+                        f"아래 제공된 [호텔 지식]은 고객 질문에 대해 검색된 공식 답변입니다. 반드시 이 지식을 활용하여 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
+                        f"고객이 한 번 더 묻거나 구체적으로 묻더라도, 제공된 [호텔 지식]을 명확한 답으로 간주하고 답변을 작성하세요. "
+                        f"그리고 답변 마지막에 반드시 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장을 덧붙이세요.\n"
+                        f"만약 [호텔 지식]이 고객의 질문과 아예 무관하다면, 절대 유추하거나 지어내지 말고 "
                         f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
                         f"[호텔 지식]\n{knowledge}"
                     )
@@ -679,6 +687,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
 
             info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
+            need_more_info_msg = _get_static_reply("NEED_MORE_INFO", request.language)
             if guest_reply == info_not_found_msg:
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
@@ -687,6 +696,16 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {"intent": "ESCALATION"},
                     "confidence": 0.0,
+                }
+            elif need_more_info_msg in guest_reply:
+                response = {
+                    "guest_reply": guest_reply,
+                    "summary": "추가 정보 필요 (프론트 연결 제안)",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                    "clarification_options": ["네", "아니요"]
                 }
             else:
                 response = {
@@ -706,11 +725,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-e: CANCEL → 요청 취소
         if primary.route_type == "CANCEL":
             text_lower = request.text.lower()
-            is_all = any(word in text_lower for word in ["전부", "모두", "다 취소", "전체", "all", "everything"])
+            is_all = any(word in text_lower for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything"])
             
             if is_all:
                 response = {
-                    "guest_reply": "네, 진행 중인 모든 요청을 취소 처리하겠습니다.",
+                    "guest_reply": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다.",
                     "summary": "전체 요청 취소",
                     "domain_code": None,
                     "priority": "NORMAL",
@@ -740,7 +759,36 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
             
-        
+        # STEP 3-f: FRONT_ESCALATION → 명시적인 프론트 데스크 연결 요청
+        if primary.route_type == "FRONT_ESCALATION":
+            response = {
+                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "summary": "프론트 연결 요청 (고객 확인)",
+                "domain_code": "FRONT",
+                "priority": "NORMAL",
+                "entities": {"intent": "ESCALATION"},
+                "confidence": 0.0,
+            }
+            print(f"[Analyze] 🚨 FRONT_ESCALATION 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+
+        # STEP 3-g: STATUS_CHECK → 진행 상태 확인
+        if primary.mode == "STATUS_CHECK":
+            response = {
+                "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
+                "summary": "요청 진행 상태 확인",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {"action": "STATUS_CHECK"},
+                "confidence": primary.confidence,
+                "action": "STATUS_CHECK",
+            }
+            print(f"[Analyze] 🔍 STATUS_CHECK 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
 
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
@@ -781,10 +829,20 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]
                 
-            if hasattr(primary, 'action_type'):
+            # 우선순위: 1. 에이전트 entities, 2. 에이전트 루트, 3. 라우터 결과
+            if "action_type" in agent_result.get("entities", {}):
+                response["action_type"] = agent_result["entities"]["action_type"]
+            elif "action_type" in agent_result:
+                response["action_type"] = agent_result["action_type"]
+            elif hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
+
             # [Keyword Targeting] 변경 대상 키워드 전달
-            if hasattr(primary, 'target_keyword') and primary.target_keyword:
+            if "target_keyword" in agent_result.get("entities", {}):
+                response["target_keyword"] = agent_result["entities"]["target_keyword"]
+            elif "target_keyword" in agent_result:
+                response["target_keyword"] = agent_result["target_keyword"]
+            elif hasattr(primary, 'target_keyword') and primary.target_keyword:
                 response["target_keyword"] = primary.target_keyword
                 
             print(f"[Analyze] ✅ {domain} 에이전트 병렬 처리 완료")
