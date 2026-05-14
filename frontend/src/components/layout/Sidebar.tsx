@@ -25,7 +25,8 @@ import {
   Layers,
   FileSearch,
   FileText,
-  LogOut
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -101,6 +102,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       items: [
         { label: t.adminPage.sidebar.menus.allRequests, href: '/admin/all-requests', icon: Layers },
         { label: t.adminPage.sidebar.menus.chatHistory, href: '/admin/chat-history', icon: History },
+        { label: '고객 피드백', href: '/admin/voc', icon: MessageCircle },
       ]
     },
     {
