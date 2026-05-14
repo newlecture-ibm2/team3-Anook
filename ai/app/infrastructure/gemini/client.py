@@ -99,7 +99,18 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
     })
     
     try:
-        return json.loads(raw_text)
+        parsed = json.loads(raw_text)
+        
+        # [추가] reasoning 필드가 리스트로 올 경우 문자열로 변환 (모든 에이전트 공통)
+        # Gemini Vision의 경우 bullet point가 리스트로 반환되어 줄바꿈이 무시되는 현상 방지
+        if isinstance(parsed, dict) and isinstance(parsed.get("reasoning"), list):
+            parsed["reasoning"] = "\n".join(parsed["reasoning"])
+        elif isinstance(parsed, list):
+            for item in parsed:
+                if isinstance(item, dict) and isinstance(item.get("reasoning"), list):
+                    item["reasoning"] = "\n".join(item["reasoning"])
+                    
+        return parsed
     except json.JSONDecodeError as e:
         raise ValueError(
             f"Gemini 응답이 유효한 JSON이 아닙니다.\n"
