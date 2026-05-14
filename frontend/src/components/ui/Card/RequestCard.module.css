@@ -1,176 +1,113 @@
+/* src/components/ui/card/RequestCard.module.css */
 .requestCard {
   display: flex;
-  align-items: stretch;
-  padding: var(--space-16) var(--space-24);
-  gap: var(--space-16);
-  border: none;
-  border-bottom: 1px solid var(--color-gray-200);
-  border-radius: 0;
-  background: transparent;
-  transition: background-color 0.15s, border-color 0.15s;
-  position: relative;
+  align-items: flex-start;
+  padding: var(--space-16);
+  gap: var(--space-24);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  transition: border-color var(--transition);
 }
 
 .requestCard:hover {
-  background-color: var(--color-gray-50);
-}
-
-.requestCardSelected {
-  background-color: var(--color-gray-100);
-}
-
-.requestCard.clickable {
-  cursor: pointer;
+  border-color: var(--color-gray-300);
 }
 
 .roomBox {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: var(--color-gray-100);
-  border-radius: 50%;
+  width: var(--space-80);
+  height: var(--space-80);
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-md);
   flex-shrink: 0;
+}
+
+.roomType {
+  font: var(--text-caption-medium);
+  color: var(--color-gray-500);
 }
 
 .roomNumber {
   font: var(--text-h2-bold);
-  color: var(--color-gray-800);
+  color: var(--color-gray-900);
 }
 
 .contentSection {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-width: 0;
-  gap: var(--space-2);
+  gap: var(--space-8);
 }
 
 .contentHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: var(--space-8);
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  min-width: 0;
-}
-
-.roomType {
-  font: var(--text-label-bold);
-  color: var(--color-gray-700);
-  white-space: nowrap;
 }
 
 .timeText {
   font: var(--text-caption-medium);
   color: var(--color-gray-500);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.contentBody {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .title {
   font: var(--text-h3-bold);
   color: var(--color-gray-900);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.description {
-  font: var(--text-body-regular);
-  color: var(--color-gray-500);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 
 .actionSection {
   display: flex;
+  flex-direction: column;
   gap: var(--space-8);
-  margin-top: var(--space-8);
-}
-
-.actionButton {
-  flex: 1;
-  padding: var(--space-8);
-  font-size: 13px;
+  flex-shrink: 0;
+  width: 120px;
 }
 
 .requestCardWarning {
   border-color: var(--color-tag-background-red);
-  background-color: var(--color-tag-background-red);
 }
 
-.requestCardWarning .roomBox {
+.actionSectionWarning {
+  align-self: flex-end;
+}
+
+.actionSectionSingle {
+  align-self: stretch;
+  justify-content: flex-end;
+}
+
+.roomBoxWarning {
   background: var(--color-error);
+  border-color: var(--color-error);
 }
 
-.requestCardWarning .roomNumber {
+.textWhite {
   color: var(--color-white);
 }
 
-.rightSection {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-  padding-left: var(--space-8);
-  gap: var(--space-4);
-  padding-top: var(--space-2);
+
+.description {
+  font: var(--text-body-regular);
+  color: var(--color-gray-500);
+  margin: var(--space-4) 0 0 0;
 }
 
-.redDot {
-  width: 10px;
-  height: 10px;
-  background-color: var(--color-error);
-  border-radius: 50%;
-  margin-top: 2px;
+.actionButton {
+  width: 100%;
+  padding: var(--space-8);
 }
 
-/* --------- Emergency Variant --------- */
-.requestCardEmergency {
-  background-color: var(--color-dept-emergency-bg);
-  border: none;
-  border-bottom: none;
-  border-radius: 0;
-  margin: 0;
-}
-
-.requestCardEmergency:hover {
-  background-color: #fde8e8;
-}
-
-.requestCardEmergency.requestCardSelected {
-  background-color: #fde8e8;
-  border: none;
-}
-
-.requestCardEmergency .roomBox {
-  background: var(--color-dept-emergency-border);
-}
-
-.requestCardEmergency .roomNumber {
-  color: var(--color-white);
-}
-
-.requestCardEmergency .title {
-  color: var(--color-dept-emergency-text);
-}
-
-.requestCardEmergency .description {
-  color: var(--color-dept-emergency-text);
-  opacity: 0.7;
+.clickable {
+  cursor: pointer;
 }

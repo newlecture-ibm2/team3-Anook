@@ -31,10 +31,9 @@ export interface ChatInputProps {
   isTyping?: boolean;
   onStop?: () => void;
   onUserTyping?: (isTyping: boolean) => void;
-  isStaff?: boolean;
 }
 
-export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isStaff }: ChatInputProps) {
+export default function ChatInput({ onSend, isTyping, onStop, onUserTyping }: ChatInputProps) {
   const [value, setValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -205,18 +204,16 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
         </div>
       )}
 
-      <div className={`${styles.wrapper} ${isStaff ? styles.staffWrapper : ''}`} ref={menuRef}>
-        {!isStaff && (
-          <button 
-            className={`${styles.attachButton} ${isMenuOpen ? styles.attachButtonActive : ''}`}
-            onClick={() => setIsMenuOpen(prev => !prev)}
-            aria-label="첨부 메뉴 열기"
-          >
-            <PlusIcon size={24} color="#b4a8c9" />
-          </button>
-        )}
+      <div className={styles.wrapper} ref={menuRef}>
+        <button 
+          className={`${styles.attachButton} ${isMenuOpen ? styles.attachButtonActive : ''}`}
+          onClick={() => setIsMenuOpen(prev => !prev)}
+          aria-label="첨부 메뉴 열기"
+        >
+          <PlusIcon size={24} color="#b4a8c9" />
+        </button>
 
-        {!isStaff && isMenuOpen && (
+        {isMenuOpen && (
           <div className={styles.attachMenu}>
             <button className={styles.menuItem} onClick={() => cameraInputRef.current?.click()}>
               <CameraIcon size={20} color="#b4a8c9" />
@@ -254,11 +251,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
           onBlur={() => setIsFocused(false)}
         />
         <div className={styles.actionGroup}>
-          {isStaff ? (
-            <button className={`${isStaff ? styles.staffIconButton : styles.iconButton} ${styles.sendButton}`} onClick={handleSend} aria-label="메시지 전송" style={{ opacity: value.trim() ? 1 : 0.5, cursor: value.trim() ? 'pointer' : 'default' }}>
-              <SendIcon size={24} color="#b4a8c9" />
-            </button>
-          ) : isTyping ? (
+          {isTyping ? (
             <button className={`${styles.iconButton} ${styles.stopButton}`} onClick={onStop} aria-label="답변 멈추기">
               <StopIcon size={24} color="#EF4444" />
             </button>

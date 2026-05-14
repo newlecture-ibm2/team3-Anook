@@ -129,7 +129,6 @@ export default function ChatHistoryPage() {
                   <ChatBubble
                     key={msg.id}
                     variant={msg.senderType === 'GUEST' ? 'received' : 'sent'}
-                    isFallback={msg.senderType === 'STAFF'}
                   >
                     {msg.content}
                   </ChatBubble>
