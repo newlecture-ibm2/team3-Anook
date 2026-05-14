@@ -40,7 +40,7 @@ class RouterOutputSchema(BaseModel):
     )
     priority: Optional[str] = Field(
         default="NORMAL",
-        description="긴급도 (NORMAL, HIGH)."
+        description="긴급도 (NORMAL, URGENT)."
     )
     clarification_question: Optional[str] = Field(
         default=None,

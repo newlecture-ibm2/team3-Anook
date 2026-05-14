@@ -16,6 +16,7 @@ class HotelRequestSchema(BaseModel):
     priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: NORMAL, URGENT)")
     status: str = Field(default="PENDING", description="티켓 상태 (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED 등)")
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")
+    reasoning: str = Field(default="", description="AI가 이 판단을 내린 논리적 근거 (디버깅/업무 상세용)")
     
     # --- [2. 챗봇 UX & 부서별 가변 데이터 (동적 데이터)] ---
     # [부서별 entities 작성 가이드]

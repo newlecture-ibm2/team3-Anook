@@ -181,7 +181,6 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
     
     final_responses = []
     
-    # ── [전역 무한 되묻기 방어 로직 (Global Clarification Counter)] ──
     for response in responses:
         guest_reply = response.get("guest_reply", "").strip()
         is_clarification = (response.get("domain_code") is None) and ("?" in guest_reply)
@@ -337,6 +336,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": 1.0,
+                "reasoning": f"• “{request.text}” → 지식 베이스(RAG) 100% 일치 정보 감지\n• 자동 답변 처리\n• Confidence: 1.0"
             }
             print(f"\n[Analyze] ✅ Exact Match (100% 일치)")
             print(f"[Analyze] 응답: {response}\n")
@@ -351,13 +351,20 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.75)
         if rag_results:
             best = rag_results[0]
+            rag_domain = best.get("domain_code")
+            
+            # COMMON 도메인이 아닌 경우(HK, FACILITY 등)는 답변과 동시에 태스크 생성이 필요하므로 domain_code 전달
+            # 단, domain_code가 None이 아니어야 백엔드에서 이벤트를 발행함.
+            final_domain = rag_domain if rag_domain != "COMMON" else None
+            
             response = {
                 "guest_reply": best["answer"],
-                "summary": "AI 자동 답변 (RAG)",
-                "domain_code": None,
-                "priority": "NORMAL",
+                "summary": best.get("summary") or _summarize_from_context(request.text, request.chat_history, best["question"]),
+                "domain_code": final_domain,
+                "priority": "URGENT" if rag_domain == "EMERGENCY" else "NORMAL",
                 "entities": {},
                 "confidence": best["similarity"],
+                "reasoning": f"• “{request.text}” → 지식 베이스(RAG) 유사 정보 감지 ({rag_domain})\n• 자동 답변 처리 및 부서 전달\n• Confidence: {best['similarity']:.2f}"
             }
             print(f"\n[Analyze] ✅ RAG 매칭 (유사도: {best['similarity']:.2f})")
             print(f"[Analyze] 응답: {response}\n")
@@ -411,12 +418,17 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     except Exception as e:
         print(f"[Analyze] ⚠️ Progress 이벤트 전송 실패 (무시): {e}")
 
+    # [추가] reasoning 필드가 리스트로 올 경우 문자열로 변환 (Pydantic 검증 유연성 확보)
+    for res in router_results:
+        if isinstance(getattr(res, 'reasoning', None), list):
+            res.reasoning = "\n".join(res.reasoning)
+
     # ──────────────────────────────────────────────
     # STEP 3: 모든 분류 결과 순회하며 에이전트 실행 (멀티 인텐트 처리)
     # ──────────────────────────────────────────────
     for primary in router_results:
         # STEP 3-a: TASK → 부서로 라우팅
-        if primary.route_type == "DEPARTMENT" and primary.domain:
+        if primary.route_type in ("DEPARTMENT", "FRONT_ESCALATION") and primary.domain:
             domain = primary.domain
             
             # 🚨 중복된 부서(Domain)는 한 번만 호출하도록 처리
@@ -444,6 +456,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
+                "reasoning": getattr(primary, 'reasoning', '알 수 없음'),
             }
             if hasattr(primary, 'action_type'):
                 response["action_type"] = primary.action_type
@@ -463,6 +476,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": "NORMAL",
                 "entities": {},
                 "confidence": primary.confidence,
+                "reasoning": getattr(primary, 'reasoning', '알 수 없음')
             }
             print(f"[Analyze] 💬 {primary.route_type} 응답")
             print(f"[Analyze] 응답: {response}\n")
@@ -519,7 +533,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
                         "missing_fields": agent_result.get("missing_fields", []),
-                        "clarification_options": agent_result.get("clarification_options", [])
+                        "clarification_options": agent_result.get("clarification_options", []),
+                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
                     }
                     print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
                     print(f"[Analyze] 응답: {response}\n")
@@ -546,7 +561,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "entities": agent_result.get("entities", {}),
                     "confidence": agent_result.get("confidence", primary.confidence),
                     "missing_fields": agent_result.get("missing_fields", []),
-                    "clarification_options": agent_result.get("clarification_options", [])
+                    "clarification_options": agent_result.get("clarification_options", []),
+                    "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
                 }
                 print(f"[Analyze] ❓ CLARIFICATION → FRONT 에이전트 위임 (부서 라우팅 구체화)")
                 print(f"[Analyze] 응답: {response}\n")
@@ -587,6 +603,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         "priority": "NORMAL",
                         "entities": agent_result.get("entities", {}) if isinstance(agent_result, dict) else {},
                         "confidence": agent_result.get("confidence", primary.confidence) if isinstance(agent_result, dict) else primary.confidence,
+                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음')) if isinstance(agent_result, dict) else getattr(primary, 'reasoning', '알 수 없음')
                     }
                     print(f"[Analyze] ℹ️ INFO+FB → FB 에이전트 위임 처리")
                     print(f"[Analyze] 응답: {response}\n")
@@ -737,6 +754,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {"intent": "ESCALATION"},
                     "confidence": 0.0,
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             elif need_more_info_msg in guest_reply:
                 response = {
@@ -746,7 +764,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {},
                     "confidence": primary.confidence,
-                    "clarification_options": ["네", "아니요"]
+                    "clarification_options": ["네", "아니요"],
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             else:
                 response = {
@@ -777,6 +796,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "entities": {},
                     "confidence": primary.confidence,
                     "action": "CANCEL_ALL_REQUESTS",
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             else:
                 reply_key = "TARGETED_CANCEL" if primary.domain else "CANCEL"
@@ -788,6 +808,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "entities": {"intent": "CANCEL"},
                     "confidence": primary.confidence,
                     "action": "CANCEL_REQUEST",
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
                 if hasattr(primary, 'action_type'):
                     response["action_type"] = primary.action_type
@@ -810,6 +831,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "priority": "NORMAL",
                 "entities": {"intent": "ESCALATION"},
                 "confidence": 0.0,
+                "reasoning": getattr(primary, 'reasoning', '알 수 없음')
             }
             print(f"[Analyze] 🚨 FRONT_ESCALATION 응답")
             print(f"[Analyze] 응답: {response}\n")
@@ -826,6 +848,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "entities": {"action": "STATUS_CHECK"},
                 "confidence": primary.confidence,
                 "action": "STATUS_CHECK",
+                "reasoning": getattr(primary, 'reasoning', '알 수 없음')
             }
             print(f"[Analyze] 🔍 STATUS_CHECK 응답")
             print(f"[Analyze] 응답: {response}\n")
@@ -866,7 +889,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "entities": final_entities,
                 "confidence": agent_confidence,
                 "missing_fields": agent_result.get("missing_fields", []),
-                "clarification_options": agent_result.get("clarification_options", [])
+                "clarification_options": agent_result.get("clarification_options", []),
+                "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
             }
             if "__ai_log_meta" in agent_result:
                 response["__ai_log_meta"] = agent_result["__ai_log_meta"]

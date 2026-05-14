@@ -77,7 +77,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                     detail.id(), detail.status(), detail.priority(), detail.departmentId(), detail.departmentName(),
                     detail.entities(), detail.rawText(), detail.summary(), detail.confidence(), detail.roomNo(),
                     detail.assignedStaffId(), detail.assignedStaffName(), detail.version(), detail.cancelRequested(),
-                    detail.cancelRequestedAt(), detail.createdAt(), detail.updatedAt(), imageUrl
+                    detail.cancelRequestedAt(), detail.createdAt(), detail.updatedAt(), imageUrl, detail.reasoning()
             );
         }
         return detail;
@@ -471,7 +471,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
                 r.getVersion(),
                 r.isCancelRequested(), r.getCancelRequestedAt(),
-                r.getCreatedAt(), r.getUpdatedAt(), null
+                r.getCreatedAt(), r.getUpdatedAt(), null, r.getReasoning()
         );
     }
 }

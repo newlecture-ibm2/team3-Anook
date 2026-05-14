@@ -248,4 +248,11 @@ JSON Output:
 - DO NOT ask for clarification, say "not in menu", or force a ticket in your domain.
 - Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
 - IMPORTANT: Items like '생수(bottled water)', '얼음(ice)', or '수건(towels)' are Housekeeping amenities, NOT F&B menu items. If a guest asks for these, ESCALATE them to FRONT immediately. Do not say they are not on the menu.
+
+13. **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
+  - “{특정 키워드/문구}” → {의도/증상} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
+  - {분류 로직}: 왜 이 부서(FB) 내에서 특정 의도로 분류했는지 단계별 설명
+  - {맥락 활용}: 과거 대화나 주문 이력에서 어떤 정보를 참조하여 판단했는지 설명
+  - {특이사항}: 알러지 주의사항 확인, 메뉴 정보 누락, 긴급도 판단 근거 등
+  - Confidence: {confidence_value}
 """

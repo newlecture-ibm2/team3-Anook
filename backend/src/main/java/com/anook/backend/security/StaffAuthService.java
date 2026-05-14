@@ -58,12 +58,13 @@ public class StaffAuthService {
         String token = jwtProvider.generateToken(staff.getId().toString(), role, jti);
 
         // 6. 최종 응답 생성
-        return LoginResponse.builder()
-                .token(token)
-                .role(role)
-                .name(staff.getName())
-                .department(staff.getDepartment().getName())
-                .departmentId(staff.getDepartment().getId())
-                .build();
+        return new LoginResponse(
+                token,
+                role,
+                staff.getName(),
+                staff.getDepartment().getName(),
+                staff.getDepartment().getId(),
+                null // roomNo는 직원 로그인에서 사용 안 함
+        );
     }
 }

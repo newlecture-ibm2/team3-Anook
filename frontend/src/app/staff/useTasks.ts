@@ -158,39 +158,50 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
     }
   }, [fetchTasks]);
 
+  const [currentDeptId, setCurrentDeptId] = useState<string | null>(null);
+
+  // 1. 세션 정보 조회 (부서 ID 획득용)
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.departmentId) {
+          setCurrentDeptId(data.departmentId);
+        }
+      })
+      .catch(err => console.error('[useTasks] Session fetch failed:', err));
+  }, []);
+
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const derivedDepartmentId = tasks.length > 0 ? tasks[0].departmentId : 'HK';
   useEffect(() => {
+    if (!currentDeptId) return;
+
     const handleEvent = (data: unknown) => {
       const event = data as {
         type?: string;
-        priority?: string;
-        entities?: Record<string, unknown>;
         requestId?: number;
-        roomNo?: string;
-        summary?: string;
       };
       if (!event || !event.type) return;
 
-      if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED'].includes(event.type)) {
+      if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_REQUEST_RECEIVED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'GRACE_EXPIRED'].includes(event.type)) {
         fetchTasks(true);
       }
-
-      // 긴급 상황 감지 로직은 GlobalEmergencyListener(어드민 레이아웃)로 이동됨
     };
 
     const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
-    const deptChannel = `/topic/dept/${derivedDepartmentId}`;
+    const deptChannel = `/topic/dept/${currentDeptId}`;
     const unsubscribeDept = subscribe(deptChannel, handleEvent);
+
+    console.info(`[useTasks] WebSocket Subscribed: ${deptChannel}`);
 
     return () => {
       unsubscribeAdmin();
       unsubscribeDept();
     };
-  }, [subscribe, fetchTasks, derivedDepartmentId]);
+  }, [subscribe, fetchTasks, currentDeptId]);
 
   return { tasks, loading, error, refetch: fetchTasks, acceptTask, completeTask, transferTask, approveCancellation, rejectCancellation };
 }

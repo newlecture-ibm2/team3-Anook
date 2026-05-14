@@ -143,7 +143,8 @@ public class CreateRequestOnEventService {
                 event.getEntities(),
                 event.getConfidence(),
                 finalRawText,
-                event.getSummary());
+                event.getSummary(),
+                event.getReasoning());
 
         // 긴급 상황 Pre-Filter 감지 여부
         boolean isEmergencyDetected = event.getEntities() != null
