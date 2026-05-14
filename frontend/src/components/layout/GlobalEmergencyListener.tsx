@@ -55,7 +55,7 @@ export default function GlobalEmergencyListener() {
       alert={emergencyAlert}
       onDismiss={() => setEmergencyAlert(null)}
       onClick={() => {
-        window.location.href = '/admin/emergency';
+        window.location.href = '/admin/front-desk';
       }}
     />
   );

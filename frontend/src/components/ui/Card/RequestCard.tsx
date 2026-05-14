@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './RequestCard.module.css';
 import Button from '@/components/ui/Button/Button';
+import Tag from '@/components/ui/StatusBadge/StatusBadge';
 
 export interface RequestCardProps {
   roomType?: string;
@@ -21,6 +22,8 @@ export interface RequestCardProps {
   onStatusChange?: (id: number, newStatus: string) => Promise<void>;
   reverseActions?: boolean;
   isSelected?: boolean;
+  hasNewMessage?: boolean;
+  isEmergency?: boolean;
 }
 
 export default function RequestCard({
@@ -41,7 +44,9 @@ export default function RequestCard({
   status,
   onStatusChange,
   reverseActions,
-  isSelected = false
+  isSelected = false,
+  hasNewMessage = false,
+  isEmergency = false
 }: RequestCardProps) {
   const isWarning = variant === 'warning';
   const handlePrimaryClick = () => {
@@ -52,7 +57,7 @@ export default function RequestCard({
 
   return (
     <>
-      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''} ${isSelected ? styles.requestCardSelected : ''} ${onCardClick ? styles.clickable : ''}`} onClick={onCardClick}>
+      <div className={`${styles.requestCard} ${isWarning ? styles.requestCardWarning : ''} ${isEmergency ? styles.requestCardEmergency : ''} ${isSelected ? styles.requestCardSelected : ''} ${onCardClick ? styles.clickable : ''}`} onClick={onCardClick}>
         <div className={styles.roomBox}>
           <span className={styles.roomNumber}>{roomNumber}</span>
         </div>
@@ -60,9 +65,6 @@ export default function RequestCard({
         <div className={styles.contentSection}>
           <div className={styles.contentHeader}>
             <h3 className={styles.title}>{title}</h3>
-            <span className={styles.timeText}>
-              {getRelativeTime(createdAt)}
-            </span>
           </div>
           
           <div className={styles.contentBody}>
@@ -86,6 +88,21 @@ export default function RequestCard({
                 </Button>
               )}
             </div>
+          )}
+        </div>
+
+        <div className={styles.rightSection}>
+          <span className={styles.timeText}>
+            {getRelativeTime(createdAt)}
+          </span>
+          {isEmergency && (
+            <Tag variant="red">EMERGENCY</Tag>
+          )}
+          {status === 'PENDING' && !isEmergency && (
+            <Tag variant="red">NEW</Tag>
+          )}
+          {status === 'IN_PROGRESS' && hasNewMessage && (
+            <div className={styles.redDot}></div>
           )}
         </div>
       </div>

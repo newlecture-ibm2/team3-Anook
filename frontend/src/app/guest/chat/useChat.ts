@@ -168,7 +168,7 @@ export function useChat() {
                   id: staffMsgId,
                   variant: 'received',
                   content: payload.content,
-                  type: 'TEXT',
+                  type: 'FALLBACK',
                 }];
               });
             } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {

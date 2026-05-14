@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Tabs from '@/components/ui/Tab/Tabs';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import Button from '@/components/ui/Button/Button';
@@ -18,20 +18,34 @@ import RegisterTrainingModal from './_components/RegisterTrainingModal/RegisterT
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
+import { useWebSocket } from '@/app/useWebSocket';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('active');
   const { requests, loading, error, refetch } = useAdminRequests('FRONT');
+  // 긴급대응(EMERGENCY) 부서 요청도 프론트 데스크에서 최우선으로 표시
+  const { requests: emergencyRequests, loading: emergLoading, refetch: emergRefetch } = useAdminRequests('EMERGENCY');
   // 취소 승인 대기: 모든 부서의 취소 요청을 프론트에서 대신 처리하기 위해 전체 조회
   const { requests: allRequests, loading: allLoading, refetch: allRefetch } = useAdminRequests(undefined, '', 'all', true);
 
-  const frontDeskRequests = requests.filter(r => r.priority !== 'EMERGENCY');
+  // FRONT + EMERGENCY 요청 병합 (중복 제거)
+  const mergedRequests = [...requests, ...emergencyRequests.filter(er => !requests.some(r => r.id === er.id))];
 
-  const pending = frontDeskRequests.filter(r => r.status === 'PENDING');
-  const inProgress = frontDeskRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested);
+  // 우선순위 정렬 가중치: EMERGENCY > URGENT > NORMAL
+  const priorityWeight = (p: string) => p === 'EMERGENCY' ? 0 : p === 'URGENT' ? 1 : 2;
+
+  const sortByPriority = <T extends { priority: string; createdAt: string }>(list: T[]) =>
+    list.sort((a, b) => {
+      const pw = priorityWeight(a.priority) - priorityWeight(b.priority);
+      if (pw !== 0) return pw;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+  const pending = sortByPriority(mergedRequests.filter(r => r.status === 'PENDING'));
+  const inProgress = sortByPriority(mergedRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested));
   // 모든 부서의 취소 대기 건 (프론트 데스크가 대신 처리)
   const cancelPending = allRequests.filter(r => r.cancelRequested);
-  const completed = frontDeskRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED');
+  const completed = sortByPriority(mergedRequests.filter(r => r.status === 'COMPLETED' || r.status === 'CANCELLED'));
 
   const { escalations } = useEscalations();
   const nonEmergencyEscalations = escalations.filter(r => r.priority !== 'EMERGENCY');
@@ -39,10 +53,43 @@ export default function FrontDeskPage() {
 
   const { activeModal, closeModal } = useUiStore();
   // Chat Modal 상태
-  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number, status: string, initialMessage?: string } | null>(null);
+  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number, status: string, summary?: string, initialMessage?: string } | null>(null);
   // 승인/반려 모달 상태
   const [approveTarget, setApproveTarget] = useState<number | null>(null);
   const [rejectTarget, setRejectTarget] = useState<number | null>(null);
+
+  // 새 메시지 알림 (레드닷) 상태
+  const [newMessageRequestIds, setNewMessageRequestIds] = useState<Set<number>>(new Set());
+  const { subscribe } = useWebSocket();
+  const activeChatRoomRef = useRef(activeChatRoom);
+  useEffect(() => { activeChatRoomRef.current = activeChatRoom; }, [activeChatRoom]);
+
+  // IN_PROGRESS 방들의 WebSocket 구독 → 고객 메시지 감지
+  useEffect(() => {
+    const unsubscribers: (() => void)[] = [];
+
+    inProgress.forEach(req => {
+      const unsub = subscribe(`/topic/room/${req.roomNo}`, (data: unknown) => {
+        const payload = data as Record<string, unknown>;
+        const type = payload.type as string;
+        // 고객이 보낸 메시지인 경우에만 레드닷 표시
+        if (type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') {
+          // 현재 열린 채팅방이면 레드닷 표시하지 않음
+          if (activeChatRoomRef.current?.requestId === req.id) return;
+          setNewMessageRequestIds(prev => {
+            const next = new Set(prev);
+            next.add(req.id);
+            return next;
+          });
+        }
+      });
+      unsubscribers.push(unsub);
+    });
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [inProgress, subscribe]);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
@@ -69,6 +116,7 @@ export default function FrontDeskPage() {
       });
       if (res.ok) {
         if (refetch) refetch();
+        if (emergRefetch) emergRefetch();
         if (allRefetch) allRefetch();
         if (activeChatRoom?.requestId === id) {
           if (newStatus === 'COMPLETED') {
@@ -83,17 +131,39 @@ export default function FrontDeskPage() {
     }
   };
 
-  // 탭에 따른 필터링
   const getFilteredRequests = () => {
     if (activeTab === 'active') {
       const activeList = [...pending, ...inProgress];
-      // 최신순 정렬
-      return activeList.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // 우선순위 → 최신순 정렬
+      return activeList.sort((a, b) => {
+        const pw = priorityWeight(a.priority) - priorityWeight(b.priority);
+        if (pw !== 0) return pw;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
     }
     if (activeTab === 'completed') return completed;
     return [];
   };
   const filteredRequests = getFilteredRequests();
+
+  useEffect(() => {
+    if (filteredRequests.length > 0) {
+      const exists = activeChatRoom && filteredRequests.some(req => req.id === activeChatRoom.requestId);
+      if (!exists) {
+        const req = filteredRequests[0];
+        setActiveChatRoom({
+          roomNumber: req.roomNo.toString(),
+          requestId: req.id,
+          status: req.status,
+          summary: req.summary,
+          initialMessage: req.rawText || req.summary
+        });
+        setDetailTarget(null);
+      }
+    } else if (activeChatRoom) {
+      setActiveChatRoom(null);
+    }
+  }, [activeTab, pending, inProgress, completed, activeChatRoom]);
 
 
   const handleCardClick = (requestId: number) => {
@@ -106,13 +176,35 @@ export default function FrontDeskPage() {
   const [cancelRejectTarget, setCancelRejectTarget] = useState<number | null>(null);
   const [trainingTarget, setTrainingTarget] = useState<any | null>(null);
 
+  // Local state to track requests that have already been added to RAG (since there is no backend flag yet)
+  const [registeredRagIds, setRegisteredRagIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const saved = localStorage.getItem('registeredRagIds');
+    if (saved) {
+      setRegisteredRagIds(new Set(JSON.parse(saved)));
+    }
+
+    const handleRagRegistered = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      setRegisteredRagIds(prev => {
+        const newSet = new Set(prev);
+        newSet.add(customEvent.detail);
+        return newSet;
+      });
+    };
+
+    window.addEventListener('ragRegistered', handleRagRegistered);
+    return () => {
+      window.removeEventListener('ragRegistered', handleRagRegistered);
+    };
+  }, []);
+
   const getPrimaryActionText = (req: any) => {
-    if (activeTab === 'completed') return '학습 관리 등록';
     return undefined;
   };
 
   const getSecondaryActionText = (req: any) => {
-    if (activeTab === 'completed') return '상담 기록 보기';
     return undefined;
   };
 
@@ -126,8 +218,8 @@ export default function FrontDeskPage() {
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <Tabs
               options={[
-                { label: '💬 진행 중', value: 'active', count: pending.length + inProgress.length },
-                { label: '✅ 상담 완료', value: 'completed', count: completed.length }
+                { label: '진행 중', value: 'active', count: pending.length + inProgress.length },
+                { label: '상담 완료', value: 'completed', count: completed.length }
               ]}
               activeValue={activeTab}
               onChange={(val) => setActiveTab(val || 'active')}
@@ -158,7 +250,7 @@ export default function FrontDeskPage() {
                   if (activeTab === 'active') {
                     if (req.status === 'PENDING') {
                       handleStatusChange(req.id, 'IN_PROGRESS');
-                      setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', initialMessage: req.rawText || req.summary });
+                      setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', summary: req.summary, initialMessage: req.rawText || req.summary });
                     } else if (req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED') {
                       handleStatusChange(req.id, 'COMPLETED');
                       setActiveChatRoom(null);
@@ -168,18 +260,26 @@ export default function FrontDeskPage() {
                   }
                 }}
                 onSecondaryAction={
-                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, initialMessage: req.rawText || req.summary }) :
+                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, summary: req.summary, initialMessage: req.rawText || req.summary }) :
                   undefined
                 }
                 reverseActions={true}
                 onCardClick={() => {
-                  setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, initialMessage: req.rawText || req.summary });
+                  setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, summary: req.summary, initialMessage: req.rawText || req.summary });
                   setDetailTarget(null);
+                  // 레드닷 해제
+                  setNewMessageRequestIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(req.id);
+                    return next;
+                  });
                 }}
                 // custom props to pass to ChatModal through RequestCard
                 requestId={req.id}
                 status={req.status}
                 onStatusChange={handleStatusChange}
+                hasNewMessage={newMessageRequestIds.has(req.id)}
+                isEmergency={req.priority === 'EMERGENCY'}
               />
             ))}
           </div>
@@ -188,17 +288,27 @@ export default function FrontDeskPage() {
 
         {/* Right Pane: Chat Window */}
         <div className={styles.rightPane}>
-          {activeChatRoom ? (
-            <ChatPanel
-              roomNumber={activeChatRoom.roomNumber}
-              requestId={activeChatRoom.requestId}
-              status={activeChatRoom.status}
-              initialMessage={activeChatRoom.initialMessage}
-              onStatusChange={handleStatusChange}
-              autoComplete={false}
+          {activeChatRoom ? (() => {
+            const activeReq = [...pending, ...inProgress, ...completed].find(r => r.id === activeChatRoom.requestId);
+            return (
+              <ChatPanel
+                roomNumber={activeChatRoom.roomNumber}
+                requestId={activeChatRoom.requestId}
+                status={activeReq?.status || activeChatRoom.status}
+                summary={activeReq?.summary || activeChatRoom.summary}
+                initialMessage={activeChatRoom.initialMessage}
+                onStatusChange={handleStatusChange}
+                autoComplete={false}
               onClose={() => setActiveChatRoom(null)}
-            />
-          ) : (
+              showRagButton={activeTab === 'completed' && !registeredRagIds.has(activeChatRoom.requestId)}
+              onRagRegister={() => {
+                const req = [...pending, ...inProgress, ...completed].find((r: any) => r.id === activeChatRoom.requestId);
+                if (req) setTrainingTarget(req);
+              }}
+              isEmergency={activeReq?.priority === 'EMERGENCY'}
+              />
+            );
+          })() : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>
               대화할 요청을 선택해주세요
             </div>
@@ -272,6 +382,7 @@ export default function FrontDeskPage() {
         departmentId={trainingTarget?.departmentId}
         summary={trainingTarget?.summary}
         roomNo={trainingTarget?.roomNo?.toString()}
+        requestId={trainingTarget?.id}
       />
     </div>
   );

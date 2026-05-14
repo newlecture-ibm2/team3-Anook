@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestDetailPanel.module.css';
 import Button from '@/components/ui/Button/Button';
-import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
+import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import { CancelIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
@@ -12,6 +12,7 @@ import ApproveCancellationModal from '../ApproveCancellationModal/ApproveCancell
 import RejectCancellationModal from '../RejectCancellationModal/RejectCancellationModal';
 import useApproveEscalation from '../ApproveEscalationModal/useApproveEscalation';
 import useRequestDetail from '../RequestDetailModal/useRequestDetail';
+import ManualAssignModal from '../ManualAssignModal/ManualAssignModal';
 
 interface Department {
   id: string;
@@ -168,6 +169,7 @@ export default function RequestDetailPanel({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmType, setConfirmType] = useState<'none' | 'cancel' | 'approve' | 'reject' | 'cancelApprove' | 'cancelReject'>('none');
+  const [showManualAssign, setShowManualAssign] = useState(false);
   const showToast = useUiStore((s) => s.showToast);
 
   useEffect(() => {
@@ -186,7 +188,7 @@ export default function RequestDetailPanel({
   useEffect(() => {
     fetch('/api/admin/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data))
+      .then((data: Department[]) => setDepartments(data.filter(d => d.id !== 'EMERGENCY')))
       .catch(() => {});
   }, []);
 
@@ -198,23 +200,24 @@ export default function RequestDetailPanel({
     editPriority !== detail.priority ||
     editDeptId !== detail.departmentId;
 
-  const handleSave = async () => {
+  const handleSave = async (newDeptId: string, newPriority: string) => {
     setSaving(true);
     let changed = false;
 
-    if (editPriority !== detail.priority) {
-      const ok = await changePriority(detail.id, editPriority);
+    if (newPriority !== detail.priority) {
+      const ok = await changePriority(detail.id, newPriority);
       if (ok) changed = true;
     }
 
-    if (editDeptId !== detail.departmentId) {
-      const ok = await changeDepartment(detail.id, editDeptId);
+    if (newDeptId !== detail.departmentId) {
+      const ok = await changeDepartment(detail.id, newDeptId);
       if (ok) changed = true;
     }
 
     setSaving(false);
     if (changed) {
       onUpdate();
+      setShowManualAssign(false);
       onClose();
     }
   };
@@ -259,15 +262,10 @@ export default function RequestDetailPanel({
 
   return (
     <div className={styles.panel}>
-      <div>
         {/* 헤더 */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <h2 className={styles.title}>요청 상세</h2>
-            <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
-            {detail.cancelRequested && (
-              <StatusBadge variant="red">고객 취소 요청됨</StatusBadge>
-            )}
           </div>
           {onClose && (
             <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
@@ -284,10 +282,7 @@ export default function RequestDetailPanel({
               <span className={styles.label}>객실</span>
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
-            <div className={styles.gridItem}>
-              <span className={styles.label}>현재 부서</span>
-              <span className={styles.value}>{detail.departmentName}</span>
-            </div>
+
             <div className={styles.gridItem}>
               <span className={styles.label}>생성 시간</span>
               <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
@@ -378,42 +373,20 @@ export default function RequestDetailPanel({
           </div>
         )}
 
-        {/* 배정 관리 */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>배정 관리</h3>
-          <div className={styles.editRow}>
-            <div className={styles.editField}>
-              <label className={styles.label}>우선순위</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
-                <input
-                  type="checkbox"
-                  checked={editPriority === 'URGENT'}
-                  onChange={(e) => setEditPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
-                />
-                <span style={{ fontSize: '14px', fontWeight: editPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
-                  긴급 작업으로 설정
-                </span>
-              </label>
-            </div>
-            <div className={styles.editField}>
-              <label className={styles.label} htmlFor="detail-dept">배정 부서</label>
-              <select
-                id="detail-dept"
-                className={styles.select}
-                value={editDeptId}
-                onChange={(e) => setEditDeptId(e.target.value)}
-              >
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 하단 버튼 */}
         <div className={styles.footer}>
+          <div className={styles.footerRight}>
+            {!showManualAssign && detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' && (
+              <Button variant="primary" onClick={() => setShowManualAssign(true)}>
+                수동 배정
+              </Button>
+            )}
+            {detail.status === 'ESCALATED' ? (
+              <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
+                에스컬레이션 승인
+              </Button>
+            ) : null}
+          </div>
+
           {detail.status === 'ESCALATED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
               에스컬레이션 반려
@@ -431,21 +404,7 @@ export default function RequestDetailPanel({
             <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
               강제 요청 취소
             </Button>
-          ) : <div />}
-
-          <div className={styles.footerRight}>
-            {detail.status === 'ESCALATED' ? (
-              <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
-                에스컬레이션 승인
-              </Button>
-            ) : hasChanges ? (
-              <Button variant="primary" onClick={handleSave} disabled={saving || loading}>
-                {saving ? '저장 중...' : '변경 저장'}
-              </Button>
-            ) : null}
-            {onClose && <Button variant="secondary" onClick={onClose}>닫기</Button>}
-          </div>
-        </div>
+          ) : null}
       </div>
 
       <ConfirmModal
@@ -502,6 +461,17 @@ export default function RequestDetailPanel({
             onUpdate();
             onClose();
           }}
+        />
+      )}
+
+      {detail && (
+        <ManualAssignModal
+          isOpen={showManualAssign}
+          onClose={() => setShowManualAssign(false)}
+          detail={detail}
+          departments={departments}
+          onSave={handleSave}
+          saving={saving}
         />
       )}
     </div>

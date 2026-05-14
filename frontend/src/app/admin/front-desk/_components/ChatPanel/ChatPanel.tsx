@@ -5,7 +5,7 @@ import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
 import { useWebSocket } from '@/app/useWebSocket';
 import Button from '@/components/ui/Button/Button';
-import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
+import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import { ChatMessage } from '@/components/ui/Modal/ChatModal';
@@ -18,9 +18,21 @@ export interface ChatPanelProps {
   autoComplete?: boolean;
   onClose?: () => void;
   initialMessage?: string;
+  summary?: string;
+  showRagButton?: boolean;
+  onRagRegister?: () => void;
+  isEmergency?: boolean;
 }
 
-export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage }: ChatPanelProps) {
+const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
+  PENDING: { text: '대기 중', variant: 'red' },
+  ASSIGNED: { text: '배정됨', variant: 'purple' },
+  IN_PROGRESS: { text: '처리 중', variant: 'green' },
+  COMPLETED: { text: '완료', variant: 'gray' },
+  CANCELLED: { text: '취소됨', variant: 'gray' },
+};
+
+export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -28,7 +40,6 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
 
   // RAG 등록 플로우 상태
   const [isRagConfirmOpen, setIsRagConfirmOpen] = useState(false);
-  const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
 
   // 모달 열릴 때 실제 대화 내역 로드
   useEffect(() => {
@@ -156,15 +167,16 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
   };
 
   // 상담 완료 버튼 클릭 시
-  const handleCompleteConsultation = async () => {
-    if (requestId && onStatusChange && status !== 'COMPLETED') {
-      await onStatusChange(requestId, 'COMPLETED');
-    }
+  const handleCompleteConsultation = () => {
     const staffMessages = messages.filter(m => m.senderType === 'STAFF');
     if (staffMessages.length > 0) {
       setIsRagConfirmOpen(true);
     } else {
-      if(onClose) onClose();
+      if (requestId && onStatusChange && status !== 'COMPLETED') {
+        onStatusChange(requestId, 'COMPLETED');
+      } else {
+        if(onClose) onClose();
+      }
     }
   };
 
@@ -173,13 +185,16 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
     if(onClose) onClose();
   };
 
-  // "등록하기" → KnowledgeEditModal 오픈
+  // "등록하기" → page.tsx의 onRagRegister를 호출하여 RegisterTrainingModal 오픈
   const handleRagConfirm = () => {
     setIsRagConfirmOpen(false);
-    setIsKnowledgeModalOpen(true);
+    if (onRagRegister) onRagRegister();
+    if (requestId && onStatusChange && status !== 'COMPLETED') {
+      onStatusChange(requestId, 'COMPLETED');
+    }
   };
 
-  // "나중에 하기" → PENDING 상태로 저장 후 닫기 (AI 학습 관리에 쌓임)
+  // "나중에 하기" → PENDING 상태로 저장 후 완료 처리
   const handleRagLater = async () => {
     const { question, answer } = extractInitialContent();
     try {
@@ -195,17 +210,35 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // 로컬 스토리지에 등록 상태 저장
+      if (requestId) {
+        const saved = localStorage.getItem('registeredRagIds');
+        const set = saved ? new Set(JSON.parse(saved)) : new Set();
+        set.add(requestId);
+        localStorage.setItem('registeredRagIds', JSON.stringify(Array.from(set)));
+        window.dispatchEvent(new CustomEvent('ragRegistered', { detail: requestId }));
+      }
     } catch (err) {
       console.error('[ChatPanel] PENDING 등록 실패:', err);
     }
     setIsRagConfirmOpen(false);
-    if(onClose) onClose();
+    
+    if (requestId && onStatusChange && status !== 'COMPLETED') {
+      onStatusChange(requestId, 'COMPLETED');
+    } else if (onClose) onClose();
   };
 
-  // "건너뛰기" → 아무것도 저장하지 않고 닫기
+  // "건너뛰기" → 그냥 완료 처리
   const handleRagSkip = () => {
     setIsRagConfirmOpen(false);
-    if(onClose) onClose();
+    if (requestId && onStatusChange && status !== 'COMPLETED') {
+      onStatusChange(requestId, 'COMPLETED');
+    } else if (onClose) onClose();
+  };
+
+  // 취소 (단순히 모달 닫기, 완료 처리 안 함)
+  const handleRagCancel = () => {
+    setIsRagConfirmOpen(false);
   };
 
   // 상담 내용에서 초기 질문/답변 추출
@@ -220,29 +253,6 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
     };
   };
 
-  // KnowledgeEditModal에서 저장 → 백엔드 API 호출 (APPROVED)
-  const handleKnowledgeSave = async (data: { domainCode: string; question: string; answer: string }) => {
-    try {
-      const res = await fetch('/api/staff/knowledge/register-from-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: data.question,
-          answer: data.answer,
-          domainCode: data.domainCode || 'COMMON',
-          roomNo: roomNumber,
-        }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-      console.error('[ChatPanel] RAG 지식 등록 실패:', err);
-    }
-    setIsKnowledgeModalOpen(false);
-    if(onClose) onClose();
-  };
-
-  const { question: initialQuestion, answer: initialAnswer } = extractInitialContent();
-
   const isReadOnly = status === 'COMPLETED' || status === 'CANCELLED';
 
   return (
@@ -250,14 +260,12 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
       <div className={styles.chatPanelContainer}>
         <div className={styles.header}>
           <div className={styles.headerInfo}>
-            <span className={styles.roomBadge}>객실 {roomNumber}</span>
-            <h3 className={styles.title}>고객 상담</h3>
+            <span className={styles.roomBadge}>{roomNumber}호</span>
+            <h3 className={styles.title}>{summary || '상담'}</h3>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {!isReadOnly && status === 'IN_PROGRESS' && (
-              <Button variant="primary" onClick={handleCompleteConsultation} style={{ padding: '6px 12px', fontSize: '13px' }}>
-                상담 완료
-              </Button>
+          <div className={styles.headerRight}>
+            {status && STATUS_MAP[status] && (
+              <StatusBadge variant={STATUS_MAP[status].variant}>{STATUS_MAP[status].text}</StatusBadge>
             )}
           </div>
         </div>
@@ -269,7 +277,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
           ) : (
             messages.map((msg) => (
-              <ChatBubble key={msg.id} variant={msg.variant}>
+              <ChatBubble key={msg.id} variant={msg.variant} isFallback={msg.senderType === 'STAFF'}>
                 {msg.content}
               </ChatBubble>
             ))
@@ -279,32 +287,80 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
         {!isReadOnly && status === 'PENDING' && (
           <div className={styles.footer} style={{ justifyContent: 'center' }}>
             <Button 
+              variant={isEmergency ? 'danger' : 'primary'}
+              size="large"
+              fullWidth
+              onClick={async () => {
+                if (onStatusChange && requestId) {
+                  await onStatusChange(requestId, 'IN_PROGRESS');
+                  // 긴급 대응 시작 시 고객에게 자동 메시지 전송
+                  if (isEmergency) {
+                    await handleSend('긴급 대응팀이 배정되었습니다. 신속히 조치하겠습니다. 안전한 곳에서 대기해 주시기 바랍니다.');
+                  }
+                }
+              }} 
+            >
+              {isEmergency ? '긴급 대응 시작' : '상담 시작하기'}
+            </Button>
+          </div>
+        )}
+
+        {status === 'COMPLETED' && showRagButton && (
+          <div className={styles.footer} style={{ justifyContent: 'center' }}>
+            <Button 
               variant="primary" 
               size="large"
               fullWidth
-              onClick={() => onStatusChange && onStatusChange(requestId, 'IN_PROGRESS')} 
+              onClick={onRagRegister} 
             >
-              상담 시작하기
+              AI 지식 등록
             </Button>
           </div>
         )}
 
         {!isReadOnly && status !== 'PENDING' && (
-          <div className={styles.footer}>
-            <ChatInput placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+          <div className={styles.footer} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <ChatInput isStaff placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
+            </div>
+            {(status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
+              <Button size="large" variant="primary" onClick={handleCompleteConsultation} style={{ marginBottom: '8px' }}>
+                상담 완료
+              </Button>
+            )}
           </div>
         )}
       </div>
 
       {/* RAG 등록 확인 모달 (3버튼: 등록하기 / 나중에 하기 / 건너뛰기) */}
-      <ModalOverlay isOpen={isRagConfirmOpen} onClose={handleRagSkip}>
+      <ModalOverlay isOpen={isRagConfirmOpen} onClose={handleRagCancel}>
         <ModalCard size="sm">
-          <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>AI 지식 등록</h2>
-            <p style={{ fontSize: '14px', color: 'var(--color-gray-500)', lineHeight: '1.5' }}>
-              이 상담 내용을 AI 지식 데이터로 등록하시겠습니까?<br />
-              등록하면 AI가 동일한 질문에 자동으로 답변할 수 있습니다.
-            </p>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={handleRagCancel}
+              aria-label="닫기"
+              style={{
+                position: 'absolute',
+                top: '-12px',
+                right: '-12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
+            </button>
+            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>AI 지식 등록</h2>
+              <p style={{ fontSize: '14px', color: 'var(--color-gray-500)', lineHeight: '1.5' }}>
+                이 상담 내용을 AI 지식 데이터로 등록하시겠습니까?<br />
+                등록하면 AI가 동일한 질문에 자동으로 답변할 수 있습니다.
+              </p>
+            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
             <Button variant="primary" onClick={handleRagConfirm} style={{ width: '100%' }}>
@@ -329,21 +385,6 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           </div>
         </ModalCard>
       </ModalOverlay>
-
-      {/* 지식 등록/편집 모달 (상담 내용 프리필) */}
-      {isKnowledgeModalOpen && (
-        <KnowledgeEditModal
-          isOpen={isKnowledgeModalOpen}
-          onClose={() => {
-            setIsKnowledgeModalOpen(false);
-            if(onClose) onClose();
-          }}
-          initialDomainCode="COMMON"
-          initialQuestion={initialQuestion}
-          initialAnswer={initialAnswer}
-          onSave={handleKnowledgeSave}
-        />
-      )}
     </>
   );
 }

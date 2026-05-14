@@ -22,15 +22,6 @@ export default function Header({ className = '', role = 'admin' }: HeaderProps) 
         <button className={styles.hamburgerBtn} onClick={toggleSidebar} aria-label="메뉴 열기">
           <Menu size={24} />
         </button>
-        <Link href="/" style={{
-          fontSize: '1.75rem',
-          fontWeight: 900,
-          letterSpacing: '-0.05em',
-          color: 'var(--color-primary, #0f172a)',
-          textDecoration: 'none'
-        }}>
-          Anook
-        </Link>
       </div>
 
       <div className={styles.right} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16)' }}>

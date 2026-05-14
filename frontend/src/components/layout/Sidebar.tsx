@@ -9,7 +9,7 @@ import { useTranslation } from '@/app/useTranslation';
 import {
   LayoutDashboard,
   Inbox,
-  AlertTriangle,
+
   Wrench,
   Home,
   Utensils,
@@ -94,7 +94,6 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
         { label: t.adminPage.sidebar.menus.fb, href: '/admin/fb', icon: Utensils },
         { label: t.adminPage.sidebar.menus.facility, href: '/admin/facility', icon: Wrench },
         { label: t.adminPage.sidebar.menus.concierge, href: '/admin/concierge', icon: MessageSquare },
-        { label: t.adminPage.sidebar.menus.emergency, href: '/admin/emergency', icon: AlertTriangle },
       ]
     },
     {
@@ -136,9 +135,21 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
   return (
     <aside
       className={`${styles.sidebar} ${className}`.trim()}
-      style={{ height: 'calc(100vh - 65px)', overflowY: 'auto' }}
+      style={{ height: '100vh', overflowY: 'auto' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-24)' }}>
+      <div style={{ padding: 'var(--space-24) var(--space-24) var(--space-8)' }}>
+        <Link href="/" style={{
+          fontSize: '1.75rem',
+          fontWeight: 900,
+          letterSpacing: '-0.05em',
+          color: 'var(--color-primary, #0f172a)',
+          textDecoration: 'none'
+        }}>
+          Anook
+        </Link>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-8)' }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
             {group.category && (
