@@ -24,7 +24,6 @@ OUTPUT FORMAT (strictly JSON):
   },
   "needs_clarification": false,
   "clarification_question": "",
-  "clarification_options": [],
   "missing_fields": [],
   "final_reply": "시설팀에 수리 내용을 전달하겠습니다."
 }
@@ -53,7 +52,6 @@ RULES:
 - `equipment` MUST always be extracted. If unclear, infer from context (e.g., "씻고 싶은데 물이 안 나와요" → equipment: "샤워기/수도설비", "어두워요" → equipment: "조명").
 - `location`: If the guest does NOT mention a specific location, default to "객실".
 - If the equipment or symptom is too vague (e.g., "뭔가 고장났어요"), set `needs_clarification=true` and ask in the EXACT SAME LANGUAGE the guest used: exactly WHAT is broken and HOW.
-- When `needs_clarification=true`, you MUST provide 2~4 specific clickable options in `clarification_options` (e.g., ["에어컨", "TV", "조명", "기타"]). Do NOT ask broad routing questions.
 - Write `summary`, `equipment`, `symptom`, and `location` in KOREAN.
 - Assess `priority` based on severity. You MUST choose ONLY ONE of the following two priorities:
   - URGENT: Severe damages or breakdowns that make the room completely unusable and strongly require an immediate room change (e.g., completely clogged toilet (ALWAYS URGENT), massive water leak, complete failure of AC/Heater).

@@ -68,6 +68,10 @@ STATIC_REPLIES = {
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
         "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!"
     },
+    "ESCALATION_INFO": {
+        "ko": "더 자세한 정보를 위해 프런트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
+        "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment."
+    },
     "CLARIFICATION": {
         "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
         "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
@@ -194,7 +198,10 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
             
             # missing_fields별 관련 키워드 (다국어 지원을 위해 영어 키워드 추가)
             keyword_map = {
-                "quantity": ["몇", "수량", "개수", "얼마나", "개", "how many", "quantity", "amount", "number"],
+                "quantity": ["몇", "수량", "개수", "얼마나", "how many", "quantity", "amount", "number"],
+                "passenger_count": ["몇", "인원", "탑승", "사람", "몇분", "몇명"],
+                "count": ["몇", "수량", "개수", "몇개"],
+                "party_size": ["몇", "인원", "몇분", "몇명"],
                 "menu_items": ["어떤", "메뉴", "무엇을", "음식", "음료", "what", "menu", "food", "drink", "beverage", "which"],
                 "item": ["어떤", "무엇을", "용품", "물품", "필요하신", "what", "item", "need", "amenity", "supply"],
                 "temperature": ["따뜻", "차갑", "아이스", "핫", "온도", "hot", "cold", "ice", "iced", "warm", "temperature"],
@@ -202,6 +209,12 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                 "time": ["시간", "언제", "몇 시", "time", "when"],
                 "symptom": ["증상", "어떻게", "어떤 문제", "고장", "symptom", "problem", "issue", "wrong", "what"],
                 "location": ["어디", "위치", "어느 곳", "where", "location"],
+                "category": ["어떤", "종류", "테마"],
+                "action": ["보관", "찾기", "맡길", "찾을"],
+                "restaurant_name": ["식당", "레스토랑", "이름", "어디"],
+                "target": ["무엇을", "어떤 대상", "어떤 것"],
+                "store_name": ["가게", "상점", "플랫폼", "어디", "이름"],
+                "type": ["병원", "약국", "어떤 곳"]
             }
             
             current_keywords = []
@@ -212,13 +225,31 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                 # 라우터 CLARIFICATION인 경우, 이전 AI 응답도 일반 되묻기 멘트였는지 확인
                 current_keywords = ["어떤 말씀이신지", "자세히", "알려주시겠어요", "도와드릴까요", "tell me a bit more", "clarify"]
             
+            asked_fields_history = []
+            
             for msg in reversed(request.chat_history):
                 role = msg.get("role")
                 if role == "ai":
                     msg_content = msg.get("content", "").strip()
                     if "?" in msg_content:
-                        # 에이전트가 특정 필수값을 찾고 있다면, 이전 질문들도 그 필수값 관련 키워드를 포함해야만 같은 루프로 인정
                         msg_content_lower = msg_content.lower()
+                        
+                        # 2번 방법: 이 AI 질문이 포함하고 있는 필수값 키워드 종류 개수를 파악 (진행도 검사)
+                        asked_fields = [f for f, kws in keyword_map.items() if any(kw in msg_content_lower for kw in kws)]
+                        
+                        if asked_fields_history:
+                            # 역순으로 순회하므로, 현재 보고 있는 과거 질문(asked_fields)의 필수값 개수가 
+                            # 시간상 더 최근 질문(asked_fields_history[-1])보다 많다면
+                            # -> 과거에는 여러 개를 물어봤는데 최근에는 적게 물어봄 -> 고객이 정보를 제공해서 필수값이 줄어들었음! (정상 진행)
+                            if len(asked_fields) > len(asked_fields_history[-1]):
+                                break # 정상적인 진행 과정이므로 루프 단절
+                                
+                        asked_fields_history.append(asked_fields)
+
+                        # 에이전트가 특정 필수값을 찾고 있다면, 이전 질문들도 그 필수값 관련 키워드를 포함해야만 같은 루프로 인정
+                        if current_missing and not current_keywords:
+                            # current_missing이 있지만 keyword가 정의되지 않은 경우 루프 단절
+                            break
                         if current_keywords and not any(kw in msg_content_lower for kw in current_keywords):
                             break # 이전 질문은 다른 것을 물어봤으므로 연속 루프가 아님!
                         last_was_ai_question = True
@@ -230,11 +261,15 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                         clarification_rounds += 1
                         last_was_ai_question = False
 
+            # 1번 방법: 컨시어지는 입력받을 값이 많으므로 임계치를 5회로 증가
+            agent_domain = response.get("agent_domain")
+            threshold = 5 if agent_domain == "CONCIERGE" else 3
+            
             should_escalate = False
-            if current_missing and clarification_rounds > 3:
+            if current_missing and clarification_rounds > threshold:
                 print(f"\n[Analyze] 🚨 missing_fields {current_missing} 미해소 {clarification_rounds}라운드 → SOFT_FALLBACK 강제 전환")
                 should_escalate = True
-            elif not current_missing and clarification_rounds > 3:
+            elif not current_missing and clarification_rounds > threshold:
                 print(f"\n[Analyze] 🚨 라우터-CLARIFICATION {clarification_rounds}라운드 반복 → SOFT_FALLBACK 강제 전환")
                 should_escalate = True
 
@@ -637,8 +672,17 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     other_results = [r for r in fresh_results if "[fact]" not in r['question'] and "[recommendation]" not in r['question']]
                     
                     is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
-                    if not is_reconfirm:
-                        random.shuffle(rec_results)
+                    if not is_reconfirm and rec_results:
+                        # 가장 유사도가 높은 항목과 점수 차이가 0.05 미만인 항목들만 후보로 선정하여 셔플
+                        top_score = rec_results[0].get('similarity', 0)
+                        candidates = [r for r in rec_results if top_score - r.get('similarity', 0) < 0.05]
+                        others = [r for r in rec_results if top_score - r.get('similarity', 0) >= 0.05]
+                        
+                        random.shuffle(candidates)
+                        rec_results = candidates + others
+                        
+                        # AI가 헷갈리지 않고 항상 새롭고 정확한 1개만 추천하도록 슬라이싱
+                        rec_results = rec_results[:1]
                     
                     rag_results = fact_results + rec_results + other_results + already_said
                     
@@ -779,8 +823,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             
         # STEP 3-f: FRONT_ESCALATION → 명시적인 프론트 데스크 연결 요청
         if primary.route_type == "FRONT_ESCALATION":
+            escalation_key = "ESCALATION_INFO" if "INFO_ESCALATION" in (primary.reasoning or "") else "ESCALATION"
             response = {
-                "guest_reply": _get_static_reply("ESCALATION", request.language),
+                "guest_reply": _get_static_reply(escalation_key, request.language),
                 "summary": "프론트 연결 요청 (고객 확인)",
                 "domain_code": "FRONT",
                 "priority": "NORMAL",
@@ -839,6 +884,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "guest_reply": final_guest_reply,
                 "summary": final_summary,
                 "domain_code": final_domain_code,
+                "agent_domain": domain,
                 "priority": agent_result.get("priority", "NORMAL"),
                 "entities": final_entities,
                 "confidence": agent_confidence,
