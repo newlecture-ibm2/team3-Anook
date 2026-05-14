@@ -376,6 +376,10 @@ export function useChat() {
     if (!roomNo) return;
     if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
 
+    // 언어 미러링: 고객 입력에 한글이 있으면 ko, 없으면 en으로 전체 UI 테마 즉시 변경
+    const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+    setLanguage(hasKorean ? 'ko' : 'en');
+
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const errorMsg: ChatMessage = {

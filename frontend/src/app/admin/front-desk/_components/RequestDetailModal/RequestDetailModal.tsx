@@ -14,6 +14,7 @@ import ApproveCancellationModal from '../ApproveCancellationModal/ApproveCancell
 import RejectCancellationModal from '../RejectCancellationModal/RejectCancellationModal';
 import useApproveEscalation from '../ApproveEscalationModal/useApproveEscalation';
 import useRequestDetail from './useRequestDetail';
+import { useTranslation } from '@/app/useTranslation';
 
 interface Department {
   id: string;
@@ -62,24 +63,13 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   ESCALATED: { text: '에스컬레이션', variant: 'red' },
 };
 
-/** 영문 키 → 한국어 라벨 매핑 (모든 부서 통합) */
-const ENTITY_LABELS: Record<string, string> = {
-  is_contactless: '비대면 배달', target_time: '희망 시간',
-  equipment: '대상 설비', symptom: '증상', location: '위치',
-  destination: '목적지', passenger_count: '인원', restaurant_name: '식당',
-  cuisine_type: '음식 종류', category: '카테고리', action: '요청 유형',
-  item: '대상 물품', time: '시간', special_requests: '추가 요청', count: '수량',
-  type: '유형', target: '대상', issue: '문제/증상', priority: '예상 긴급도',
-  topic: '주제', question: '질문', language: '언어',
-};
-
 /** 직원에게 보여줄 필요 없는 내부 키 (섹션 표시 판단 + 순회에서 모두 제외) */
 const HIDDEN_ENTITY_KEYS = new Set(['intent', 'allergen_warning']);
 
 /** 배열 타입 특수 렌더러가 필요한 키 (key-value 순회에서만 스킵, 섹션 표시 판단에서는 포함) */
 const ARRAY_KEYS = new Set(['items', 'tasks', 'menu_items']);
 
-function renderEntities(entities: Record<string, any>): React.ReactNode {
+function renderEntities(entities: Record<string, any>, t: any, language: string): React.ReactNode {
   const rendered: React.ReactNode[] = [];
 
   // 0) 정규화: item+count 플랫 키 → items 배열로 통일 (AI 응답 형식 불일치 보정)
@@ -89,14 +79,16 @@ function renderEntities(entities: Record<string, any>): React.ReactNode {
     delete entities.count;
   }
 
+  const labels = t.adminPage.requestDetailModal.entityLabels;
+
   // 1) 배열 타입 특수 렌더링
   if (entities.items?.length > 0) {
     rendered.push(
       <div key="items" style={{ marginBottom: '12px' }}>
-        <strong>물품 요청:</strong>
+        <strong>{labels.items}:</strong>
         <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
           {entities.items.map((it: any, idx: number) => (
-            <li key={idx}>{it.item} - {it.count}개</li>
+            <li key={idx}>{it.item} - {it.count}{labels.countSuffix}</li>
           ))}
         </ul>
       </div>
@@ -105,7 +97,7 @@ function renderEntities(entities: Record<string, any>): React.ReactNode {
   if (entities.tasks?.length > 0) {
     rendered.push(
       <div key="tasks" style={{ marginBottom: '12px' }}>
-        <strong>작업 요청:</strong>
+        <strong>{labels.tasks}:</strong>
         <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
           {entities.tasks.map((task: string, idx: number) => (
             <li key={idx}>{task}</li>
@@ -117,12 +109,12 @@ function renderEntities(entities: Record<string, any>): React.ReactNode {
   if (entities.menu_items?.length > 0) {
     rendered.push(
       <div key="menu_items" style={{ marginBottom: '12px' }}>
-        <strong>주문 메뉴:</strong>
+        <strong>{labels.menu_items}:</strong>
         <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
           {entities.menu_items.map((mi: any, idx: number) => (
             <li key={idx}>
-              {mi.name} - {mi.quantity}개
-              {mi.selected_option && mi.selected_option !== '없음' && ` (옵션: ${mi.selected_option})`}
+              {mi.name} - {mi.quantity}{labels.countSuffix}
+              {mi.selected_option && mi.selected_option !== '없음' && mi.selected_option !== 'None' && ` (${labels.option}: ${mi.selected_option})`}
             </li>
           ))}
         </ul>
@@ -135,9 +127,9 @@ function renderEntities(entities: Record<string, any>): React.ReactNode {
     // 숨길 키이거나 이미 처리된 배열 키면 스킵
     if (HIDDEN_ENTITY_KEYS.has(key) || ARRAY_KEYS.has(key)) continue;
     // 값이 비어있으면 스킵
-    if (value === null || value === undefined || value === '' || value === false || value === '없음') continue;
+    if (value === null || value === undefined || value === '' || value === false || value === '없음' || value === 'None') continue;
 
-    const label = ENTITY_LABELS[key] || key; // 매핑 없으면 영어 키 그대로 표시 (폴백)
+    const label = labels[key as keyof typeof labels] || key; // 매핑 없으면 영어 키 그대로 표시 (폴백)
 
     // boolean true인 경우 라벨만 표시 (예: is_contactless -> "비대면 배달")
     if (value === true) {
@@ -174,6 +166,8 @@ export default function RequestDetailModal({
   const [saving, setSaving] = useState(false);
   const [confirmType, setConfirmType] = useState<'none' | 'cancel' | 'approve' | 'reject' | 'cancelApprove' | 'cancelReject'>('none');
   const showToast = useUiStore((s) => s.showToast);
+
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
@@ -269,35 +263,35 @@ export default function RequestDetailModal({
         {/* 헤더 */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <h2 className={styles.title}>요청 상세</h2>
+            <h2 className={styles.title}>{t.adminPage.requestDetailModal.title}</h2>
             <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
             {detail.cancelRequested && (
-              <StatusBadge variant="red">고객 취소 요청됨</StatusBadge>
+              <StatusBadge variant="red">{t.adminPage.requestDetailModal.status.cancelRequested}</StatusBadge>
             )}
           </div>
-          <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
+          <button className={styles.closeButton} onClick={onClose} aria-label={t.adminPage.requestDetailModal.buttons.close}>
             <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
           </button>
         </div>
 
         {/* 기본 정보 */}
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>기본 정보</h3>
+          <h3 className={styles.sectionTitle}>{t.adminPage.requestDetailModal.basicInfo}</h3>
           <div className={styles.grid}>
             <div className={styles.gridItem}>
-              <span className={styles.label}>객실</span>
+              <span className={styles.label}>{t.adminPage.requestDetailModal.roomNo}</span>
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
             <div className={styles.gridItem}>
-              <span className={styles.label}>현재 부서</span>
+              <span className={styles.label}>{t.adminPage.requestDetailModal.currentDept}</span>
               <span className={styles.value}>{detail.departmentName}</span>
             </div>
             <div className={styles.gridItem}>
-              <span className={styles.label}>생성 시간</span>
+              <span className={styles.label}>{t.adminPage.requestDetailModal.createdAt}</span>
               <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
             </div>
             <div className={styles.gridItem}>
-              <span className={styles.label}>최종 수정</span>
+              <span className={styles.label}>{t.adminPage.requestDetailModal.updatedAt}</span>
               <span className={styles.value}>{formatDateTime(detail.updatedAt)}</span>
             </div>
           </div>
@@ -305,10 +299,12 @@ export default function RequestDetailModal({
 
         {/* 요약 + 원문 */}
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>요청 내용</h3>
+          <h3 className={styles.sectionTitle}>{t.adminPage.requestDetailModal.requestContent}</h3>
           <div className={styles.contentBlock}>
-            <span className={styles.label}>요약</span>
-            <p className={styles.contentText}>{detail.summary}</p>
+            <span className={styles.label}>{t.adminPage.requestDetailModal.summary}</span>
+            <p className={styles.contentText}>
+              {language === 'en' && detail.entities?.summary_en ? detail.entities.summary_en : detail.summary}
+            </p>
           </div>
           {(() => {
             if (!detail.rawText) return null;
@@ -327,19 +323,19 @@ export default function RequestDetailModal({
               <>
                 {customerText && (
                   <div className={styles.contentBlock}>
-                    <span className={styles.label}>고객 원문</span>
+                    <span className={styles.label}>{t.adminPage.requestDetailModal.originalText}</span>
                     <p className={styles.rawText}>{customerText}</p>
                   </div>
                 )}
                 {orderDetail && !hasValidEntities && (
                   <div className={styles.contentBlock}>
-                    <span className={styles.label}>주문/요청 상세</span>
+                    <span className={styles.label}>{t.adminPage.requestDetailModal.orderDetail}</span>
                     <p className={styles.orderDetail}>{orderDetail}</p>
                   </div>
                 )}
                 {transferReason && (
                   <div className={styles.contentBlock}>
-                    <span className={styles.label}>부서 이관 사유</span>
+                    <span className={styles.label}>{t.adminPage.requestDetailModal.transferReason}</span>
                     <p className={styles.transferReason}>{transferReason}</p>
                   </div>
                 )}
@@ -351,9 +347,9 @@ export default function RequestDetailModal({
         {/* 첨부 사진 */}
         {detail.imageUrl && (
           <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>첨부 사진</h3>
+            <h3 className={styles.sectionTitle}>{t.adminPage.requestDetailModal.photo}</h3>
             <div className={styles.contentBlock} style={{ textAlign: 'center' }}>
-              <img src={detail.imageUrl} alt="첨부 사진" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
+              <img src={detail.imageUrl} alt={t.adminPage.requestDetailModal.photo} style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
             </div>
           </div>
         )}
@@ -361,10 +357,10 @@ export default function RequestDetailModal({
         {/* AI 분석 결과 */}
         {((detail.entities && Object.keys(detail.entities).length > 0) || detail.reasoning) && (
           <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>AI 분석 결과</h3>
+            <h3 className={styles.sectionTitle}>{t.adminPage.requestDetailModal.aiAnalysis}</h3>
             <div className={styles.aiInfo}>
               <div className={styles.confidenceBadge}>
-                신뢰도: {Math.round(detail.confidence * 100)}%
+                {t.adminPage.requestDetailModal.confidence}: {Math.round(detail.confidence * 100)}%
               </div>
               {(() => {
                 if (!detail.entities) return null;
@@ -374,13 +370,13 @@ export default function RequestDetailModal({
 
                 return (
                   <div className={styles.entityList}>
-                    {renderEntities(detail.entities)}
+                    {renderEntities(detail.entities, t, language)}
                   </div>
                 );
               })()}
               {detail.reasoning && (
                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-gray-200)' }}>
-                  <span className={styles.label} style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>판단 근거</span>
+                  <span className={styles.label} style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>{t.adminPage.requestDetailModal.reasoning}</span>
                   <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-gray-700)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
                     {detail.reasoning}
                   </p>
@@ -392,10 +388,10 @@ export default function RequestDetailModal({
 
         {/* 배정 관리 */}
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>배정 관리</h3>
+          <h3 className={styles.sectionTitle}>{t.adminPage.requestDetailModal.assignment}</h3>
           <div className={styles.editRow}>
             <div className={styles.editField}>
-              <label className={styles.label}>우선순위</label>
+              <label className={styles.label}>{t.adminPage.requestDetailModal.priority}</label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
                 <input
                   type="checkbox"
@@ -404,12 +400,12 @@ export default function RequestDetailModal({
                   style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
                 />
                 <span style={{ fontSize: '14px', fontWeight: editPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
-                  긴급 작업으로 설정
+                  {t.adminPage.requestDetailModal.setUrgent}
                 </span>
               </label>
             </div>
             <div className={styles.editField}>
-              <label className={styles.label} htmlFor="detail-dept">배정 부서</label>
+              <label className={styles.label} htmlFor="detail-dept">{t.adminPage.requestDetailModal.assignDept}</label>
               <select
                 id="detail-dept"
                 className={styles.select}
@@ -428,32 +424,32 @@ export default function RequestDetailModal({
         <div className={styles.footer}>
           {detail.status === 'ESCALATED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
-              에스컬레이션 반려
+              {t.adminPage.requestDetailModal.buttons.rejectEscalation}
             </Button>
           ) : detail.cancelRequested ? (
             <>
               <Button variant="secondary" onClick={() => setConfirmType('cancelReject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
-                취소 반려
+                {t.adminPage.requestDetailModal.buttons.rejectCancel}
               </Button>
               <Button variant="primary" onClick={() => setConfirmType('cancelApprove')} disabled={saving || loading}>
-                취소 승인
+                {t.adminPage.requestDetailModal.buttons.approveCancel}
               </Button>
             </>
           ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
-              강제 요청 취소
+              {t.adminPage.requestDetailModal.buttons.forceCancel}
             </Button>
           ) : <div />}
 
           <div className={styles.footerRight}>
-            <Button variant="secondary" onClick={onClose}>닫기</Button>
+            <Button variant="secondary" onClick={onClose}>{t.adminPage.requestDetailModal.buttons.close}</Button>
             {detail.status === 'ESCALATED' ? (
               <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
-                에스컬레이션 승인
+                {t.adminPage.requestDetailModal.buttons.approveEscalation}
               </Button>
             ) : hasChanges ? (
               <Button variant="primary" onClick={handleSave} disabled={saving || loading}>
-                {saving ? '저장 중...' : '변경 저장'}
+                {saving ? t.adminPage.requestDetailModal.buttons.saving : t.adminPage.requestDetailModal.buttons.save}
               </Button>
             ) : null}
           </div>

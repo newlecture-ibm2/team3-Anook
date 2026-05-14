@@ -166,6 +166,70 @@
       "sending": "Sending...",
       "send": "Send",
       "sendFail": "Failed to send message."
+    },
+    "requestDetailModal": {
+      "title": "Request Details",
+      "basicInfo": "Basic Info",
+      "roomNo": "Room No",
+      "currentDept": "Current Dept",
+      "createdAt": "Created At",
+      "updatedAt": "Last Updated",
+      "requestContent": "Request Content",
+      "summary": "Summary",
+      "originalText": "Original Text",
+      "orderDetail": "Order/Request Details",
+      "transferReason": "Transfer Reason",
+      "photo": "Attached Photo",
+      "aiAnalysis": "AI Analysis Result",
+      "confidence": "Confidence",
+      "reasoning": "Reasoning",
+      "assignment": "Assignment Management",
+      "priority": "Priority",
+      "setUrgent": "Set as Urgent Task",
+      "assignDept": "Assigned Dept",
+      "buttons": {
+        "forceCancel": "Force Cancel Request",
+        "approveEscalation": "Approve Escalation",
+        "rejectEscalation": "Reject Escalation",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "close": "Close",
+        "approveCancel": "Approve Cancellation",
+        "rejectCancel": "Reject Cancellation"
+      },
+      "status": {
+        "cancelRequested": "Cancellation Requested by Guest"
+      },
+      "entityLabels": {
+        "is_contactless": "Contactless Delivery",
+        "target_time": "Target Time",
+        "equipment": "Equipment",
+        "symptom": "Symptom",
+        "location": "Location",
+        "destination": "Destination",
+        "passenger_count": "Passengers",
+        "restaurant_name": "Restaurant",
+        "cuisine_type": "Cuisine",
+        "category": "Category",
+        "action": "Action Type",
+        "item": "Item",
+        "time": "Time",
+        "special_requests": "Special Requests",
+        "count": "Quantity",
+        "type": "Type",
+        "target": "Target",
+        "issue": "Issue/Symptom",
+        "priority": "Est. Priority",
+        "topic": "Topic",
+        "question": "Question",
+        "language": "Language",
+        "items": "Item Requests",
+        "tasks": "Task Requests",
+        "menu_items": "Order Menu",
+        "countSuffix": " item(s)",
+        "option": "Option",
+        "none": "None"
+      }
     }
   },
   "guestChat": {
@@ -190,5 +254,125 @@
         "EMERGENCY": "Emergency"
       }
     }
+  },
+  "intents": {
+    "TOWEL": "Towel Request",
+    "WATER": "Water Request",
+    "ROOM_CLEAN": "Room Cleaning",
+    "CLEAN_ROOM": "Room Cleaning",
+    "CLEANING": "Cleaning Request",
+    "MULTIPLE_HK": "Housekeeping Request",
+    "AMENITY_DELIVERY": "Amenity Request",
+    "LATE_CHECKOUT": "Late Checkout",
+    "AMENITY": "Amenity Request",
+    "BEDDING": "Bedding Request",
+    "ROOM_SERVICE": "Room Service",
+    "MENU_INQUIRY": "Menu Inquiry",
+    "ALLERGY_CHECK": "Allergy Check",
+    "ORDER_MODIFY": "Order Modification",
+    "ORDER_CANCEL": "Order Cancellation",
+    "OPERATING_HOURS": "Operating Hours",
+    "RECOMMENDATION": "Recommendation",
+    "SPENDING_INQUIRY": "Spending Inquiry",
+    "AC_REPAIR": "AC Repair",
+    "HEATER_REPAIR": "Heater Repair",
+    "PLUMBING": "Plumbing Request",
+    "WATER_LEAK": "Water Leak",
+    "DRAIN_CLOG": "Drain Clogged",
+    "ELECTRICAL": "Electrical Issue",
+    "LIGHTING": "Lighting Repair",
+    "TV_ISSUE": "TV Issue",
+    "WIFI_ISSUE": "WiFi Issue",
+    "APPLIANCE": "Appliance Issue",
+    "DOOR_LOCK": "Door Lock Issue",
+    "WINDOW": "Window/Noise Issue",
+    "FURNITURE": "Furniture Repair",
+    "FIRE_ALARM": "Fire Alarm Issue",
+    "ODOR": "Bad Odor",
+    "NOISE": "Noise Complaint",
+    "OTHER": "Other Request",
+    "TAXI": "Taxi Request",
+    "TOUR_INFO": "Tour Information",
+    "LUGGAGE_STORAGE": "Luggage Storage",
+    "RESTAURANT": "Restaurant Reservation",
+    "RESERVATION": "Reservation",
+    "DELIVERY": "Delivery Request",
+    "WAKE_UP_CALL": "Wake-up Call",
+    "MEDICAL_INFO": "Medical Info",
+    "POSTAL_SERVICE": "Postal Service",
+    "COMPLAINT": "Complaint",
+    "INQUIRY": "General Inquiry",
+    "AMBIGUOUS": "Ambiguous Request",
+    "ESCALATION": "Staff Assistance",
+    "LOST_FOUND": "Lost & Found",
+    "MEDICAL_EMERGENCY": "Medical Emergency",
+    "FIRE_EMERGENCY": "Fire Emergency",
+    "VIOLENCE_EMERGENCY": "Disturbance/Violence"
+  },
+  "cardUI": {
+    "status": {
+      "pending": "Pending",
+      "received": "Received",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "completedMark": "Completed",
+      "cancelled": "Cancelled",
+      "cancelPending": "Cancel Pending",
+      "escalated": "Awaiting Staff"
+    },
+    "message": {
+      "cancelPending": "🔄 Cancel request received, staff is checking",
+      "escalated": "💬 Front desk staff will respond shortly.",
+      "forwarded": "✅ Forwarded to staff",
+      "cancelledCard": "Request Cancelled",
+      "autoAcceptGuide": "Automatically submitted shortly."
+    },
+    "button": {
+      "accept": "Submit Now",
+      "cancel": "Cancel"
+    },
+    "time": {
+      "received": "Received",
+      "seconds": "sec"
+    },
+    "title": "Request Status",
+    "items": " items",
+    "and": "and",
+    "others": "other item(s)"
+  },
+  "ticketUI": {
+    "department": {
+      "HK": "Housekeeping",
+      "FACILITY": "Facility",
+      "FB": "F&B",
+      "CONCIERGE": "Concierge",
+      "FRONT": "Front Desk",
+      "EMERGENCY": "Emergency 🚨"
+    },
+    "badge": {
+      "cancelled": "Cancelled",
+      "cancelPending": "Cancel Pending",
+      "urgent": "Urgent",
+      "contactless": "Contactless",
+      "targetTime": "Target Time"
+    },
+    "button": {
+      "accept": "Accept",
+      "complete": "Complete"
+    },
+    "time": {
+      "justStarted": "Just started",
+      "elapsed": " elapsed",
+      "hoursAgo": "hrs ago",
+      "minsAgo": "mins ago",
+      "justNow": "Just now"
+    }
+  },
+  "menu": {
+    "아메리카노": "Americano",
+    "한우 불고기 덮밥": "Hanwoo Bulgogi Bowl",
+    "제로콜라": "Zero Coke",
+    "콜라": "Coke",
+    "클래식 치즈버거": "Classic Cheeseburger"
   }
 }

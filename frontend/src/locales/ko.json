@@ -166,6 +166,70 @@
       "sending": "전송중...",
       "send": "전송",
       "sendFail": "메시지 전송에 실패했습니다."
+    },
+    "requestDetailModal": {
+      "title": "요청 상세",
+      "basicInfo": "기본 정보",
+      "roomNo": "객실",
+      "currentDept": "현재 부서",
+      "createdAt": "생성 시간",
+      "updatedAt": "최종 수정",
+      "requestContent": "요청 내용",
+      "summary": "요약",
+      "originalText": "고객 원문",
+      "orderDetail": "주문/요청 상세",
+      "transferReason": "부서 이관 사유",
+      "photo": "첨부 사진",
+      "aiAnalysis": "AI 분석 결과",
+      "confidence": "신뢰도",
+      "reasoning": "판단 근거",
+      "assignment": "배정 관리",
+      "priority": "우선순위",
+      "setUrgent": "긴급 작업으로 설정",
+      "assignDept": "배정 부서",
+      "buttons": {
+        "forceCancel": "강제 요청 취소",
+        "approveEscalation": "에스컬레이션 승인",
+        "rejectEscalation": "에스컬레이션 반려",
+        "save": "변경 저장",
+        "saving": "저장 중...",
+        "close": "닫기",
+        "approveCancel": "취소 승인",
+        "rejectCancel": "취소 반려"
+      },
+      "status": {
+        "cancelRequested": "고객 취소 요청됨"
+      },
+      "entityLabels": {
+        "is_contactless": "비대면 배달",
+        "target_time": "희망 시간",
+        "equipment": "대상 설비",
+        "symptom": "증상",
+        "location": "위치",
+        "destination": "목적지",
+        "passenger_count": "인원",
+        "restaurant_name": "식당",
+        "cuisine_type": "음식 종류",
+        "category": "카테고리",
+        "action": "요청 유형",
+        "item": "대상 물품",
+        "time": "시간",
+        "special_requests": "추가 요청",
+        "count": "수량",
+        "type": "유형",
+        "target": "대상",
+        "issue": "문제/증상",
+        "priority": "예상 긴급도",
+        "topic": "주제",
+        "question": "질문",
+        "language": "언어",
+        "items": "물품 요청",
+        "tasks": "작업 요청",
+        "menu_items": "주문 메뉴",
+        "countSuffix": "개",
+        "option": "옵션",
+        "none": "없음"
+      }
     }
   },
   "guestChat": {
@@ -190,5 +254,125 @@
         "EMERGENCY": "긴급 대응"
       }
     }
+  },
+  "intents": {
+    "TOWEL": "수건 요청",
+    "WATER": "생수 요청",
+    "ROOM_CLEAN": "객실 청소 요청",
+    "CLEAN_ROOM": "객실 청소 요청",
+    "CLEANING": "청소 요청",
+    "MULTIPLE_HK": "하우스키핑 요청",
+    "AMENITY_DELIVERY": "어메니티 요청",
+    "LATE_CHECKOUT": "레이트 체크아웃",
+    "AMENITY": "어메니티 요청",
+    "BEDDING": "침구류 요청",
+    "ROOM_SERVICE": "룸서비스",
+    "MENU_INQUIRY": "메뉴 문의",
+    "ALLERGY_CHECK": "알러지 문의",
+    "ORDER_MODIFY": "주문 변경",
+    "ORDER_CANCEL": "주문 취소",
+    "OPERATING_HOURS": "운영시간 문의",
+    "RECOMMENDATION": "추천 요청",
+    "SPENDING_INQUIRY": "이용 금액 조회",
+    "AC_REPAIR": "에어컨 수리",
+    "HEATER_REPAIR": "히터 수리",
+    "PLUMBING": "배관 수리",
+    "WATER_LEAK": "누수",
+    "DRAIN_CLOG": "배수구 막힘",
+    "ELECTRICAL": "전기/콘센트 수리",
+    "LIGHTING": "조명 수리",
+    "TV_ISSUE": "TV 수리",
+    "WIFI_ISSUE": "와이파이 문제",
+    "APPLIANCE": "가전제품 수리",
+    "DOOR_LOCK": "도어락 수리",
+    "WINDOW": "창문 수리/방음",
+    "FURNITURE": "가구 수리",
+    "FIRE_ALARM": "화재경보기 문제",
+    "ODOR": "악취 문제",
+    "NOISE": "소음 불편",
+    "OTHER": "기타 요청",
+    "TAXI": "택시 호출",
+    "TOUR_INFO": "관광지 안내",
+    "LUGGAGE_STORAGE": "수하물 보관",
+    "RESTAURANT": "식당 예약",
+    "RESERVATION": "예약 문의",
+    "DELIVERY": "배달품 전달",
+    "WAKE_UP_CALL": "모닝콜",
+    "MEDICAL_INFO": "의료 정보",
+    "POSTAL_SERVICE": "우편물 발송",
+    "COMPLAINT": "컴플레인",
+    "INQUIRY": "일반 문의",
+    "AMBIGUOUS": "의도 불분명",
+    "ESCALATION": "직원 연결",
+    "LOST_FOUND": "분실물 접수",
+    "MEDICAL_EMERGENCY": "응급 환자 발생",
+    "FIRE_EMERGENCY": "화재 발생",
+    "VIOLENCE_EMERGENCY": "난동/폭행 발생"
+  },
+  "cardUI": {
+    "status": {
+      "pending": "대기 중",
+      "received": "접수 완료",
+      "inProgress": "처리 중",
+      "completed": "완료",
+      "completedMark": "완료됨",
+      "cancelled": "취소됨",
+      "cancelPending": "취소 대기 중",
+      "escalated": "상담 대기 중"
+    },
+    "message": {
+      "cancelPending": "🔄 취소 요청이 접수되어 직원이 확인 중입니다",
+      "escalated": "💬 프론트 직원이 채팅으로 응대할 예정입니다.",
+      "forwarded": "✅ 직원에게 전달되었습니다",
+      "cancelledCard": "요청이 취소되었습니다",
+      "autoAcceptGuide": "잠시 후 자동으로 접수됩니다."
+    },
+    "button": {
+      "accept": "바로등록",
+      "cancel": "취소하기"
+    },
+    "time": {
+      "received": "접수",
+      "seconds": "초"
+    },
+    "title": "요청 처리 현황",
+    "items": "개",
+    "and": "외",
+    "others": "건"
+  },
+  "ticketUI": {
+    "department": {
+      "HK": "하우스키핑",
+      "FACILITY": "시설관리",
+      "FB": "F&B",
+      "CONCIERGE": "컨시어지",
+      "FRONT": "프런트",
+      "EMERGENCY": "응급상황 🚨"
+    },
+    "badge": {
+      "cancelled": "취소됨",
+      "cancelPending": "취소 대기",
+      "urgent": "긴급",
+      "contactless": "비대면 배달",
+      "targetTime": "희망 시간"
+    },
+    "button": {
+      "accept": "수락하기",
+      "complete": "업무 완료"
+    },
+    "time": {
+      "justStarted": "방금 시작",
+      "elapsed": " 경과",
+      "hoursAgo": "시간 전",
+      "minsAgo": "분 전",
+      "justNow": "방금 전"
+    }
+  },
+  "menu": {
+    "아메리카노": "아메리카노",
+    "한우 불고기 덮밥": "한우 불고기 덮밥",
+    "제로콜라": "제로콜라",
+    "콜라": "콜라",
+    "클래식 치즈버거": "클래식 치즈버거"
   }
 }

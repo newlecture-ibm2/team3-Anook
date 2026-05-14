@@ -92,7 +92,8 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
    - "clarification_question": A polite question.
-3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
+3. OUTPUT LANGUAGE: summary, description MUST be in KOREAN.
+   - CRITICAL LANGUAGE RULE: `clarification_question` and `final_reply` MUST ALWAYS be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, these fields MUST be in English. Do NOT default to Korean for these fields.
 4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
 5. CONTEXT SEPARATION: DO NOT reuse or hallucinate entities (like time, destination, passenger_count) from older messages in the `[대화 맥락]` for a NEW request. If the user makes a new request (e.g. saying "Call a taxi" again after a previous booking), you MUST evaluate it independently and ask for missing fields again.
 
@@ -108,6 +109,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "confidence": 0.0~1.0,
   "entities": {
     "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | OTHER",
+    "summary_en": "English translation of the summary",
     ... (other intent-specific fields)
   },
   "needs_clarification": boolean,
