@@ -97,8 +97,8 @@ STATIC_REPLIES = {
         "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 담당 직원에게 즉시 전달하여 빠르게 해결해 드리겠습니다.",
-        "en": "We sincerely apologize for the inconvenience. We will escalate this to our staff immediately for a prompt resolution."
+        "ko": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트와 직접 연결해 드리겠습니다.",
+        "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now."
     },
     "FALLBACK_FAILURE": {
         "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
@@ -395,33 +395,49 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     agent_tasks = []  # (domain, primary, coroutine)
 
     # ──────────────────────────────────────────────
-    # STEP 2-1: [FALSE ALARM 감지] 코드 레벨 방어
+    # STEP 2-1: [FALSE ALARM 감지] LLM 기반 다국어 및 의미 검증
     # ──────────────────────────────────────────────
-    # LLM이 "불" 같은 키워드를 보고 부정형("안났어")을 무시하는 문제를 방지.
-    # 직전 AI 응답이 EMERGENCY/ESCALATION 관련이었고, 현재 사용자 메시지에
-    # 부정/정정/취소 패턴이 포함되어 있으면 강제로 CANCEL로 오버라이드합니다.
-    _NEGATION_PATTERNS = ["안났", "안 났", "아니야", "아니요", "아닌데", "장난", "잘못", "취소", "괜찮아", "해결됐", "실수", "오해", "거짓", "뻥이"]
-    _EMERGENCY_CONTEXT_KEYWORDS = ["119", "응급", "보안팀", "긴급 구조", "EMERGENCY", "즉시 119"]
+    # 단순 키워드("아니") 매칭의 치명적 오류("아니 진짜 불이 났다고!!")를 방지하고,
+    # 영어(No, false alarm), 중국어, 일본어 등 모든 언어의 취소 의도를 정확히 파악합니다.
+    _EMERGENCY_CONTEXT_KEYWORDS = ["119", "응급", "보안팀", "긴급", "EMERGENCY", "emergency", "security", "911"]
     
     has_emergency_context = False
     if request.chat_history:
         recent_ai_msgs = [m for m in request.chat_history[-4:] if m.get("role") == "ai"]
         if recent_ai_msgs:
-            last_ai_content = recent_ai_msgs[-1].get("content", "")
+            last_ai_content = recent_ai_msgs[-1].get("content", "").lower()
             has_emergency_context = any(kw in last_ai_content for kw in _EMERGENCY_CONTEXT_KEYWORDS)
     
-    has_negation = any(pat in request.text for pat in _NEGATION_PATTERNS)
-    
-    if has_emergency_context and has_negation:
-        # 라우터가 EMERGENCY를 반환했더라도 강제 CANCEL로 오버라이드
-        any_emergency = any(r.route_type == "FRONT_ESCALATION" and r.domain == "EMERGENCY" for r in router_results)
-        if any_emergency:
-            print(f"[Analyze] 🛡️ FALSE ALARM 감지 — EMERGENCY → CANCEL 오버라이드 (text: '{request.text}')")
-            for r in router_results:
-                if r.route_type == "FRONT_ESCALATION":
-                    r.route_type = "CANCEL"
-                    r.domain = "EMERGENCY"
-                    r.confidence = 1.0
+    if has_emergency_context:
+        is_false_alarm = False
+        try:
+            validation_prompt = (
+                f"호텔 직원이 고객에게 긴급 상황(화재, 응급 환자 등)을 인지하고 즉시 조치/출동하겠다고 안내한 직후입니다.\n"
+                f"고객이 보낸 다음 메시지를 읽고, 고객의 의도를 정확히 분류하세요.\n"
+                f"- CANCEL: 오인 신고, 단순 실수, 장난, 상황 종료 등 출동을 취소하려는 의도 (예: '아니야 잘못 눌렀어', '불 안났어', '취소', 'No, false alarm', '不是')\n"
+                f"- CONFIRM: 상황이 실제임을 확인하거나, 강조하거나, 더 빨리 와달라고 재촉하는 의도 (예: '아니 진짜 불났다고!', '빨리 와요', 'Yes, hurry')\n\n"
+                f"[고객 메시지]: {request.text}"
+            )
+            val_raw = await call_gemini_async(
+                prompt=validation_prompt,
+                system_instruction='반드시 {"intent": "CANCEL"} 또는 {"intent": "CONFIRM"} 형태의 JSON으로만 응답하세요.'
+            )
+            is_false_alarm = (val_raw.get("intent") == "CANCEL") if isinstance(val_raw, dict) else False
+            print(f"[Analyze] 🧠 긴급 상황 의미 검증 결과: {val_raw} (원문: '{request.text}')")
+        except Exception as e:
+            print(f"[Analyze] ⚠️ 긴급 상황 의미 검증 실패, 폴백 사용: {e}")
+            is_false_alarm = any(pat in request.text.lower() for pat in ["취소", "장난", "잘못", "아니", "괜찮", "no", "false", "cancel", "mistake"])
+
+        if is_false_alarm:
+            # 라우터가 EMERGENCY를 반환했더라도 강제 CANCEL로 오버라이드
+            any_emergency = any(r.route_type == "FRONT_ESCALATION" and r.domain == "EMERGENCY" for r in router_results)
+            if any_emergency:
+                print(f"[Analyze] 🛡️ FALSE ALARM (LLM 판별 완료) — EMERGENCY → CANCEL 오버라이드")
+                for r in router_results:
+                    if r.route_type == "FRONT_ESCALATION":
+                        r.route_type = "CANCEL"
+                        r.domain = "EMERGENCY"
+                        r.confidence = 1.0
 
     # ──────────────────────────────────────────────
     # STEP 2-5: [Progress Indicator] 라우터 결과 기반 진행 상태 전송
@@ -817,8 +833,25 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-f: FRONT_ESCALATION → 명시적인 프론트 데스크 연결 요청
         if primary.route_type == "FRONT_ESCALATION":
             is_emergency = (primary.domain == "EMERGENCY")
-            reply_key = "EMERGENCY_REPLY" if is_emergency else "ESCALATION"
-            summary_val = "긴급 구조 요청 (119/보안팀)" if is_emergency else "프론트 연결 요청 (고객 확인)"
+            
+            # 불만(Complaint) 여부 파악 (키워드 기반 휴리스틱)
+            is_complaint = False
+            if not is_emergency:
+                text_lower = request.text.lower()
+                summary_lower = (primary.summary or "").lower()
+                reasoning_lower = (primary.reasoning or "").lower()
+                complaint_keywords = ["불만", "컴플레인", "불편", "짜증", "최악", "환불", "태도", "실화", "이따구", "장난하", "엉망", "화가", "기분"]
+                is_complaint = any(kw in text_lower or kw in summary_lower or kw in reasoning_lower for kw in complaint_keywords)
+                
+            if is_emergency:
+                reply_key = "EMERGENCY_REPLY"
+                summary_val = "긴급 구조 요청 (119/보안팀)"
+            elif is_complaint:
+                reply_key = "COMPLAINT"
+                summary_val = "프론트 연결 (고객 불만)"
+            else:
+                reply_key = "ESCALATION"
+                summary_val = "프론트 연결 요청 (고객 확인)"
             
             response = {
                 "guest_reply": _get_static_reply(reply_key, request.language),

@@ -44,5 +44,18 @@ public class MessagePersistenceAdapter implements MessageRepositoryPort {
                 .map(MessageJpaEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    public java.util.Optional<Message> findById(Long id) {
+        return jpaRepository.findById(id).map(MessageJpaEntity::toDomain);
+    }
+
+    @Override
+    public List<Message> findVocs() {
+        return jpaRepository.findBySentimentIsNotNullOrderByCreatedAtDesc()
+                .stream()
+                .map(MessageJpaEntity::toDomain)
+                .toList();
+    }
 }
 

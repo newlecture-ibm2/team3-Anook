@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # ── 상수 ──
 VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
-VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK"}
+VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK", "VOC"}
 
 def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None) -> List[RouterOutputSchema]:
     """
@@ -78,7 +78,7 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
         if result.route_type == "EMERGENCY" or result.domain == "EMERGENCY":
             result.route_type = "FRONT_ESCALATION"
             result.domain = "EMERGENCY"
-            result.priority = "HIGH"
+            result.priority = "URGENT"
 
         # ── 3) route_type 유효성 검증 ──
         if result.route_type not in VALID_ROUTE_TYPES:
@@ -95,7 +95,7 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
                 result.domain = None
 
         # ── 5) 티켓 미생성 유형의 domain 무효화 (보호 처리) ──
-        if result.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", "STATUS_CHECK"):
+        if result.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", "STATUS_CHECK", "VOC"):
             result.domain = None
             result.create_ticket = False
 
