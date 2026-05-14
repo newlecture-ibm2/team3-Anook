@@ -1,6 +1,7 @@
 from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.facility_prompt import FACILITY_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
+from app.domains.rag import service as rag_service
 
 # ── 대상물(equipment) 정규화 매핑 ──
 # 고객이 같은 설비를 다양하게 부르는 경우를 통일
@@ -35,14 +36,31 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
 async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """시설관리 에이전트: 고객 메시지에서 시설/수리 관련 정보를 추출"""
     
+    # 1. RAG 검색 → FACILITY 도메인 지식 (수리비, 담당자 등)
+    rag_context = ""
+    try:
+        rag_results = rag_service.search_hybrid(
+            query=user_message, domain_code="FACILITY", top_k=3, threshold=0.5
+        )
+        if rag_results:
+            rag_context = "\n".join([f"- {r['question']}: {r['answer']}" for r in rag_results])
+    except Exception as e:
+        print(f"[FACILITY Agent] RAG 검색 실패: {e}")
+
+    # 2. 대화 맥락 조립
     if chat_history:
         context = "\n".join([
             f"{'고객' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
             for m in chat_history[-5:]
         ])
-        prompt = f"[대화 맥락]\n{context}\n\n[현재 요청]\n고객(객실 {room_no}): {user_message}"
+        prompt = f"[대화 맥락]\n{context}\n\n"
     else:
-        prompt = f"고객 객실: {room_no}\n고객 메시지: {user_message}"
+        prompt = f"고객 객실: {room_no}\n"
+    
+    # 3. RAG 지식 삽입 + 현재 메시지
+    if rag_context:
+        prompt += f"[관련 지식 (RAG)]\n{rag_context}\n\n"
+    prompt += f"[현재 요청]\n고객 메시지: {user_message}"
     
     raw = await call_gemini_async(prompt=prompt, system_instruction=FACILITY_SYSTEM_PROMPT, images=images)
     
