@@ -18,7 +18,7 @@ interface AdminRequest {
   entities?: Record<string, any>;
 }
 
-export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all') {
+export default function useAdminRequests(dept?: string, searchQuery: string = '', filterType: string = 'all', includeAllDepts: boolean = false) {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +27,15 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
   const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const url = dept
-        ? `/api/admin/requests?dept=${dept}`
-        : '/api/admin/requests?exclude=FRONT,EMERGENCY';
+      let url: string;
+      if (includeAllDepts) {
+        // 모든 부서 요청 조회 (프론트 데스크 취소 승인 대기 탭용)
+        url = '/api/admin/requests';
+      } else if (dept) {
+        url = `/api/admin/requests?dept=${dept}`;
+      } else {
+        url = '/api/admin/requests?exclude=FRONT,EMERGENCY';
+      }
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: AdminRequest[] = await res.json();
@@ -39,7 +45,7 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
     } finally {
       setLoading(false);
     }
-  }, [dept]);
+  }, [dept, includeAllDepts]);
 
   useEffect(() => {
     fetchRequests();

@@ -158,6 +158,7 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
             setIsEditModalOpen(false);
             setSelectedItem(null);
           }}
+          mode="register"
           initialDomainCode={selectedItem.domainCode}
           initialQuestion={selectedItem.question}
           initialAnswer={selectedItem.answer}

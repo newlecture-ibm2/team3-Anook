@@ -19,6 +19,7 @@ interface RequestDetail {
   cancelRequested: boolean;
   cancelRequestedAt: string | null;
   imageUrl?: string | null;
+  reasoning?: string;
 }
 
 export default function useRequestDetail() {

@@ -19,6 +19,7 @@ public class Request {
     private double confidence;
     private String rawText;
     private String summary;
+    private String reasoning;
     private String roomNo;
     private Long guestId;
     private Long assignedStaffId;
@@ -42,7 +43,8 @@ public class Request {
                                   Map<String, Object> entities,
                                   double confidence,
                                   String rawText,
-                                  String summary) {
+                                  String summary,
+                                  String reasoning) {
         Request request = new Request();
         request.roomNo = roomNo;
         request.guestId = guestId;
@@ -53,6 +55,7 @@ public class Request {
         request.confidence = confidence;
         request.rawText = rawText;
         request.summary = summary;
+        request.reasoning = reasoning;
         request.version = 0;
         request.cancelRequested = false;
         request.createdAt = LocalDateTime.now();
@@ -71,6 +74,7 @@ public class Request {
                                         double confidence,
                                         String rawText,
                                         String summary,
+                                        String reasoning,
                                         String roomNo,
                                         Long guestId,
                                         Long assignedStaffId,
@@ -88,6 +92,7 @@ public class Request {
         request.confidence = confidence;
         request.rawText = rawText;
         request.summary = summary;
+        request.reasoning = reasoning;
         request.roomNo = roomNo;
         request.guestId = guestId;
         request.assignedStaffId = assignedStaffId;
@@ -222,6 +227,7 @@ public class Request {
     public double getConfidence() { return confidence; }
     public String getRawText() { return rawText; }
     public String getSummary() { return summary; }
+    public String getReasoning() { return reasoning; }
     public String getRoomNo() { return roomNo; }
     public Long getGuestId() { return guestId; }
     public Long getAssignedStaffId() { return assignedStaffId; }

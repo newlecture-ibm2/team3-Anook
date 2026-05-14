@@ -112,7 +112,17 @@ INSERT INTO pms_menu (name, price, category, allergens, options, available) VALU
     -- DESSERT (디저트)
     ('뉴욕 치즈케이크',      12000, 'DESSERT', '밀,유제품,계란',        NULL,                    TRUE),
     ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', NULL,                    TRUE),
-    ('바닐라 아이스크림',    8000,  'DESSERT', '유제품',               NULL,                    TRUE)
+    ('바닐라 아이스크림',    8000,  'DESSERT', '유제품',               NULL,                    TRUE),
+    -- HK (하우스키핑 유료 서비스)
+    ('추가 수건',            1000,  'HK_AMENITY',    NULL, NULL, TRUE),
+    ('생수 추가',            2000,  'HK_AMENITY',    NULL, NULL, TRUE),
+    ('어메니티 팩',          3000,  'HK_AMENITY',    NULL, NULL, TRUE),
+    ('엑스트라 베드',        50000, 'HK_FURNITURE',  NULL, NULL, TRUE),
+    ('긴급 세탁',            10000, 'HK_LAUNDRY',    NULL, NULL, TRUE),
+    ('일반 세탁',            7000,  'HK_LAUNDRY',    NULL, NULL, TRUE),
+    ('미니바 맥주',          8000,  'HK_MINIBAR',    NULL, NULL, TRUE),
+    ('미니바 와인',          15000, 'HK_MINIBAR',    NULL, NULL, TRUE),
+    ('미니바 스낵',          5000,  'HK_MINIBAR',    NULL, NULL, TRUE)
 ON CONFLICT DO NOTHING;
 
 -- Mock 요청 시드 데이터

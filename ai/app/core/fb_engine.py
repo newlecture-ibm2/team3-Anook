@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import httpx
 import asyncio
 from app.infrastructure.gemini.client import call_gemini_async
@@ -128,6 +129,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "confidence": result.confidence,
         "missing_fields": getattr(result, "missing_fields", []),
         "clarification_options": getattr(result, "clarification_options", []),
+        "reasoning": result.reasoning,
     }
 
 

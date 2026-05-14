@@ -51,4 +51,5 @@ async def run_front_agent(user_message: str, room_no: str, chat_history: list = 
         "entities": result.entities,
         "confidence": result.confidence,
         "missing_fields": result.missing_fields,
+        "reasoning": result.reasoning,
     }

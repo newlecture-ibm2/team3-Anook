@@ -127,12 +127,12 @@
       "tabs": {
         "unhandled": "Pending",
         "inProgress": "In Progress",
-        "escalation": "Escalated"
+        "escalation": "Transfer Request"
       },
       "sections": {
         "unhandled": "Unhandled / Exception Requests",
         "inProgress": "Requests In Progress",
-        "escalation": "Requests Pending Approval"
+        "escalation": "Transfer Request"
       },
       "empty": "No requests found.",
       "actions": {
@@ -146,7 +146,7 @@
         "assigned": "Assigned",
         "inProgress": "In Progress",
         "completed": "Completed",
-        "escalated": "Escalated"
+        "escalated": "Transfer Request"
       }
     },
     "chatHistory": {

@@ -35,14 +35,15 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 
 1. TAXI
    - Required: destination (string), time (string), passenger_count (number)
-   - If 'destination' is missing: ask for it and provide options like ["Incheon Airport", "Seoul Station", "Gangnam"].
+   - If 'destination' is missing: ask for it.
+   - STRICT RULE FOR 'time': NEVER assume or guess "now" (지금) unless the user explicitly says "now", "right away", or gives a specific time. If they just say "Call a taxi", 'time' MUST be missing.
    - If 'time' is missing: ask "What time would you like the taxi?".
    - If 'passenger_count' is missing: ask "How many passengers will be riding?".
 
 2. TOUR_INFO
    - Required: category (History/Shopping/Nature/Food)
    - Optional: area (string)
-   - If 'category' is missing: ask "What kind of place are you looking for?" with options ["History", "Shopping", "Nature", "Food"].
+   - If 'category' is missing: ask "What kind of place are you looking for?".
 
 3. LUGGAGE_STORAGE
    - Required: action (store / pickup), count (number)
@@ -91,9 +92,9 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
    - "clarification_question": A polite question.
-   - "clarification_options": 3-4 specific choices for the guest to pick.
 3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
 4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
+5. CONTEXT SEPARATION: DO NOT reuse or hallucinate entities (like time, destination, passenger_count) from older messages in the `[대화 맥락]` for a NEW request. If the user makes a new request (e.g. saying "Call a taxi" again after a previous booking), you MUST evaluate it independently and ask for missing fields again.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ OUTPUT JSON STRUCTURE
@@ -111,7 +112,6 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   },
   "needs_clarification": boolean,
   "clarification_question": "string (in guest's language)",
-  "clarification_options": ["option1", "option2"],
   "missing_fields": ["field_name"]
 }
 
@@ -119,6 +119,12 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 - If the guest's request has ABSOLUTELY NOTHING to do with your department (Concierge) AND is clearly meant for another department (e.g., room service food, towels, AC repair), DO NOT ask for clarification or force a ticket in your domain.
 - Instead, set `domain` to "FRONT", `intent` to "ESCALATION", and put the guest's request in the `summary`. The system will route it to the Front Desk for manual transfer.
 - HOWEVER, if the request is a "compound request" and contains AT LEAST ONE item related to your department (e.g., "towels and call a taxi"), IGNORE this rule and normally process ONLY the items that belong to your department.
+- **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
+  - “{특정 키워드/문구}” → {의도/정보} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
+  - {분류 로직}: 왜 컨시어지(CONCIERGE) 업무로 분류했는지 단계별 설명
+  - {맥락 활용}: 과거 대화나 관심사에서 어떤 정보를 참조하여 추천/안내했는지 설명
+  - {특이사항}: 지식 베이스(RAG) 활용 여부, 추가 서비스 제안 근거 등
+  - Confidence: {confidence_value}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ EXAMPLES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -141,7 +147,6 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
-  "clarification_options": [],
   "missing_fields": []
 }
 
@@ -161,7 +166,6 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어디로 가시나요? 그리고 탑승 인원은 몇 분이신가요?",
-  "clarification_options": [],
   "missing_fields": ["destination", "passenger_count"]
 }
 
@@ -182,7 +186,6 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
-  "clarification_options": [],
   "missing_fields": []
 }
 
@@ -201,7 +204,6 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어떤 배달 음식(또는 물품)인지, 그리고 주문하신 식당(또는 플랫폼) 이름을 알려주시면 도착 시 바로 객실로 안내해 드리겠습니다.",
-  "clarification_options": [],
   "missing_fields": ["item", "store_name"]
 }
 
@@ -221,7 +223,6 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
-  "clarification_options": [],
   "missing_fields": []
 }
 """.strip()

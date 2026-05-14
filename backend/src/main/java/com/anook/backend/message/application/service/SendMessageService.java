@@ -187,7 +187,8 @@ public class SendMessageService implements SendMessageUseCase {
                             escalated,
                             analysis.actionType(),
                             analysis.targetKeyword(),
-                            images));
+                            images,
+                            analysis.reasoning()));
                     log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}, targetKeyword: {}",
                             analysis.domainCode(), escalated, analysis.actionType(), analysis.targetKeyword());
                 } else if ("STATUS_CHECK".equals(analysis.action())) {

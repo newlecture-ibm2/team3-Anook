@@ -4,6 +4,7 @@
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -14,6 +15,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -35,7 +37,7 @@
 }
 
 .bubble {
-  max-width: 80%;
+  max-width: 100%;
   padding: var(--space-12) var(--space-24);
   font: var(--text-body-md-medium);
   word-break: keep-all;
@@ -62,15 +64,19 @@
 }
 
 .fallback {
-  background: linear-gradient(120deg, 
-    rgba(255, 225, 205, 0.4) 0%,   /* Very light peach/apricot */
-    rgba(255, 215, 230, 0.4) 33%,  /* Very light pink */
-    rgba(255, 225, 205, 0.4) 66%,  /* Very light peach/apricot */
-    rgba(255, 215, 230, 0.4) 100%); /* Very light pink */
+  background: linear-gradient(120deg,
+      rgba(255, 225, 205, 0.4) 0%,
+      /* Very light peach/apricot */
+      rgba(255, 215, 230, 0.4) 33%,
+      /* Very light pink */
+      rgba(255, 225, 205, 0.4) 66%,
+      /* Very light peach/apricot */
+      rgba(255, 215, 230, 0.4) 100%);
+  /* Very light pink */
   background-size: 200% 100%;
   animation: waitingBubble 3s linear infinite;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 
+  box-shadow:
     inset 2px 2px 6px rgba(255, 255, 255, 0.9),
     inset -2px -2px 8px rgba(250, 200, 150, 0.3),
     0 4px 16px rgba(31, 38, 135, 0.05);
@@ -78,8 +84,13 @@
 }
 
 @keyframes waitingBubble {
-  0% { background-position: 200% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 200% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .receivedContainer {
@@ -146,7 +157,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #FFB085; /* Bright Apricot/Peach */
+  background: #FFB085;
+  /* Bright Apricot/Peach */
   filter: blur(4px);
   top: 50%;
   left: 50%;
@@ -156,23 +168,43 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes orbit1 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(10px, 10px) scale(1.5); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(10px, 10px) scale(1.5);
+  }
 }
 
 @keyframes orbit2 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-10px, -10px) scale(1.5); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(-10px, -10px) scale(1.5);
+  }
 }
 
 @keyframes orbit3 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(8px, -12px) scale(1.6); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(8px, -12px) scale(1.6);
+  }
 }
 
 /* ── Sent message container (이미지 + 텍스트 묶음) ── */
@@ -260,6 +292,11 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

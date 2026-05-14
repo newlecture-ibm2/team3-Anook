@@ -45,6 +45,9 @@ public class AdminRequestJpaEntity {
 
     private Float confidence;
 
+    @Column(columnDefinition = "TEXT")
+    private String reasoning;
+
     @Column(name = "room_no", nullable = false)
     private String roomNo;
 
@@ -78,9 +81,10 @@ public class AdminRequestJpaEntity {
                 this.rawText,
                 this.summary,
                 this.confidence != null ? this.confidence : 0.0,
+                this.reasoning,
                 this.roomNo,
                 this.assignedStaffId,
-                this.version,
+                this.version != null ? this.version : 0,
                 this.cancelRequested != null ? this.cancelRequested : false,
                 this.cancelRequestedAt,
                 this.createdAt,
