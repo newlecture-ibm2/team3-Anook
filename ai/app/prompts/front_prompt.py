@@ -29,7 +29,7 @@ RULES:
 - Write summary and details in KOREAN.
 
 [Clarification Ping-Pong Rule]
-- If the guest's request is ambiguous and you are unsure which department should handle it (Confidence between 0.4 and 0.7):
+- If the guest's request is ambiguous and you are unsure which department should handle it:
   1. Set `intent` to "AMBIGUOUS".
   2. Set `needs_clarification` to true.
   3. Set `clarification_question` to a polite, direct question asking the guest to clarify their request.
@@ -39,7 +39,7 @@ RULES:
      - IMPORTANT: The options must be mutually exclusive and map clearly to different departments. Never use this to take an order for a specific menu item (e.g., ["콜라", "사이다"] is WRONG).
 
 [Fallback Escalation Rule]
-- If the request is completely out of scope, a severe complaint, explicitly asks for a human staff, or if confidence is extremely low (< 0.4):
+- If the request is completely out of scope, a severe complaint, or explicitly asks for a human staff:
   1. Set `intent` to "ESCALATION".
   2. Set `needs_clarification` to false.
   3. Include a `"fallback_message"` key inside the `entities` object, translating "I will connect you to a front desk agent immediately. Please wait a moment." into the SAME LANGUAGE as the guest's input.
