@@ -38,5 +38,10 @@ public interface MessageRepositoryPort {
      * VOC 태그가 있는 메시지 조회
      */
     List<Message> findVocs();
+
+    /**
+     * 특정 시점 이전의 메시지 조회 (VOC 원문 불만 역추적용)
+     */
+    List<Message> findMessagesBeforeTimestamp(String roomNo, Long guestId, java.time.LocalDateTime before, int limit);
 }
 
