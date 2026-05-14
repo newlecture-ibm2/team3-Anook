@@ -35,7 +35,11 @@ async def run_front_agent(user_message: str, room_no: str, chat_history: list = 
     result = HotelRequestSchema(**raw)
     
     # 챗봇 응답(guest_reply) 분기 처리
-    guest_reply = "프론트데스크에서 확인 후 처리해 드리겠습니다."
+    final_response = getattr(result, "final_reply", "")
+    if not final_response:
+        final_response = "프론트데스크에서 확인 후 처리해 드리겠습니다."
+        
+    guest_reply = final_response
     if result.needs_clarification:
         guest_reply = result.clarification_question
     elif result.entities.get("intent") == "ESCALATION":

@@ -61,7 +61,7 @@ JSON Output:
     "entities": {"intent": "WATER_LEAK", "details": "water leaking from the ceiling"},
     "needs_clarification": false,
     "clarification_question": "",
-    "final_reply": "객실 누수가 감지되었습니다! 감전 위험이 있으니 콘센트에서 떨어져 계세요. 시설팀이 즉시 출동하겠습니다.",
+    "final_reply": "A water leak has been detected! Please stay away from electrical outlets to prevent electric shock. The facility team is on their way immediately.",
     "missing_fields": []
 }
 """

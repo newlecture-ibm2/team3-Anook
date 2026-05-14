@@ -114,6 +114,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   },
   "needs_clarification": boolean,
   "clarification_question": "string (in guest's language)",
+  "final_reply": "string (in guest's language, confirmation message)",
   "missing_fields": ["field_name"]
 }
 
@@ -149,6 +150,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "배차 확인 후 안내해 드리겠습니다. 08:00에 서울역(으)로 가시는 택시(2명)를 예약해 드릴까요?",
   "missing_fields": []
 }
 
@@ -168,6 +170,7 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어디로 가시나요? 그리고 탑승 인원은 몇 분이신가요?",
+  "final_reply": "",
   "missing_fields": ["destination", "passenger_count"]
 }
 
@@ -188,6 +191,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "담당 직원이 곧 도움을 드리러 가겠습니다. 짐 3개를 보관하시겠습니까?",
   "missing_fields": []
 }
 
@@ -206,6 +210,7 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어떤 배달 음식(또는 물품)인지, 그리고 주문하신 식당(또는 플랫폼) 이름을 알려주시면 도착 시 바로 객실로 안내해 드리겠습니다.",
+  "final_reply": "",
   "missing_fields": ["item", "store_name"]
 }
 
@@ -225,6 +230,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "편안한 밤 되세요! 06:00에 모닝콜을 예약해 드릴까요?",
   "missing_fields": []
 }
 """.strip()

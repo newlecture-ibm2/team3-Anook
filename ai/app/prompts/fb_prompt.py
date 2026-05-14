@@ -201,6 +201,7 @@ JSON Output:
     },
     "needs_clarification": false,
     "clarification_question": "",
+    "final_reply": "클래식 치즈버거 1개 주문을 F&B 팀에 전달하겠습니다.",
     "missing_fields": []
 }
 
