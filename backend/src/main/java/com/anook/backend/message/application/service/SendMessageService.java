@@ -92,7 +92,7 @@ public class SendMessageService implements SendMessageUseCase {
             log.info("[Message] 직원 상담 중 — AI 호출 스킵 (room: {})", cmd.roomNo());
         } else {
             // AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
-            self.processAiAsync(cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
+            self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
         }
 
         return new SendMessageResult(guestMsg.getId());
