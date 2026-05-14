@@ -492,6 +492,16 @@ export function useChat() {
     }
   };
 
+  // 6. Handle Pill Selection
+  const handlePillSelect = (msgId: string, option: string) => {
+    sendMessage(option);
+    setMessages(prev => prev.map(m => 
+      m.id === msgId 
+        ? { ...m, meta: { ...m.meta, selectedOption: option, pillDisabled: true } }
+        : m
+    ));
+  };
+
   return {
     messages,
     isTyping,
@@ -499,6 +509,7 @@ export function useChat() {
     activeRequests,
     cancelRequest,
     confirmRequest,
-    stopMessage
+    stopMessage,
+    handlePillSelect
   };
 }
