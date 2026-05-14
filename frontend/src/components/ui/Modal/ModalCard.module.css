@@ -11,10 +11,6 @@
   overflow-y: auto;
 }
 
-.overflowVisible {
-  overflow: visible;
-}
-
 .sizeSm {
   width: 400px;
   max-width: calc(100vw - 32px);

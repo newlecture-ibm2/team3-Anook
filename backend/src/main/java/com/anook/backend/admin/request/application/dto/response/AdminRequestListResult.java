@@ -12,7 +12,6 @@ public record AdminRequestListResult(
         String departmentId,
         String departmentName,
         String summary,
-        String rawText,
         String roomNo,
         Long assignedStaffId,
         String assignedStaffName,

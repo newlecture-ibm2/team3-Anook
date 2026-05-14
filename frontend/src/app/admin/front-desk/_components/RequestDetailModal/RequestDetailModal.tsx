@@ -5,7 +5,6 @@ import styles from './RequestDetailModal.module.css';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
-import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { CancelIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
@@ -193,8 +192,8 @@ export default function RequestDetailModal({
     if (!isOpen) return;
     fetch('/api/admin/departments')
       .then(res => res.json())
-      .then((data: Department[]) => setDepartments(data.filter(d => d.id !== 'EMERGENCY')))
-      .catch(() => {});
+      .then(data => setDepartments(data))
+      .catch(() => { });
   }, [isOpen]);
 
   if (!detail) return null;
@@ -289,7 +288,10 @@ export default function RequestDetailModal({
               <span className={styles.label}>객실</span>
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
-
+            <div className={styles.gridItem}>
+              <span className={styles.label}>현재 부서</span>
+              <span className={styles.value}>{detail.departmentName}</span>
+            </div>
             <div className={styles.gridItem}>
               <span className={styles.label}>생성 시간</span>
               <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
@@ -407,13 +409,17 @@ export default function RequestDetailModal({
               </label>
             </div>
             <div className={styles.editField}>
-              <Dropdown
-                label="배정 부서"
-                placeholder="부서를 선택하세요"
-                options={departments.map(d => ({ value: d.id, label: d.name }))}
+              <label className={styles.label} htmlFor="detail-dept">배정 부서</label>
+              <select
+                id="detail-dept"
+                className={styles.select}
                 value={editDeptId}
-                onChange={(val) => setEditDeptId(val)}
-              />
+                onChange={(e) => setEditDeptId(e.target.value)}
+              >
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>

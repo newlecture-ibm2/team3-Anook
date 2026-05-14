@@ -69,14 +69,7 @@ export default function Dropdown({
       )}
 
       {/* 2. 트리거 박스 (클릭 시 열림) */}
-      <div 
-        className={styles.trigger} 
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className={styles.trigger} onClick={() => setIsOpen(!isOpen)}>
         {selectedOption ? (
           <span className={styles.textSelected}>{selectedOption.label}</span>
         ) : (
