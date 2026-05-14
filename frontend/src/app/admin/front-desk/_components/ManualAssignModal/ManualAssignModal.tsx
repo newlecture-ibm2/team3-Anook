@@ -33,12 +33,12 @@ interface ManualAssignModalProps {
 }
 
 export default function ManualAssignModal({ isOpen, onClose, detail, departments, onSave, saving }: ManualAssignModalProps) {
-  const [editPriority, setEditPriority] = useState(detail.priority);
+  const [editPriority, setEditPriority] = useState<string>('NORMAL');
   const [editDeptId, setEditDeptId] = useState(detail.departmentId);
 
   useEffect(() => {
     if (isOpen) {
-      setEditPriority(detail.priority);
+      setEditPriority('NORMAL'); // 항상 기본값은 'NORMAL' (체크 해제 상태)
       setEditDeptId(detail.departmentId);
     }
   }, [isOpen, detail]);

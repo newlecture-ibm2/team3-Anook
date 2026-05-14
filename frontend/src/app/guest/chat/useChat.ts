@@ -116,6 +116,7 @@ export function useChat() {
         client.subscribe(`/topic/room/${roomNo}`, (message) => {
           if (message.body) {
             const payload = JSON.parse(message.body);
+            console.log('[WS-RECEIVE]', payload);
 
             // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
             if (payload.type === 'SESSION_EXPIRED') {

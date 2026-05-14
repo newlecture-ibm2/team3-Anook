@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './RequestDetailPanel.module.css';
 import Button from '@/components/ui/Button/Button';
 import Dropdown from '@/components/ui/Dropdown/Dropdown';
-import { CancelIcon } from '@/components/icons';
+import { CancelIcon, ArrowDownIcon, ArrowUpIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import RejectEscalationModal from '../RejectEscalationModal/RejectEscalationModal';
@@ -37,6 +37,7 @@ interface RequestDetail {
   updatedAt: string;
   cancelRequestedAt: string | null;
   imageUrl?: string | null;
+  reasoning?: string;
 }
 
 interface RequestDetailPanelProps {
@@ -170,6 +171,7 @@ export default function RequestDetailPanel({
   const [saving, setSaving] = useState(false);
   const [confirmType, setConfirmType] = useState<'none' | 'cancel' | 'approve' | 'reject' | 'cancelApprove' | 'cancelReject'>('none');
   const [showManualAssign, setShowManualAssign] = useState(false);
+  const [isAiSectionOpen, setIsAiSectionOpen] = useState(false);
   const showToast = useUiStore((s) => s.showToast);
 
   useEffect(() => {
@@ -218,7 +220,7 @@ export default function RequestDetailPanel({
     if (changed) {
       onUpdate();
       setShowManualAssign(false);
-      onClose();
+      onClose?.();
     }
   };
 
@@ -230,7 +232,7 @@ export default function RequestDetailPanel({
     if (ok) {
       showToast('요청이 취소되었습니다.', 'success');
       onUpdate();
-      onClose();
+      onClose?.();
     } else {
       showToast('요청 취소에 실패했습니다.', 'error');
     }
@@ -246,7 +248,7 @@ export default function RequestDetailPanel({
     if (ok) {
       showToast('에스컬레이션이 승인되어 재배정 대기 상태가 되었습니다.', 'success');
       onUpdate();
-      onClose();
+      onClose?.();
     } else {
       showToast('승인 처리에 실패했습니다.', 'error');
     }
@@ -267,11 +269,6 @@ export default function RequestDetailPanel({
           <div className={styles.headerLeft}>
             <h2 className={styles.title}>요청 상세</h2>
           </div>
-          {onClose && (
-            <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
-              <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
-            </button>
-          )}
         </div>
 
         {/* 기본 정보 */}
@@ -352,24 +349,39 @@ export default function RequestDetailPanel({
         {/* AI 분석 결과 */}
         {detail.entities && Object.keys(detail.entities).length > 0 && (
           <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>AI 분석 결과</h3>
-            <div className={styles.aiInfo}>
-              <div className={styles.confidenceBadge}>
-                신뢰도: {Math.round(detail.confidence * 100)}%
-              </div>
-              {(() => {
-                if (!detail.entities) return null;
-                // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
-                const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
-                if (displayableKeys.length === 0) return null;
-
-                return (
-                  <div className={styles.entityList}>
-                    {renderEntities(detail.entities)}
-                  </div>
-                );
-              })()}
+            <div 
+              className={styles.collapsibleHeader} 
+              onClick={() => setIsAiSectionOpen(!isAiSectionOpen)}
+            >
+              <h3 className={styles.collapsibleTitle}>AI 분석 결과 보기</h3>
+              {isAiSectionOpen ? <ArrowUpIcon width={20} height={20} color="var(--color-gray-500)" /> : <ArrowDownIcon width={20} height={20} color="var(--color-gray-500)" />}
             </div>
+            
+            {isAiSectionOpen && (
+              <div className={styles.aiInfo} style={{ marginTop: 'var(--space-8)' }}>
+                <div className={styles.confidenceBadge}>
+                  신뢰도: {Math.round(detail.confidence * 100)}%
+                </div>
+                {(() => {
+                  if (!detail.entities) return null;
+                  // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
+                  const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
+                  if (displayableKeys.length === 0) return null;
+
+                  return (
+                    <div className={styles.entityList}>
+                      {renderEntities(detail.entities)}
+                    </div>
+                  );
+                })()}
+                {detail.reasoning && (
+                  <div className={styles.contentBlock}>
+                    <span className={styles.label}>판단 근거</span>
+                    <p className={styles.rawText}>{detail.reasoning}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -435,7 +447,7 @@ export default function RequestDetailPanel({
           requestId={detail.id}
           onSuccess={() => {
             onUpdate();
-            onClose();
+            onClose?.();
           }}
         />
       )}
@@ -447,7 +459,7 @@ export default function RequestDetailPanel({
           requestId={detail.id}
           onSuccess={() => {
             onUpdate();
-            onClose();
+            onClose?.();
           }}
         />
       )}
@@ -459,7 +471,7 @@ export default function RequestDetailPanel({
           requestId={detail.id}
           onSuccess={() => {
             onUpdate();
-            onClose();
+            onClose?.();
           }}
         />
       )}

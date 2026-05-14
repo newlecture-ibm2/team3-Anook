@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button/Button';
 
 interface HeaderProps {
   className?: string;
-  role?: 'admin' | 'staff' | 'guest';
+  role?: string;
 }
 
 export default function Header({ className = '', role = 'admin' }: HeaderProps) {
@@ -45,18 +45,26 @@ function LanguageToggle() {
   const { language, setLanguage } = useUiStore();
 
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div style={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      background: 'var(--color-gray-100, #f3f4f6)',
+      borderRadius: '20px',
+      padding: '2px',
+      border: '1px solid var(--color-gray-200, #e5e7eb)'
+    }}>
       <button
         onClick={() => setLanguage('ko')}
         style={{
-          background: language === 'ko' ? 'var(--color-primary, #0f172a)' : 'transparent',
-          color: language === 'ko' ? 'white' : 'var(--color-gray-600, #475569)',
-          border: '1px solid var(--color-gray-300, #cbd5e1)',
-          padding: '4px 8px',
-          borderRadius: '4px',
+          background: language === 'ko' ? 'var(--color-gray-500)' : 'transparent',
+          color: language === 'ko' ? '#ffffff' : 'var(--color-gray-500)',
+          border: 'none',
+          padding: '4px 12px',
+          borderRadius: '18px',
           cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: '0.875rem'
+          fontWeight: language === 'ko' ? 600 : 500,
+          fontSize: '0.875rem',
+          transition: 'all 0.2s ease-in-out'
         }}
       >
         KO
@@ -64,14 +72,15 @@ function LanguageToggle() {
       <button
         onClick={() => setLanguage('en')}
         style={{
-          background: language === 'en' ? 'var(--color-primary, #0f172a)' : 'transparent',
-          color: language === 'en' ? 'white' : 'var(--color-gray-600, #475569)',
-          border: '1px solid var(--color-gray-300, #cbd5e1)',
-          padding: '4px 8px',
-          borderRadius: '4px',
+          background: language === 'en' ? 'var(--color-gray-500)' : 'transparent',
+          color: language === 'en' ? '#ffffff' : 'var(--color-gray-500)',
+          border: 'none',
+          padding: '4px 12px',
+          borderRadius: '18px',
           cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: '0.875rem'
+          fontWeight: language === 'en' ? 600 : 500,
+          fontSize: '0.875rem',
+          transition: 'all 0.2s ease-in-out'
         }}
       >
         EN

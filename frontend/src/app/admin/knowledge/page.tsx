@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Tabs from '@/components/ui/Tab/Tabs';
-import InputField from '@/components/ui/InputField/InputField';
+import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import KnowledgeLibraryTab from './_components/KnowledgeLibraryTab/KnowledgeLibraryTab';
 import KnowledgeReviewTab from './_components/KnowledgeReviewTab/KnowledgeReviewTab';

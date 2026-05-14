@@ -78,11 +78,11 @@
 }
 
 .pillTabActive {
-  background-color: var(--color-primary);
+  background-color: var(--color-gray-500);
   color: var(--color-white);
 }
 
 .pillTabActive:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-gray-600);
   color: var(--color-white);
 }
