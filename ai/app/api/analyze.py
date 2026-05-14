@@ -707,14 +707,24 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     f"[고객의 질문]\n{request.text}\n\n"
                     f"위 맥락을 참고하여, 고객이 궁극적으로 알고 싶은 '호텔 정책/정보'가 무엇인지 파악하고 지식 베이스 검색에 최적화된 구체적인 문장으로 재작성하세요."
                 )
-                search_query_raw = await call_gemini_async(
-                    prompt=rewrite_prompt,
-                    system_instruction=(
+                if domain == "CONCIERGE":
+                    sys_instruction = (
+                        "당신은 호텔 검색 엔진 최적화 전문가입니다. "
+                        "사용자가 대명사('이거', '다른데')나 생략된 표현을 사용했더라도, 반드시 [과거 대화 맥락]을 파악하여 사용자가 찾고자 하는 '명확한 대상(예: 식당, 관광지, 카페 등)'을 명시적으로 포함한 '단일 검색 쿼리 문장' 하나만 작성하세요. "
+                        "절대로 고객에게 대답하거나 말을 걸지 마세요. 질문형으로 끝내지 말고, 검색어 형태로 명사형이나 평서문으로 작성하세요. "
+                        "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
+                    )
+                else:
+                    sys_instruction = (
                         "당신은 호텔 검색 엔진 최적화 전문가입니다. "
                         "사용자가 특정 사물이나 서비스를 지칭하지 않고 '왜', '얼마야' 등 생략된 표현을 사용했더라도, 반드시 [과거 대화 맥락]을 파악하여 질문 대상을 찾아 명시적으로 포함시키세요. (예: '생수 추가 요금이 발생하는 이유가 무엇인가요?') "
                         "**주의**: 사용자가 직접 언급하지 않은 구체적인 음식 이름이나 카테고리를 무단으로 추가하지 마세요. "
                         "반드시 {\"reply\": \"재작성된 문장\"} 형식의 JSON으로만 출력하세요."
                     )
+                    
+                search_query_raw = await call_gemini_async(
+                    prompt=rewrite_prompt,
+                    system_instruction=sys_instruction
                 )
                 search_query = search_query_raw.get("reply", request.text) if isinstance(search_query_raw, dict) else request.text
                 print(f"[Analyze] 🔍 검색어 확장: '{request.text}' → '{search_query}'")
@@ -733,41 +743,32 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     
                     mentioned_places = []
                     if request.chat_history:
-                        for msg in request.chat_history[-4:]:
+                        for msg in request.chat_history[-6:]:
                             if msg.get('role') == 'ai':
                                 content = msg.get('content', '')
                                 all_answers = rag_service.get_all_answers_by_domain("CONCIERGE")
-                                all_places = set()
+                                
+                                # 1) Find all places that appear in this message
+                                found_in_msg = []
                                 for ans in all_answers:
                                     found = re.findall(r"'([^']+)'", ans)
                                     for f in found:
-                                        all_places.add(f)
+                                        if f in content and f not in found_in_msg:
+                                            found_in_msg.append(f)
                                 
-                                for place in all_places:
-                                    if place in content:
+                                # 2) Sort them by the order they appear in the message
+                                found_in_msg.sort(key=lambda x: content.find(x))
+                                
+                                # 3) Append to mentioned_places if not already there
+                                for place in found_in_msg:
+                                    if place not in mentioned_places:
                                         mentioned_places.append(place)
                     
                     fresh_results = [r for r in rag_results if not any(p in r['answer'] for p in mentioned_places)]
-                    already_said = [r for r in rag_results if any(p in r['answer'] for p in mentioned_places)]
                     
                     fact_results = [r for r in fresh_results if "[fact]" in r['question'] and r.get('similarity', 0) >= 0.7]
                     rec_results = [r for r in fresh_results if "[recommendation]" in r['question']]
                     other_results = [r for r in fresh_results if "[fact]" not in r['question'] and "[recommendation]" not in r['question']]
-                    
-                    is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
-                    if not is_reconfirm and rec_results:
-                        # 가장 유사도가 높은 항목과 점수 차이가 0.05 미만인 항목들만 후보로 선정하여 셔플
-                        top_score = rec_results[0].get('similarity', 0)
-                        candidates = [r for r in rec_results if top_score - r.get('similarity', 0) < 0.05]
-                        others = [r for r in rec_results if top_score - r.get('similarity', 0) >= 0.05]
-                        
-                        random.shuffle(candidates)
-                        rec_results = candidates + others
-                        
-                        # AI가 헷갈리지 않고 항상 새롭고 정확한 1개만 추천하도록 슬라이싱
-                        rec_results = rec_results[:1]
-                    
-                    rag_results = fact_results + rec_results + other_results + already_said
                     
                     last_place = mentioned_places[-1] if mentioned_places else None
                     is_another_request = any(word in request.text for word in ["다른", "또", "더", "다음에", "더보기"])
@@ -781,18 +782,48 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                                 break
                     
                     if is_another_request and last_category:
-                        rag_results.sort(key=lambda x: 0 if x.get('category') == last_category else 1)
+                        # 동일 카테고리만 후보로 남김
+                        rec_results = [r for r in rec_results if r.get('category') == last_category]
+
+                    is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
+                    if not is_reconfirm and rec_results:
+                        # 셔플 풀 확대 (0.05 -> 0.15)
+                        top_score = rec_results[0].get('similarity', 0)
+                        candidates = [r for r in rec_results if top_score - r.get('similarity', 0) < 0.15]
+                        others = [r for r in rec_results if top_score - r.get('similarity', 0) >= 0.15]
+                        
+                        random.shuffle(candidates)
+                        rec_results = candidates + others
+                        
+                        # AI가 헷갈리지 않고 항상 새롭고 정확한 1개만 추천하도록 슬라이싱
+                        rec_results = rec_results[:1]
+                    
+                    # 새 추천 결과가 있다면 이미 말한 것은 아예 빼버려서 AI의 착각을 방지
+                    if rec_results:
+                        rag_results = fact_results + rec_results + other_results
+                    else:
+                        already_said = [r for r in rag_results if any(p in r['answer'] for p in mentioned_places)]
+                        if is_another_request and last_category:
+                            already_said = [r for r in already_said if r.get('category') == last_category]
+                        rag_results = fact_results + already_said
 
                     is_fact_included = any("[fact]" in r['question'] for r in rag_results)
                     fact_instruction = "\n- **중요**: [fact] 태그 정보는 질문에 대한 확정적 답변이므로 즉시 활용하세요." if is_fact_included else ""
 
-                    last_mention_instruction = f"방금 '{last_place}'를 추천했음을 인지하고, " if last_place else ""
+                    mentioned_str = ", ".join([f"'{p}'" for p in mentioned_places])
+                    if rec_results:
+                        last_mention_instruction = f"이전 대화에서 이미 {mentioned_str} 등을 추천했음을 인지하세요. 고객이 '다른' 것을 원할 경우 이전에 추천한 곳을 절대 다시 추천하지 말고 제공된 새로운 [KNOWLEDGE BASE] 항목을 우선적으로 제시하세요. " if mentioned_places else ""
+                        avoid_repeat_instruction = "\n- 이전 대화와 중복되는 장소 추천은 절대 피하세요."
+                    else:
+                        last_mention_instruction = "고객이 다른 장소를 원하지만 현재 지식 베이스에 더 이상 새로운 추천 장소가 없습니다. '현재 더 이상 새로운 장소를 안내해 드리기 어려워, 이전에 안내해 드렸던 장소 중 하나를 다시 추천해 드립니다'와 같이 양해를 구하고 [KNOWLEDGE BASE]에 있는 장소 하나를 자연스럽게 다시 추천하세요. " if mentioned_places else ""
+                        avoid_repeat_instruction = ""
+
                     additional_instructions = (
                         f"\n- 답변 시 마크다운 강조(**)를 사용하지 말고 평문으로 작성하세요. {fact_instruction}"
                         f"\n- {last_mention_instruction}사용자의 요청 흐름에 맞춰 자연스럽게 대화를 이어가세요. "
                         f"\n- 안내한 내용이 택시 호출, 꽃배달, 짐 보관 등 '요청이나 예약'이 가능한 서비스라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스로 이어지는 질문을 포함하세요."
                         f"\n- 예: '파스타 외에 다른 맛집을 찾으신다면 ~는 어떠세요?', '택시는 정문에서 이용 가능합니다. 지금 바로 호출해 드릴까요?' 등"
-                        "\n- 이전 대화와 중복되는 장소 추천은 절대 피하세요."
+                        f"{avoid_repeat_instruction}"
                     )
 
                 if rag_results:
