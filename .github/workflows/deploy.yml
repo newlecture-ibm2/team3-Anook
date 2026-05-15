@@ -81,7 +81,15 @@ jobs:
           docker compose exec -T backend curl -sf http://localhost:8080/actuator/health || echo "⚠️ Backend health endpoint not yet configured (skipping)"
           echo "✅ Health Check Done"
 
-      # 6. 불필요한 쓰레기 이미지 정리
+      # 6. RAG 지식 자동 시딩 (Vector 임베딩 DB 저장)
+      - name: Seed RAG Knowledge
+        run: |
+          cd ~/workspace/team3-Anook
+          echo "⏳ Seeding RAG Knowledge Data to pgvector..."
+          # docker compose 환경에서 ai 컨테이너를 지정하여 스크립트 실행
+          docker compose exec -T ai python seed_all.py || echo "⚠️ Seeding failed but continuing"
+
+      # 7. 불필요한 쓰레기 이미지 정리
       - name: Cleanup
         run: docker image prune -f
 
