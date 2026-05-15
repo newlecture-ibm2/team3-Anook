@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import useAdminRequests from '@/app/admin/useAdminRequests';
 import useEscalations from '@/app/admin/front-desk/useEscalations';
+import RejectCancellationModal from '@/app/admin/front-desk/_components/RejectCancellationModal/RejectCancellationModal';
+import RejectEscalationModal from '@/app/admin/front-desk/_components/RejectEscalationModal/RejectEscalationModal';
 import styles from './HeaderNotification.module.css';
 
 export default function HeaderNotification() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const popupRef = useRef<HTMLDivElement>(null);
+
+  // 반려 모달 상태
+  const [cancelRejectTarget, setCancelRejectTarget] = useState<number | null>(null);
+  const [escalationRejectTarget, setEscalationRejectTarget] = useState<number | null>(null);
 
   // 데이터 패치
   const { requests: allRequests, refetch: refetchRequests } = useAdminRequests(undefined, '', 'all', true);
@@ -51,17 +57,8 @@ export default function HeaderNotification() {
     } catch (e) { console.error(e); }
   };
 
-  const handleRejectCancel = async (id: number) => {
-    const reason = window.prompt('반려 사유를 입력해주세요 (선택)');
-    if (reason === null) return; // 취소
-    try {
-      const res = await fetch(`/api/admin/requests/${id}/cancellation/reject`, { 
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rejectionReason: reason || '프론트데스크 직권 거절' })
-      });
-      if (res.ok) refetchRequests();
-    } catch (e) { console.error(e); }
+  const handleRejectCancel = (id: number) => {
+    setCancelRejectTarget(id);
   };
 
   const handleApproveEscalation = async (id: number) => {
@@ -77,21 +74,12 @@ export default function HeaderNotification() {
     } catch (e) { console.error(e); }
   };
 
-  const handleRejectEscalation = async (id: number) => {
-    const reason = window.prompt('고객에게 안내할 반려 사유를 입력해주세요.');
-    if (reason === null) return; // 취소
-    try {
-      // 이관 반려: 요청 자체를 취소 처리 + 반려 사유 전송 (front-desk RejectEscalationModal과 동일)
-      const res = await fetch(`/api/admin/requests/${id}/cancel`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rejectionReason: reason || '' })
-      });
-      if (res.ok) refetchEscalations();
-    } catch (e) { console.error(e); }
+  const handleRejectEscalation = (id: number) => {
+    setEscalationRejectTarget(id);
   };
 
   return (
+    <>
     <div className={styles.container} ref={popupRef}>
       <button className={styles.bellButton} onClick={() => setIsOpen(!isOpen)}>
         <Bell size={24} color="var(--color-gray-600)" />
@@ -144,5 +132,26 @@ export default function HeaderNotification() {
         </div>
       )}
     </div>
+
+      {/* 취소 반려 모달 */}
+      {cancelRejectTarget !== null && (
+        <RejectCancellationModal
+          isOpen={true}
+          onClose={() => setCancelRejectTarget(null)}
+          requestId={cancelRejectTarget}
+          onSuccess={() => { setCancelRejectTarget(null); refetchRequests(); }}
+        />
+      )}
+
+      {/* 이관 반려 모달 */}
+      {escalationRejectTarget !== null && (
+        <RejectEscalationModal
+          isOpen={true}
+          onClose={() => setEscalationRejectTarget(null)}
+          requestId={escalationRejectTarget}
+          onSuccess={() => { setEscalationRejectTarget(null); refetchEscalations(); }}
+        />
+      )}
+    </>
   );
 }
