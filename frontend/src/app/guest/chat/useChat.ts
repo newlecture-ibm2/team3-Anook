@@ -334,7 +334,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'TEXT',
-                      content: '안내: 취소 요청이 반려되어 기존 요청대로 진행됩니다.',
+                      content: '안내: 업무가 이미 진행 중이라 취소 요청이 반려되어 기존 요청대로 진행됩니다.',
                     }];
                   });
                 }, 800);
