@@ -28,10 +28,13 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
   const pendingItems = data.filter(item => item.status === 'PENDING');
 
   // 검색 필터
-  const filteredItems = pendingItems.filter(item =>
-    item.question.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.answer.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredItems = pendingItems.filter(item => {
+    const q = item.question || '';
+    const a = item.answer || '';
+    const search = searchValue || '';
+    return q.toLowerCase().includes(search.toLowerCase()) ||
+           a.toLowerCase().includes(search.toLowerCase());
+  });
 
   // RAG 등록 (APPROVED로 전환) — register-from-answer API 재사용
   const handleApprove = async (formData: { domainCode: string; question: string; answer: string }) => {
