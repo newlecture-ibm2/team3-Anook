@@ -828,21 +828,35 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
                 if rag_results:
                     knowledge = "\n".join([f"Q: {r['question']}\nA: {r['answer']}" for r in rag_results])
-                    info_prompt = (
-                        f"고객 질문: {request.text}\n\n"
-                        f"아래 제공된 [호텔 지식]은 고객 질문에 대해 검색된 공식 답변입니다. 반드시 이 지식을 활용하여 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
-                        f"고객이 한 번 더 묻거나 구체적으로 묻더라도, 제공된 [호텔 지식]을 명확한 답으로 간주하고 답변을 작성하세요. "
-                        f"그리고 답변 마지막에 반드시 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장을 덧붙이세요.\n"
-                        f"만약 [호텔 지식]이 고객의 질문과 아예 무관하다면, 절대 유추하거나 지어내지 말고 "
-                        f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
-                        f"[호텔 지식]\n{knowledge}"
-                    )
+                    
+                    # [수정] 컨시어지 도메인인 경우, 지식 베이스를 더 적극적으로 활용하고 서비스 유도를 지시함
+                    if domain == "CONCIERGE":
+                        info_prompt = (
+                            f"고객 질문: {request.text}\n\n"
+                            f"아래 제공된 [호텔 지식]을 바탕으로 고객의 질문에 친절하게 답변하세요. {additional_instructions}\n"
+                            f"**중요**: [호텔 지식]에 해당 서비스에 대한 정보가 조금이라도 포함되어 있다면, '모른다'고 하지 말고 최대한 정보를 제공하세요. "
+                            f"만약 답변 내용이 택시, 꽃배달, 예약 등 서비스 관련 내용이라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스 이용을 유도하는 질문을 포함하세요.\n"
+                            f"**주의**: 서비스 유도 질문을 포함했다면, 절대로 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장은 사용하지 마세요.\n"
+                            f"서비스 유도 질문이 없는 일반적인 정보 안내인 경우에만 마지막에 '{_get_static_reply('NEED_MORE_INFO', request.language)}'를 덧붙이세요.\n\n"
+                            f"[호텔 지식]\n{knowledge}"
+                        )
+                    else:
+                        info_prompt = (
+                            f"고객 질문: {request.text}\n\n"
+                            f"아래 제공된 [호텔 지식]은 고객 질문에 대해 검색된 공식 답변입니다. 반드시 이 지식을 활용하여 고객의 질문에 사용된 언어(또는 {request.language} 언어)로 친절하게 답변하세요. {additional_instructions}\n"
+                            f"고객이 한 번 더 묻거나 구체적으로 묻더라도, 제공된 [호텔 지식]을 명확한 답으로 간주하고 답변을 작성하세요. "
+                            f"그리고 답변 마지막에 반드시 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장을 덧붙이세요.\n"
+                            f"만약 [호텔 지식]이 고객의 질문과 아예 무관하다면, 절대 유추하거나 지어내지 말고 "
+                            f"'{_get_static_reply('INFO_NOT_FOUND', request.language)}' 라는 문장을 그대로 답변으로 사용하세요.\n\n"
+                            f"[호텔 지식]\n{knowledge}"
+                        )
                     raw = await call_gemini_async(
                         prompt=info_prompt, 
                         system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
                     )
                     guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(raw, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
                 else:
+                    # [수정] RAG 결과가 없을 때 에이전트 폴백 실행 시, 에이전트의 전체 결과를 response로 활용함
                     if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
                         print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
                         agent_result = await DOMAIN_AGENTS["CONCIERGE"](
@@ -851,7 +865,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                             chat_history=request.chat_history,
                             images=request.images
                         )
-                        guest_reply = agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(agent_result, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
+                        # 에이전트 결과를 통째로 response 객체로 만듦
+                        response = {
+                            "guest_reply": agent_result.get("guest_reply", _get_static_reply("INFO_NOT_FOUND", request.language)),
+                            "summary": agent_result.get("summary", "정보 문의"),
+                            "domain_code": agent_result.get("domain_code"),
+                            "priority": agent_result.get("priority", "NORMAL"),
+                            "entities": agent_result.get("entities", {}),
+                            "confidence": agent_result.get("confidence", primary.confidence),
+                            "missing_fields": agent_result.get("missing_fields", []),
+                            "clarification_options": agent_result.get("clarification_options", [])
+                        }
+                        
+                        # 컨시어지는 웬만한 경우 에스컬레이션 없이 직접 답변하도록 신뢰도 보정
+                        if response["confidence"] < 0.5 and response["domain_code"] != "FRONT":
+                            response["confidence"] = 0.5 
+
+                        print(f"[Analyze] ℹ️ INFO → CONCIERGE 에이전트 결과 채택")
+                        print(f"[Analyze] 응답: {response}\n")
+                        final_responses.append(response)
+                        continue
                     else:
                         guest_reply = _get_static_reply("INFO_NOT_FOUND", request.language)
             except Exception as e:
@@ -860,7 +893,13 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             info_not_found_msg = _get_static_reply("INFO_NOT_FOUND", request.language)
             need_more_info_msg = _get_static_reply("NEED_MORE_INFO", request.language)
+            
             if guest_reply == info_not_found_msg:
+                # [수정] 컨시어지인 경우 INFO_NOT_FOUND 상태에서도 에이전트에게 한 번 더 기회를 줌 (이미 위에서 처리되지 않은 경우)
+                if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
+                     # 이미 위에서 에이전트 폴백을 거쳤음에도 여기까지 왔다면, 최종적으로 프론트 연결
+                     pass
+                
                 response = {
                     "guest_reply": _get_static_reply("ESCALATION", request.language),
                     "summary": "AI 미학습 정보 (직원 연결)",
