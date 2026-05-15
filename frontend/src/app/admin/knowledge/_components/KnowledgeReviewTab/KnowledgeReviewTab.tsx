@@ -74,16 +74,8 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
   };
 
   const getDomainLabel = (code: string) => {
-    const map: Record<string, string> = {
-      HK: '하우스키핑',
-      FB: 'F&B',
-      FACILITY: '시설',
-      CONCIERGE: '컨시어지',
-      FRONT: '프론트데스크',
-      EMERGENCY: '긴급',
-      COMMON: '공통',
-    };
-    return map[code] || code;
+    // t.rag.tabs has the department mappings we need
+    return (t.adminPage.rag.tabs as Record<string, string>)[code] || code;
   };
 
   return (
@@ -95,7 +87,7 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
         ) : error ? (
           <div className={styles.emptyState}>{error}</div>
         ) : filteredItems.length === 0 ? (
-          <div className={styles.emptyState}>검토 대기 중인 항목이 없습니다.</div>
+          <div className={styles.emptyState}>{t.adminPage?.aiTraining?.empty || '검토 대기 중인 항목이 없습니다.'}</div>
         ) : (
           filteredItems.map(item => (
             <RagCandidateCard
@@ -135,10 +127,10 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
         isOpen={deleteTargetId !== null}
         onClose={() => setDeleteTargetId(null)}
         onConfirm={handleReject}
-        title="제외 확인"
-        subtitle="이 항목을 정말 검토 목록에서 제외하시겠습니까?"
+        title={t.adminPage?.aiTraining?.rejectTitle || '제외 확인'}
+        subtitle={t.adminPage?.aiTraining?.rejectSubtitle || '이 항목을 정말 검토 목록에서 제외하시겠습니까?'}
         status="danger"
-        confirmText="제외"
+        confirmText={t.adminPage?.aiTraining?.rejectConfirm || '제외'}
       />
     </div>
   );

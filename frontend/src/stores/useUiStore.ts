@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 interface UiState {
   isSidebarOpen: boolean;
+  isSidebarCollapsed: boolean;
   activeModal: string | null;
   activeTab: string;
 
@@ -12,6 +13,7 @@ interface UiState {
   toastType: 'success' | 'error';
 
   toggleSidebar: () => void;
+  toggleCollapse: () => void;
   openModal: (modalId: string) => void;
   closeModal: () => void;
   setActiveTab: (tab: string) => void;
@@ -27,6 +29,7 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   isSidebarOpen: false,
+  isSidebarCollapsed: false,
   activeModal: null,
   activeTab: 'all',
 
@@ -36,6 +39,7 @@ export const useUiStore = create<UiState>((set) => ({
   toastType: 'success',
 
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  toggleCollapse: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
   openModal: (modalId) => set({ activeModal: modalId }),
   closeModal: () => set({ activeModal: null }),
   setActiveTab: (tab) => set({ activeTab: tab }),

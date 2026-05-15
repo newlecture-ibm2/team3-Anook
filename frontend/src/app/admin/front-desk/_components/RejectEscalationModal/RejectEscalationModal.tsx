@@ -5,7 +5,7 @@ import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import styles from './RejectEscalationModal.module.css';
-
+import { useUiStore } from '@/stores/useUiStore';
 import useRejectEscalation from './useRejectEscalation';
 
 export interface RejectEscalationModalProps {
@@ -23,10 +23,11 @@ export default function RejectEscalationModal({
 }: RejectEscalationModalProps) {
   const [reason, setReason] = useState('');
   const { rejectEscalation, loading } = useRejectEscalation();
+  const showToast = useUiStore((s) => s.showToast);
 
   const handleReject = async () => {
     if (!reason.trim()) {
-      alert('고객에게 안내할 반려 사유를 입력해주세요.');
+      showToast('고객에게 안내할 반려 사유를 입력해주세요.', 'error');
       return;
     }
     const success = await rejectEscalation(requestId, reason);

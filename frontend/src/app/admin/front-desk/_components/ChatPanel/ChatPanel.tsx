@@ -8,7 +8,12 @@ import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
-import { ChatMessage } from '@/components/ui/Modal/ChatModal';
+export interface ChatMessage {
+  id: number | string;
+  variant: 'sent' | 'received';
+  senderType?: string;
+  content: string;
+}
 
 export interface ChatPanelProps {
   roomNumber?: string;
@@ -22,6 +27,8 @@ export interface ChatPanelProps {
   showRagButton?: boolean;
   onRagRegister?: () => void;
   isEmergency?: boolean;
+  headerRightContent?: React.ReactNode;
+  searchTerm?: string;
 }
 
 const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
@@ -32,7 +39,7 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   CANCELLED: { text: '취소됨', variant: 'gray' },
 };
 
-export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false }: ChatPanelProps) {
+export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, searchTerm }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -105,9 +112,9 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
         setMessages(prev => {
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
           // 낙관적 업데이트로 인한 중복 방지 (내용으로 비교)
-          if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp'))) {
+          if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && String(m.id).startsWith('temp'))) {
             // tempId를 실제 messageId로 교체
-            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent, senderType: 'STAFF' } : m);
+            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && String(m.id).startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent, senderType: 'STAFF' } : m);
           }
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
@@ -264,8 +271,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <h3 className={styles.title}>{summary || '상담'}</h3>
           </div>
           <div className={styles.headerRight}>
-            {status && STATUS_MAP[status] && (
-              <StatusBadge variant={STATUS_MAP[status].variant}>{STATUS_MAP[status].text}</StatusBadge>
+            {headerRightContent ? headerRightContent : (
+              status && STATUS_MAP[status] && (
+                <StatusBadge variant={STATUS_MAP[status].variant}>{STATUS_MAP[status].text}</StatusBadge>
+              )
             )}
           </div>
         </div>
@@ -275,13 +284,20 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
           ) : messages.length === 0 ? (
             <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
-          ) : (
-            messages.map((msg) => (
-              <ChatBubble key={msg.id} variant={msg.variant} isFallback={msg.senderType === 'STAFF'}>
-                {msg.content}
-              </ChatBubble>
-            ))
-          )}
+          ) : (() => {
+            const filtered = searchTerm
+              ? messages.filter(m => m.content.toLowerCase().includes(searchTerm.toLowerCase()))
+              : messages;
+            return filtered.length === 0 ? (
+              <div className={styles.emptyState}>검색 결과가 없습니다.</div>
+            ) : (
+              filtered.map((msg) => (
+                <ChatBubble key={msg.id} variant={msg.variant} isFallback={msg.senderType === 'STAFF'}>
+                  {msg.content}
+                </ChatBubble>
+              ))
+            );
+          })()}
         </div>
 
         {!isReadOnly && status === 'PENDING' && (

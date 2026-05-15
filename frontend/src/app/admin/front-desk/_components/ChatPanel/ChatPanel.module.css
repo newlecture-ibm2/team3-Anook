@@ -15,18 +15,22 @@
   border-bottom: 1px solid var(--color-gray-200);
   background-color: var(--color-white);
   flex-shrink: 0;
+  gap: var(--space-16);
 }
 
 .headerRight {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+  flex-shrink: 0;
 }
 
 .headerInfo {
   display: flex;
   align-items: center;
   gap: var(--space-12);
+  flex: 1;
+  min-width: 0;
 }
 
 .roomBadge {
@@ -35,12 +39,17 @@
   padding: 4px var(--space-8);
   border-radius: var(--radius-sm);
   font: var(--text-caption-bold);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .title {
   font: var(--text-h3-bold);
   color: var(--color-gray-900);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .closeButton {
