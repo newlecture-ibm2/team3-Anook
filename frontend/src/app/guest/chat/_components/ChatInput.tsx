@@ -32,9 +32,10 @@ export interface ChatInputProps {
   onStop?: () => void;
   onUserTyping?: (isTyping: boolean) => void;
   isStaff?: boolean;
+  onFocus?: () => void;
 }
 
-export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isStaff }: ChatInputProps) {
+export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isStaff, onFocus }: ChatInputProps) {
   const [value, setValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -50,6 +51,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
   const menuRef = useRef<HTMLDivElement>(null);
 
   const language = useUiStore((state) => state.language) as 'ko' | 'en';
+  const showToast = useUiStore((state) => state.showToast);
   const l = LABELS[language] || LABELS.ko;
 
   React.useEffect(() => {
@@ -103,7 +105,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
-      alert(l.speechUnsupported);
+      showToast(l.speechUnsupported, 'error');
       return;
     }
     
@@ -250,7 +252,10 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
           value={value} 
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
           onBlur={() => setIsFocused(false)}
         />
         <div className={styles.actionGroup}>

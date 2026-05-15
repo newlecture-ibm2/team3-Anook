@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from './ChatBubble.module.css';
+import { CancelIcon } from '@/components/icons';
 
 export interface ChatBubbleProps {
   variant: 'sent' | 'received';
@@ -81,7 +82,7 @@ export default function ChatBubble({ variant, isFallback, isLatest = false, imag
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <img src={imageUrl} alt="첨부 이미지 확대" className={styles.lightboxImage} />
             <button className={styles.lightboxClose} onClick={() => setIsLightboxOpen(false)} aria-label="닫기">
-              ✕
+              <CancelIcon width={24} height={24} color="#fff" />
             </button>
           </div>
         </div>

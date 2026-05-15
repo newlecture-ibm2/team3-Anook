@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import styles from './EmergencyBanner.module.css';
+import { CancelIcon } from '@/components/icons';
 
 interface EmergencyAlert {
   requestId: number;
@@ -102,7 +103,7 @@ export default function EmergencyBanner({ alert, onDismiss, onClick }: Emergency
         }}
         aria-label="긴급 알림 닫기"
       >
-        ✕
+        <CancelIcon width={20} height={20} color="#fff" />
       </button>
     </div>
   );
