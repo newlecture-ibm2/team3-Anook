@@ -9,14 +9,37 @@
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
   line-height: 1.4;
-  animation: textPulse 1.5s ease-in-out infinite;
 }
 
-@keyframes textPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+.shimmerText {
+  display: inline-block;
+  font-weight: 500;
+  color: transparent;
+  background: linear-gradient(
+    90deg, 
+    var(--color-gray-400) 0%, 
+    var(--color-gray-400) 40%, 
+    var(--color-gray-800) 50%, 
+    var(--color-gray-400) 60%, 
+    var(--color-gray-400) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s infinite linear;
+  transition: opacity 0.3s ease;
+}
+
+.fadeIn {
+  opacity: 1;
+}
+
+.fadeOut {
+  opacity: 0;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }

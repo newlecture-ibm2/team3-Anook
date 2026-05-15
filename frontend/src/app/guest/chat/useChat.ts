@@ -22,15 +22,38 @@ export interface ActiveRequest {
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { t } = useTranslation();
+  const setLanguage = useUiStore((state) => state.setLanguage);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([{
+    id: 'welcome-1',
+    variant: 'received',
+    type: 'WELCOME',
+    content: t.guestChat.welcomeMessage,
+    meta: { options: t.guestChat.quickReplyOptions }
+  }]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isStaffTyping, setIsStaffTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { t } = useTranslation();
-  const setLanguage = useUiStore((state) => state.setLanguage);
+  // Update welcome message if language changes and it is the only message
+  useEffect(() => {
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].id === 'welcome-1') {
+        return [{
+          id: 'welcome-1',
+          variant: 'received',
+          type: 'WELCOME',
+          content: t.guestChat.welcomeMessage,
+          meta: { options: t.guestChat.quickReplyOptions }
+        }];
+      }
+      return prev;
+    });
+  }, [t.guestChat.welcomeMessage, t.guestChat.quickReplyOptions]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -155,8 +178,12 @@ export function useChat() {
                 };
                 return [...filtered, newAiMsg];
               });
+            } else if (payload.type === 'STAFF_TYPING') {
+              // 직원이 메시지 작성 중 → 타이핑 인디케이터 표시
+              setIsStaffTyping(true);
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
+              setIsStaffTyping(false);
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
               setMessages(prev => {
                 // 중복 방지
@@ -210,7 +237,8 @@ export function useChat() {
                   progress: progressMap[payload.status] || 0,
                   graceRemaining: payload.graceRemaining || 0,
                   priority: payload.priority || 'NORMAL',
-                  cancelPending: isCancelPending
+                  cancelPending: isCancelPending,
+                  createdAt: payload.createdAt || new Date().toISOString()
                 }
               };
 
@@ -230,6 +258,7 @@ export function useChat() {
                     ...requestMsg.meta,
                     entities: payload.entities || existingMeta.entities,
                     priority: payload.priority || existingMeta.priority,
+                    createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
                     graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                   }
                 }];
@@ -506,6 +535,7 @@ export function useChat() {
   return {
     messages,
     isTyping,
+    isStaffTyping,
     sendMessage,
     activeRequests,
     cancelRequest,
