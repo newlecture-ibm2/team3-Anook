@@ -140,8 +140,12 @@ export function useChat() {
               return;
             }
 
-            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
+            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR' || payload.type === 'AI_SKIPPED') {
               setIsTyping(false);
+
+              if (payload.type === 'AI_SKIPPED') {
+                return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
+              }
 
               // 진행 상태 메시지 제거
               setMessages(prev => {
