@@ -3,12 +3,22 @@
 import React, { useState, useMemo } from 'react';
 import styles from './page.module.css';
 import { useVocList } from './useVocList';
-import VocFilter, { FilterType } from './_components/VocFilter/VocFilter';
+import Tabs from '@/components/ui/Tab/Tabs';
 import VocTable from './_components/VocTable/VocTable';
+import { useTranslation } from '@/app/useTranslation';
+
+type FilterType = 'ALL' | 'POSITIVE' | 'NEGATIVE';
 
 export default function VocPage() {
+  const { t } = useTranslation();
   const { vocList, loading, error, refetch } = useVocList();
   const [filter, setFilter] = useState<FilterType>('ALL');
+
+  const FILTER_OPTIONS = [
+    { value: 'ALL', label: t.adminPage.voc.filterAll },
+    { value: 'POSITIVE', label: t.adminPage.voc.filterPositive },
+    { value: 'NEGATIVE', label: t.adminPage.voc.filterNegative },
+  ];
 
   const filteredVocs = useMemo(() => {
     if (filter === 'ALL') return vocList;
@@ -18,9 +28,9 @@ export default function VocPage() {
   return (
     <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>고객 피드백 (VOC)</h1>
+        <h1 className={styles.title}>{t.adminPage.voc.title}</h1>
         <p className={styles.subtitle}>
-          고객의 칭찬과 불만 등 서비스 피드백을 수집하고 관리하는 페이지입니다.
+          {t.adminPage.voc.subtitle}
         </p>
       </div>
 
@@ -31,12 +41,19 @@ export default function VocPage() {
             onClick={refetch} 
             style={{ marginLeft: '10px', textDecoration: 'underline', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}
           >
-            다시 시도
+            {t.common.retry}
           </button>
         </div>
       )}
 
-      <VocFilter currentFilter={filter} onFilterChange={setFilter} />
+      <div style={{ marginBottom: 'var(--space-16)' }}>
+        <Tabs
+          options={FILTER_OPTIONS}
+          activeValue={filter}
+          onChange={(val) => setFilter((val || 'ALL') as FilterType)}
+          variant="pill"
+        />
+      </div>
       
       <VocTable vocs={filteredVocs} loading={loading} />
     </div>

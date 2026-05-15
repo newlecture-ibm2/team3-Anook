@@ -91,6 +91,33 @@ export default function FrontDeskPage() {
     };
   }, [inProgress, subscribe]);
 
+  // 긴급(EMERGENCY) 요청 자동 선택 로직
+  const seenEmergencyRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const emergencyReqs = [...pending, ...inProgress].filter(r => r.priority === 'EMERGENCY');
+    let targetReq = null;
+
+    for (const req of emergencyReqs) {
+      if (!seenEmergencyRef.current.has(req.id)) {
+        if (!targetReq) {
+          targetReq = req;
+        }
+        seenEmergencyRef.current.add(req.id);
+      }
+    }
+
+    if (targetReq) {
+      setActiveTab('active');
+      setActiveChatRoom({
+        roomNumber: targetReq.roomNo,
+        requestId: targetReq.id,
+        status: targetReq.status,
+        summary: targetReq.summary
+      });
+    }
+  }, [pending, inProgress]);
+
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
     if (status === 'PENDING') return 'red';
     if (status === 'IN_PROGRESS') return 'green';
