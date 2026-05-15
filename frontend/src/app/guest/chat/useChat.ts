@@ -334,7 +334,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'TEXT',
-                      content: '안내: 업무가 이미 진행 중이라 취소 요청이 반려되어 기존 요청대로 진행됩니다.',
+                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프런트로 연락 부탁드립니다.',
                     }];
                   });
                 }, 800);
