@@ -1,66 +1,37 @@
-# ============================================================
-# Aneuk 로컬 개발용 Docker Compose
-# ============================================================
-# 사용법: docker compose -f docker-compose.local.yml up -d
-# DB와 AI 서버는 Docker로 실행, 백엔드/프론트엔드는 로컬에서 직접 실행
-# ============================================================
+version: '3.8'
+
+# 메인 docker-compose.yml을 건드리지 않고,
+# 로컬 개발 환경에서만 Graph RAG(Neo4j)를 띄우기 위한 별도의 Compose 파일입니다.
+# 실행 방법: docker-compose -f docker-compose.yml -f docker-compose.local.yml up -d
 
 services:
-  # ─── PostgreSQL + pgvector (로컬 개발용) ─────────────
+  # 로컬 개발 환경용 포트 개방 오버라이드
   db:
-    image: pgvector/pgvector:pg16
-    container_name: anook-local-db
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=anook_db
-      - POSTGRES_USER=anook_user
-      - POSTGRES_PASSWORD=anook2026
-    volumes:
-      - local-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U anook_user -d anook_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ─── Redis (이미지 임시 캐싱 및 세션용) ─────────────
+  
   redis:
-    image: redis:alpine
-    container_name: anook-local-redis
     ports:
       - "6379:6379"
-    command: redis-server --save 60 1 --loglevel warning
-    volumes:
-      - local-redis-data:/data
-    restart: unless-stopped
 
-  # ─── AI 서버 (FastAPI, 로컬 개발용) ─────────────
   ai:
-    build:
-      context: ./ai
-      dockerfile: Dockerfile
-    container_name: anook-local-ai
     ports:
       - "8000:8000"
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - POSTGRES_DB=anook_db
-      - POSTGRES_USER=anook_user
-      - POSTGRES_PASSWORD=anook2026
-      - POSTGRES_HOST=db
       - BACKEND_URL=http://host.docker.internal:8080
+
+  neo4j:
+    image: neo4j:5
+    container_name: anook-neo4j-local
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-anook2026}  # (환경변수 처리, 기본값: neo4j/anook2026)
+    ports:
+      - "7474:7474" # HTTP UI 대시보드 (그래프 시각화)
+      - "7687:7687" # Bolt 포트 (AI 백엔드 통신용)
     volumes:
-      - ./ai:/app # 파이썬 코드 수정 시 즉시 반영 (Hot Reload)
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    depends_on:
-      - db
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - neo4j-local-data:/data
+    networks:
+      - Anook-network
 
 volumes:
-  local-db-data:
-    name: anook-local-db-data
-  local-redis-data:
-    name: anook-local-redis-data
+  neo4j-local-data:

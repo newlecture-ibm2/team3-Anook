@@ -10,6 +10,7 @@ import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
+import com.anook.backend.message.application.port.out.MessageRoomStatusPort;
 import com.anook.backend.global.util.PiiMaskingUtil;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class SendMessageService implements SendMessageUseCase {
     private final MessageDispatchPort dispatchPort;
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncAiLoggingService asyncAiLoggingService;
+    private final MessageRoomStatusPort roomStatusPort;
 
     @Autowired
     @Lazy
@@ -85,8 +87,15 @@ public class SendMessageService implements SendMessageUseCase {
                 "messageId", guestMsg.getId(),
                 "content", maskedContent));
 
-        // 3. AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
-        self.processAiAsync(cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
+        // 3. AI 처리 — 직원이 실시간 상담 중인 방이면 AI 개입 스킵
+        if (roomStatusPort.isStaffHandlingRoom(cmd.roomNo())) {
+            log.info("[Message] 직원 상담 중 — AI 호출 스킵 (room: {})", cmd.roomNo());
+            // 프론트엔드에 AI 스킵(직원 응대 중)임을 알려 타이핑 인디케이터를 해제
+            dispatchPort.sendToRoom(cmd.roomNo(), Map.of("type", "AI_SKIPPED"));
+        } else {
+            // AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
+            self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
+        }
 
         return new SendMessageResult(guestMsg.getId());
     }
@@ -100,7 +109,7 @@ public class SendMessageService implements SendMessageUseCase {
      */
     @Async("aiTaskExecutor")
     @Transactional
-    public void processAiAsync(String roomNo, Long guestId, String content, String language, boolean piiDetected, java.util.List<String> images) {
+    public void processAiAsync(Long messageId, String roomNo, Long guestId, String content, String language, boolean piiDetected, java.util.List<String> images) {
         try {
             // 3. AI 호출을 위해 최근 10개 메시지 조회 (대화 맥락 확장)
             java.util.List<Message> recentMessages = new java.util.ArrayList<>(
@@ -187,12 +196,20 @@ public class SendMessageService implements SendMessageUseCase {
                             escalated,
                             analysis.actionType(),
                             analysis.targetKeyword(),
-                            images));
+                            images,
+                            analysis.reasoning()));
                     log.info("[Message] RequestDetectedEvent 발행 — domain: {}, escalated: {}, actionType: {}, targetKeyword: {}",
                             analysis.domainCode(), escalated, analysis.actionType(), analysis.targetKeyword());
                 } else if ("STATUS_CHECK".equals(analysis.action())) {
                     eventPublisher.publishEvent(new RequestStatusCheckByGuestEvent(this, roomNo, guestId, content));
                     log.info("[Message] RequestStatusCheckByGuestEvent 발행 — room: {}", roomNo);
+                } else if ("VOC_FEEDBACK".equals(analysis.action())) {
+                    String sentiment = (String) analysis.entities().get("sentiment");
+                    messagePort.findById(messageId).ifPresent(msg -> {
+                        msg.setSentiment(sentiment);
+                        messagePort.save(msg);
+                    });
+                    log.info("[Message] VOC 태그 부착 완료 — msgId: {}, sentiment: {}", messageId, sentiment);
                 }
 
                 // 7. AI 로그 비동기 분리 저장
@@ -245,6 +262,10 @@ public class SendMessageService implements SendMessageUseCase {
         if (targetLang == null || targetLang.isBlank()) {
             targetLang = "ko"; // 기본값 (추후 팀원이 다국어 지원 시 수정 예정)
         }
+
+        // 0. 즉시 STAFF_TYPING 이벤트 전송 (번역 전 게스트에게 타이핑 인디케이터 표시)
+        dispatchPort.sendToRoom(command.roomNo(), Map.of(
+                "type", "STAFF_TYPING"));
 
         // 1. 번역 수행
         String translatedContent = aiPort.translate(command.content(), targetLang);

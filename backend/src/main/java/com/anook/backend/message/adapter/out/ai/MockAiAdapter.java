@@ -47,7 +47,8 @@ public class MockAiAdapter implements MessageAiPort {
                     "ADD",
                     null,
                     null,
-                    null
+                    null,
+                    "키워드 기반 매칭 (HK)"
             ));
         }
 
@@ -63,7 +64,8 @@ public class MockAiAdapter implements MessageAiPort {
                     "ADD",
                     null,
                     null,
-                    null
+                    null,
+                    "키워드 기반 매칭 (FACILITY)"
             ));
         }
 
@@ -79,7 +81,8 @@ public class MockAiAdapter implements MessageAiPort {
                     "ADD",
                     null,
                     null,
-                    null
+                    null,
+                    "키워드 기반 매칭 (FB)"
             ));
         }
 
@@ -87,7 +90,7 @@ public class MockAiAdapter implements MessageAiPort {
         return java.util.List.of(new MessageAiResult(
                 "안녕하세요! 아눅 호텔 컨시어지입니다. 무엇이든 편하게 말씀해 주세요.",
                 null,
-                null, null, Map.of(), 0.0, null, "ADD", null, null, null
+                null, null, Map.of(), 0.0, null, "ADD", null, null, null, null
         ));
     }
 

@@ -20,7 +20,6 @@ import ChatInput from '@/app/guest/chat/_components/ChatInput';
 
 import ChatScreen from '@/app/guest/chat/_components/ChatScreen';
 import Pill from '@/components/ui/Pill/Pill';
-import StatusCard from '@/app/guest/chat/_components/StatusCard';
 import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
@@ -32,11 +31,13 @@ import { Table, TableHeader, TableRow, TableCell } from '@/components/ui/Table/T
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Toggle from '@/components/ui/Button/Toggle';
 import Toast from '@/components/ui/Modal/Toast';
-import ChatModal from '@/components/ui/Modal/ChatModal';
+
 import ChatHistory from '@/components/ui/ChatHistory/ChatHistory';
 import KnowledgeItem from '@/components/ui/Knowledge/KnowledgeItem';
 import KnowledgeModal from '@/components/ui/Knowledge/KnowledgeModal';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
+import BoardSkeleton from '@/app/staff/_components/BoardSkeleton/BoardSkeleton';
+import chatScreenStyles from '@/app/guest/chat/_components/ChatScreen.module.css';
 import {
   LayoutDashboard, Inbox, AlertTriangle, Wrench, Home, Utensils,
   ConciergeBell, List, Database, Target, User, History,
@@ -68,9 +69,10 @@ export default function ComponentShowcasePage() {
   const [activeRoomId, setActiveRoomId] = useState<string | number>('1001');
   const [selectedKnowledge, setSelectedKnowledge] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [chatScreenStatus, setChatScreenStatus] = useState<'normal' | 'emergency' | 'escalated' | 'progress'>('normal');
+  const [requestCardKey, setRequestCardKey] = useState(0);
 
   const sampleRooms = [
     { id: '1001', roomNumber: '1001', statusText: '보관됨' },
@@ -390,16 +392,34 @@ export default function ComponentShowcasePage() {
                     </div>
                   </div>
 
+                  <div style={{ marginTop: 'var(--space-24)' }}>
+                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Staff Typing Indicator (상담사 입력 중)</h4>
+                    <ComponentLabel path="app/guest/chat/_components/ChatScreen.module.css (.typingDots)" />
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
+                      <ChatBubble variant="received" isFallback isLatest>
+                        <span className={chatScreenStyles.typingDots}>
+                          <span className={chatScreenStyles.dot} />
+                          <span className={chatScreenStyles.dot} />
+                          <span className={chatScreenStyles.dot} />
+                        </span>
+                      </ChatBubble>
+                    </div>
+                  </div>
+
 
                   <div style={{ marginTop: 'var(--space-24)' }}>
-                    <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Guest Request Card (10초 타이머)</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-12)' }}>
+                      <h4 style={{ font: 'var(--text-body-bold)', margin: 0 }}>Guest Request Card (10초 타이머)</h4>
+                      <Button variant="outlined" onClick={() => setRequestCardKey(k => k + 1)}>타이머 재시작 🔄</Button>
+                    </div>
                     <ComponentLabel path="app/guest/chat/_components/RequestCard/RequestCard.tsx" />
-                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
+                    <div style={{ padding: 'var(--space-24)', background: 'var(--bg-bubble)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
                       <GuestRequestCard
+                        key={requestCardKey}
                         requestId={1001}
                         domainCode="HK"
                         summary="수건 2장 추가 요청"
-                        entities={{ item: "수건", count: "2" }}
+                        entities={{ items: [{ item: "수건", count: 2 }] }}
                         status="PENDING"
                         progress={0}
                         graceRemaining={10}
@@ -408,6 +428,16 @@ export default function ComponentShowcasePage() {
                         onAccept={() => alert('요청 접수')}
                         onCancel={() => alert('취소')}
                       />
+                      
+                      {/* 색상 테스트용 카드들 (타이머 종료 상태) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-16)', marginTop: 'var(--space-24)' }}>
+                        <GuestRequestCard requestId={2} domainCode="HK" summary="하우스키핑 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
+                        <GuestRequestCard requestId={3} domainCode="FB" summary="식음료 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
+                        <GuestRequestCard requestId={4} domainCode="FACILITY" summary="시설관리 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
+                        <GuestRequestCard requestId={5} domainCode="CONCIERGE" summary="컨시어지 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
+                        <GuestRequestCard requestId={6} domainCode="FRONT" summary="프론트 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
+                        <GuestRequestCard requestId={7} domainCode="EMERGENCY" summary="긴급 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="URGENT" />
+                      </div>
                     </div>
                   </div>
 
@@ -441,31 +471,6 @@ export default function ComponentShowcasePage() {
                   </div>
                 </div>
                 
-                <div style={{ flex: 1, minWidth: '280px' }}>
-                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Status Card</h4>
-                  <ComponentLabel path="app/guest/chat/_components/StatusCard.tsx" />
-                  <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-16)' }}>
-                      <StatusCard progress={testProgress} />
-                      <button 
-                        onClick={() => setTestProgress(p => p === 33 ? 66 : p === 66 ? 100 : 33)}
-                        style={{ 
-                          padding: 'var(--space-8) var(--space-16)', 
-                          borderRadius: 'var(--radius-full)', 
-                          border: '1px solid var(--color-gray-300)', 
-                          background: 'var(--color-white)', 
-                          cursor: 'pointer', 
-                          font: 'var(--text-caption-medium)',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--color-gray-50)'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--color-white)'}
-                      >
-                        상태 업데이트 (현재: {testProgress}%)
-                      </button>
-                    </div>
-                  </div>
-                </div>
                 
                 <div style={{ flex: 1, minWidth: '280px' }}>
                   <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Feedback Card</h4>
@@ -509,16 +514,7 @@ export default function ComponentShowcasePage() {
                   </div>
                 </div>
                 
-                <div style={{ flex: 1, minWidth: '300px' }}>
-                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Chat Modal (직원 상담용)</h4>
-                  <ComponentLabel path="components/ui/Modal/ChatModal.tsx" />
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-                    <Button variant="primary" onClick={() => setIsChatModalOpen(true)}>직접 Chat Modal 열기</Button>
-                    <p style={{ font: 'var(--text-caption-medium)', color: 'var(--color-gray-500)' }}>
-                      * Group 5의 RequestCard '상담 시작' 버튼으로도 열립니다.
-                    </p>
-                  </div>
-                </div>
+
               </div>
 
 
@@ -613,16 +609,15 @@ export default function ComponentShowcasePage() {
                     <ComponentLabel path="components/ui/Card/RagCandidateCard.tsx" />
                     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
                       <RagCandidateCard
-                        roomNumber="1204"
                         department="하우스키핑"
-                        aiReason="RAG_MISSING"
-                        consultationContent="고객: 혹시 아기용 침대 가드 설치가 가능한가요?&#10;직원: 네, 고객님. 12개월 미만 유아용 침대 가드는 재고 확인 후 무상으로 설치해 드리고 있습니다. 바로 준비해드리겠습니다."
+                        question="혹시 아기용 침대 가드 설치가 가능한가요?"
+                        answer="네, 고객님. 12개월 미만 유아용 침대 가드는 재고 확인 후 무상으로 설치해 드리고 있습니다. 바로 준비해드리겠습니다."
                         timestamp="2026.10.26 15:30"
-                        onAddRag={(content) => {
+                        onAddRag={() => {
                           setSelectedKnowledge({
                             category: "수동 상담 (하우스키핑)",
-                            title: "", // 지식 제목을 새로 입력할 수 있도록 비워둠
-                            description: content,
+                            title: "",
+                            description: "네, 고객님. 12개월 미만 유아용 침대 가드는 재고 확인 후 무상으로 설치해 드리고 있습니다. 바로 준비해드리겠습니다.",
                             updatedAt: "방금 전",
                             isNew: true
                           });
@@ -632,16 +627,15 @@ export default function ComponentShowcasePage() {
                       />
                       
                       <RagCandidateCard
-                        roomNumber="2401"
                         department="프론트"
-                        aiReason="INTENT_UNCLEAR"
-                        consultationContent="고객: 저기요, 아까 예약했던 거 혹시 취소되나요?&#10;직원: 고객님, 혹시 예약하신 패키지가 어떤 상품이신지 말씀해 주실 수 있을까요? 취소 규정이 상품마다 달라서요."
+                        question="저기요, 아까 예약했던 거 혹시 취소되나요?"
+                        answer="고객님, 혹시 예약하신 패키지가 어떤 상품이신지 말씀해 주실 수 있을까요? 취소 규정이 상품마다 달라서요."
                         timestamp="2026.10.26 16:15"
-                        onAddRag={(content) => {
+                        onAddRag={() => {
                           setSelectedKnowledge({
                             category: "의도 불명 (프론트)",
                             title: "",
-                            description: content,
+                            description: "고객님, 혹시 예약하신 패키지가 어떤 상품이신지 말씀해 주실 수 있을까요? 취소 규정이 상품마다 달라서요.",
                             updatedAt: "방금 전",
                             isNew: true
                           });
@@ -725,6 +719,26 @@ export default function ComponentShowcasePage() {
             briefing={sampleHandoverBriefing}
             items={sampleHandoverItems}
           />
+        </section>
+
+        {/* Skeleton UI Showcase */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-16)', marginBottom: 'var(--space-32)' }}>
+          <h2 style={{ font: 'var(--text-h2-bold)', color: 'var(--color-gray-900)' }}>
+            Skeleton UI
+          </h2>
+
+          {/* Board Skeleton */}
+          <div style={{ background: 'var(--color-bg)', padding: 'var(--space-32)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
+            <h3 style={{ font: 'var(--text-h3-bold)', marginBottom: 'var(--space-4)', color: 'var(--color-gray-700)' }}>Board Skeleton (Staff 칸반보드 로딩)</h3>
+            <ComponentLabel path="app/staff/_components/BoardSkeleton/BoardSkeleton.tsx" />
+            <p style={{ font: 'var(--text-caption-regular)', color: 'var(--color-gray-500)', marginBottom: 'var(--space-16)' }}>
+              Staff 대시보드에서 태스크 데이터를 불러오는 동안 표시되는 Skeleton UI입니다.
+            </p>
+            <div style={{ padding: 'var(--space-24)', boxSizing: 'border-box', height: '360px', overflow: 'hidden', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-gray-100)' }}>
+              <BoardSkeleton />
+            </div>
+          </div>
+
         </section>
 
         {/* 5. ICONS */}
@@ -820,11 +834,6 @@ export default function ComponentShowcasePage() {
         />
       )}
 
-      {/* Chat Modal */}
-      <ChatModal
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-      />
 
       {/* Log Data Modal */}
       <LogDataModal

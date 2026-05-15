@@ -31,7 +31,7 @@ public class StaffAuthController {
 
     /**
      * 세션 유효성 검증 API
-     * JwtAuthFilter에서 중복 로그인 및 토큰 유효성을 이미 검사하므로, 
+     * JwtAuthFilter에서 중복 로그인 및 토큰 유효성을 이미 검사하므로,
      * 여기까지 도달하면 유효한 세션으로 간주합니다.
      */
     @GetMapping("/verify")

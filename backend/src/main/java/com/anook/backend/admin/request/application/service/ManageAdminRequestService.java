@@ -11,12 +11,14 @@ import com.anook.backend.admin.request.application.dto.response.AdminRequestStat
 import com.anook.backend.admin.request.application.port.in.ManageAdminRequestUseCase;
 import com.anook.backend.admin.request.application.port.out.AdminRequestQueryPort;
 import com.anook.backend.admin.request.application.port.out.AdminRequestMessagePort;
+import com.anook.backend.admin.request.application.port.out.AdminRequestDispatchPort;
 import com.anook.backend.admin.request.domain.model.AdminRequest;
 import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.admin.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.admin.staff.application.port.in.ManageStaffUseCase;
 import com.anook.backend.global.util.RedisImageCacheUtil;
+import com.anook.backend.pms.application.port.in.GenerateReceiptUseCase;
 import com.anook.backend.global.exception.BusinessException;
 import com.anook.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +41,12 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     private final AdminRequestQueryPort adminRequestQueryPort;
     private final AdminRequestMessagePort adminRequestMessagePort;
+    private final AdminRequestDispatchPort adminRequestDispatchPort;
     private final ListDepartmentsUseCase listDepartmentsUseCase;
     private final ManageStaffUseCase manageStaffUseCase;
     private final DispatchPort dispatchPort;
     private final RedisImageCacheUtil redisImageCacheUtil;
+    private final GenerateReceiptUseCase generateReceiptUseCase;
 
     @Override
     public List<AdminRequestListResult> getAllRequests(String status, String departmentId, String priority, List<String> exclude, String sort) {
@@ -73,7 +77,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                     detail.id(), detail.status(), detail.priority(), detail.departmentId(), detail.departmentName(),
                     detail.entities(), detail.rawText(), detail.summary(), detail.confidence(), detail.roomNo(),
                     detail.assignedStaffId(), detail.assignedStaffName(), detail.version(), detail.cancelRequested(),
-                    detail.cancelRequestedAt(), detail.createdAt(), detail.updatedAt(), imageUrl
+                    detail.cancelRequestedAt(), detail.createdAt(), detail.updatedAt(), imageUrl, detail.reasoning()
             );
         }
         return detail;
@@ -119,6 +123,11 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         adminRequestQueryPort.updateStatus(id, status.toUpperCase());
+
+        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            generateReceiptUseCase.generate(request.getRoomNo(), request.getDepartmentId(), request.getEntities());
+        }
 
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
                 id, status.toUpperCase(), request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
@@ -207,6 +216,10 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         if (rejectionReason != null && !rejectionReason.isBlank()) {
             String formattedMessage = "[취소 반려] " + rejectionReason;
             adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), formattedMessage);
+            // DB 저장 후 WebSocket으로도 실시간 전송 (게스트 챗봇에 반려 사유 표시)
+            adminRequestDispatchPort.dispatchStaffMessage(
+                    request.getRoomNo(), null, formattedMessage
+            );
         }
     }
 
@@ -437,13 +450,14 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getId(), r.getStatus(), r.getPriority(),
                 r.getDepartmentId(),
                 deptMap.getOrDefault(r.getDepartmentId(), r.getDepartmentId()),
-                r.getSummary(), r.getRoomNo(),
+                r.getSummary(), r.getRawText(), r.getRoomNo(),
                 r.getAssignedStaffId(),
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
                 r.isCancelRequested(),
                 r.getCancelRequestedAt(),
                 r.getCreatedAt(), r.getUpdatedAt(),
-                r.getVersion()
+                r.getVersion(),
+                r.getEntities()
         );
     }
 
@@ -458,7 +472,7 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.getAssignedStaffId() != null ? staffMap.get(r.getAssignedStaffId()) : null,
                 r.getVersion(),
                 r.isCancelRequested(), r.getCancelRequestedAt(),
-                r.getCreatedAt(), r.getUpdatedAt(), null
+                r.getCreatedAt(), r.getUpdatedAt(), null, r.getReasoning()
         );
     }
 }

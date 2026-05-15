@@ -40,7 +40,7 @@ class RouterOutputSchema(BaseModel):
     )
     priority: Optional[str] = Field(
         default="NORMAL",
-        description="긴급도 (NORMAL, HIGH)."
+        description="긴급도 (NORMAL, URGENT)."
     )
     clarification_question: Optional[str] = Field(
         default=None,
@@ -49,4 +49,8 @@ class RouterOutputSchema(BaseModel):
     clarification_options: Optional[list] = Field(
         default_factory=list,
         description="고객이 쉽게 선택할 수 있는 짧은 답변 옵션 리스트 (예: ['무료 생수', '유료 음료']). CLARIFICATION 시 제공."
+    )
+    sentiment: Optional[str] = Field(
+        default=None,
+        description="고객 피드백(VOC)에 대한 감정 태그 (POSITIVE, NEGATIVE)"
     )

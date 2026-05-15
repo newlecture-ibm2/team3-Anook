@@ -14,7 +14,7 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     # 1. RAG 검색 → HK 도메인 지식 (비품 목록, 수량 제한 등)
     rag_context = ""
     try:
-        rag_results = rag_service.search_similar(
+        rag_results = rag_service.search_hybrid(
             query=user_message, domain_code="HK", top_k=3, threshold=0.5
         )
         if rag_results:
@@ -40,7 +40,11 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     # 4. Gemini One-pass 호출
     raw = await call_gemini_async(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT, images=images)
 
-    # 5. Pydantic 검증 (HotelRequestSchema)
+    # 5. reasoning 필드가 리스트로 올 경우 문자열로 변환 (Pydantic 검증 에러 방지)
+    if isinstance(raw.get("reasoning"), list):
+        raw["reasoning"] = "\n".join(raw["reasoning"])
+
+    # 6. Pydantic 검증 (HotelRequestSchema)
     if "request_id" not in raw or raw["request_id"] == "auto":
         raw["request_id"] = "auto"
     if "room_no" not in raw or raw["room_no"] == "unknown":
@@ -50,7 +54,7 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
 
     result = HotelRequestSchema(**raw)
 
-    # 6. analyze.py 응답 형태로 변환
+    # 7. analyze.py 응답 형태로 변환
     # 되묻기(needs_clarification)일 때는 domain_code=None → 백엔드가 request를 생성하지 않음
     return {
         "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
@@ -61,4 +65,5 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
         "confidence": result.confidence,
         "missing_fields": result.missing_fields,
         "clarification_options": getattr(result, "clarification_options", []),
+        "reasoning": result.reasoning,
     }

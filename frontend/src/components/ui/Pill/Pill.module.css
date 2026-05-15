@@ -1,6 +1,5 @@
 .container {
   display: flex;
-  justify-content: center;
   gap: var(--space-8);
   flex-wrap: wrap;
   margin-top: var(--space-4);
@@ -11,21 +10,34 @@
   padding: var(--space-8) var(--space-16);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-gray-300);
-  background-color: var(--color-bg);
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--color-gray-700);
   font: var(--text-body-regular);
   cursor: pointer;
-  transition: background-color 0.1s ease-in-out, border-color 0.1s ease-in-out;
+  transition: all 0.2s ease;
 }
 
 .button:hover:not(.buttonSelected) {
-  background-color: var(--color-gray-50);
-  border-color: var(--color-gray-500);
+  background-color: #F3F4FF;
+  border-color: var(--color-gray-300);
+  box-shadow: 0 0 12px rgba(86, 91, 187, 0.25);
+  color: var(--color-gray-900);
 }
 
 .buttonSelected {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background-color: var(--color-gray-600);
+  border-color: var(--color-gray-600);
   color: var(--color-white);
   transition: none;
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.buttonSelected:disabled {
+  opacity: 1; /* Keep selected one fully opaque to show choice */
 }

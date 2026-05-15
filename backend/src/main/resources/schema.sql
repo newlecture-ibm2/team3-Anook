@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS message (
     room_no             VARCHAR(10)  NOT NULL REFERENCES room(number),
     guest_id            BIGINT,      -- PMS 투숙객 ID (데이터 격리 및 RAG용)
     request_id          BIGINT       REFERENCES request(id),
+    sentiment           VARCHAR(10), -- 'POSITIVE' | 'NEGATIVE' (VOC 필터링용)
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
@@ -246,3 +247,9 @@ ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN NOT NULL D
 ALTER TABLE request ADD COLUMN IF NOT EXISTS cancel_requested_at TIMESTAMP;
 -- [2026-05-07] F&B 메뉴 선택옵션(options) 컬럼 추가 (혜연)
 ALTER TABLE pms_menu ADD COLUMN IF NOT EXISTS options VARCHAR(500);
+
+-- [2026-05-13] AI 판단 근거 저장
+ALTER TABLE request ADD COLUMN IF NOT EXISTS reasoning TEXT;
+
+-- [2026-05-14] VOC 감성 분석 컬럼 추가
+ALTER TABLE message ADD COLUMN IF NOT EXISTS sentiment VARCHAR(10);

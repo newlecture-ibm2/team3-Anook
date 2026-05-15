@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import styles from './Sidebar.module.css';
 import { useTranslation } from '@/app/useTranslation';
+import { useUiStore } from '@/stores/useUiStore';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 import {
   LayoutDashboard,
   Inbox,
-  AlertTriangle,
+
   Wrench,
   Home,
   Utensils,
@@ -25,7 +27,8 @@ import {
   Layers,
   FileSearch,
   FileText,
-  LogOut
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -41,10 +44,11 @@ interface SidebarItemProps {
   href: string;
   isActive?: boolean;
   isDanger?: boolean;
+  isCollapsed?: boolean;
   onClick?: (e: React.MouseEvent, href: string) => void;
 }
 
-function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = false, onClick }: SidebarItemProps) {
+function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = false, isCollapsed = false, onClick }: SidebarItemProps) {
   let itemStyle = styles.default;
   if (isActive) {
     itemStyle = styles.selected;
@@ -56,11 +60,23 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
   return (
     <Link
       href={href}
-      className={`${styles.item} ${itemStyle}`}
+      className={`${styles.item} ${itemStyle} ${isCollapsed ? styles.itemCollapsed : ''}`}
       onClick={(e) => onClick && onClick(e, href)}
+      onMouseEnter={(e) => {
+        if (isCollapsed) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          // window.dispatchEvent to notify Sidebar of hover
+          window.dispatchEvent(new CustomEvent('sidebar-hover', { detail: { label, top: rect.top + rect.height / 2, left: rect.right + 8 } }));
+        }
+      }}
+      onMouseLeave={() => {
+        if (isCollapsed) {
+          window.dispatchEvent(new CustomEvent('sidebar-hover', { detail: null }));
+        }
+      }}
     >
       <Icon className={styles.icon} />
-      <span className={styles.label}>{label}</span>
+      {!isCollapsed && <span className={styles.label}>{label}</span>}
     </Link>
   );
 }
@@ -72,6 +88,14 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
   const fullPathname = searchString ? `${actualPathname}?${searchString}` : actualPathname;
   const pathname = fakePathname || fullPathname;
   const { t } = useTranslation();
+  const { isSidebarCollapsed, toggleCollapse } = useUiStore();
+  const [tooltip, setTooltip] = React.useState<{ label: string; top: number; left: number } | null>(null);
+
+  React.useEffect(() => {
+    const handleHover = (e: any) => setTooltip(e.detail);
+    window.addEventListener('sidebar-hover', handleHover);
+    return () => window.removeEventListener('sidebar-hover', handleHover);
+  }, []);
 
   // 부서별 (하우스키핑, 식음료, 시설, 컨시어지) 메뉴 리스트
   const deptMenus = [
@@ -94,7 +118,6 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
         { label: t.adminPage.sidebar.menus.fb, href: '/admin/fb', icon: Utensils },
         { label: t.adminPage.sidebar.menus.facility, href: '/admin/facility', icon: Wrench },
         { label: t.adminPage.sidebar.menus.concierge, href: '/admin/concierge', icon: MessageSquare },
-        { label: t.adminPage.sidebar.menus.emergency, href: '/admin/emergency', icon: AlertTriangle },
       ]
     },
     {
@@ -102,6 +125,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       items: [
         { label: t.adminPage.sidebar.menus.allRequests, href: '/admin/all-requests', icon: Layers },
         { label: t.adminPage.sidebar.menus.chatHistory, href: '/admin/chat-history', icon: History },
+        { label: t.adminPage.sidebar.menus.voc, href: '/admin/voc', icon: MessageCircle },
       ]
     },
     {
@@ -135,15 +159,31 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
 
   return (
     <aside
-      className={`${styles.sidebar} ${className}`.trim()}
-      style={{ height: 'calc(100vh - 65px)', overflowY: 'auto' }}
+      className={`${styles.sidebar} ${isSidebarCollapsed ? styles.sidebarCollapsed : ''} ${className}`.trim()}
+      style={{ height: '100vh', overflowY: 'auto' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-16) 0', width: '100%', flex: 1 }}>
+      {/* Logo + Collapse Toggle */}
+      <div className={styles.logoRow}>
+        {!isSidebarCollapsed && (
+          <Link href="/" className={styles.logoLink}>
+            Anook
+          </Link>
+        )}
+        <button
+          className={styles.collapseBtn}
+          onClick={toggleCollapse}
+          aria-label={isSidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+        >
+          {isSidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-8)' }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
-            {group.category && (
+            {group.category && !isSidebarCollapsed && (
               <h4 style={{ 
-                padding: 'var(--space-8) var(--space-16)', 
+                padding: 'var(--space-8) var(--space-24)', 
                 fontSize: '0.75rem', 
                 fontWeight: 600, 
                 color: 'var(--color-gray-500)',
@@ -153,7 +193,10 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
                 {group.category}
               </h4>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {group.category && isSidebarCollapsed && (
+              <div className={styles.collapsedDivider} />
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {group.items.map((menu) => {
                 const isActive = activeMenu?.href === menu.href;
                 return (
@@ -163,6 +206,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
                     label={menu.label}
                     href={menu.href}
                     isActive={isActive}
+                    isCollapsed={isSidebarCollapsed}
                     onClick={onMenuClick}
                   />
                 );
@@ -172,19 +216,50 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
         ))}
       </div>
 
-      <div style={{ width: '100%', padding: 'var(--space-16) 0', borderTop: '1px solid var(--color-gray-200)', marginTop: 'auto' }}>
+      <div style={{ width: '100%', paddingBottom: 'var(--space-24)', marginTop: 'auto' }}>
         <button
           onClick={async () => {
             await fetch('/api/auth/session', { method: 'DELETE' });
             window.location.href = '/login';
           }}
-          className={`${styles.item} ${styles.default}`}
-          style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
+          className={`${styles.item} ${styles.danger} ${isSidebarCollapsed ? styles.itemCollapsed : ''}`}
+          style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
+          onMouseEnter={(e) => {
+            if (isSidebarCollapsed) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setTooltip({ label: '로그아웃', top: rect.top + rect.height / 2, left: rect.right + 8 });
+            }
+          }}
+          onMouseLeave={() => {
+            if (isSidebarCollapsed) setTooltip(null);
+          }}
         >
           <LogOut className={styles.icon} />
-          <span className={styles.label}>로그아웃</span>
+          {!isSidebarCollapsed && <span className={styles.label}>로그아웃</span>}
         </button>
       </div>
+
+      {/* Fixed Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          top: tooltip.top,
+          left: tooltip.left,
+          transform: 'translateY(-50%)',
+          backgroundColor: 'var(--color-gray-900)',
+          color: 'var(--color-white)',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+          {tooltip.label}
+        </div>
+      )}
     </aside>
   );
 }

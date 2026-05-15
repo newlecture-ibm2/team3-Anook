@@ -5,6 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import Button from '@/components/ui/Button/Button';
+import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
 import styles from './KnowledgeReviewTab.module.css';
@@ -13,11 +14,11 @@ import { handleResponse } from '@/lib/api';
 
 interface KnowledgeReviewTabProps {
   domainCode: string; // 'ALL' 또는 도메인 코드
+  searchValue: string;
 }
 
-export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabProps) {
+export default function KnowledgeReviewTab({ domainCode, searchValue }: KnowledgeReviewTabProps) {
   const { t } = useTranslation();
-  const [searchValue, setSearchValue] = useState('');
   const { data, loading, error, deleteEntry, refresh } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<KnowledgeEntry | null>(null);
@@ -27,10 +28,13 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
   const pendingItems = data.filter(item => item.status === 'PENDING');
 
   // 검색 필터
-  const filteredItems = pendingItems.filter(item =>
-    item.question.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.answer.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const filteredItems = pendingItems.filter(item => {
+    const q = item.question || '';
+    const a = item.answer || '';
+    const search = searchValue || '';
+    return q.toLowerCase().includes(search.toLowerCase()) ||
+           a.toLowerCase().includes(search.toLowerCase());
+  });
 
   // RAG 등록 (APPROVED로 전환) — register-from-answer API 재사용
   const handleApprove = async (formData: { domainCode: string; question: string; answer: string }) => {
@@ -70,35 +74,12 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
   };
 
   const getDomainLabel = (code: string) => {
-    const map: Record<string, string> = {
-      HK: '하우스키핑',
-      FB: 'F&B',
-      FACILITY: '시설',
-      CONCIERGE: '컨시어지',
-      FRONT: '프론트데스크',
-      EMERGENCY: '긴급',
-      COMMON: '공통',
-    };
-    return map[code] || code;
+    // t.rag.tabs has the department mappings we need
+    return (t.adminPage.rag.tabs as Record<string, string>)[code] || code;
   };
 
   return (
     <div className={styles.container}>
-      {/* Header Section */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.title}>{t.adminPage.taskBoard.titles.aiTraining} 관리</h1>
-        </div>
-        <div className={styles.headerActions}>
-          <InputField 
-            variant="search" 
-            placeholder={t.adminPage.taskBoard.searchPlaceholder} 
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-        </div>
-      </div>
-
       {/* Content Section */}
       <div className={styles.cardList}>
         {loading ? (
@@ -106,46 +87,21 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
         ) : error ? (
           <div className={styles.emptyState}>{error}</div>
         ) : filteredItems.length === 0 ? (
-          <div className={styles.emptyState}>검토 대기 중인 항목이 없습니다.</div>
+          <div className={styles.emptyState}>{t.adminPage?.aiTraining?.empty || '검토 대기 중인 항목이 없습니다.'}</div>
         ) : (
           filteredItems.map(item => (
-            <div key={item.id} className={styles.candidateCard}>
-              <div className={styles.candidateContent}>
-                <div className={styles.candidateHeader}>
-                  <StatusBadge variant="purple">
-                    검토 대기 ({getDomainLabel(item.domainCode)})
-                  </StatusBadge>
-                  <span className={styles.candidateTime}>
-                    {new Date(item.updatedAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className={styles.candidateQuestion}>
-                  <strong>Q:</strong> {item.question || '(질문 없음)'}
-                </div>
-                <div className={styles.candidateAnswer}>
-                  <strong>A:</strong> {item.answer || '(답변 없음)'}
-                </div>
-              </div>
-              <div className={styles.candidateActions}>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setIsEditModalOpen(true);
-                  }}
-                  style={{ width: '100%', padding: 'var(--space-8)' }}
-                >
-                  RAG 등록
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setDeleteTargetId(item.id)}
-                  style={{ width: '100%', padding: 'var(--space-8)' }}
-                >
-                  제외
-                </Button>
-              </div>
-            </div>
+            <RagCandidateCard
+              key={item.id}
+              department={getDomainLabel(item.domainCode)}
+              question={item.question}
+              answer={item.answer}
+              timestamp={new Date(item.updatedAt).toLocaleDateString()}
+              onAddRag={() => {
+                setSelectedItem(item);
+                setIsEditModalOpen(true);
+              }}
+              onReject={() => setDeleteTargetId(item.id)}
+            />
           ))
         )}
       </div>
@@ -158,6 +114,7 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
             setIsEditModalOpen(false);
             setSelectedItem(null);
           }}
+          mode="register"
           initialDomainCode={selectedItem.domainCode}
           initialQuestion={selectedItem.question}
           initialAnswer={selectedItem.answer}
@@ -170,10 +127,10 @@ export default function KnowledgeReviewTab({ domainCode }: KnowledgeReviewTabPro
         isOpen={deleteTargetId !== null}
         onClose={() => setDeleteTargetId(null)}
         onConfirm={handleReject}
-        title="제외 확인"
-        subtitle="이 항목을 정말 검토 목록에서 제외하시겠습니까?"
+        title={t.adminPage?.aiTraining?.rejectTitle || '제외 확인'}
+        subtitle={t.adminPage?.aiTraining?.rejectSubtitle || '이 항목을 정말 검토 목록에서 제외하시겠습니까?'}
         status="danger"
-        confirmText="제외"
+        confirmText={t.adminPage?.aiTraining?.rejectConfirm || '제외'}
       />
     </div>
   );

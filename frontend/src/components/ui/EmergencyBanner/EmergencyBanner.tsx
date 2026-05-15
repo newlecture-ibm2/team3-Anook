@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import styles from './EmergencyBanner.module.css';
+import { CancelIcon } from '@/components/icons';
 
 interface EmergencyAlert {
   requestId: number;
@@ -35,7 +36,17 @@ export default function EmergencyBanner({ alert, onDismiss, onClick }: Emergency
   useEffect(() => {
     try {
       // Web Audio API로 경고음 생성 (외부 파일 불필요)
-      const ctx = new AudioContext();
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const ctx = new AudioContextClass();
+      
+      // 브라우저 정책(Autoplay 방지)으로 인해 suspended 상태일 수 있음. 
+      // 사용자가 페이지 어딘가를 한 번이라도 클릭했다면 resume()을 통해 깨울 수 있습니다.
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
       const oscillator = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -92,7 +103,7 @@ export default function EmergencyBanner({ alert, onDismiss, onClick }: Emergency
         }}
         aria-label="긴급 알림 닫기"
       >
-        ✕
+        <CancelIcon width={20} height={20} color="#fff" />
       </button>
     </div>
   );

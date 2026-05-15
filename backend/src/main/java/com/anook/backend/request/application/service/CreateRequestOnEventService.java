@@ -143,7 +143,8 @@ public class CreateRequestOnEventService {
                 event.getEntities(),
                 event.getConfidence(),
                 finalRawText,
-                event.getSummary());
+                event.getSummary(),
+                event.getReasoning());
 
         // 긴급 상황 Pre-Filter 감지 여부
         boolean isEmergencyDetected = event.getEntities() != null
@@ -173,8 +174,8 @@ public class CreateRequestOnEventService {
         }
 
 
-        // [AN-252] URGENT 판별: priority가 URGENT/EMERGENCY이거나 에스컬레이션된 경우
-        boolean isUrgent = savedRequest.getPriority() == Priority.URGENT || savedRequest.getPriority() == Priority.EMERGENCY;
+        // [AN-252] URGENT 판별: priority가 EMERGENCY인 경우에만 Grace Period 생략
+        boolean isUrgent = savedRequest.getPriority() == Priority.EMERGENCY;
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
         int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 

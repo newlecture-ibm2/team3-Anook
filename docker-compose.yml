@@ -81,6 +81,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=db
       - BACKEND_URL=http://backend:8080
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
     volumes:
       - ./ai:/app # 소스 코드 실시간 동기화 (Hot Reload)
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -102,9 +105,22 @@ services:
     networks:
       - Anook-network
 
+  # 6. Neo4j (Graph RAG용 데이터베이스)
+  neo4j:
+    image: neo4j:5
+    container_name: anook-neo4j
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
+    # 배포용이므로 7474, 7687 포트를 외부에 열지 않아 보안을 유지합니다.
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - Anook-network
+
 volumes:
   db-data:
   redis-data:
+  neo4j-data:
 
 
 networks:

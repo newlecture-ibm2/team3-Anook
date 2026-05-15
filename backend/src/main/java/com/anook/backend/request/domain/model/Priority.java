@@ -16,6 +16,10 @@ public enum Priority {
         if (value == null || value.isBlank()) {
             return NORMAL;
         }
-        return valueOf(value.trim().toUpperCase());
+        String upperValue = value.trim().toUpperCase();
+        if ("HIGH".equals(upperValue)) {
+            return URGENT;
+        }
+        return valueOf(upperValue);
     }
 }

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import httpx
 import asyncio
 from app.infrastructure.gemini.client import call_gemini_async
@@ -58,7 +59,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     # 2. RAG 검색 → FB 도메인 지식 (운영시간, 기타 정책 등)
     rag_context = ""
     try:
-        rag_results = rag_service.search_similar(
+        rag_results = rag_service.search_hybrid(
             query=user_message, domain_code="FB", top_k=3, threshold=0.5
         )
         if rag_results:
@@ -128,6 +129,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "confidence": result.confidence,
         "missing_fields": getattr(result, "missing_fields", []),
         "clarification_options": getattr(result, "clarification_options", []),
+        "reasoning": result.reasoning,
     }
 
 

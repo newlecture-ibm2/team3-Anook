@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './RequestCard.module.css';
 import Button from '@/components/ui/Button/Button';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
+import { Monitor, Home, Utensils, Wrench, ConciergeBell, AlertTriangle, FileText } from 'lucide-react';
 
 export interface RequestCardProps {
   requestId: number;
@@ -19,14 +20,14 @@ export interface RequestCardProps {
   onAccept?: () => void;
 }
 
-const DOMAIN_MAP: Record<string, { icon: string; label: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
-  HK: { icon: '🏨', label: '하우스키핑', variant: 'green' },
-  FB: { icon: '🍽️', label: '식음료', variant: 'gray' },
-  FACILITY: { icon: '🔧', label: '시설관리', variant: 'gray' },
-  CONCIERGE: { icon: '🛎️', label: '컨시어지', variant: 'purple' },
-  FRONT: { icon: '🏢', label: '프론트', variant: 'purple' },
-  EMERGENCY: { icon: '🚨', label: '긴급', variant: 'red' },
-  UNKNOWN: { icon: '📋', label: '기타 요청', variant: 'gray' },
+const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
+  HK: { icon: Home, label: '하우스키핑' },
+  FB: { icon: Utensils, label: '식음료' },
+  FACILITY: { icon: Wrench, label: '시설관리' },
+  CONCIERGE: { icon: ConciergeBell, label: '컨시어지' },
+  FRONT: { icon: Monitor, label: '프론트' },
+  EMERGENCY: { icon: AlertTriangle, label: '긴급' },
+  UNKNOWN: { icon: FileText, label: '기타 요청' },
 };
 
 export default function RequestCard({
@@ -51,6 +52,7 @@ export default function RequestCard({
   const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
   const isCompleted = progress >= 100 && !isCancelled;
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
+  const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
   
   // Timer state
   const [timeLeft, setTimeLeft] = useState(graceRemaining);
@@ -82,104 +84,94 @@ export default function RequestCard({
   const renderDetails = () => {
     if (!entities) return null;
     
-    // Example: "수건 ×2장"
-    if (entities.item) {
-      return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
+    const parts: string[] = [];
+    if (Array.isArray(entities.items)) {
+      entities.items.forEach((it: any) => {
+        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
+      });
+    } else if (entities.item) {
+      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
     }
-    // Fallback if no specific format matched, maybe raw text or other entity props
-    const HIDDEN_KEYS = ['intent', 'emergency_category', 'matched_keyword', 'severity'];
-    const parts = [];
-    if (entities.menu) parts.push(`${entities.menu}`);
-    if (entities.symptom) parts.push(`${entities.symptom}`);
-    // 시스템 내부용 키만 있는 경우 빈 문자열 반환
+
+    if (Array.isArray(entities.tasks)) {
+      entities.tasks.forEach((t: string) => parts.push(t));
+    }
+    
     if (parts.length === 0) {
-      const visibleEntries = Object.entries(entities).filter(([key]) => !HIDDEN_KEYS.includes(key));
-      if (visibleEntries.length === 0) return null;
+      if (entities.menu) {
+        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+      }
+      if (entities.symptom) parts.push(`${entities.symptom}`);
     }
-    return parts.join(', ');
+    
+    return parts.length > 0 ? parts.join(', ') : null;
   };
 
   const detailsText = renderDetails();
 
   return (
-    <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
-      {/* Header */}
-      <div className={styles.header}>
-        <Tag variant={domainInfo.variant}>
-          {domainInfo.icon} {domainInfo.label}
-        </Tag>
-        <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : '대기 중'}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className={styles.content}>
-        <div className={styles.summary}>{summary}</div>
-        {detailsText && <div className={styles.details}>{detailsText}</div>}
-      </div>
-
-      {/* Meta */}
-      {createdAt && (
-        <div className={styles.meta}>
-          🕐 {new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 접수
-        </div>
-      )}
-
-      {/* Grace Period Timer & Buttons */}
-      {showButtons && (
-        <>
-          <div className={styles.guideText}>
-            <strong>잠시 후 자동으로 접수됩니다.</strong>
-          </div>
-          <div className={styles.timerContainer}>
-            <div className={styles.timerBarBg}>
-              <div 
-                className={styles.timerBarFill} 
-                style={{ animationDuration: `${graceRemaining}s` }}
-              />
-            </div>
-            <div className={styles.timerText}>{timeLeft}초</div>
-          </div>
-          <div className={styles.buttonGroup}>
-            <Button variant="primary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onAccept}>바로등록</Button>
-            <Button variant="secondary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onCancel}>취소하기</Button>
-          </div>
-        </>
-      )}
-
-      {/* Expiry Message or Progress */}
-      {!showButtons && !isCancelled && (
-        <>
-          {isCancelPending ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              🔄 취소 요청이 접수되어 직원이 확인 중입니다
-            </div>
-          ) : isEscalatedChat ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              💬 프론트 직원이 채팅으로 응대할 예정입니다.
+    <div 
+      className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)'
+      }}
+    >
+      <div className={styles.cardLayout}>
+        {/* Left Column: Icon or Timer */}
+        <div className={styles.leftColumn}>
+          {showButtons ? (
+            <div className={`${styles.timerContainer} ${bgClass}`} style={{ backgroundColor: 'transparent' }}>
+              <svg viewBox="0 0 36 36" className={styles.circularSvg}>
+                <path
+                  className={styles.circleBg}
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className={styles.circleProgress}
+                  strokeDasharray={`${(timeLeft / Math.max(graceRemaining, 1)) * 100}, 100`}
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className={styles.timerText}>{timeLeft}</div>
             </div>
           ) : (
-            <div className={styles.completionMessage}>
-              ✅ 직원에게 전달되었습니다
+            <div className={`${styles.iconContainer} ${bgClass}`}>
+              <domainInfo.icon size={20} />
             </div>
           )}
-          
-          {/* Progress bar after grace period expires (Hide for Escalated Chat) */}
-          {!isEscalatedChat && (
-            <div className={styles.progressContainer}>
-              <div className={styles.progressBarBg}>
-                <div className={styles.progressBarFill} style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
-              </div>
-              <div className={styles.steps}>
-                <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>접수 완료</span>
-                <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>처리 중</span>
-                <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>완료</span>
-              </div>
+        </div>
+
+        {/* Right Column: Content and Buttons */}
+        <div className={styles.rightColumn}>
+          <div className={styles.content}>
+            <div className={styles.summaryRow}>
+              <div className={styles.summary}>{summary}</div>
+              {detailsText && <div className={styles.detailsInline}>{detailsText}</div>}
             </div>
-          )}
-        </>
-      )}
+          </div>
+
+          <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
+            {isCancelled ? (
+              <>요청이 취소되었습니다</>
+            ) : showButtons ? (
+              <>요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.</>
+            ) : isCancelPending ? (
+              <>취소 요청 확인 중</>
+            ) : isEscalatedChat ? (
+              <>직원이 응대할 예정입니다</>
+            ) : (
+              <>{domainInfo.label} 팀에 전달되었습니다</>
+            )}
+          </div>
+
+          <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
+            <Button variant="secondary" size="medium" onClick={onCancel} fullWidth>요청 취소</Button>
+            <Button variant="primary" size="medium" onClick={onAccept} fullWidth>진행</Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

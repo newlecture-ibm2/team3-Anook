@@ -22,15 +22,38 @@ export interface ActiveRequest {
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { t } = useTranslation();
+  const setLanguage = useUiStore((state) => state.setLanguage);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([{
+    id: 'welcome-1',
+    variant: 'received',
+    type: 'WELCOME',
+    content: t.guestChat.welcomeMessage,
+    meta: { options: t.guestChat.quickReplyOptions }
+  }]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isStaffTyping, setIsStaffTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { t } = useTranslation();
-  const setLanguage = useUiStore((state) => state.setLanguage);
+  // Update welcome message if language changes and it is the only message
+  useEffect(() => {
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].id === 'welcome-1') {
+        return [{
+          id: 'welcome-1',
+          variant: 'received',
+          type: 'WELCOME',
+          content: t.guestChat.welcomeMessage,
+          meta: { options: t.guestChat.quickReplyOptions }
+        }];
+      }
+      return prev;
+    });
+  }, [t.guestChat.welcomeMessage, t.guestChat.quickReplyOptions]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -40,7 +63,7 @@ export function useChat() {
   }, [setLanguage]);
 
   // 연속된 시스템 메시지 방지 및 통합용 Ref
-  const cancelEventsBatch = useRef<Set<'SUCCESS' | 'PENDING' | 'STAFF_SUCCESS'>>(new Set());
+  const cancelEventsBatch = useRef<Set<'SUCCESS' | 'PENDING' | 'STAFF_SUCCESS' | 'GUEST_CANCEL_APPROVED'>>(new Set());
   const cancelBatchTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 0. 세션 정보 가져오기
@@ -116,6 +139,7 @@ export function useChat() {
         client.subscribe(`/topic/room/${roomNo}`, (message) => {
           if (message.body) {
             const payload = JSON.parse(message.body);
+            console.log('[WS-RECEIVE]', payload);
 
             // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
             if (payload.type === 'SESSION_EXPIRED') {
@@ -139,8 +163,12 @@ export function useChat() {
               return;
             }
 
-            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
+            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR' || payload.type === 'AI_SKIPPED') {
               setIsTyping(false);
+
+              if (payload.type === 'AI_SKIPPED') {
+                return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
+              }
 
               // 진행 상태 메시지 제거
               setMessages(prev => {
@@ -154,8 +182,12 @@ export function useChat() {
                 };
                 return [...filtered, newAiMsg];
               });
+            } else if (payload.type === 'STAFF_TYPING') {
+              // 직원이 메시지 작성 중 → 타이핑 인디케이터 표시
+              setIsStaffTyping(true);
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 실시간 표시
+              setIsStaffTyping(false);
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
               setMessages(prev => {
                 // 중복 방지
@@ -168,7 +200,7 @@ export function useChat() {
                   id: staffMsgId,
                   variant: 'received',
                   content: payload.content,
-                  type: 'TEXT',
+                  type: 'FALLBACK',
                 }];
               });
             } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {
@@ -209,7 +241,8 @@ export function useChat() {
                   progress: progressMap[payload.status] || 0,
                   graceRemaining: payload.graceRemaining || 0,
                   priority: payload.priority || 'NORMAL',
-                  cancelPending: isCancelPending
+                  cancelPending: isCancelPending,
+                  createdAt: payload.createdAt || new Date().toISOString()
                 }
               };
 
@@ -229,6 +262,7 @@ export function useChat() {
                     ...requestMsg.meta,
                     entities: payload.entities || existingMeta.entities,
                     priority: payload.priority || existingMeta.priority,
+                    createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
                     graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                   }
                 }];
@@ -236,10 +270,16 @@ export function useChat() {
 
               // --- System messages for cancel flow ---
               let hasCancelEvent = false;
-              if ((payload.type === 'STATUS_CHANGED' || payload.type === 'CANCEL_APPROVED') && payload.status === 'CANCELLED') {
+              if (payload.type === 'CANCEL_APPROVED' && payload.status === 'CANCELLED') {
+                // 고객이 요청한 취소를 관리자가 승인한 경우
+                cancelEventsBatch.current.add('GUEST_CANCEL_APPROVED');
+                hasCancelEvent = true;
+              } else if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
                 if (payload.initiatedBy === 'STAFF') {
+                  // 관리자가 직접 강제 취소한 경우
                   cancelEventsBatch.current.add('STAFF_SUCCESS');
                 } else {
+                  // 고객이 직접 취소한 경우 (PENDING 상태에서 즉시 취소)
                   cancelEventsBatch.current.add('SUCCESS');
                 }
                 hasCancelEvent = true;
@@ -255,6 +295,7 @@ export function useChat() {
                 cancelBatchTimer.current = setTimeout(() => {
                   const hasSuccess = cancelEventsBatch.current.has('SUCCESS');
                   const hasStaffSuccess = cancelEventsBatch.current.has('STAFF_SUCCESS');
+                  const hasGuestApproved = cancelEventsBatch.current.has('GUEST_CANCEL_APPROVED');
                   const hasPending = cancelEventsBatch.current.has('PENDING');
                   cancelEventsBatch.current.clear();
 
@@ -264,6 +305,8 @@ export function useChat() {
                     let content = '';
                     if (hasStaffSuccess) {
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
+                    } else if (hasGuestApproved) {
+                      content = '안내: 요청하신 취소가 정상 처리되었습니다.';
                     } else if (hasSuccess && hasPending) {
                       content = '안내: 대기 중인 요청은 즉시 취소되었으나, 처리 중인 요청은 담당자에게 취소를 요청했습니다.';
                     } else if (hasSuccess) {
@@ -300,19 +343,30 @@ export function useChat() {
                 }, 1000);
               }
 
+              // CANCEL_REJECTED 처리: 제네릭 메시지 대신 관리자가 입력한 반려 사유가
+              // STAFF_MESSAGE로 별도 전송되므로, 여기서는 시스템 메시지를 생략합니다.
+              // (반려 사유가 없는 경우에만 기본 안내 표시)
               if (payload.type === 'CANCEL_REJECTED') {
-                setMessages(prev => {
-                  const msgId = `system-cancel-reject-${payload.requestId}`;
-                  if (prev.some(m => m.id === msgId)) return prev;
-                  const content = '안내: 이미 업무가 진행 중이라 취소/변경이 어렵습니다. 기존 요청대로 진행됩니다. 추가로 필요하신 부분이 있다면 언제든 말씀해 주세요!';
+                // 반려 사유(STAFF_MESSAGE)가 0.5초 내로 도착하지 않으면 기본 메시지 표시
+                const rejectFallbackTimer = setTimeout(() => {
+                  setMessages(prev => {
+                    // 이미 STAFF_MESSAGE로 반려 사유가 도착했는지 확인
+                    const hasRejectReason = prev.some(m =>
+                      m.type === 'TEXT' && m.content?.includes('[취소 반려]')
+                      && prev.indexOf(m) > prev.length - 5 // 최근 5개 메시지 내
+                    );
+                    if (hasRejectReason) return prev;
 
-                  return [...prev, {
-                    id: msgId,
-                    variant: 'received',
-                    type: 'TEXT',
-                    content,
-                  }];
-                });
+                    const msgId = `system-cancel-reject-${payload.requestId}`;
+                    if (prev.some(m => m.id === msgId)) return prev;
+                    return [...prev, {
+                      id: msgId,
+                      variant: 'received',
+                      type: 'TEXT',
+                      content: '안내: 취소 요청이 반려되어 기존 요청대로 진행됩니다.',
+                    }];
+                  });
+                }, 800);
               }
             } else if (payload.type === 'GRACE_EXPIRED') {
               // Hide the buttons on the specific card by forcing graceRemaining to 0
@@ -355,6 +409,10 @@ export function useChat() {
   const sendMessage = async (text: string, imageFile?: File) => {
     if (!roomNo) return;
     if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
+
+    // 언어 미러링: 고객 입력에 한글이 있으면 ko, 없으면 en으로 전체 UI 테마 즉시 변경
+    const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+    setLanguage(hasKorean ? 'ko' : 'en');
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -472,13 +530,25 @@ export function useChat() {
     }
   };
 
+  // 6. Handle Pill Selection
+  const handlePillSelect = (msgId: string, option: string) => {
+    sendMessage(option);
+    setMessages(prev => prev.map(m => 
+      m.id === msgId 
+        ? { ...m, meta: { ...m.meta, selectedOption: option, pillDisabled: true } }
+        : m
+    ));
+  };
+
   return {
     messages,
     isTyping,
+    isStaffTyping,
     sendMessage,
     activeRequests,
     cancelRequest,
     confirmRequest,
-    stopMessage
+    stopMessage,
+    handlePillSelect
   };
 }
