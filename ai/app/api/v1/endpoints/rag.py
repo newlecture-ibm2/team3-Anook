@@ -39,7 +39,7 @@ async def search_similar_endpoint(request: SearchRequest):
     도메인 에이전트가 고객 메시지에 답변하기 위해 호출합니다.
     """
     try:
-        results = rag_service.search_similar(
+        results = rag_service.search_hybrid(
             query=request.query,
             domain_code=request.domain_code,
             top_k=request.top_k,

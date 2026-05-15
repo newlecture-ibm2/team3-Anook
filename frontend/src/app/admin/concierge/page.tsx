@@ -79,6 +79,7 @@ export default function ConciergePage() {
                   isCancelled={req.status === 'CANCELLED'}
                   cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
+                  entities={req.entities}
                 />
                 </div>
               ))}
@@ -102,6 +103,7 @@ export default function ConciergePage() {
                   cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
                   updatedAt={req.updatedAt}
+                  entities={req.entities}
                 />
                 </div>
               ))}
@@ -124,6 +126,7 @@ export default function ConciergePage() {
                   isCancelled={req.status === 'CANCELLED'}
                   cancelRequested={req.cancelRequested}
                   createdAt={req.createdAt}
+                  entities={req.entities}
                 />
                 </div>
               ))}

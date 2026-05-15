@@ -456,7 +456,8 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
                 r.isCancelRequested(),
                 r.getCancelRequestedAt(),
                 r.getCreatedAt(), r.getUpdatedAt(),
-                r.getVersion()
+                r.getVersion(),
+                r.getEntities()
         );
     }
 

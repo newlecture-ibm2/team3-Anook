@@ -92,7 +92,8 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
    - "clarification_question": A polite question.
-3. OUTPUT LANGUAGE: summary, description, and clarification_question MUST be in KOREAN.
+3. OUTPUT LANGUAGE: summary, description MUST be in KOREAN.
+   - CRITICAL LANGUAGE RULE: `clarification_question` and `final_reply` MUST ALWAYS be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, these fields MUST be in English. Do NOT default to Korean for these fields.
 4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
 5. CONTEXT SEPARATION: DO NOT reuse or hallucinate entities (like time, destination, passenger_count) from older messages in the `[대화 맥락]` for a NEW request. If the user makes a new request (e.g. saying "Call a taxi" again after a previous booking), you MUST evaluate it independently and ask for missing fields again.
 
@@ -107,13 +108,22 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "priority": "NORMAL | URGENT",
   "confidence": 0.0~1.0,
   "entities": {
-    "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | OTHER",
+    "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | INFO | OTHER",
+    "summary_en": "English translation of the summary",
     ... (other intent-specific fields)
   },
   "needs_clarification": boolean,
   "clarification_question": "string (in guest's language)",
+  "final_reply": "string (in guest's language, confirmation message)",
   "missing_fields": ["field_name"]
 }
+
+[Information Inquiry Rule (RAG)]
+- If the guest is asking a factual question (e.g. nearby restaurants, taxi numbers) AND the prompt includes `[관련 지식 (RAG)]`:
+  1. Set `intent` to "INFO".
+  2. Set `needs_clarification` to false.
+  3. Include a `"fallback_message"` key inside the `entities` object with the answer formulated naturally using the `[관련 지식 (RAG)]` in the SAME LANGUAGE as the guest's input.
+  4. Set `summary` to KOREAN (e.g., "근처 식당 정보 안내").
 
 [Out-of-Domain Escalation Rule]
 - If the guest's request has ABSOLUTELY NOTHING to do with your department (Concierge) AND is clearly meant for another department (e.g., room service food, towels, AC repair), DO NOT ask for clarification or force a ticket in your domain.
@@ -147,6 +157,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "배차 확인 후 안내해 드리겠습니다. 08:00에 서울역(으)로 가시는 택시(2명)를 예약해 드릴까요?",
   "missing_fields": []
 }
 
@@ -166,6 +177,7 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어디로 가시나요? 그리고 탑승 인원은 몇 분이신가요?",
+  "final_reply": "",
   "missing_fields": ["destination", "passenger_count"]
 }
 
@@ -186,6 +198,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "담당 직원이 곧 도움을 드리러 가겠습니다. 짐 3개를 보관하시겠습니까?",
   "missing_fields": []
 }
 
@@ -204,6 +217,7 @@ Output:
   },
   "needs_clarification": true,
   "clarification_question": "어떤 배달 음식(또는 물품)인지, 그리고 주문하신 식당(또는 플랫폼) 이름을 알려주시면 도착 시 바로 객실로 안내해 드리겠습니다.",
+  "final_reply": "",
   "missing_fields": ["item", "store_name"]
 }
 
@@ -223,6 +237,7 @@ Output:
   },
   "needs_clarification": false,
   "clarification_question": "",
+  "final_reply": "편안한 밤 되세요! 06:00에 모닝콜을 예약해 드릴까요?",
   "missing_fields": []
 }
 """.strip()

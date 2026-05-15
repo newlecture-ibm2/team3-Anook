@@ -14,7 +14,7 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     # 1. RAG 검색 → HK 도메인 지식 (비품 목록, 수량 제한 등)
     rag_context = ""
     try:
-        rag_results = rag_service.search_similar(
+        rag_results = rag_service.search_hybrid(
             query=user_message, domain_code="HK", top_k=3, threshold=0.5
         )
         if rag_results:

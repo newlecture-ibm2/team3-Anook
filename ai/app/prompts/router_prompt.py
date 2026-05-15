@@ -134,7 +134,7 @@ You must output a JSON Array of objects.
 - **CONCIERGE INFO Persistence**: If the guest repeats an informational request in the CONCIERGE domain (e.g., asking for restaurant recommendations again), DO NOT classify as CLARIFICATION. Instead, maintain "INFO" mode so the system can provide different options from the knowledge base.
 - **RE-CONFIRM Detection**: If the guest asks to see previous information again (e.g., "아까 말한 곳 알려줘", "What was that place?"), maintain "INFO" mode and mention "RE-CONFIRM" in the `reasoning` field so the system avoids shuffling the results.
 - If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CANCEL" so no actionable ticket is created and recent request is cancelled.
-<<<<<<< HEAD
+
 - **EXPLICIT COMPLAINT ESCALATION RULE**: If the user makes a complaint AND explicitly demands an action, staff intervention, or a solution using strong verbs (e.g., "방 바꿔 주세요", "빨리 해결해 줘", "당장 직원 보내", "환불해줘"), or if there is a severe operational failure (e.g., "물이 새요", "1시간째 기다리고 있어요"), you MUST NOT ask for clarification. You MUST immediately route to "FRONT_ESCALATION" with domain "FRONT" (or "EMERGENCY" if unsafe) so a ticket is created instantly.
 - **AMBIGUOUS COMPLAINT RULE**: If a user makes a complaint about noise (e.g., "옆방이 시끄러워요"), temperature, smell, or service, but DOES NOT explicitly demand an action (e.g., just saying "짜증나네", "별로예요", "너무 춥네요"), you MUST NEVER route it to "FRONT_ESCALATION", "DEPARTMENT", or "VOC". You MUST route it to "CLARIFICATION" with `domain: null`. Sarcastic, indirect, or purely descriptive complaints MUST be clarified first to see if they actually want staff intervention. You MUST politely ask: "불편을 드려 죄송합니다. 프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요?" Provide options like ["네, 조치해 주세요", "아니요, 괜찮습니다"].
 - **REPEATED COMPLAINT ESCALATION RULE**: If the user repeats a complaint or expresses frustration multiple times in the `[과거 대화 맥락]` (especially after previously declining help or getting a CLARIFICATION question), this indicates escalating dissatisfaction. In this specific case, DO NOT ask for clarification again. You MUST proactively route it to "FRONT_ESCALATION" with domain "FRONT" so the staff can intervene immediately.
@@ -147,7 +147,8 @@ You must output a JSON Array of objects.
 - If route_type is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
 - Regardless of the input language (Korean or English), classify it uniformly based on meaning.
-- The `reasoning` field MUST be written in Korean.
+- CRITICAL LANGUAGE RULE: ALL text outputs intended for the guest (e.g., `clarification_question`, `clarification_options`, `reply`) MUST be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, you MUST generate these fields in English (e.g., `["Free Water (Housekeeping)", "Paid Drinks (Room Service)"]`). NEVER use Korean for guest-facing messages if the guest speaks English.
+- The `reasoning` and `summary` fields MUST be written in Korean.
 - **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
   - “{특정 키워드/문구}” → {의도/증상} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
   - {분류 로직}: 왜 이 부서로 분류했는지 단계별 설명 (예: 물품 요청이므로 하우스키핑 배정)

@@ -163,8 +163,12 @@ export function useChat() {
               return;
             }
 
-            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR') {
+            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR' || payload.type === 'AI_SKIPPED') {
               setIsTyping(false);
+
+              if (payload.type === 'AI_SKIPPED') {
+                return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
+              }
 
               // 진행 상태 메시지 제거
               setMessages(prev => {
@@ -405,6 +409,10 @@ export function useChat() {
   const sendMessage = async (text: string, imageFile?: File) => {
     if (!roomNo) return;
     if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
+
+    // 언어 미러링: 고객 입력에 한글이 있으면 ko, 없으면 en으로 전체 UI 테마 즉시 변경
+    const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+    setLanguage(hasKorean ? 'ko' : 'en');
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
