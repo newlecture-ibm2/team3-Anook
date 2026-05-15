@@ -46,7 +46,7 @@ export default function HeaderNotification() {
 
   const handleApproveCancel = async (id: number) => {
     try {
-      const res = await fetch(`/api/admin/requests/${id}/cancel/approve`, { method: 'POST' });
+      const res = await fetch(`/api/admin/requests/${id}/cancellation/approve`, { method: 'PATCH' });
       if (res.ok) refetchRequests();
     } catch (e) { console.error(e); }
   };
@@ -55,8 +55,8 @@ export default function HeaderNotification() {
     const reason = window.prompt('반려 사유를 입력해주세요 (선택)');
     if (reason === null) return; // 취소
     try {
-      const res = await fetch(`/api/admin/requests/${id}/cancel/reject`, { 
-        method: 'POST',
+      const res = await fetch(`/api/admin/requests/${id}/cancellation/reject`, { 
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectionReason: reason || '프론트데스크 직권 거절' })
       });
@@ -66,22 +66,26 @@ export default function HeaderNotification() {
 
   const handleApproveEscalation = async (id: number) => {
     try {
-      const res = await fetch(`/api/admin/requests/${id}/status`, {
+      // 이관 승인: 현재 부서 유지 + NORMAL 우선순위로 에스컬레이션 처리
+      const target = escalations.find(r => r.id === id);
+      const res = await fetch(`/api/admin/requests/${id}/escalate`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'ASSIGNED' })
+        body: JSON.stringify({ departmentId: target?.departmentId || 'FRONT', priority: 'NORMAL' })
       });
       if (res.ok) refetchEscalations();
     } catch (e) { console.error(e); }
   };
 
   const handleRejectEscalation = async (id: number) => {
-    if (!window.confirm('이관 요청을 반려하시겠습니까?')) return;
+    const reason = window.prompt('고객에게 안내할 반려 사유를 입력해주세요.');
+    if (reason === null) return; // 취소
     try {
-      const res = await fetch(`/api/admin/requests/${id}/status`, {
+      // 이관 반려: 요청 자체를 취소 처리 + 반려 사유 전송 (front-desk RejectEscalationModal과 동일)
+      const res = await fetch(`/api/admin/requests/${id}/cancel`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'REJECTED' })
+        body: JSON.stringify({ rejectionReason: reason || '' })
       });
       if (res.ok) refetchEscalations();
     } catch (e) { console.error(e); }
