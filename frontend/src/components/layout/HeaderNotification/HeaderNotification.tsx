@@ -4,12 +4,14 @@ import useAdminRequests from '@/app/admin/useAdminRequests';
 import useEscalations from '@/app/admin/front-desk/useEscalations';
 import RejectCancellationModal from '@/app/admin/front-desk/_components/RejectCancellationModal/RejectCancellationModal';
 import RejectEscalationModal from '@/app/admin/front-desk/_components/RejectEscalationModal/RejectEscalationModal';
+import { useUiStore } from '@/stores/useUiStore';
 import styles from './HeaderNotification.module.css';
 
 export default function HeaderNotification() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const popupRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useUiStore();
 
   // 반려 모달 상태
   const [cancelRejectTarget, setCancelRejectTarget] = useState<number | null>(null);
@@ -53,8 +55,16 @@ export default function HeaderNotification() {
   const handleApproveCancel = async (id: number) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/cancellation/approve`, { method: 'PATCH' });
-      if (res.ok) refetchRequests();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        showToast('취소가 승인되었습니다.', 'success');
+        refetchRequests();
+      } else {
+        showToast('취소 승인에 실패했습니다.', 'error');
+      }
+    } catch (e) { 
+      console.error(e);
+      showToast('취소 승인 중 오류가 발생했습니다.', 'error');
+    }
   };
 
   const handleRejectCancel = (id: number) => {
@@ -70,8 +80,16 @@ export default function HeaderNotification() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ departmentId: target?.departmentId || 'FRONT', priority: 'NORMAL' })
       });
-      if (res.ok) refetchEscalations();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        showToast('이관 요청이 승인되었습니다.', 'success');
+        refetchEscalations();
+      } else {
+        showToast('이관 승인에 실패했습니다.', 'error');
+      }
+    } catch (e) { 
+      console.error(e);
+      showToast('이관 승인 중 오류가 발생했습니다.', 'error');
+    }
   };
 
   const handleRejectEscalation = (id: number) => {
