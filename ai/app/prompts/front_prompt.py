@@ -46,6 +46,13 @@ RULES:
   4. Set `summary` to a handover note for the human staff explaining the context in KOREAN (e.g., "[직원 인수인계] 고객이 3번 이상 핑퐁 후 분노하여 직원을 호출함").
   5. Set `priority` to "URGENT".
 
+[Information Inquiry Rule (RAG)]
+- If the guest is asking a factual question (e.g. checkout time, wifi password) AND the prompt includes `[관련 지식 (RAG)]`:
+  1. Set `intent` to "INFO".
+  2. Set `needs_clarification` to false.
+  3. Include a `"fallback_message"` key inside the `entities` object with the answer formulated naturally using the `[관련 지식 (RAG)]` in the SAME LANGUAGE as the guest's input.
+  4. Set `summary` to KOREAN (e.g., "체크아웃 시간 문의").
+
 - **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
   - “{특정 키워드/문구}” → {의도/컴플레인} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
   - {분류 로직}: 왜 프론트(FRONT) 업무로 분류하거나 에스컬레이션을 결정했는지 설명

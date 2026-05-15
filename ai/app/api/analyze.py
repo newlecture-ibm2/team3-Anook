@@ -384,14 +384,14 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 1: 지식 베이스 검색 (RAG - 임베딩 기반)
     # ──────────────────────────────────────────────
     try:
-        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.75)
+        # threshold를 0.85로 상향하여 너무 느슨한 일치 방지
+        rag_results = rag_service.search_similar(request.text, domain_code=None, top_k=1, threshold=0.85)
         if rag_results:
             best = rag_results[0]
             rag_domain = best.get("domain_code")
             
-            # COMMON 도메인이 아닌 경우(HK, FACILITY 등)는 답변과 동시에 태스크 생성이 필요하므로 domain_code 전달
-            # 단, domain_code가 None이 아니어야 백엔드에서 이벤트를 발행함.
-            final_domain = rag_domain if rag_domain != "COMMON" else None
+            # 단순 정보 제공(FAQ)이므로 부서 상관없이 티켓 생성 방지
+            final_domain = None
             
             response = {
                 "guest_reply": best["answer"],
@@ -733,7 +733,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 top_k = 10 if domain == "CONCIERGE" else 3
                 threshold = 0.3 if domain == "CONCIERGE" else 0.5
                 
-                rag_results = rag_service.search_similar(search_query, domain_code=domain, top_k=top_k, threshold=threshold)
+                rag_results = rag_service.search_hybrid(search_query, domain_code=domain, top_k=top_k, threshold=threshold)
                 
                 # 🎨 [컨시어지 전용 리랭킹/셔플/네거티브 필터링]
                 additional_instructions = ""

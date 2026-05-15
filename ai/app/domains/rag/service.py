@@ -1,6 +1,64 @@
 from typing import List, Dict, Any, Optional
+import os
+from neo4j import GraphDatabase
 from app.infrastructure.embedding.client import generate_embedding
 from app.infrastructure.database.connection import get_db_connection
+
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://anook-neo4j-local:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "anook2026")
+
+def search_graph(query: str) -> List[Dict[str, Any]]:
+    """
+    사용자 질문에서 키워드를 바탕으로 Neo4j 그래프 데이터베이스를 탐색합니다.
+    """
+    auth = (NEO4J_USER, NEO4J_PASSWORD) if NEO4J_PASSWORD else None
+    driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
+    results = []
+    try:
+        with driver.session() as session:
+            # 질문 문자열 내에 노드의 이름이 포함되어 있으면 연관된 관계를 전부 추출
+            cypher_query = """
+            MATCH (n)
+            WHERE $search_keyword CONTAINS n.name
+            MATCH (n)-[r]->(m)
+            RETURN n.name AS source, type(r) AS relation, m.name AS target
+            """
+            rows = session.run(cypher_query, search_keyword=query)
+            
+            for row in rows:
+                results.append({
+                    "source": row["source"],
+                    "relation": row["relation"],
+                    "target": row["target"]
+                })
+    except Exception as e:
+        print(f"Graph Search Error: {e}")
+    finally:
+        driver.close()
+    
+    return results
+
+def search_hybrid(query: str, domain_code: str, top_k: int = 3, threshold: float = 0.7) -> List[Dict[str, Any]]:
+    """
+    Vector RAG와 Graph RAG를 결합한 하이브리드 검색을 수행합니다.
+    (기존 시스템과의 완벽한 호환성을 위해 동일한 List[Dict] 형태로 반환합니다)
+    """
+    vector_results = search_similar(query, domain_code, top_k, threshold)
+    graph_results = search_graph(query)
+    
+    # Graph 결과를 Vector 형태처럼 포장하여 기존 로직(필터링/프롬프트 주입)이 깨지지 않도록 방지
+    for g in graph_results:
+        vector_results.append({
+            "id": None,
+            "question": f"[Graph Fact] {g['source']}",
+            "answer": f"{g['source']} --({g['relation']})--> {g['target']}",
+            "domain_code": domain_code,
+            "status": "APPROVED",
+            "similarity": 0.99  # 그래프 지식은 확정적 지식이므로 높은 신뢰도 부여
+        })
+    
+    return vector_results
 
 def embed_text(text: str) -> List[float]:
     """
