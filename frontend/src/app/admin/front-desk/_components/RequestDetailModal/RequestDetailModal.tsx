@@ -283,14 +283,7 @@ export default function RequestDetailModal({
               <span className={styles.label}>{t.adminPage.requestDetailModal.roomNo}</span>
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
-<<<<<<< HEAD
-            <div className={styles.gridItem}>
-              <span className={styles.label}>{t.adminPage.requestDetailModal.currentDept}</span>
-              <span className={styles.value}>{detail.departmentName}</span>
-            </div>
-=======
 
->>>>>>> 18164b797d31df690e1016612a292febcf125b79
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.adminPage.requestDetailModal.createdAt}</span>
               <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
