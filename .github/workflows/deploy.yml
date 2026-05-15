@@ -25,7 +25,8 @@ jobs:
       DB_PORT: ${{ vars.DB_PORT }}
       FRONTEND_PORT: ${{ vars.FRONTEND_PORT }}
       SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-      
+      NEO4J_USER: ${{ vars.NEO4J_USER }}
+      NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
       # 추가로 필요한 환경변수가 생기면 여기에 계속 추가하세요.
 
     steps:
@@ -52,6 +53,8 @@ jobs:
           SESSION_SECRET=${{ secrets.SESSION_SECRET }}
           DB_PORT=${{ vars.DB_PORT }}
           FRONTEND_PORT=${{ vars.FRONTEND_PORT }}
+          NEO4J_USER=${{ vars.NEO4J_USER }}
+          NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}
           SPRING_PROFILE=prod
           ENVEOF
           sed -i 's/^[[:space:]]*//' .env

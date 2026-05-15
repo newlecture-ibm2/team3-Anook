@@ -5,12 +5,12 @@ import ChatInput from './ChatInput';
 
 import Pill from '@/components/ui/Pill/Pill';
 import ChatBackground from './ChatBackground';
-import StatusCard from './StatusCard';
 import FeedbackCard from './FeedbackCard';
 import RequestCard from './RequestCard/RequestCard';
 import RequestStatusBar from './RequestStatusBar/RequestStatusBar';
 import ProgressIndicator from './ProgressIndicator/ProgressIndicator';
 import { ActiveRequest } from '../useChat';
+import { ArrowDownIcon } from '@/components/icons';
 
 export interface ChatMessage {
   id: string;
@@ -24,6 +24,7 @@ export interface ChatMessage {
 export interface ChatScreenProps {
   messages: ChatMessage[];
   isTyping: boolean;
+  isStaffTyping?: boolean;
   activeRequests?: ActiveRequest[];
   onSendMessage: (text: string) => void;
   onCancelRequest?: (requestId: number) => void;
@@ -32,14 +33,15 @@ export interface ChatScreenProps {
   onPillSelect?: (msgId: string, option: string) => void;
 }
 
-export default function ChatScreen({ messages, isTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
+export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
+  const [isRequestsExpanded, setIsRequestsExpanded] = useState(true);
 
   // Auto-scroll to bottom when messages or typing state changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isStaffTyping]);
 
   const hasInteracted = messages.some(msg => msg.variant === 'sent');
   const showTypingBackground = isUserTyping || hasInteracted;
@@ -52,37 +54,72 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
       
       {/* 고정 상태 바 컨테이너 */}
       {activeRequests && activeRequests.length > 0 && (
-        <div style={{ 
-          position: 'absolute', 
-          top: 'var(--space-12)', 
-          left: '50%', 
-          transform: 'translateX(-50%)', 
-          width: 'calc(100% - var(--space-32))', 
-          maxWidth: '448px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '8px', 
-          zIndex: 10 
-        }}>
-          {activeRequests.map(req => (
-            <RequestStatusBar
-              key={req.requestId}
-              requestId={req.requestId}
-              domainCode={req.domainCode}
-              summary={req.summary}
-              status={req.status}
-              entities={req.entities}
-              progress={req.progress}
-            />
-          ))}
+        <div 
+          className={styles.statusBarContainer}
+          style={{
+            zIndex: 9999,
+            top: '12px',
+            left: '12px',
+            right: '12px',
+            width: 'auto',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 8px 32px rgba(31, 38, 135, 0.05)',
+            transform: 'translateZ(0)'
+          }}
+        >
+          <div className={styles.requestList}>
+            {[...activeRequests].reverse().map((req, index) => {
+              const isLatest = index === 0;
+              const content = (
+                <RequestStatusBar
+                  key={req.requestId}
+                  requestId={req.requestId}
+                  domainCode={req.domainCode}
+                  summary={req.summary}
+                  status={req.status}
+                  entities={req.entities}
+                  progress={req.progress}
+                  isMini={isLatest ? !isRequestsExpanded : false}
+                />
+              );
+
+              if (isLatest) {
+                return content;
+              }
+
+              return (
+                <div 
+                  key={req.requestId} 
+                  className={`${styles.expandableWrapper} ${isRequestsExpanded ? styles.expanded : ''}`}
+                >
+                  <div className={styles.expandableInner}>
+                    {content}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div 
+            className={styles.multiRequestToggle}
+            onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
+          >
+            <span>{activeRequests.length}개의 진행 중인 요청</span>
+            <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
+              <ArrowDownIcon width={24} height={24} strokeWidth={1.5} color="var(--color-gray-500)" />
+            </span>
+          </div>
         </div>
       )}
 
       <div 
-        className={styles.messageList}
-        style={{ paddingTop: activeRequests && activeRequests.length > 0 ? '100px' : undefined }}
+        className={`${styles.messageList} ${activeRequests && activeRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
+        style={activeRequests && activeRequests.length > 1 ? { '--status-bar-offset': `${activeRequests.length * 56}px` } as React.CSSProperties : undefined}
       >
-        {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div style={{ flex: 1 }} />}
+        {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div className={styles.spacer} />}
         {messages.map((msg, index) => {
           const isLatest = index === messages.length - 1;
 
@@ -105,11 +142,6 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
                 {msg.content && <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble>}
-                <StatusCard 
-                  progress={Number(msg.meta?.progress) || 0} 
-                  steps={msg.meta?.steps as string[]} 
-                  cancelled={Boolean(msg.meta?.cancelled) || false}
-                />
               </div>
             );
           }
@@ -125,6 +157,7 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
                 progress={Number(msg.meta?.progress) || 0}
                 graceRemaining={Number(msg.meta?.graceRemaining) || 0}
                 priority={String(msg.meta?.priority || 'NORMAL')}
+                createdAt={msg.meta?.createdAt as string}
                 cancelPending={Boolean(msg.meta?.cancelPending)}
                 onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
                 onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
@@ -166,26 +199,28 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
                 ) : (
                   msg.content ? <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble> : null
                 )}
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: isWelcome ? 'center' : 'flex-start',
-                  marginBottom: isWelcome ? '-16px' : '0',
-                  paddingLeft: isWelcome ? '0' : '48px'
-                }}>
-                  <Pill 
-                    options={msg.meta?.options as string[]} 
-                    selectedOption={msg.meta?.selectedOption as string | undefined}
-                    disabled={msg.meta?.pillDisabled as boolean | undefined}
-                    onSelect={(option) => {
-                      if (onPillSelect) {
-                        onPillSelect(msg.id, option);
-                      } else {
-                        onSendMessage(option);
-                      }
-                    }} 
-                    align={isWelcome ? 'center' : 'flex-start'}
-                  />
-                </div>
+                {!msg.meta?.selectedOption && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: isWelcome ? 'center' : 'flex-start',
+                    marginBottom: isWelcome ? '-16px' : '0',
+                    paddingLeft: isWelcome ? '0' : '0'
+                  }}>
+                    <Pill 
+                      options={msg.meta?.options as string[]} 
+                      selectedOption={msg.meta?.selectedOption as string | undefined}
+                      disabled={msg.meta?.pillDisabled as boolean | undefined}
+                      onSelect={(option) => {
+                        if (onPillSelect) {
+                          onPillSelect(msg.id, option);
+                        } else {
+                          onSendMessage(option);
+                        }
+                      }} 
+                      align={isWelcome ? 'center' : 'flex-start'}
+                    />
+                  </div>
+                )}
               </div>
             );
           }
@@ -204,11 +239,26 @@ export default function ChatScreen({ messages, isTyping, activeRequests, onSendM
             </ChatBubble>
           );
         })}
+        {isStaffTyping && (
+          <ChatBubble variant="received" isFallback isLatest>
+            <span className={styles.typingDots}>
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+            </span>
+          </ChatBubble>
+        )}
         <div ref={messagesEndRef} />
       </div>
       
       <div className={styles.footer}>
-        <ChatInput onSend={onSendMessage} isTyping={isTyping} onStop={onStopMessage} onUserTyping={setIsUserTyping} />
+        <ChatInput 
+          onSend={onSendMessage} 
+          isTyping={isTyping} 
+          onStop={onStopMessage} 
+          onUserTyping={setIsUserTyping} 
+          onFocus={() => setIsRequestsExpanded(false)}
+        />
       </div>
     </div>
   );

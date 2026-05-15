@@ -23,8 +23,8 @@ export default function KnowledgeManagementPage() {
   const [filterValue, setFilterValue] = useState('all');
 
   const MAIN_TAB_OPTIONS = [
-    { value: 'REVIEW', label: '학습 관리 (AI Training)' },
-    { value: 'LIBRARY', label: 'RAG 데이터 관리 (RAG)' }
+    { value: 'REVIEW', label: t.adminPage.taskBoard.titles.aiTraining },
+    { value: 'LIBRARY', label: t.adminPage.taskBoard.titles.rag }
   ];
 
   const SUB_TAB_OPTIONS = [
@@ -41,11 +41,11 @@ export default function KnowledgeManagementPage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>지식 라이브러리 데이터 관리</h1>
+        <h1 className={styles.pageTitle}>{t.adminPage.sidebar.menus.rag}</h1>
         <div className={styles.headerActions}>
           <InputField 
             variant="search" 
-            placeholder="검색어를 입력하세요" 
+            placeholder={t.adminPage.rag.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />

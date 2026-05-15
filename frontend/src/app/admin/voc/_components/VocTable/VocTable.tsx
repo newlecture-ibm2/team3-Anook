@@ -2,18 +2,22 @@ import React from 'react';
 import styles from './VocTable.module.css';
 import { VocItem } from '../../useVocList';
 
+import { useTranslation } from '@/app/useTranslation';
+
 interface VocTableProps {
   vocs: VocItem[];
   loading: boolean;
 }
 
 export default function VocTable({ vocs, loading }: VocTableProps) {
+  const { t } = useTranslation();
+
   if (loading) {
-    return <div className={styles.emptyState}>데이터를 불러오는 중입니다...</div>;
+    return <div className={styles.emptyState}>{t.common.loading}</div>;
   }
 
   if (vocs.length === 0) {
-    return <div className={styles.emptyState}>조건에 맞는 피드백이 없습니다.</div>;
+    return <div className={styles.emptyState}>{t.adminPage.voc.empty}</div>;
   }
 
   const formatDate = (dateString: string) => {
@@ -26,11 +30,11 @@ export default function VocTable({ vocs, loading }: VocTableProps) {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th className={styles.dateCol}>수신 일시</th>
-            <th className={styles.roomCol}>객실</th>
-            <th className={styles.sentimentCol}>구분</th>
-            <th className={styles.contentCol}>고객 피드백 내용</th>
-            <th className={styles.replyCol}>AI 자동 답변</th>
+            <th className={styles.dateCol}>{t.adminPage.voc.columns.date}</th>
+            <th className={styles.roomCol}>{t.adminPage.voc.columns.room}</th>
+            <th className={styles.sentimentCol}>{t.adminPage.voc.columns.sentiment}</th>
+            <th className={styles.contentCol}>{t.adminPage.voc.columns.content}</th>
+            <th className={styles.replyCol}>{t.adminPage.voc.columns.reply}</th>
           </tr>
         </thead>
         <tbody>
@@ -40,7 +44,7 @@ export default function VocTable({ vocs, loading }: VocTableProps) {
               <td className={styles.centerAlign}>{voc.roomNo}</td>
               <td className={styles.centerAlign}>
                 <span className={`${styles.badge} ${voc.sentiment === 'POSITIVE' ? styles.positive : styles.negative}`}>
-                  {voc.sentiment === 'POSITIVE' ? '칭찬' : '불만/의견'}
+                  {voc.sentiment === 'POSITIVE' ? t.adminPage.voc.sentiments.positive : t.adminPage.voc.sentiments.negative}
                 </span>
               </td>
               <td>
