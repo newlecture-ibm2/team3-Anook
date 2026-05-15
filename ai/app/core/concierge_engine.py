@@ -1,6 +1,7 @@
 from app.infrastructure.gemini.client import call_gemini_async
 from app.prompts.concierge_prompt import CONCIERGE_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
+from app.domains.rag import service as rag_service
 
 async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """
@@ -15,15 +16,31 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     kst = timezone(timedelta(hours=9))
     now_str = datetime.now(kst).strftime('%Y-%m-%d %H:%M')
     
-    # 대화 맥락 조립 (최근 5개 메시지)
+    # 1. RAG 검색 → CONCIERGE 도메인 지식
+    rag_context = ""
+    try:
+        rag_results = rag_service.search_hybrid(
+            query=user_message, domain_code="CONCIERGE", top_k=3, threshold=0.5
+        )
+        if rag_results:
+            rag_context = "\n".join([f"- {r['question']}: {r['answer']}" for r in rag_results])
+    except Exception as e:
+        print(f"[CONCIERGE Agent] RAG 검색 실패: {e}")
+
+    # 2. 대화 맥락 조립
     if chat_history:
         context = "\n".join([
             f"{'고객' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
             for m in chat_history[-5:]
         ])
-        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n[대화 맥락]\n{context}\n\n[현재 요청]\n고객: {user_message}"
+        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n[대화 맥락]\n{context}\n\n"
     else:
-        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n고객 객실: {room_no}\n고객 메시지: {user_message}"
+        prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n고객 객실: {room_no}\n"
+        
+    if rag_context:
+        prompt += f"[관련 지식 (RAG)]\n{rag_context}\n\n"
+        
+    prompt += f"[현재 요청]\n고객 메시지: {user_message}"
     
     try:
         # Gemini 호출
@@ -94,8 +111,13 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     elif intent == 'POSTAL_SERVICE':
         item = entities.get('item', '우편물')
         default_reply = f"요청하신 {item} 발송 대행 업무를 도와드릴까요? (1층 컨시어지 데스크 방문 필요)"
+    elif intent == 'INFO':
+        default_reply = entities.get('fallback_message', "안내해 드리겠습니다.")
     else:
         default_reply = f"요청하신 컨시어지 서비스({intent or '문의사항'})를 확인하였습니다. 담당 직원이 곧 안내해 드릴까요?"
+    
+    # INFO 의도일 경우 티켓 생성 방지
+    domain_code = None if (result.needs_clarification or intent == 'INFO') else "CONCIERGE"
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     
@@ -106,7 +128,7 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     return {
         "request_id": result.request_id if result.request_id else "REQ_TEMP",
         "room_no": room_no,
-        "domain_code": None if result.needs_clarification else "CONCIERGE",
+        "domain_code": domain_code,
         "summary": result.summary,
         "priority": result.priority,
         "entities": result.entities,

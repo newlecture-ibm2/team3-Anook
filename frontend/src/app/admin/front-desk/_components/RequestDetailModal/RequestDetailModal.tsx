@@ -5,6 +5,7 @@ import styles from './RequestDetailModal.module.css';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
+import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { CancelIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
@@ -186,8 +187,8 @@ export default function RequestDetailModal({
     if (!isOpen) return;
     fetch('/api/admin/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data))
-      .catch(() => { });
+      .then((data: Department[]) => setDepartments(data.filter(d => d.id !== 'EMERGENCY')))
+      .catch(() => {});
   }, [isOpen]);
 
   if (!detail) return null;
@@ -282,10 +283,14 @@ export default function RequestDetailModal({
               <span className={styles.label}>{t.adminPage.requestDetailModal.roomNo}</span>
               <span className={styles.value}>{detail.roomNo}</span>
             </div>
+<<<<<<< HEAD
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.adminPage.requestDetailModal.currentDept}</span>
               <span className={styles.value}>{detail.departmentName}</span>
             </div>
+=======
+
+>>>>>>> 18164b797d31df690e1016612a292febcf125b79
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.adminPage.requestDetailModal.createdAt}</span>
               <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
@@ -405,17 +410,13 @@ export default function RequestDetailModal({
               </label>
             </div>
             <div className={styles.editField}>
-              <label className={styles.label} htmlFor="detail-dept">{t.adminPage.requestDetailModal.assignDept}</label>
-              <select
-                id="detail-dept"
-                className={styles.select}
+              <Dropdown
+                label={t.adminPage.requestDetailModal.assignDept}
+                placeholder="부서를 선택하세요"
+                options={departments.map(d => ({ value: d.id, label: d.name }))}
                 value={editDeptId}
-                onChange={(e) => setEditDeptId(e.target.value)}
-              >
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setEditDeptId(val)}
+              />
             </div>
           </div>
         </div>

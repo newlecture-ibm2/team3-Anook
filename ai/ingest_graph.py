@@ -1,0 +1,165 @@
+import os
+import sys
+import json
+import importlib
+from neo4j import GraphDatabase
+from google import genai
+
+# ai 디렉토리를 파이썬 경로에 추가
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# 환경변수 로드 (기본값 설정)
+# 도커 내부에서 실행하기 위해 anook-neo4j-local 지정
+NEO4J_URI = os.getenv("NEO4J_URI", "bolt://anook-neo4j-local:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "anook2026")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") # .env에 설정된 키를 불러옵니다.
+
+if not GEMINI_API_KEY:
+    print("⚠️ GEMINI_API_KEY 환경변수가 설정되지 않았습니다.")
+    exit(1)
+
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+def extract_entities_and_relations(text):
+    prompt = f"""
+    당신은 호텔 데이터베이스 데이터 마이닝 전문가입니다. 
+    다음 제공된 호텔 규정 매뉴얼 텍스트를 분석하여, Knowledge Graph 구성을 위한 엔티티(Entity)와 관계(Relation)를 추출하세요.
+    결과는 반드시 유효한 JSON 포맷의 문자열로만 반환하세요. (마크다운 백틱 제외)
+
+    [엔티티 타입 제한]
+    - Department: 부서 이름 (예: 하우스키핑, 시설관리팀, 프론트데스크 등)
+    - Item: 물품 또는 서비스 이름 (예: 수건, 에어컨, 생수 등)
+    - Rule: 요금, 규정, 정책 (예: 수건 1장당 1000원, 무상 수리 등)
+
+    [관계 타입 제한]
+    - HANDLED_BY: Item -> Department (예: 수건은 하우스키핑이 처리한다)
+    - GOVERNED_BY: Item -> Rule (예: 수건은 '1장당 1000원'이라는 규정을 따른다)
+
+    [분석할 텍스트]
+    {text}
+
+    [출력 JSON 포맷 예시]
+    {{
+        "entities": [
+            {{"id": "수건", "label": "Item"}},
+            {{"id": "하우스키핑", "label": "Department"}},
+            {{"id": "추가 1장당 1000원 부과", "label": "Rule"}}
+        ],
+        "relations": [
+            {{"source": "수건", "target": "하우스키핑", "type": "HANDLED_BY"}},
+            {{"source": "수건", "target": "추가 1장당 1000원 부과", "type": "GOVERNED_BY"}}
+        ]
+    }}
+    """
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt
+    )
+    try:
+        # JSON 포맷만 남기도록 파싱
+        clean_json = response.text.replace("```json", "").replace("```", "").strip()
+        return json.loads(clean_json)
+    except Exception as e:
+        print("JSON 파싱 에러:", e)
+        print("원본 응답:", response.text)
+        return None
+
+def ingest_to_neo4j(graph_data):
+    # docker-compose.local.yml 에서 설정된 환경변수 기반으로 인증 처리
+    auth = (NEO4J_USER, NEO4J_PASSWORD) if NEO4J_PASSWORD else None
+    driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
+    
+    with driver.session() as session:
+        # 1. 엔티티(Node) 병합 생성
+        print("-> 노드(Node) 생성 중...")
+        for entity in graph_data.get("entities", []):
+            label = entity["label"]
+            name = entity["id"]
+            # Cypher 쿼리: 이미 있으면 무시, 없으면 생성 (MERGE)
+            query = f"MERGE (n:{label} {{name: $name}})"
+            session.run(query, name=name)
+            
+        # 2. 관계(Edge) 병합 생성
+        print("-> 관계(Edge) 생성 중...")
+        for rel in graph_data.get("relations", []):
+            source_name = rel["source"]
+            target_name = rel["target"]
+            rel_type = rel["type"]
+            
+            # 소스와 타겟 노드를 매칭한 후 선으로 연결
+            query = f"""
+            MATCH (source {{name: $source_name}})
+            MATCH (target {{name: $target_name}})
+            MERGE (source)-[r:{rel_type}]->(target)
+            """
+            session.run(query, source_name=source_name, target_name=target_name)
+            
+    driver.close()
+    print("✅ Neo4j 데이터 적재가 성공적으로 완료되었습니다!")
+
+def get_all_knowledge_texts():
+    """모든 도메인의 knowledge_data.py에서 질문과 답변을 추출하여 텍스트로 결합"""
+    domains_dir = os.path.join(os.path.dirname(__file__), "app", "domains")
+    domain_folders = [f for f in os.listdir(domains_dir) if os.path.isdir(os.path.join(domains_dir, f))]
+    
+    domain_texts = {}
+    for domain in domain_folders:
+        knowledge_file = os.path.join(domains_dir, domain, "knowledge_data.py")
+        if os.path.exists(knowledge_file):
+            try:
+                module_name = f"app.domains.{domain}.knowledge_data"
+                module = importlib.import_module(module_name)
+                
+                # 모듈에서 리스트 형태의 KNOWLEDGE 변수 찾기 (예: FB_KNOWLEDGE, HK_KNOWLEDGE)
+                for attr_name in dir(module):
+                    if attr_name.endswith("_KNOWLEDGE") and isinstance(getattr(module, attr_name), list):
+                        knowledge_list = getattr(module, attr_name)
+                        texts = []
+                        for item in knowledge_list:
+                            texts.append(f"Q: {item['question']}\nA: {item['answer']}")
+                        domain_texts[domain] = "\n\n".join(texts)
+                        break
+            except Exception as e:
+                print(f"⚠️ [{domain.upper()}] 지식 로드 중 오류 발생: {e}")
+                
+    return domain_texts
+
+if __name__ == "__main__":
+    print("====================================")
+    print("1. 모든 도메인의 RAG 지식 데이터 수집")
+    print("====================================")
+    
+    domain_texts = get_all_knowledge_texts()
+    if not domain_texts:
+        print("❌ 수집된 지식 데이터가 없습니다.")
+        exit(1)
+        
+    print(f"✅ 총 {len(domain_texts)}개 도메인의 지식 데이터를 찾았습니다: {list(domain_texts.keys())}")
+    
+    print("\n====================================")
+    print("2. Gemini LLM을 통한 지식 추출 및 Neo4j 적재 시작")
+    print("====================================")
+    
+    total_entities = 0
+    total_relations = 0
+    
+    for domain, text in domain_texts.items():
+        print(f"\n--- 🚀 [{domain.upper()}] 지식 그래프 추출 중 ---")
+        graph_data = extract_entities_and_relations(text)
+        
+        if graph_data:
+            entities_count = len(graph_data.get("entities", []))
+            relations_count = len(graph_data.get("relations", []))
+            total_entities += entities_count
+            total_relations += relations_count
+            
+            print(f"[{domain.upper()}] 추출 완료: 엔티티 {entities_count}개, 관계 {relations_count}개")
+            ingest_to_neo4j(graph_data)
+        else:
+            print(f"❌ [{domain.upper()}] 데이터 추출에 실패했습니다.")
+            
+    print("\n====================================")
+    print(f"🎉 모든 파이프라인 완료! (총 엔티티: {total_entities}, 총 관계: {total_relations})")
+    print("http://localhost:7474 에서 확인하세요.")

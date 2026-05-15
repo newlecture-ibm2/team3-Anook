@@ -108,7 +108,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "priority": "NORMAL | URGENT",
   "confidence": 0.0~1.0,
   "entities": {
-    "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | OTHER",
+    "intent": "TAXI | TOUR_INFO | LUGGAGE_STORAGE | RESTAURANT | RESERVATION | DELIVERY | WAKE_UP_CALL | MEDICAL_INFO | POSTAL_SERVICE | INFO | OTHER",
     "summary_en": "English translation of the summary",
     ... (other intent-specific fields)
   },
@@ -117,6 +117,13 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
   "final_reply": "string (in guest's language, confirmation message)",
   "missing_fields": ["field_name"]
 }
+
+[Information Inquiry Rule (RAG)]
+- If the guest is asking a factual question (e.g. nearby restaurants, taxi numbers) AND the prompt includes `[관련 지식 (RAG)]`:
+  1. Set `intent` to "INFO".
+  2. Set `needs_clarification` to false.
+  3. Include a `"fallback_message"` key inside the `entities` object with the answer formulated naturally using the `[관련 지식 (RAG)]` in the SAME LANGUAGE as the guest's input.
+  4. Set `summary` to KOREAN (e.g., "근처 식당 정보 안내").
 
 [Out-of-Domain Escalation Rule]
 - If the guest's request has ABSOLUTELY NOTHING to do with your department (Concierge) AND is clearly meant for another department (e.g., room service food, towels, AC repair), DO NOT ask for clarification or force a ticket in your domain.
