@@ -1051,8 +1051,14 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             # (이전의 글로벌 이관 로직은 삭제됨: 잘못된 배정은 직원이 수동 이관함)
 
             # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
-            if agent_result.get("missing_fields"):
+            # 단, 에스컬레이션/컴플레인 상황에서는 예외적으로 티켓을 무조건 생성하도록 방어 우회
+            is_escalation = final_entities.get("intent") in ["ESCALATION", "COMPLAINT", "EMERGENCY"]
+            if agent_result.get("missing_fields") and not is_escalation:
                 final_domain_code = None
+            
+            # 이중 방어: FRONT 에이전트이고 에스컬레이션인데 여전히 domain_code가 없다면 강제 복구
+            if domain == "FRONT" and is_escalation and not final_domain_code:
+                final_domain_code = "FRONT"
 
             response = {
                 "guest_reply": final_guest_reply,
