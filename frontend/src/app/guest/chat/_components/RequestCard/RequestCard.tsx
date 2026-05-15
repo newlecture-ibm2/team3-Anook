@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './RequestCard.module.css';
 import Button from '@/components/ui/Button/Button';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
+import { useTranslation } from '@/app/useTranslation';
 
 export interface RequestCardProps {
   requestId: number;
@@ -44,6 +45,8 @@ export default function RequestCard({
   onModify,
   onAccept,
 }: RequestCardProps) {
+  const { t, language } = useTranslation();
+
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
   const isCancelPending = cancelPending === true;
@@ -99,30 +102,87 @@ export default function RequestCard({
     return parts.join(', ');
   };
 
-  const detailsText = renderDetails();
+  let targetIntent = entities?.intent;
+  let targetCount = entities?.count;
+  let orderDetails = '';
+  
+  // 만약 items나 tasks 배열이 있다면 (HK 등), 그 안의 세부 항목을 진짜 targetIntent로 사용합니다.
+  if (entities?.items && Array.isArray(entities.items) && entities.items.length > 0) {
+    targetIntent = entities.items[0].item;
+    targetCount = entities.items[0].count;
+  } else if (entities?.tasks && Array.isArray(entities.tasks) && entities.tasks.length > 0) {
+    targetIntent = entities.tasks[0];
+  } else if (entities?.intent === 'ROOM_SERVICE' && entities?.menu_items && Array.isArray(entities.menu_items) && entities.menu_items.length > 0) {
+    // F&B 룸서비스의 경우, 첫 번째 메뉴 이름을 사용
+    let firstMenu = entities.menu_items[0].name;
+    // 다국어 메뉴 매핑이 있으면 영어 등으로 번역
+    const tMenu = (t as any).menu;
+    if (tMenu && firstMenu in tMenu) {
+      firstMenu = tMenu[firstMenu];
+    }
+    const totalCount = entities.menu_items.reduce((sum: number, m: any) => sum + (m.quantity || 1), 0);
+    const extraCount = entities.menu_items.length - 1;
+    
+    if (extraCount > 0) {
+      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items} ${t.cardUI.and} ${extraCount}${t.cardUI.others}`;
+    } else {
+      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items}`;
+    }
+  }
+
+  // 혹시라도 소문자로 왔을 경우를 대비해 대문자로 정규화
+  if (targetIntent && typeof targetIntent === 'string') {
+    targetIntent = targetIntent.toUpperCase();
+  }
+
+  const translatedIntent = targetIntent && t.intents ? t.intents[targetIntent as keyof typeof t.intents] : null;
+  
+  let displaySummary = summary;
+  if (language === 'en' && (entities as any)?.summary_en) {
+    displaySummary = (entities as any).summary_en as string;
+  }
+  
+  if (orderDetails) {
+    displaySummary = orderDetails; // e.g. "콜라 2개 외 1건" or "Coke 2items and 1other item(s)"
+  } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
+    // summary_en이 없고 번역된 인텐트가 있는 경우에만 인텐트를 표시 (폴백)
+    displaySummary = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
+  }
+
+  // summary_en을 쓰거나 번역된 인텐트가 있는 경우, 중복된 한국어 상세 정보(고장 등)를 숨김
+  const detailsText = (translatedIntent || (language === 'en' && (entities as any)?.summary_en)) ? null : renderDetails();
+
+  let statusText = t.cardUI.status.pending;
+  if (isCancelled) statusText = t.cardUI.status.cancelled;
+  else if (isCancelPending) statusText = t.cardUI.status.cancelPending;
+  else if (isEscalatedChat) statusText = t.cardUI.status.escalated;
+  else if (isCompleted) statusText = t.cardUI.status.completedMark;
+  else if (isInProgress) statusText = t.cardUI.status.inProgress;
+
+  const displayDomainLabel = t.ticketUI.department[domainCode as keyof typeof t.ticketUI.department] || domainInfo.label;
 
   return (
     <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <Tag variant={domainInfo.variant}>
-          {domainInfo.icon} {domainInfo.label}
+          {domainInfo.icon} {displayDomainLabel}
         </Tag>
         <div className={styles.statusText}>
-          {isCancelled ? '취소됨' : isCancelPending ? '취소 대기 중' : isEscalatedChat ? '상담 대기 중' : isCompleted ? '완료됨' : isInProgress ? '처리 중' : '대기 중'}
+          {statusText}
         </div>
       </div>
 
       {/* Content */}
       <div className={styles.content}>
-        <div className={styles.summary}>{summary}</div>
+        <div className={styles.summary}>{displaySummary as string}</div>
         {detailsText && <div className={styles.details}>{detailsText}</div>}
       </div>
 
       {/* Meta */}
       {createdAt && (
         <div className={styles.meta}>
-          🕐 {new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 접수
+          🕐 {new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {t.cardUI.time.received}
         </div>
       )}
 
@@ -130,7 +190,7 @@ export default function RequestCard({
       {showButtons && (
         <>
           <div className={styles.guideText}>
-            <strong>잠시 후 자동으로 접수됩니다.</strong>
+            <strong>{t.cardUI.message.autoAcceptGuide}</strong>
           </div>
           <div className={styles.timerContainer}>
             <div className={styles.timerBarBg}>
@@ -139,11 +199,11 @@ export default function RequestCard({
                 style={{ animationDuration: `${graceRemaining}s` }}
               />
             </div>
-            <div className={styles.timerText}>{timeLeft}초</div>
+            <div className={styles.timerText}>{timeLeft}{t.cardUI.time.seconds}</div>
           </div>
           <div className={styles.buttonGroup}>
-            <Button variant="primary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onAccept}>바로등록</Button>
-            <Button variant="secondary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onCancel}>취소하기</Button>
+            <Button variant="primary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onAccept}>{t.cardUI.button.accept}</Button>
+            <Button variant="secondary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onCancel}>{t.cardUI.button.cancel}</Button>
           </div>
         </>
       )}
@@ -153,15 +213,15 @@ export default function RequestCard({
         <>
           {isCancelPending ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              🔄 취소 요청이 접수되어 직원이 확인 중입니다
+              {t.cardUI.message.cancelPending}
             </div>
           ) : isEscalatedChat ? (
             <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              💬 프론트 직원이 채팅으로 응대할 예정입니다.
+              {t.cardUI.message.escalated}
             </div>
           ) : (
             <div className={styles.completionMessage}>
-              ✅ 직원에게 전달되었습니다
+              {t.cardUI.message.forwarded}
             </div>
           )}
           
@@ -172,9 +232,9 @@ export default function RequestCard({
                 <div className={styles.progressBarFill} style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
               </div>
               <div className={styles.steps}>
-                <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>접수 완료</span>
-                <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>처리 중</span>
-                <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>완료</span>
+                <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.received}</span>
+                <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.inProgress}</span>
+                <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.completed}</span>
               </div>
             </div>
           )}

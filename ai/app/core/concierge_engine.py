@@ -120,6 +120,11 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     domain_code = None if (result.needs_clarification or intent == 'INFO') else "CONCIERGE"
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
+    
+    final_response = getattr(result, "final_reply", "")
+    if not final_response:
+        final_response = default_reply
+        
     return {
         "request_id": result.request_id if result.request_id else "REQ_TEMP",
         "room_no": room_no,
@@ -128,10 +133,10 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
-        "guest_reply": result.clarification_question if result.needs_clarification else default_reply,
+        "guest_reply": result.clarification_question if result.needs_clarification else final_response,
         "needs_clarification": result.needs_clarification,
         "clarification_question": result.clarification_question,
-        "clarification_options": result.clarification_options,
-        "missing_fields": result.missing_fields,
+        "clarification_options": getattr(result, "clarification_options", []),
+        "missing_fields": getattr(result, "missing_fields", []),
         "reasoning": result.reasoning,
     }

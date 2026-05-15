@@ -90,6 +90,8 @@ public class SendMessageService implements SendMessageUseCase {
         // 3. AI 처리 — 직원이 실시간 상담 중인 방이면 AI 개입 스킵
         if (roomStatusPort.isStaffHandlingRoom(cmd.roomNo())) {
             log.info("[Message] 직원 상담 중 — AI 호출 스킵 (room: {})", cmd.roomNo());
+            // 프론트엔드에 AI 스킵(직원 응대 중)임을 알려 타이핑 인디케이터를 해제
+            dispatchPort.sendToRoom(cmd.roomNo(), Map.of("type", "AI_SKIPPED"));
         } else {
             // AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
             self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());

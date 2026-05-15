@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './StatusCard.module.css';
 import { TimerIcon } from '@/components/icons';
+import { useTranslation } from '@/app/useTranslation';
 
 export interface StatusCardProps {
   progress: number; // 0 to 100
@@ -15,6 +16,14 @@ export default function StatusCard({
   cancelled = false,
   cancelPending = false,
 }: StatusCardProps) {
+  const { t } = useTranslation();
+  
+  const localizedSteps = [
+    t.cardUI.status.received,
+    t.cardUI.status.inProgress,
+    t.cardUI.status.completed
+  ];
+  const currentSteps = steps && steps.length > 0 && steps[0] !== '접수 완료' ? steps : localizedSteps;
   
   // 취소 상태면 별도 렌더링
   if (cancelled) {
@@ -22,12 +31,12 @@ export default function StatusCard({
       <div className={styles.card}>
         <div className={styles.title}>
           <TimerIcon style={{ width: '18px', height: '18px' }} />
-          <span style={{ position: 'relative', top: '1px' }}>요청 처리 현황</span>
+          <span style={{ position: 'relative', top: '1px' }}>{t.cardUI.title}</span>
         </div>
         <div className={styles.barBackground}>
           <div className={styles.barCancelled} style={{ width: '100%' }} />
         </div>
-        <div className={styles.cancelledText}>요청이 취소되었습니다</div>
+        <div className={styles.cancelledText}>{t.cardUI.message.cancelledCard}</div>
       </div>
     );
   }
@@ -39,7 +48,7 @@ export default function StatusCard({
     <div className={styles.card}>
       <div className={styles.title}>
         <TimerIcon style={{ width: '18px', height: '18px' }} />
-        <span style={{ position: 'relative', top: '1px' }}>요청 처리 현황</span>
+        <span style={{ position: 'relative', top: '1px' }}>{t.cardUI.title}</span>
       </div>
       <div className={styles.barBackground}>
         <div 
@@ -48,16 +57,16 @@ export default function StatusCard({
         />
       </div>
       <div className={styles.steps}>
-        {steps.map((step, index) => (
+        {currentSteps.map((step, index) => (
           <span 
             key={index} 
             className={index <= activeStepIndex ? (cancelPending ? styles.stepCancelPending : styles.stepActive) : styles.stepInactive}
             style={{ 
               flex: 1, 
-              textAlign: index === 0 ? 'left' : index === steps.length - 1 ? 'right' : 'center' 
+              textAlign: index === 0 ? 'left' : index === currentSteps.length - 1 ? 'right' : 'center' 
             }}
           >
-            {step} {index === steps.length - 1 && progress >= 100 && '✓'}
+            {step} {index === currentSteps.length - 1 && progress >= 100 && '✓'}
           </span>
         ))}
       </div>
