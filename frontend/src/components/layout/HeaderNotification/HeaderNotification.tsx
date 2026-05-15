@@ -19,17 +19,17 @@ export default function HeaderNotification() {
   const { requests: allRequests, refetch: refetchRequests } = useAdminRequests(undefined, '', 'all', true);
   const { escalations, refetch: refetchEscalations } = useEscalations();
 
-  // 1분마다 현재 시간 갱신 (3분 지연 계산용)
+  // 30초마다 현재 시간 갱신 (1분 30초 지연 계산용)
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    const timer = setInterval(() => setCurrentTime(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
 
-  // 3분 초과된 취소 요청 필터링
+  // 1분 30초 초과된 취소 요청 필터링
   const delayedCancelRequests = allRequests.filter(r => {
     if (!r.cancelRequested || !r.cancelRequestedAt) return false;
     const requestedTime = new Date(r.cancelRequestedAt).getTime();
-    return (currentTime - requestedTime) > 3 * 60 * 1000;
+    return (currentTime - requestedTime) > 90 * 1000;
   });
 
   // 타 부서 긴급 이관 제외 (프론트가 처리할 이관 요청)
