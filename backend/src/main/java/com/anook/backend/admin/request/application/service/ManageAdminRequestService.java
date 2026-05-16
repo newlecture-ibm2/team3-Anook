@@ -166,13 +166,12 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public void changeDepartment(Long id, String departmentId) {
-        AdminRequest request = adminRequestQueryPort.findById(id)
+        adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
-        String oldDeptId = request.getDepartmentId();
         adminRequestQueryPort.changeDepartment(id, departmentId);
 
-        // Re-fetch to get the latest summary (may have been updated by prior updateSummary call)
+        // Re-fetch after changeDepartment to get the latest summary (updated by updateSummary)
         AdminRequest updated = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
@@ -181,8 +180,8 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         );
         dispatchPort.dispatchToRoom(updated.getRoomNo(), payload);
         dispatchPort.dispatchToDepartment(departmentId, payload);
-        if (!departmentId.equals(oldDeptId)) {
-            dispatchPort.dispatchToDepartment(oldDeptId, payload);
+        if (!departmentId.equals(updated.getDepartmentId())) {
+            dispatchPort.dispatchToDepartment(updated.getDepartmentId(), payload);
         }
         dispatchPort.dispatchToAdmin(payload);
     }
@@ -271,13 +270,17 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public AdminRequestDetailResult createRequest(CreateAdminRequestCommand command) {
+        // 방 번호로 투숙객 ID 조회 (기존 요청에서 guest_id를 가져옴)
+        Long guestId = adminRequestQueryPort.findGuestIdByRoomNo(command.roomNo());
+
         AdminRequest saved = adminRequestQueryPort.save(
                 command.departmentId().toUpperCase(),
                 command.roomNo(),
                 command.summary(),
                 command.rawText(),
                 command.priority(),
-                command.assignedStaffId()
+                command.assignedStaffId(),
+                guestId
         );
 
         // [AN-307] 수동 생성 시 WebSocket 알림 발송 (고객 & 부서)

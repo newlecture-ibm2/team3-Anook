@@ -62,7 +62,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
 
         const mapped: ChatMessage[] = data.map((msg: any) => ({
           id: String(msg.id),
-          variant: msg.senderType === 'STAFF' ? 'sent' as const : 'received' as const,
+          variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
           senderType: msg.senderType,
           content: msg.content,
         }));
@@ -294,14 +294,19 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
                                   msg.content.includes('긴급 대응팀이 배정되었습니다');
                 
                 // 관리자 패널 기준:
-                // - GUEST, AI → 왼쪽(received)
-                // - STAFF → 오른쪽(sent), 수동 입력은 fallback 스타일
+                // - GUEST → 왼쪽(received) + surface color 스타일(sent)
+                // - AI → 오른쪽(sent) + AI 텍스트 스타일(received)
+                // - STAFF → 오른쪽(sent) + fallback 스타일
                 const isManualStaffMsg = msg.senderType === 'STAFF' && !isAutoMsg;
+
+                // 위치(variant)와 버블 스타일(bubbleStyle)을 독립적으로 지정
+                const bubbleStyle = msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const;
 
                 return (
                   <ChatBubble 
                     key={msg.id} 
-                    variant={msg.variant} 
+                    variant={msg.variant}
+                    bubbleStyle={bubbleStyle}
                     isFallback={isManualStaffMsg}
                   >
                     {msg.content}

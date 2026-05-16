@@ -51,4 +51,10 @@ public interface AdminRequestJpaRepository extends JpaRepository<AdminRequestJpa
 
     @Query("SELECT r.priority, COUNT(r) FROM AdminRequest r GROUP BY r.priority")
     List<Object[]> countGroupByPriority();
+
+    /**
+     * 방 번호로 투숙객 ID 조회 (기존 요청에서)
+     */
+    @Query(value = "SELECT guest_id FROM request WHERE room_no = :roomNo AND guest_id IS NOT NULL ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    Long findFirstGuestIdByRoomNo(@Param("roomNo") String roomNo);
 }
