@@ -1,11 +1,9 @@
-/* src/app/guest/chat/_components/FeedbackCard.module.css */
-
 .card {
   width: 100%;
   position: relative;
 }
 
-/* ── Horizontal Layout (matches RequestCard) ── */
+/* ── Horizontal Layout (matches RequestCard exactly) ── */
 
 .cardLayout {
   display: flex;
@@ -49,10 +47,9 @@
   width: 100%;
 }
 
-.title {
+.summary {
   font: var(--text-h3-bold);
   color: var(--color-gray-900);
-  margin: 0;
 }
 
 .timeLabel {

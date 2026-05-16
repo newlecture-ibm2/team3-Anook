@@ -139,7 +139,7 @@ export default function TaskTicket({
       timeDisplay = relTime.replace(language === 'ko' ? ' 전' : ' ago', t.ticketUI.time.elapsed);
     }
   } else {
-    timeDisplay = getRelativeTime(createdAt, language, t.ticketUI.time);
+    timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
   }
 
   let displayDescription = description;

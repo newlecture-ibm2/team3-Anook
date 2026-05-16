@@ -969,13 +969,13 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             
             if is_emergency:
                 reply_key = "EMERGENCY_REPLY"
-                summary_val = "긴급 구조 요청 (119/보안팀)"
+                summary_val = "[프론트 연결] 긴급 구조 요청"
             elif is_complaint:
                 reply_key = "COMPLAINT"
-                summary_val = "프론트 연결 (고객 불만)"
+                summary_val = "[프론트 연결] 고객 불만"
             else:
                 reply_key = escalation_key
-                summary_val = "프론트 연결 요청 (고객 확인)"
+                summary_val = "[프론트 연결] 고객 직접 요청"
             
             response = {
                 "guest_reply": _get_static_reply(reply_key, request.language),

@@ -169,17 +169,31 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         AdminRequest request = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
+        String oldDeptId = request.getDepartmentId();
         adminRequestQueryPort.changeDepartment(id, departmentId);
 
+        // Re-fetch to get the latest summary (may have been updated by prior updateSummary call)
+        AdminRequest updated = adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                id, request.getStatus(), departmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+                id, updated.getStatus(), departmentId, updated.getSummary(), updated.getRoomNo(), "STAFF"
         );
-        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToRoom(updated.getRoomNo(), payload);
         dispatchPort.dispatchToDepartment(departmentId, payload);
-        if (!departmentId.equals(request.getDepartmentId())) {
-            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        if (!departmentId.equals(oldDeptId)) {
+            dispatchPort.dispatchToDepartment(oldDeptId, payload);
         }
         dispatchPort.dispatchToAdmin(payload);
+    }
+
+    @Override
+    @Transactional
+    public void updateSummary(Long id, String summary, String description) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.updateSummary(id, summary, description);
     }
 
     @Override

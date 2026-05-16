@@ -52,6 +52,11 @@ public interface ManageAdminRequestUseCase {
     void changeDepartment(Long id, String departmentId);
 
     /**
+     * 요약(제목) 및 설명 변경
+     */
+    void updateSummary(Long id, String summary, String description);
+
+    /**
      * 에스컬레이션 대상 목록 조회 
      */
     List<AdminRequestListResult> getEscalations();

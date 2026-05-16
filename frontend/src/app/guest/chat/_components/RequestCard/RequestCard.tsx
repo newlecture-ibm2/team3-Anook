@@ -53,9 +53,25 @@ export default function RequestCard({
   const isCompleted = progress >= 100 && !isCancelled;
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
+  const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
+
+  const DOMAIN_TIMER_COLORS: Record<string, string> = {
+    HK: 'var(--color-dept-hk-text)',
+    FB: 'var(--color-dept-fb-text)',
+    FACILITY: 'var(--color-dept-facility-text)',
+    CONCIERGE: 'var(--color-dept-concierge-text)',
+    FRONT: 'var(--color-dept-front-text)',
+    EMERGENCY: 'var(--color-dept-emergency-text)',
+  };
+  const timerColor = DOMAIN_TIMER_COLORS[domainCode] || 'var(--color-primary)';
   
   // Timer state
   const [timeLeft, setTimeLeft] = useState(graceRemaining);
+
+  // Format summary to hide internal notes from guest
+  const displaySummary = summary.includes('[직원 인수인계]') || summary.includes('[프론트 연결]') || summary.includes('미학습 정보') || isEscalatedChat
+    ? '프론트 데스크 직원 연결 요청'
+    : summary;
 
   useEffect(() => {
     if (graceRemaining <= 0 || isCancelled) {
@@ -109,20 +125,21 @@ export default function RequestCard({
 
   const detailsText = renderDetails();
 
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
   return (
-    <div 
-      className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}
-      style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)'
-      }}
-    >
+    <div className={`glass-panel ${styles.card} ${cardBgClass} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
       <div className={styles.cardLayout}>
         {/* Left Column: Icon or Timer */}
         <div className={styles.leftColumn}>
           {showButtons ? (
-            <div className={`${styles.timerContainer} ${bgClass}`} style={{ backgroundColor: 'transparent' }}>
+            <div className={`${styles.timerContainer} ${bgClass}`} style={{ '--timer-color': timerColor } as React.CSSProperties}>
               <svg viewBox="0 0 36 36" className={styles.circularSvg}>
                 <path
                   className={styles.circleBg}
@@ -143,12 +160,12 @@ export default function RequestCard({
           )}
         </div>
 
-        {/* Right Column: Content and Buttons */}
+        {/* Right Column: Content */}
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.summary}>{summary}</div>
-              {detailsText && <div className={styles.detailsInline}>{detailsText}</div>}
+              <div className={styles.summary}>{displaySummary}</div>
+              <div className={styles.timeLabel}>{formatTime(createdAt)}</div>
             </div>
           </div>
 
@@ -165,12 +182,13 @@ export default function RequestCard({
               <>{domainInfo.label} 팀에 전달되었습니다</>
             )}
           </div>
-
-          <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
-            <Button variant="secondary" size="medium" onClick={onCancel} fullWidth>요청 취소</Button>
-            <Button variant="primary" size="medium" onClick={onAccept} fullWidth>진행</Button>
-          </div>
         </div>
+      </div>
+
+      {/* Buttons — full width below cardLayout */}
+      <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
+        <Button variant="secondary" size="medium" onClick={onCancel} fullWidth>요청 취소</Button>
+        <Button variant="primary" size="medium" onClick={onAccept} fullWidth>진행</Button>
       </div>
     </div>
   );

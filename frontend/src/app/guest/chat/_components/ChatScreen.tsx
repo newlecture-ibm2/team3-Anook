@@ -5,6 +5,7 @@ import ChatInput from './ChatInput';
 
 import Pill from '@/components/ui/Pill/Pill';
 import ChatBackground from './ChatBackground';
+import ChatEndCard from './ChatEndCard/ChatEndCard';
 import FeedbackCard from './FeedbackCard';
 import RequestCard from './RequestCard/RequestCard';
 import RequestStatusBar from './RequestStatusBar/RequestStatusBar';
@@ -15,7 +16,7 @@ import { ArrowDownIcon } from '@/components/icons';
 export interface ChatMessage {
   id: string;
   variant: 'sent' | 'received';
-  type?: 'TEXT' | 'REQUEST_CARD' | 'AI_PROGRESS' | 'QUICK_REPLY' | 'FEEDBACK' | 'WELCOME' | 'FALLBACK' | 'STATUS_CARD';
+  type?: 'TEXT' | 'REQUEST_CARD' | 'AI_PROGRESS' | 'QUICK_REPLY' | 'FEEDBACK' | 'CHAT_END' | 'WELCOME' | 'FALLBACK' | 'STATUS_CARD';
   content: string;
   imageUrl?: string;
   meta?: Record<string, any>;
@@ -29,11 +30,12 @@ export interface ChatScreenProps {
   onSendMessage: (text: string) => void;
   onCancelRequest?: (requestId: number) => void;
   onConfirmRequest?: (requestId: number) => void;
+  onRateRequest?: (requestId: number, rating: number) => void;
   onStopMessage?: () => void;
   onPillSelect?: (msgId: string, option: string) => void;
 }
 
-export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
+export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onRateRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [isRequestsExpanded, setIsRequestsExpanded] = useState(true);
@@ -226,10 +228,32 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
           if (msg.type === 'FEEDBACK') {
             return (
-              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                {msg.content && <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble>}
-                <FeedbackCard onSubmit={(rating) => console.log('Feedback:', rating)} />
-              </div>
+              <ChatEndCard
+                key={msg.id}
+                summary={String(msg.meta?.summary || '')}
+                domainCode={String(msg.meta?.domainCode || 'UNKNOWN')}
+                completedAt={String(msg.meta?.completedAt || new Date().toISOString())}
+                onSubmitRating={(rating) => {
+                  const requestId = msg.meta?.requestId;
+                  if (requestId && onRateRequest) {
+                    onRateRequest(Number(requestId), rating);
+                  }
+                }}
+              />
+            );
+          }
+          if (msg.type === 'CHAT_END') {
+            return (
+              <FeedbackCard
+                key={msg.id}
+                completedAt={String(msg.meta?.completedAt || new Date().toISOString())}
+                onSubmit={(rating) => {
+                  const requestId = msg.meta?.requestId;
+                  if (requestId && onRateRequest) {
+                    onRateRequest(Number(requestId), rating);
+                  }
+                }}
+              />
             );
           }
           

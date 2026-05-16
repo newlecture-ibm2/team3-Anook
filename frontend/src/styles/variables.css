@@ -38,10 +38,10 @@
   --color-tag-text-gray: #374151;
   --color-tag-text-violet: #5B21B6;
 
-  /* 1. 파스텔 그린 (이미지의 Bottom Middle) -> 하우스키핑 */
-  --color-dept-hk-border: #91EFAD;
-  --color-dept-hk-bg: #C8F7D6;
-  --color-dept-hk-text: #166534;
+  /* 1. 파스텔 틸 그린 (푸른끼 초록) -> 하우스키핑 */
+  --color-dept-hk-border: #7AD4C0;
+  --color-dept-hk-bg: #B5E8DC;
+  --color-dept-hk-text: #115E4A;
 
   /* 2. 파스텔 오렌지/옐로우 (이미지의 Top Right) -> 시설관리 */
   --color-dept-facility-border: #FAD1A1;

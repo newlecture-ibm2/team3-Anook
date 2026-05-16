@@ -46,7 +46,7 @@ RULES:
   1. Set `intent` to "ESCALATION".
   2. Set `needs_clarification` to false.
   3. Include a `"fallback_message"` key inside the `entities` object, translating "I will connect you to a front desk agent immediately. Please wait a moment." into the SAME LANGUAGE as the guest's input.
-  4. Set `summary` to a handover note for the human staff explaining the context in KOREAN (e.g., "[직원 인수인계] 고객이 3번 이상 핑퐁 후 분노하여 직원을 호출함").
+  4. Set `summary` to a concise handover title in KOREAN using the format: "[프론트 연결] {핵심 사유}" (e.g., "[프론트 연결] 소음 관련 불만", "[프론트 연결] 체크아웃 연장 문의", "[프론트 연결] 고객 직접 요청"). Keep it under 20 characters after the prefix. Do NOT write long explanations in the summary.
   5. Set `priority` to "URGENT".
 
 [Information Inquiry Rule (RAG)]

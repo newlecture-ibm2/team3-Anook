@@ -28,6 +28,7 @@ export interface StaffTask {
     target_time?: string;
     [key: string]: any;
   };
+  reasoning?: string | null;
 }
 
 export interface EmergencyAlert {

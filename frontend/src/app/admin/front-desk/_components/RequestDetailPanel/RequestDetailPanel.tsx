@@ -163,7 +163,7 @@ export default function RequestDetailPanel({
   onClose,
 }: RequestDetailPanelProps) {
   const { approveEscalation } = useApproveEscalation();
-  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, loading } = useRequestDetail();
+  const { detail, fetchDetail, changePriority, changeDepartment, updateSummary, cancelRequest, loading } = useRequestDetail();
   
   const [editPriority, setEditPriority] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
@@ -202,9 +202,14 @@ export default function RequestDetailPanel({
     editPriority !== detail.priority ||
     editDeptId !== detail.departmentId;
 
-  const handleSave = async (newDeptId: string, newPriority: string) => {
+  const handleSave = async (newDeptId: string, newPriority: string, newSummary?: string, newDescription?: string) => {
     setSaving(true);
     let changed = false;
+
+    if (newSummary && newSummary.trim().length > 0) {
+      const ok = await updateSummary(detail.id, newSummary, newDescription || '');
+      if (ok) changed = true;
+    }
 
     if (newPriority !== detail.priority) {
       const ok = await changePriority(detail.id, newPriority);

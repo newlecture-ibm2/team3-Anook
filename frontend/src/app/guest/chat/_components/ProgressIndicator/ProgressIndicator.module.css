@@ -17,11 +17,11 @@
   color: transparent;
   background: linear-gradient(
     90deg, 
-    var(--color-gray-400) 0%, 
-    var(--color-gray-400) 40%, 
-    var(--color-gray-800) 50%, 
-    var(--color-gray-400) 60%, 
-    var(--color-gray-400) 100%
+    var(--color-gray-800) 0%, 
+    var(--color-gray-800) 40%, 
+    var(--color-gray-400) 50%, 
+    var(--color-gray-800) 60%, 
+    var(--color-gray-800) 100%
   );
   background-size: 200% 100%;
   background-clip: text;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import styles from './FeedbackCard.module.css';
+import styles from './ChatEndCard.module.css';
 import { ReviewStarIcon } from '@/components/icons';
 import { Check, Home, Utensils, Wrench, ConciergeBell, Monitor, AlertTriangle, FileText } from 'lucide-react';
 
@@ -17,33 +17,27 @@ const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
   UNKNOWN: { icon: FileText, label: '기타' },
 };
 
-export interface FeedbackCardProps {
-  /** 요청 요약 (AI 요청 완료 시 전달) */
-  summary?: string;
-  /** 부서 코드 (아이콘/라벨 결정) */
+export interface ChatEndCardProps {
+  summary: string;
   domainCode?: string;
-  /** 완료 시간 */
-  completedAt?: string;
-  /** 별점 제출 핸들러 */
-  onSubmit: (rating: number) => void;
+  completedAt: string;
+  onSubmitRating?: (rating: number) => void;
 }
 
-export default function FeedbackCard({ summary, domainCode, completedAt, onSubmit }: FeedbackCardProps) {
+export default function ChatEndCard({ summary, domainCode, completedAt, onSubmitRating }: ChatEndCardProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
 
   const activeRating = hoverRating || rating;
   const domainInfo = DOMAIN_MAP[domainCode || 'UNKNOWN'] || DOMAIN_MAP['UNKNOWN'];
-
-  // 요청 정보가 있으면 요청 완료 카드, 없으면 상담 완료 카드
-  const hasRequestInfo = !!summary;
+  const DomainIcon = domainInfo.icon;
 
   const handleStarClick = (star: number) => {
     if (submitted) return;
     setRating(star);
     setSubmitted(true);
-    onSubmit(star);
+    onSubmitRating?.(star);
   };
 
   const formatTime = (dateStr?: string) => {
@@ -54,15 +48,16 @@ export default function FeedbackCard({ summary, domainCode, completedAt, onSubmi
     return `${h}:${m}`;
   };
 
-  // 게스트용 제목: 도메인 라벨 + "요청 완료"
-  const displayTitle = hasRequestInfo
-    ? `${domainInfo.label} 요청 완료`
-    : '상담이 완료되었습니다';
+  // 표시용 요약 — [프론트 연결] 등 내부 태그 제거
+  const displaySummary = summary
+    .replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '')
+    .replace(/미학습 정보.*$/, '')
+    .trim() || '요청 처리';
 
   return (
     <div className={`glass-panel ${styles.card}`}>
       <div className={styles.cardLayout}>
-        {/* Left Column: Icon */}
+        {/* Left Column: Check Icon */}
         <div className={styles.leftColumn}>
           <div className={styles.iconContainer}>
             <Check size={20} color="var(--color-success, #10B981)" strokeWidth={3} />
@@ -73,8 +68,8 @@ export default function FeedbackCard({ summary, domainCode, completedAt, onSubmi
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.title}>{displayTitle}</div>
-              {completedAt && <div className={styles.timeLabel}>{formatTime(completedAt)}</div>}
+              <div className={styles.summary}>{displaySummary} 완료</div>
+              <div className={styles.timeLabel}>{formatTime(completedAt)}</div>
             </div>
           </div>
 

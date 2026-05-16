@@ -53,6 +53,11 @@ public interface AdminRequestQueryPort {
     void rejectCancellation(Long requestId);
 
     /**
+     * 요약(제목) 및 설명 변경
+     */
+    void updateSummary(Long requestId, String summary, String description);
+
+    /**
      * 부서 변경 (관리자 수동 배정)
      */
     void changeDepartment(Long requestId, String departmentId);

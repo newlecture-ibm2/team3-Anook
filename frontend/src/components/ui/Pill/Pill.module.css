@@ -1,7 +1,7 @@
 .container {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
   gap: var(--space-8);
-  flex-wrap: wrap;
   margin-top: var(--space-4);
   margin-bottom: var(--space-8);
 }
