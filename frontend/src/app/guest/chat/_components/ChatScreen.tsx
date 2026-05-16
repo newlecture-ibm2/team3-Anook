@@ -53,56 +53,74 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
       <ChatBackground isAiTyping={isTyping} isUserTyping={showTypingBackground} />
 
 
-      <div 
-        className={styles.messageList}
-      >
-        {/* 고정 상태 바 컨테이너 (sticky — 스크롤 시 상단 고정) */}
-        {activeRequests && activeRequests.length > 0 && (
-          <div className={styles.statusBarContainer}>
-            <div className={styles.requestList}>
-              {[...activeRequests].reverse().map((req, index) => {
-                const isLatest = index === 0;
-                const content = (
-                  <RequestStatusBar
-                    key={req.requestId}
-                    requestId={req.requestId}
-                    domainCode={req.domainCode}
-                    summary={req.summary}
-                    status={req.status}
-                    entities={req.entities}
-                    progress={req.progress}
-                    isMini={isLatest ? !isRequestsExpanded : false}
-                  />
-                );
+      
+      {/* 고정 상태 바 컨테이너 */}
+      {activeRequests && activeRequests.length > 0 && (
+        <div 
+          className={styles.statusBarContainer}
+          style={{
+            zIndex: 9999,
+            top: '0px',
+            left: '0px',
+            right: '0px',
+            width: '100%',
+            borderRadius: '0px',
+            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 8px 32px rgba(31, 38, 135, 0.05)',
+            transform: 'translateZ(0)'
+          }}
+        >
+          <div className={styles.requestList}>
+            {[...activeRequests].reverse().map((req, index) => {
+              const isLatest = index === 0;
+              const content = (
+                <RequestStatusBar
+                  key={req.requestId}
+                  requestId={req.requestId}
+                  domainCode={req.domainCode}
+                  summary={req.summary}
+                  status={req.status}
+                  entities={req.entities}
+                  progress={req.progress}
+                  isMini={isLatest ? !isRequestsExpanded : false}
+                />
+              );
 
-                if (isLatest) {
-                  return content;
-                }
+              if (isLatest) {
+                return content;
+              }
 
-                return (
-                  <div 
-                    key={req.requestId} 
-                    className={`${styles.expandableWrapper} ${isRequestsExpanded ? styles.expanded : ''}`}
-                  >
-                    <div className={styles.expandableInner}>
-                      {content}
-                    </div>
+              return (
+                <div 
+                  key={req.requestId} 
+                  className={`${styles.expandableWrapper} ${isRequestsExpanded ? styles.expanded : ''}`}
+                >
+                  <div className={styles.expandableInner}>
+                    {content}
                   </div>
-                );
-              })}
-            </div>
-            <div 
-              className={styles.multiRequestToggle}
-              onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
-            >
-              <span>{activeRequests.length}개의 진행 중인 요청</span>
-              <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
-                <ArrowDownIcon width={24} height={24} strokeWidth={1.5} color="var(--color-gray-500)" />
-              </span>
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+          <div 
+            className={styles.multiRequestToggle}
+            onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
+          >
+            <span>{activeRequests.length}개의 진행 중인 요청</span>
+            <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
+              <ArrowDownIcon width={24} height={24} strokeWidth={1.5} color="var(--color-gray-500)" />
+            </span>
+          </div>
+        </div>
+      )}
 
+      <div 
+        className={`${styles.messageList} ${activeRequests && activeRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
+        style={activeRequests && activeRequests.length > 1 ? { '--status-bar-offset': `${activeRequests.length * 56}px` } as React.CSSProperties : undefined}
+      >
         {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div className={styles.spacer} />}
         {messages.map((msg, index) => {
           const isLatest = index === messages.length - 1;
