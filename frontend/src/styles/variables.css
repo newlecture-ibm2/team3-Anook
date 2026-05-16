@@ -38,10 +38,11 @@
   --color-tag-text-gray: #374151;
   --color-tag-text-violet: #5B21B6;
 
-  /* 1. 파스텔 틸 그린 (푸른끼 초록) -> 하우스키핑 */
-  --color-dept-hk-border: #7AD4C0;
-  --color-dept-hk-bg: #B5E8DC;
-  --color-dept-hk-text: #115E4A;
+  /* 부서별 색상 팔레트 */
+  /* 1. HK - 프론트 색상 적용 */
+  --color-dept-hk-border: #A9C9F9;
+  --color-dept-hk-bg: #D4E4FC;
+  --color-dept-hk-text: #1E40AF;
 
   /* 2. 파스텔 오렌지/옐로우 (이미지의 Top Right) -> 시설관리 */
   --color-dept-facility-border: #FAD1A1;
@@ -58,10 +59,10 @@
   --color-dept-concierge-bg: #E1D5FA;
   --color-dept-concierge-text: #5B21B6;
 
-  /* 5. 파스텔 블루 (이미지의 Top Left) -> 프런트 */
-  --color-dept-front-border: #A9C9F9;
-  --color-dept-front-bg: #D4E4FC;
-  --color-dept-front-text: #1E40AF;
+  /* 5. FRONT - HK 색상 적용 */
+  --color-dept-front-border: #7AD4C0;
+  --color-dept-front-bg: #B5E8DC;
+  --color-dept-front-text: #115E4A;
 
   /* 긴급 상황 (기존 유지) */
   --color-dept-emergency-border: #ff7272;
