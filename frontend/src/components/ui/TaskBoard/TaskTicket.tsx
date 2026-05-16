@@ -149,9 +149,14 @@ export default function TaskTicket({
   }
 
   let displayDescription = description;
-  // 수동 배정된 요청: rawText 전체는 상세 모달에서 확인 → 카드에는 빈 값
-  if (isManuallyReassigned) {
-    displayDescription = '';
+  if (isManuallyReassigned && displayDescription) {
+    // 수동 배정: rawText 원본에서 마지막 줄(admin 이관 사유)만 추출
+    // rawText 구조: "원문\n\n[주문 상세]\n...\nadmin메모"
+    const lines = displayDescription.split('\n').filter(l => l.trim());
+    displayDescription = lines[lines.length - 1] || '';
+  } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
+    // 일반 요청: '[주문 상세]' 이후의 entities dump 제거 → 고객 원문만
+    displayDescription = displayDescription.split('[주문 상세]')[0].trim();
   }
   if (language === 'en') {
     if (displayDescription === '관리자') displayDescription = 'Admin';
