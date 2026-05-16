@@ -258,7 +258,7 @@ export function useChat() {
                   id: staffMsgId,
                   variant: 'received',
                   content: payload.content,
-                  type: 'TEXT',
+                  type: 'FALLBACK',
                 }];
               });
             } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {
@@ -348,7 +348,7 @@ export function useChat() {
                       ...requestMsg.meta,
                       entities: payload.entities || existingMeta.entities,
                       priority: payload.priority || existingMeta.priority,
-                      createdAt: existingIdx >= 0 ? new Date().toISOString() : (payload.createdAt || new Date().toISOString()),
+                      createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
                       graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                     }
                   }];

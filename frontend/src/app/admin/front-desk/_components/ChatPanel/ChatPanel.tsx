@@ -62,7 +62,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
 
         const mapped: ChatMessage[] = data.map((msg: any) => ({
           id: String(msg.id),
-          variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
+          variant: msg.senderType === 'STAFF' ? 'sent' as const : 'received' as const,
           senderType: msg.senderType,
           content: msg.content,
         }));
@@ -293,8 +293,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
                 const isAutoMsg = msg.content.includes('프론트 데스크 직원이 메시지를 확인했습니다') || 
                                   msg.content.includes('긴급 대응팀이 배정되었습니다');
                 
-                // 수동 상담사 채팅은 fallback 스타일(핑크색), 자동응답과 AI채팅은 기본 스타일(유리)
-                const isManualStaffMsg = msg.variant === 'sent' && msg.senderType !== 'AI' && !isAutoMsg;
+                // 관리자 패널 기준:
+                // - GUEST, AI → 왼쪽(received)
+                // - STAFF → 오른쪽(sent), 수동 입력은 fallback 스타일
+                const isManualStaffMsg = msg.senderType === 'STAFF' && !isAutoMsg;
 
                 return (
                   <ChatBubble 
