@@ -47,9 +47,9 @@ public interface ManageAdminRequestUseCase {
     void cancelRequest(Long id, String rejectionReason);
 
     /**
-     * 부서 변경 (관리자 수동 배정)
+     * 부서 변경 (관리자 수동 배정) — summary/description도 함께 변경 가능
      */
-    void changeDepartment(Long id, String departmentId);
+    void changeDepartment(Long id, String departmentId, String summary, String description);
 
     /**
      * 요약(제목) 및 설명 변경

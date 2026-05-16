@@ -48,7 +48,7 @@ export default function RequestCard({
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
   const isCancelPending = cancelPending === true;
-  const isEscalatedChat = entities?.intent === 'ESCALATION';
+  const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
   const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
   const isCompleted = progress >= 100 && !isCancelled;
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];

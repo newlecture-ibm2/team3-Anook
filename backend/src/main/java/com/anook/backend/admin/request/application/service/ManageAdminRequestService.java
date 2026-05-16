@@ -165,23 +165,32 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void changeDepartment(Long id, String departmentId) {
-        adminRequestQueryPort.findById(id)
+    public void changeDepartment(Long id, String departmentId, String summary, String description) {
+        AdminRequest before = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+        String previousDeptId = before.getDepartmentId();
+
+        // summary/description이 전달되면 같은 트랜잭션에서 먼저 업데이트
+        if (summary != null && !summary.isBlank()) {
+            adminRequestQueryPort.updateSummary(id, summary, description);
+        }
 
         adminRequestQueryPort.changeDepartment(id, departmentId);
 
-        // Re-fetch after changeDepartment to get the latest summary (updated by updateSummary)
+        // Re-fetch — summary + department 모두 반영된 최신 데이터
         AdminRequest updated = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                id, updated.getStatus(), departmentId, updated.getSummary(), updated.getRoomNo(), "STAFF"
+        // entities, priority를 포함한 full payload (Guest RequestCard 렌더링용)
+        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+                id, updated.getStatus(), departmentId, updated.getSummary(), updated.getRoomNo(),
+                updated.getEntities(), 0, updated.getPriority()
         );
         dispatchPort.dispatchToRoom(updated.getRoomNo(), payload);
         dispatchPort.dispatchToDepartment(departmentId, payload);
-        if (!departmentId.equals(updated.getDepartmentId())) {
-            dispatchPort.dispatchToDepartment(updated.getDepartmentId(), payload);
+        // 이전 부서에도 알림 (프론트 데스크 → 타 부서 이관 시 원래 부서에서 제거용)
+        if (!departmentId.equals(previousDeptId)) {
+            dispatchPort.dispatchToDepartment(previousDeptId, payload);
         }
         dispatchPort.dispatchToAdmin(payload);
     }

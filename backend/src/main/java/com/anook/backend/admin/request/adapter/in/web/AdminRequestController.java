@@ -147,7 +147,9 @@ public class AdminRequestController {
         if (departmentId == null || departmentId.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        manageAdminRequestUseCase.changeDepartment(id, departmentId);
+        String summary = body.get("summary");
+        String description = body.get("description");
+        manageAdminRequestUseCase.changeDepartment(id, departmentId, summary, description);
         return ResponseEntity.noContent().build();
     }
 

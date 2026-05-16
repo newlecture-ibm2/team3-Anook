@@ -59,7 +59,7 @@
     inset 0 2px 4px rgba(255, 255, 255, 0.4),
     0 4px 12px rgba(86, 91, 187, 0.1);
   color: var(--color-gray-900);
-  border-radius: 24px 4px 24px 24px;
+  border-radius: 24px;
 }
 
 .fallback {
@@ -86,12 +86,12 @@
 
 .received.fallback {
   padding: var(--space-12) var(--space-24);
-  border-radius: 4px 24px 24px 24px;
+  border-radius: 24px;
   max-width: 100%;
 }
 
 .sent.fallback {
-  border-radius: 24px 4px 24px 24px;
+  border-radius: 24px;
 }
 
 @keyframes waitingBubble {

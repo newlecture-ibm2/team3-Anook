@@ -206,18 +206,14 @@ export default function RequestDetailPanel({
     setSaving(true);
     let changed = false;
 
-    if (newSummary && newSummary.trim().length > 0) {
-      const ok = await updateSummary(detail.id, newSummary, newDescription || '');
-      if (ok) changed = true;
-    }
-
     if (newPriority !== detail.priority) {
       const ok = await changePriority(detail.id, newPriority);
       if (ok) changed = true;
     }
 
     if (newDeptId !== detail.departmentId) {
-      const ok = await changeDepartment(detail.id, newDeptId);
+      // summary/description도 같은 요청에서 함께 업데이트 (한 트랜잭션)
+      const ok = await changeDepartment(detail.id, newDeptId, newSummary, newDescription);
       if (ok) changed = true;
     }
 

@@ -87,12 +87,12 @@ export default function useRequestDetail() {
     }
   };
 
-  const changeDepartment = async (id: number, departmentId: string) => {
+  const changeDepartment = async (id: number, departmentId: string, summary?: string, description?: string) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/department`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ departmentId }),
+        body: JSON.stringify({ departmentId, summary, description }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return true;

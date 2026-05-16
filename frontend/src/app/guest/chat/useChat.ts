@@ -338,7 +338,24 @@ export function useChat() {
                     return updated;
                   }
 
-                  // 기타 도메인: 기존 카드 제거 후 하단에 새로 추가
+                  // 부서가 변경된 경우: 기존 카드는 유지하고 새 카드를 하단에 추가
+                  const existingDomain = existingMeta.domainCode;
+                  const isDeptChanged = existingIdx >= 0 && existingDomain && existingDomain !== payload.domainCode;
+
+                  if (isDeptChanged) {
+                    // 기존 FRONT 카드는 그대로 두고, 새 부서 카드를 하단에 추가
+                    return [...prev, {
+                      ...requestMsg,
+                      id: `request-${payload.requestId}-${Date.now()}`,
+                      meta: {
+                        ...requestMsg.meta,
+                        createdAt: new Date().toISOString(),
+                        graceRemaining: 0
+                      }
+                    }];
+                  }
+
+                  // 같은 도메인 내 상태 변경: 기존 카드 교체
                   const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
 
                   return [...filtered, {
