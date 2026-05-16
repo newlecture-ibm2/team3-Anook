@@ -431,13 +431,13 @@ export function useChat() {
                     if (hasStaffSuccess) {
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
-                      content = '안내: 요청하신 취소가 정상 처리되었습니다.';
+                      content = '요청하신 취소가 정상 처리되었습니다.';
                     } else if (hasSuccess && hasPending) {
-                      content = '안내: 대기 중인 요청은 즉시 취소되었으나, 처리 중인 요청은 담당자에게 취소를 요청했습니다.';
+                      content = '대기 중인 요청은 즉시 취소되었으나, 처리 중인 요청은 담당자에게 취소를 요청했습니다.';
                     } else if (hasSuccess) {
-                      content = '안내: 해당 요청이 정상적으로 취소되었습니다.';
+                      content = '해당 요청이 정상적으로 취소되었습니다.';
                     } else if (hasPending) {
-                      content = '안내: 업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.';
+                      content = '업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.';
                     }
 
                     if (!content) return prev;

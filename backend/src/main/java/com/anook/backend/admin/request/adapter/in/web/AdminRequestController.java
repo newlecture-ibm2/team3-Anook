@@ -30,7 +30,8 @@ public class AdminRequestController {
     /**
      * 전체 요청 목록 조회 (필터링 + 정렬)
      *
-     * GET /admin/requests?status=PENDING&dept=HK&priority=URGENT&sort=created_at_desc
+     * GET
+     * /admin/requests?status=PENDING&dept=HK&priority=URGENT&sort=created_at_desc
      */
     @GetMapping
     public ResponseEntity<List<AdminRequestListResult>> getAllRequests(

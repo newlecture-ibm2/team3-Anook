@@ -17,7 +17,8 @@ public interface ManageAdminRequestUseCase {
     /**
      * 전체 요청 목록 조회 (필터링 + 정렬)
      */
-    List<AdminRequestListResult> getAllRequests(String status, String departmentId, String priority, List<String> exclude, String sort);
+    List<AdminRequestListResult> getAllRequests(String status, String departmentId, String priority,
+            List<String> exclude, String sort);
 
     /**
      * 단건 요청 상세 조회
@@ -41,7 +42,8 @@ public interface ManageAdminRequestUseCase {
 
     /**
      * 요청 취소 (관리자 권한)
-     * @param id 요청 ID
+     * 
+     * @param id              요청 ID
      * @param rejectionReason 반려 사유 (널 가능 — 에스컬레이션 반려 시만 사용)
      */
     void cancelRequest(Long id, String rejectionReason);
@@ -57,12 +59,12 @@ public interface ManageAdminRequestUseCase {
     void updateSummary(Long id, String summary, String description);
 
     /**
-     * 에스컬레이션 대상 목록 조회 
+     * 에스컬레이션 대상 목록 조회
      */
     List<AdminRequestListResult> getEscalations();
 
     /**
-     * 에스컬레이션 승인 
+     * 에스컬레이션 승인
      */
     void escalateRequest(Long id, String departmentId, String priority);
 
@@ -86,7 +88,7 @@ public interface ManageAdminRequestUseCase {
     /**
      * 고객의 취소 요청 반려
      *
-     * @param id 요청 ID
+     * @param id              요청 ID
      * @param rejectionReason 반려 사유
      */
     void rejectCancellation(Long id, String rejectionReason);
