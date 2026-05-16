@@ -59,15 +59,15 @@
   --color-dept-concierge-bg: #E1D5FA;
   --color-dept-concierge-text: #5B21B6;
 
-  /* 5. FRONT - HK 색상 적용 */
-  --color-dept-front-border: #7AD4C0;
-  --color-dept-front-bg: #B5E8DC;
-  --color-dept-front-text: #115E4A;
+  /* 5. FRONT - EMERGENCY 색상 적용 */
+  --color-dept-front-border: #ff7272;
+  --color-dept-front-bg: #FEF2F2;
+  --color-dept-front-text: #991B1B;
 
-  /* 긴급 상황 (기존 유지) */
-  --color-dept-emergency-border: #ff7272;
-  --color-dept-emergency-bg: #FEF2F2;
-  --color-dept-emergency-text: #991B1B;
+  /* 긴급 상황 - FRONT(구 HK) 색상 적용 */
+  --color-dept-emergency-border: #7AD4C0;
+  --color-dept-emergency-bg: #B5E8DC;
+  --color-dept-emergency-text: #115E4A;
 
   /* Typography Tokens (font: weight size/line-height font-family) */
   --font-sans: 'Pretendard', 'Inter', -apple-system, sans-serif;
