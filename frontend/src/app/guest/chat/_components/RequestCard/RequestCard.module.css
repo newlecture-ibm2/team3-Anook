@@ -47,7 +47,7 @@
 .bgFACILITY { color: var(--color-dept-facility-text); }
 .bgCONCIERGE { color: var(--color-dept-concierge-text); }
 .bgFRONT { color: var(--color-dept-front-text); }
-.bgEMERGENCY { color: var(--color-dept-emergency-text); }
+.bgEMERGENCY { color: var(--color-error); }
 .bgUNKNOWN { color: var(--color-primary); }
 
 .cardBgHK { background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-hk-bg) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
@@ -55,7 +55,7 @@
 .cardBgFACILITY { background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-facility-bg) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
 .cardBgCONCIERGE { background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-concierge-bg) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
 .cardBgFRONT { background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-front-bg) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
-.cardBgEMERGENCY { background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-emergency-bg) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
+.cardBgEMERGENCY { background: rgba(255, 255, 255, 0.5) !important; border: 1px solid var(--color-error) !important; }
 .cardBgUNKNOWN { background: linear-gradient(to right, color-mix(in srgb, var(--color-surface) 40%, rgba(255,255,255,0)) 0%, rgba(255,255,255,0) 70%), rgba(255, 255, 255, 0.5) !important; }
 
 .circularSvg {
