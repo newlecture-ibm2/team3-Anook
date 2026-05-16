@@ -149,9 +149,13 @@ export default function TaskTicket({
   }
 
   let displayDescription = description;
+  // 수동 배정된 요청: rawText 전체는 상세 모달에서 확인 → 카드에는 빈 값
+  if (isManuallyReassigned) {
+    displayDescription = '';
+  }
   if (language === 'en') {
-    if (description === '관리자') displayDescription = 'Admin';
-    else if (description === '직원') displayDescription = 'Staff';
+    if (displayDescription === '관리자') displayDescription = 'Admin';
+    else if (displayDescription === '직원') displayDescription = 'Staff';
   }
 
   return (
