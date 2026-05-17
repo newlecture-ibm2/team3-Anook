@@ -93,7 +93,9 @@ public class CreateRequestOnEventService {
                                 RequestStatus.CANCELLED.name(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                                 existing.getSummary(),
-                                existing.getRoomNo());
+                                existing.getRoomNo(),
+                                "AI",
+                                "REPLACED");
                         dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
                     } catch (Exception e) {
                         log.warn("[Cancel&Replace] 기존 요청 자동 취소 실패: {}", e.getMessage());

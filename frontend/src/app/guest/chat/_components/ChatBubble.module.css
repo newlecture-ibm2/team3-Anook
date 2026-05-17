@@ -87,7 +87,7 @@
 .received.fallback {
   padding: var(--space-12) var(--space-24);
   border-radius: 24px;
-  max-width: 100%;
+  max-width: 85%;
 }
 
 .sent.fallback {

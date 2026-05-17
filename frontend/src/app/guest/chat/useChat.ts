@@ -310,22 +310,24 @@ export function useChat() {
                   graceRemaining: payload.graceRemaining || 0,
                   priority: payload.priority || 'NORMAL',
                   cancelPending: isCancelPending,
+                  cancelReason: payload.cancelReason,
+                  cancelledAt: payload.status === 'CANCELLED' ? new Date().toISOString() : undefined,
                   createdAt: payload.createdAt || new Date().toISOString()
                 }
               };
 
               // COMPLETED는 ChatEndCard(FEEDBACK)로 처리
               if (payload.status !== 'COMPLETED') {
-                // FRONT 도메인 카드는 제자리에서 상태만 업데이트 (제거/재생성 방지)
-                const isFrontDomain = payload.domainCode === 'FRONT';
+                // FRONT/EMERGENCY 도메인 카드는 제자리에서 상태만 업데이트 (제거/재생성 방지)
+                const isInPlaceDomain = payload.domainCode === 'FRONT' || payload.domainCode === 'EMERGENCY';
 
                 setMessages(prev => {
                   const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
                   const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
                   const existingGrace = existingMeta.graceRemaining || 0;
 
-                  if (isFrontDomain && existingIdx >= 0) {
-                    // FRONT: 제자리에서 상태만 업데이트 (카드 위치/보더 유지)
+                  if (isInPlaceDomain && existingIdx >= 0) {
+                    // FRONT/EMERGENCY: 제자리에서 상태만 업데이트 (카드 위치/보더 유지)
                     const updated = [...prev];
                     updated[existingIdx] = {
                       ...updated[existingIdx],
@@ -365,6 +367,8 @@ export function useChat() {
                       ...requestMsg.meta,
                       entities: payload.entities || existingMeta.entities,
                       priority: payload.priority || existingMeta.priority,
+                      cancelReason: payload.cancelReason || existingMeta.cancelReason,
+                      cancelledAt: payload.status === 'CANCELLED' ? (existingMeta.cancelledAt || new Date().toISOString()) : undefined,
                       createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
                       graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
                     }
@@ -400,14 +404,17 @@ export function useChat() {
                 cancelEventsBatch.current.add('GUEST_CANCEL_APPROVED');
                 hasCancelEvent = true;
               } else if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
-                if (payload.initiatedBy === 'STAFF') {
+                if (payload.cancelReason === 'REPLACED') {
+                  // System auto-cancel due to replace, do not show system message
+                } else if (payload.initiatedBy === 'STAFF') {
                   // 관리자가 직접 강제 취소한 경우
                   cancelEventsBatch.current.add('STAFF_SUCCESS');
+                  hasCancelEvent = true;
                 } else {
                   // 고객이 직접 취소한 경우 (PENDING 상태에서 즉시 취소)
                   cancelEventsBatch.current.add('SUCCESS');
+                  hasCancelEvent = true;
                 }
-                hasCancelEvent = true;
               }
               if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
                 cancelEventsBatch.current.add('PENDING');

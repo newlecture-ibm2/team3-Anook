@@ -160,7 +160,9 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
                 graceRemaining={Number(msg.meta?.graceRemaining) || 0}
                 priority={String(msg.meta?.priority || 'NORMAL')}
                 createdAt={msg.meta?.createdAt as string}
+                cancelledAt={msg.meta?.cancelledAt as string}
                 cancelPending={Boolean(msg.meta?.cancelPending)}
+                cancelReason={msg.meta?.cancelReason as string}
                 onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
                 onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
               />
@@ -265,11 +267,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
         })}
         {isStaffTyping && (
           <ChatBubble variant="received" isFallback isLatest>
-            <span className={styles.typingDots}>
-              <span className={styles.dot} />
-              <span className={styles.dot} />
-              <span className={styles.dot} />
-            </span>
+            <span className={styles.typingDots}><span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} /></span>
           </ChatBubble>
         )}
         <div ref={messagesEndRef} />

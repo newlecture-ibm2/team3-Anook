@@ -265,7 +265,7 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
             </button>
           ) : isTyping ? (
             <button className={`${styles.iconButton} ${styles.stopButton}`} onClick={onStop} aria-label="답변 멈추기">
-              <StopIcon size={24} color="#EF4444" />
+              <StopIcon size={24} color="#b4a8c9" />
             </button>
           ) : (value.trim() === '' && !imageFile && !isRecording) ? (
             <button className={`${styles.iconButton} ${styles.micButton}`} onClick={toggleRecording} aria-label="음성 입력 시작">

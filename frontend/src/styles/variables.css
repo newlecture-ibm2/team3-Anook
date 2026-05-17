@@ -64,10 +64,10 @@
   --color-dept-front-bg: #FFE0D4;
   --color-dept-front-text: #B44A28;
 
-  /* 긴급 상황 - FRONT(구 HK) 색상 적용 */
-  --color-dept-emergency-border: #7AD4C0;
-  --color-dept-emergency-bg: #B5E8DC;
-  --color-dept-emergency-text: #115E4A;
+  /* 긴급 상황 — 단일 색상(--color-error) 통일 */
+  --color-dept-emergency-border: var(--color-error);
+  --color-dept-emergency-bg: #FEF2F2;
+  --color-dept-emergency-text: var(--color-error);
 
   /* Typography Tokens (font: weight size/line-height font-family) */
   --font-sans: 'Pretendard', 'Inter', -apple-system, sans-serif;

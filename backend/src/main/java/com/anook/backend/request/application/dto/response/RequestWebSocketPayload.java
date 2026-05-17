@@ -24,7 +24,8 @@ public record RequestWebSocketPayload(
                 Map<String, Object> entities, // AI 추출 데이터 ({item: "수건", count: 2})
                 int graceRemaining, // Grace Period 남은 초 (URGENT=0)
                 String priority, // "NORMAL" | "URGENT"
-                String initiatedBy // 취소/변경 주체 (GUEST, STAFF 등)
+                String initiatedBy, // 취소/변경 주체 (GUEST, STAFF 등)
+        String cancelReason // 취소 사유 (REPLACED 등)
 ) {
         /**
          * 신규 요청용 정적 팩토리 (Grace Period 포함)
@@ -34,7 +35,7 @@ public record RequestWebSocketPayload(
                         Map<String, Object> entities,
                         int graceRemaining, String priority) {
                 return new RequestWebSocketPayload("NEW_REQUEST", id, status, domainCode, summary, roomNo,
-                                entities, graceRemaining, priority, null);
+                                entities, graceRemaining, priority, null, null);
         }
 
         /**
@@ -42,7 +43,7 @@ public record RequestWebSocketPayload(
          */
         public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo) {
-                return statusChanged(id, status, domainCode, summary, roomNo, null);
+                return statusChanged(id, status, domainCode, summary, roomNo, null, null);
         }
 
         /**
@@ -50,8 +51,16 @@ public record RequestWebSocketPayload(
          */
         public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo, String initiatedBy) {
+                return statusChanged(id, status, domainCode, summary, roomNo, initiatedBy, null);
+        }
+
+        /**
+         * 상태 변경용 정적 팩토리 (취소 사유 포함)
+         */
+        public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
+                        String summary, String roomNo, String initiatedBy, String cancelReason) {
                 return new RequestWebSocketPayload("STATUS_CHANGED", id, status, domainCode, summary, roomNo,
-                                null, 0, null, initiatedBy);
+                                null, 0, null, initiatedBy, cancelReason);
         }
 
         /**
@@ -59,13 +68,13 @@ public record RequestWebSocketPayload(
          */
         public static RequestWebSocketPayload graceExpired(Long id, String roomNo) {
                 return new RequestWebSocketPayload("GRACE_EXPIRED", id, null, null, null, roomNo,
-                                null, 0, null, null);
+                                null, 0, null, null, null);
         }
 
         public static RequestWebSocketPayload cancelRequestReceived(Long id, String domainCode, String summary,
                         String roomNo) {
                 return new RequestWebSocketPayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary,
-                                roomNo, null, 0, "NORMAL", null);
+                                roomNo, null, 0, "NORMAL", null, null);
         }
 
         public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
@@ -76,7 +85,7 @@ public record RequestWebSocketPayload(
         public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
                         String roomNo, String initiatedBy) {
                 return new RequestWebSocketPayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo,
-                                null, 0, "NORMAL", initiatedBy);
+                                null, 0, "NORMAL", initiatedBy, null);
         }
 
         public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
@@ -87,6 +96,6 @@ public record RequestWebSocketPayload(
         public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
                         String roomNo, String initiatedBy) {
                 return new RequestWebSocketPayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo,
-                                null, 0, "NORMAL", initiatedBy);
+                                null, 0, "NORMAL", initiatedBy, null);
         }
 }

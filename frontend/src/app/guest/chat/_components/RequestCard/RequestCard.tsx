@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestCard.module.css';
-import Button from '@/components/ui/Button/Button';
+import GlassButton from '@/components/ui/Button/GlassButton';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
 import { Monitor, Home, Utensils, Wrench, ConciergeBell, AlertTriangle, FileText } from 'lucide-react';
 
@@ -14,7 +14,9 @@ export interface RequestCardProps {
   graceRemaining: number;
   priority: string;
   createdAt?: string;
+  cancelledAt?: string;
   cancelPending?: boolean;
+  cancelReason?: string;
   onCancel?: () => void;
   onModify?: () => void;
   onAccept?: () => void;
@@ -40,7 +42,9 @@ export default function RequestCard({
   graceRemaining,
   priority,
   createdAt,
+  cancelledAt,
   cancelPending,
+  cancelReason,
   onCancel,
   onModify,
   onAccept,
@@ -51,6 +55,9 @@ export default function RequestCard({
   const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
   const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
   const isCompleted = progress >= 100 && !isCancelled;
+  
+
+
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
   const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
@@ -69,9 +76,17 @@ export default function RequestCard({
   const [timeLeft, setTimeLeft] = useState(graceRemaining);
 
   // Format summary to hide internal notes from guest
-  const displaySummary = summary.includes('[직원 인수인계]') || summary.includes('[프론트 연결]') || summary.includes('미학습 정보') || isEscalatedChat
+  let displaySummary = summary.includes('[직원 인수인계]') || summary.includes('[프론트 연결]') || summary.includes('미학습 정보') || isEscalatedChat
     ? '프론트 데스크 직원 연결 요청'
     : summary;
+  
+  if (isUrgent) {
+    displaySummary = `[긴급] ${displaySummary}`;
+  }
+
+  if (isCancelled) {
+    displaySummary += ' 취소';
+  }
 
   useEffect(() => {
     if (graceRemaining <= 0 || isCancelled) {
@@ -142,12 +157,9 @@ export default function RequestCard({
             <div className={`${styles.timerContainer} ${bgClass}`} style={{ '--timer-color': timerColor } as React.CSSProperties}>
               <svg viewBox="0 0 36 36" className={styles.circularSvg}>
                 <path
-                  className={styles.circleBg}
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
                   className={styles.circleProgress}
-                  strokeDasharray={`${(timeLeft / Math.max(graceRemaining, 1)) * 100}, 100`}
+                  strokeDasharray="100"
+                  strokeDashoffset={100 - (timeLeft / Math.max(graceRemaining, 1)) * 100}
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 />
               </svg>
@@ -165,7 +177,7 @@ export default function RequestCard({
           <div className={styles.content}>
             <div className={styles.summaryRow}>
               <div className={styles.summary}>{displaySummary}</div>
-              <div className={styles.timeLabel}>{formatTime(createdAt)}</div>
+              <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
           </div>
 
@@ -187,8 +199,8 @@ export default function RequestCard({
 
       {/* Buttons — full width below cardLayout */}
       <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
-        <Button variant="secondary" size="medium" onClick={onCancel} fullWidth>요청 취소</Button>
-        <Button variant="primary" size="medium" onClick={onAccept} fullWidth>진행</Button>
+        <GlassButton variant="cancel" onClick={onCancel} fullWidth>요청 취소</GlassButton>
+        <GlassButton variant="primary" domainCode={domainCode} onClick={onAccept} fullWidth>진행</GlassButton>
       </div>
     </div>
   );

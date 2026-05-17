@@ -87,8 +87,8 @@
 }
 
 .starIcon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   transition: transform 0.15s ease, color 0.15s ease;
 }
 
@@ -101,5 +101,5 @@
 }
 
 .starEmpty {
-  color: var(--color-gray-300);
+  color: var(--color-gray-500);
 }
