@@ -7,6 +7,7 @@ import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import { CancelIcon, ArrowDownIcon, ArrowUpIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import RejectEscalationModal from '../RejectEscalationModal/RejectEscalationModal';
 import ApproveCancellationModal from '../ApproveCancellationModal/ApproveCancellationModal';
 import RejectCancellationModal from '../RejectCancellationModal/RejectCancellationModal';
@@ -269,6 +270,9 @@ export default function RequestDetailPanel({
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h2 className={styles.title}>요청 상세</h2>
+        </div>
+        <div className={styles.headerRight}>
+          <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
         </div>
       </div>
 

@@ -51,17 +51,11 @@ export default function ChatBubble({ variant, bubbleStyle, isFallback, isLatest 
       <div className={`${styles.wrapper} ${variant === 'sent' ? styles.sentWrapper : styles.receivedWrapper}`}>
         {variant === 'received' ? (
           <div className={styles.receivedContainer}>
-            {!isFallback && styleClass === 'received' && (
-              isLatest ? (
-                <div className={styles.aiLogoContainer}>
-                  <div className={styles.aiLogoMask}>
-                    <div className={styles.orbBlue} />
-                    <div className={styles.orbPurple} />
-                    <div className={styles.orbPeach} />
-                  </div>
-                </div>
+            {styleClass === 'received' && (
+              isFallback ? (
+                <div className={styles.moonLoader} />
               ) : (
-                <div className={styles.aiLogoStatic} />
+                <img src="/anook_icon.png" alt="Anook AI" className={styles.aiLogo} />
               )
             )}
             <div className={`${styles.bubble} ${styles[styleClass]} ${isFallback ? styles.fallback : ''}`}>
@@ -70,8 +64,12 @@ export default function ChatBubble({ variant, bubbleStyle, isFallback, isLatest 
           </div>
         ) : (
           <div className={styles.sentContainer}>
-            {!isFallback && styleClass === 'received' && (
-              <div className={styles.aiLogoStatic} />
+            {styleClass === 'received' && (
+              isFallback ? (
+                <div className={styles.moonLoader} />
+              ) : (
+                <img src="/anook_icon.png" alt="Anook AI" className={styles.aiLogo} />
+              )
             )}
             {renderImage()}
             {(typeof children === 'string' && children.trim()) || typeof children !== 'string' ? (

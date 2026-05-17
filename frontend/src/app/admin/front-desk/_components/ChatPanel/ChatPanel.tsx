@@ -270,8 +270,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           </div>
           <div className={styles.headerRight}>
             {headerRightContent ? headerRightContent : (
-              status && STATUS_MAP[status] && (
-                <StatusBadge variant={STATUS_MAP[status].variant}>{STATUS_MAP[status].text}</StatusBadge>
+              (status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
+                <Button size="small" variant="primary" onClick={handleCompleteConsultation}>
+                  상담 완료
+                </Button>
               )
             )}
           </div>
@@ -357,11 +359,6 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <div style={{ flex: 1 }}>
               <ChatInput isStaff placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
             </div>
-            {(status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
-              <Button size="large" variant="primary" onClick={handleCompleteConsultation} style={{ marginBottom: '8px' }}>
-                상담 완료
-              </Button>
-            )}
           </div>
         )}
       </div>
