@@ -89,7 +89,6 @@ export default function ChatHistoryModal({ isOpen, onClose, roomNumber }: ChatHi
                   key={msg.id}
                   variant={variant}
                   isFallback={isStaff}
-                  isLatest={idx === messages.length - 1 && !isGuest}
                 >
                   {msg.content}
                 </ChatBubble>

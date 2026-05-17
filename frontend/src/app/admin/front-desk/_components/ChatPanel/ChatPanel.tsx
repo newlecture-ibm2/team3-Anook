@@ -271,7 +271,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           <div className={styles.headerRight}>
             {headerRightContent ? headerRightContent : (
               (status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
-                <Button size="small" variant="primary" onClick={handleCompleteConsultation}>
+                <Button size="medium" variant="primary" onClick={handleCompleteConsultation}>
                   상담 완료
                 </Button>
               )

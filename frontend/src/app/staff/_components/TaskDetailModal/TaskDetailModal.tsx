@@ -298,7 +298,6 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     key={msg.id}
                     variant={isGuest ? 'sent' : 'received'}
                     isFallback={isStaff}
-                    isLatest={idx === chatMessages.length - 1 && !isGuest}
                   >
                     {msg.content}
                   </ChatBubble>
