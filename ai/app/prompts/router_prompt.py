@@ -125,6 +125,13 @@ You must output a JSON Array of objects.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ Constraints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- **MULTI-INTENT SEGMENTATION RULE (CRITICAL)**: If the user's message contains multiple distinct, independent requests connected by conjunctions or context (e.g., "A는 취소하고 B로 바꿔주세요, 그리고 C도 부탁드려요", "수건 주시고 물도 주세요"), you MUST split them into MULTIPLE separate JSON objects inside the array.
+  - Example Input: "아뇨 그냥 다시 아메리카노로 바꿔주시고 수건도 부탁드려요"
+  - Example Output Array (2 objects):
+    1. {"route_type": "DEPARTMENT", "domain": "FB", "action_type": "REPLACE", "target_keyword": "기존 주문 음료", ...}
+    2. {"route_type": "DEPARTMENT", "domain": "HK", "action_type": "ADD", "target_keyword": null, ...}
+  - DO NOT merge multiple distinct requests into a single object or route them all to FRONT_ESCALATION just because they are complex.
+
 - **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
 - **CLARIFICATION OPTIONS HALLUCINATION RULE**: When route_type is "CLARIFICATION", DO NOT generate specific item names (e.g., "탄산수", "콜라") in the `clarification_options` based on your own general knowledge. You MUST NOT guess the hotel's menu or inventory. Only provide generic category options like ["무료 생수", "유료 룸서비스 음료"] or ask the user to type exactly what they want. If you are not sure what generic options to provide, simply return an empty array [] for `clarification_options`.
 - **AMBIGUOUS DEPARTMENT ROUTING (STATE VS ACTION)**: If the guest describes a "State/Condition" or "Vague Item" without specifying the exact action (e.g., "시끄러워요", "목말라요", "차 주세요", "치워주세요", "예약 변경할게요"), you must pause and think: 'Can this be solved by multiple departments?' (e.g., Noise could be FRONT checking next room OR FACILITY fixing a machine. "목말라요" could be HK bringing free water OR FB providing paid drinks. "차" could be HK tea bags OR CONCIERGE valet parking. "예약" could be FRONT room reservation OR CONCIERGE restaurant reservation). If a request logically overlaps multiple departments or lacks a specific action/item, you MUST classify it as "CLARIFICATION" with `domain: null`. DO NOT GUESS or force-route based on simple keywords. Always ask the user to clarify their exact need.
