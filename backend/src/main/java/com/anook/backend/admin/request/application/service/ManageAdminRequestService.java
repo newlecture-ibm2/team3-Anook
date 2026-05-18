@@ -256,6 +256,25 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
+    public void requestEscalation(Long id, String targetDepartmentId) {
+        AdminRequest request = adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.requestEscalation(id, targetDepartmentId);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, "ESCALATED", targetDepartmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(targetDepartmentId, payload);
+        if (!targetDepartmentId.equals(request.getDepartmentId())) {
+            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        }
+        dispatchPort.dispatchToAdmin(payload);
+    }
+
+    @Override
+    @Transactional
     public AdminRequestDetailResult createRequest(CreateAdminRequestCommand command) {
         AdminRequest saved = adminRequestQueryPort.save(
                 command.departmentId().toUpperCase(),

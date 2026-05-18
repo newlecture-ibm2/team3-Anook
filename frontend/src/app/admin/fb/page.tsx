@@ -142,6 +142,7 @@ export default function FbPage() {
           onClose={() => setDetailTarget(null)}
           requestId={detailTarget}
           onUpdate={() => refetch && refetch()}
+          callerDepartment="FB"
         />
       )}
     </div>

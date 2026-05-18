@@ -152,6 +152,23 @@ public class AdminRequestController {
     }
 
     /**
+     * 직원 이관 요청 — 부서 변경 + ESCALATED 상태 전환 (관리자 승인 대기)
+     *
+     * PATCH /admin/requests/{id}/request-escalation
+     */
+    @PatchMapping("/{id}/request-escalation")
+    public ResponseEntity<Void> requestEscalation(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String targetDepartmentId = body.get("departmentId");
+        if (targetDepartmentId == null || targetDepartmentId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.requestEscalation(id, targetDepartmentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 에스컬레이션 대기열 조회
      *
      * GET /admin/requests/escalations

@@ -63,6 +63,11 @@ public interface AdminRequestQueryPort {
     void escalate(Long requestId, String departmentId, String priority);
 
     /**
+     * 직원 이관 요청 (부서 변경 + 상태를 ESCALATED로 전환 → 관리자 승인 대기)
+     */
+    void requestEscalation(Long requestId, String targetDepartmentId);
+
+    /**
      * 상태 변경 (프론트데스크 상담 라이프사이클 처리용)
      */
     void updateStatus(Long requestId, String status);

@@ -142,6 +142,7 @@ export default function HousekeepingPage() {
           onClose={() => setDetailTarget(null)}
           requestId={detailTarget}
           onUpdate={() => refetch && refetch()}
+          callerDepartment="HK"
         />
       )}
     </div>
