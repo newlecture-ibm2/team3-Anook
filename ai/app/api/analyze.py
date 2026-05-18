@@ -1136,11 +1136,25 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # (이전의 글로벌 이관 로직은 삭제됨: 잘못된 배정은 직원이 수동 이관함)
 
-            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
+            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았거나, 에이전트가 아직 최종 접수(ADD/REPLACE)를 확정하지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
             # 단, 에스컬레이션/컴플레인 상황에서는 예외적으로 티켓을 무조건 생성하도록 방어 우회
             is_escalation = final_entities.get("intent") in ["ESCALATION", "COMPLAINT", "EMERGENCY"]
-            if agent_result.get("missing_fields") and not is_escalation:
+            
+            action_type = agent_result.get("action_type")
+            if action_type is None:
+                action_type = final_entities.get("action_type")
+            if action_type is None:
+                action_type = getattr(primary, 'action_type', None)
+            
+            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
                 final_domain_code = None
+            
+            # 🛡️ [컨시어지 확인 질문 방어] AI가 "~드릴까요?" 등 확인 질문을 던지는 단계에서는
+            # action_type과 무관하게 티켓 생성을 차단 (컨시어지 도메인에만 적용)
+            if domain == "CONCIERGE" and final_domain_code:
+                confirmation_patterns = ["까요?", "할까요?", "드릴까요?", "하시겠습니까?", "인가요?"]
+                if any(p in final_guest_reply for p in confirmation_patterns):
+                    final_domain_code = None
             
             # 이중 방어: FRONT 에이전트이고 에스컬레이션인데 여전히 domain_code가 없다면 강제 복구
             if domain == "FRONT" and is_escalation and not final_domain_code:
