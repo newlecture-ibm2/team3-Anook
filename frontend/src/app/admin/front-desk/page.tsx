@@ -41,7 +41,7 @@ export default function FrontDeskPage() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  const pending = sortByPriority(mergedRequests.filter(r => r.status === 'PENDING'));
+  const pending = sortByPriority(mergedRequests.filter(r => r.status === 'PENDING' || r.status === 'ESCALATED'));
   const inProgress = sortByPriority(mergedRequests.filter(r => (r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS') && !r.cancelRequested));
   // 모든 부서의 취소 대기 건 (프론트 데스크가 대신 처리)
   const cancelPending = allRequests.filter(r => r.cancelRequested);
@@ -147,7 +147,7 @@ export default function FrontDeskPage() {
   }, [pending, inProgress]);
 
   const mapStatusVariant = (status: string): 'red' | 'purple' | 'green' | 'gray' => {
-    if (status === 'PENDING') return 'red';
+    if (status === 'PENDING' || status === 'ESCALATED') return 'red';
     if (status === 'IN_PROGRESS') return 'green';
     if (status === 'COMPLETED' || status === 'CANCELLED') return 'gray';
     return 'gray';
@@ -303,7 +303,7 @@ export default function FrontDeskPage() {
                 secondaryActionText={getSecondaryActionText(req)}
                 onPrimaryAction={() => {
                   if (activeTab === 'active') {
-                    if (req.status === 'PENDING') {
+                    if (req.status === 'PENDING' || req.status === 'ESCALATED') {
                       handleStatusChange(req.id, 'IN_PROGRESS');
                       setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', summary: req.summary, initialMessage: req.rawText || req.summary });
                     } else if (req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED') {

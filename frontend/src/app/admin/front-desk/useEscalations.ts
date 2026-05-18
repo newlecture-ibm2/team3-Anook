@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useWebSocket } from '@/app/useWebSocket';
 
 interface EscalatedRequest {
   id: number;
@@ -36,6 +37,19 @@ export default function useEscalations() {
   useEffect(() => {
     fetchEscalations();
   }, [fetchEscalations]);
+
+  const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    const handleEvent = (message: any) => {
+      fetchEscalations();
+    };
+
+    const unsubAdmin = subscribe('/topic/admin', handleEvent);
+    return () => {
+      unsubAdmin();
+    };
+  }, [subscribe, fetchEscalations]);
 
   return { escalations, loading, error, refetch: fetchEscalations };
 }

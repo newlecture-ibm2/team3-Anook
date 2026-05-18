@@ -37,8 +37,8 @@ public class StaffRequestQueryAdapter implements RequestQueryPort {
         if (!"ALL".equalsIgnoreCase(priority)) {
             sql.append(" AND r.priority = ?");
             params.add(priority);
-        } else {
-            // ALL일 경우, 긴급(EMERGENCY) 업무는 긴급 대응 전용 페이지에서만 보이도록 제외
+        } else if (!"EMERGENCY".equalsIgnoreCase(departmentId)) {
+            // ALL일 경우, 일반 부서에서는 긴급(EMERGENCY) 업무 제외 (EMERGENCY 부서 직원에게는 보이도록 허용)
             sql.append(" AND r.priority != 'EMERGENCY'");
         }
 

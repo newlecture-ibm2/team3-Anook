@@ -98,7 +98,7 @@ public class CancelRequestOnEventService {
 
     private void cancelSingleRequest(Request request, String roomNo) {
         try {
-            if (request.getStatus() == RequestStatus.PENDING) {
+            if (request.getStatus() == RequestStatus.PENDING || request.getStatus() == RequestStatus.ESCALATED) {
                 request.changeStatus(RequestStatus.CANCELLED);
                 requestPort.save(request);
 
@@ -116,6 +116,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToAdmin(payload);
             } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
                 request.requestCancellation();
                 requestPort.save(request);
@@ -132,6 +133,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToAdmin(payload);
             }
 
         } catch (IllegalStateException e) {

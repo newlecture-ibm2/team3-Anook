@@ -33,6 +33,19 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
     # 만약 백엔드에서 실수로 전체 대화를 다 보내더라도, AI 서버에서 안전하게 최근 5개만 자름 (비용 폭발 방지)
     chat_history = chat_history[-5:]
 
+    # [수정] 에스컬레이션(직원 연결) 완료 이후의 맥락만 유지하여 컨텍스트 오염 방지
+    escalation_phrases = ["프런트 데스크 직원에게 바로 연결", "직원에게 즉시 전달", "직원에게 즉시 연결", "연결해 드리겠습니다", "연결해 드릴게요"]
+    cutoff_index = 0
+    for i, msg in enumerate(chat_history):
+        if msg.get("role") == "ai" and any(p in msg.get("content", "") for p in escalation_phrases):
+            cutoff_index = i + 1
+
+    if cutoff_index > 0:
+        chat_history = chat_history[cutoff_index:]
+        # 프롬프트가 오염되지 않도록 명시적 경계 마커 주입
+        if chat_history:
+            chat_history.insert(0, {"role": "ai", "content": "[SYSTEM: 이전 요청은 직원 연결로 종료되었습니다. 아래부터는 완전히 독립적인 새로운 요청으로 평가하세요.]"})
+
     # ── 1) 과거 대화 맥락 조립 ──
     if chat_history:
         context_lines = []

@@ -148,7 +148,7 @@ function DashboardContent() {
     };
 
     return {
-      TODO: sortByCancelRequested(filteredTasks.filter(t => t.status === 'PENDING')),
+      TODO: sortByCancelRequested(filteredTasks.filter(t => t.status === 'PENDING' || t.status === 'ESCALATED')),
       IN_PROGRESS: sortByCancelRequested(filteredTasks.filter(t => t.status === 'IN_PROGRESS')),
       DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
     };

@@ -123,6 +123,8 @@ export default function TaskTicket({
 
     if (orderDetails) {
       displayTitle = orderDetails;
+    } else if (entities?.intent === 'ORDER_MODIFY' || entities?.intent === 'ORDER_CANCEL') {
+      // 주문 변경/취소의 경우 AI가 생성한 상세 summary(title)를 그대로 사용
     } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
       displayTitle = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
     }
