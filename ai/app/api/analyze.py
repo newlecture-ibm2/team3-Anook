@@ -324,6 +324,23 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ── [비동기 로깅 메타데이터 처리 보류] ──
     # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
+    from app.core.emergency_filter import emergency_pre_filter, get_emergency_reply
+    
+    # ── [긴급 상황 사전 필터 (1-Tier)] ──
+    em_match = emergency_pre_filter(request.text)
+    if em_match:
+        category = em_match["category"]
+        print(f"[Analyze] 🚨 긴급 상황 키워드 감지: {category}")
+        return [{
+            "guest_reply": get_emergency_reply(category, request.language),
+            "summary": f"긴급 상황 자동 접수 ({category})",
+            "domain_code": "EMERGENCY",
+            "priority": "EMERGENCY",
+            "entities": {"intent": "EMERGENCY", "category": category},
+            "confidence": 1.0,
+            "reasoning": f"• 긴급 키워드 '{em_match['matched_keyword']}' 감지\n• 1-Tier 즉시 라우팅"
+        }]
+
     # ── [실무 최적화: 역질문 단답형(네/아니요) 강제 라우팅 인터셉트] ──
     if request.chat_history:
         last_ai = None
