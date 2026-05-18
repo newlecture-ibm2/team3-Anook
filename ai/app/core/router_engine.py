@@ -35,11 +35,7 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
 
     # [수정] 에스컬레이션(직원 연결) 완료 혹은 상담 완료 이후의 맥락만 유지하여 컨텍스트 오염 방지
     escalation_phrases = [
-        "프런트 데스크 직원에게 바로 연결", 
-        "직원에게 즉시 전달", 
-        "직원에게 즉시 연결", 
         "연결해 드리겠습니다", 
-        "연결해 드릴게요",
         "[SYSTEM] 이전 상담 및 처리가 모두 완료되었습니다."
     ]
     cutoff_index = 0
