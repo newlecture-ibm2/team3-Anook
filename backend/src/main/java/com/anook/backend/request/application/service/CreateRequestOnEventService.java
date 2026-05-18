@@ -93,7 +93,9 @@ public class CreateRequestOnEventService {
                                 RequestStatus.CANCELLED.name(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                                 existing.getSummary(),
-                                existing.getRoomNo());
+                                existing.getRoomNo(),
+                                "AI",
+                                "REPLACED");
                         dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
                     } catch (Exception e) {
                         log.warn("[Cancel&Replace] 기존 요청 자동 취소 실패: {}", e.getMessage());
@@ -174,10 +176,12 @@ public class CreateRequestOnEventService {
         }
 
 
-        // [AN-252] URGENT 판별: priority가 EMERGENCY인 경우에만 Grace Period 생략
+        // [AN-252] URGENT 판별: EMERGENCY이거나 FRONT(에스컬레이션) 도메인은 Grace Period 생략
         boolean isUrgent = savedRequest.getPriority() == Priority.EMERGENCY;
+        boolean isFrontEscalation = savedRequest.getDomainCode() == DomainCode.FRONT;
+        boolean skipGrace = isUrgent || isFrontEscalation;
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
-        int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
+        int graceRemaining = skipGrace ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 
         // [AN-252] Generative UI: entities 포함 WebSocket payload 생성
         RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
@@ -193,9 +197,9 @@ public class CreateRequestOnEventService {
         // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
 
-        if (isUrgent) {
-            // URGENT: 즉시 직원/관리자 알림 (Grace Period 없음)
-            log.info("[GracePeriod] URGENT 요청 → 즉시 직원 알림 발송 — id: {}", savedRequest.getId());
+        if (skipGrace) {
+            // URGENT / FRONT 에스컬레이션: 즉시 직원/관리자 알림 (Grace Period 없음)
+            log.info("[GracePeriod] 즉시 발송 (urgent={}, front={}) — id: {}", isUrgent, isFrontEscalation, savedRequest.getId());
             if (savedRequest.getDomainCode() != null) {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }

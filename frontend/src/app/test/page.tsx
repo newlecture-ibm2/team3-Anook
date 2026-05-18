@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
-import Footer from '@/components/layout/Footer';
+
 import { ConfirmModal, ModalOverlay, ModalCard, LogDataModal } from '@/components/ui/Modal';
 import * as Icons from '@/components/icons';
 import Button from '@/components/ui/Button/Button';
@@ -21,6 +21,7 @@ import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import ChatScreen from '@/app/guest/chat/_components/ChatScreen';
 import Pill from '@/components/ui/Pill/Pill';
 import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
+import ChatEndCard from '@/app/guest/chat/_components/ChatEndCard/ChatEndCard';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
 import TaskColumn from '@/components/ui/TaskBoard/TaskColumn';
@@ -396,7 +397,7 @@ export default function ComponentShowcasePage() {
                     <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Staff Typing Indicator (상담사 입력 중)</h4>
                     <ComponentLabel path="app/guest/chat/_components/ChatScreen.module.css (.typingDots)" />
                     <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
-                      <ChatBubble variant="received" isFallback isLatest>
+                      <ChatBubble variant="received" isFallback>
                         <span className={chatScreenStyles.typingDots}>
                           <span className={chatScreenStyles.dot} />
                           <span className={chatScreenStyles.dot} />
@@ -473,10 +474,22 @@ export default function ComponentShowcasePage() {
                 
                 
                 <div style={{ flex: 1, minWidth: '280px' }}>
-                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Feedback Card</h4>
+                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Feedback Card (Deprecated)</h4>
                   <ComponentLabel path="app/guest/chat/_components/FeedbackCard.tsx" />
                   <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'center' }}>
                     <FeedbackCard onSubmit={(rating) => alert(`별점: ${rating}점 제출!`)} />
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, minWidth: '300px' }}>
+                  <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Chat End Card (New Feedback)</h4>
+                  <ComponentLabel path="app/guest/chat/_components/ChatEndCard/ChatEndCard.tsx" />
+                  <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'center' }}>
+                    <ChatEndCard 
+                      summary="[에어컨 수리] 기사님 방문 완료 및 정상 작동 확인"
+                      completedAt={new Date().toISOString()}
+                      onSubmitRating={(rating) => alert(`별점: ${rating}점 제출!`)}
+                    />
                   </div>
                 </div>
               </div>
@@ -801,7 +814,7 @@ export default function ComponentShowcasePage() {
       </div>
 
       {/* 6. REAL PAGE FOOTER */}
-      <Footer />
+
 
       {selectedKnowledge && !isEditModalOpen && (
         <KnowledgeModal

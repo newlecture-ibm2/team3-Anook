@@ -4,13 +4,14 @@ import { CancelIcon } from '@/components/icons';
 
 export interface ChatBubbleProps {
   variant: 'sent' | 'received';
+  bubbleStyle?: 'sent' | 'received';
   isFallback?: boolean;
-  isLatest?: boolean;
   imageUrl?: string;
   children: React.ReactNode;
 }
 
-export default function ChatBubble({ variant, isFallback, isLatest = false, imageUrl, children }: ChatBubbleProps) {
+export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl, children }: ChatBubbleProps) {
+  const styleClass = bubbleStyle || variant;
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const renderContent = () => {
@@ -49,26 +50,25 @@ export default function ChatBubble({ variant, isFallback, isLatest = false, imag
       <div className={`${styles.wrapper} ${variant === 'sent' ? styles.sentWrapper : styles.receivedWrapper}`}>
         {variant === 'received' ? (
           <div className={styles.receivedContainer}>
-            {isLatest ? (
-              <div className={styles.aiLogoContainer}>
-                <div className={styles.aiLogoMask}>
-                  <div className={styles.orbBlue} />
-                  <div className={styles.orbPurple} />
-                  <div className={styles.orbPeach} />
-                </div>
+            {styleClass === 'received' && !isFallback && (
+              <div className={styles.aiAvatar}>
+                <img src="/moon_avatar.png" alt="Anook AI" />
               </div>
-            ) : (
-              <div className={styles.aiLogoStatic} />
             )}
-            <div className={`${styles.bubble} ${styles[variant]} ${isFallback ? styles.fallback : ''}`}>
+            <div className={`${styles.bubble} ${styles[styleClass]} ${isFallback ? styles.fallback : ''}`}>
               {renderContent()}
             </div>
           </div>
         ) : (
           <div className={styles.sentContainer}>
+            {styleClass === 'received' && !isFallback && (
+              <div className={styles.aiAvatar}>
+                <img src="/moon_avatar.png" alt="Anook AI" />
+              </div>
+            )}
             {renderImage()}
             {(typeof children === 'string' && children.trim()) || typeof children !== 'string' ? (
-              <div className={`${styles.bubble} ${styles[variant]} ${isFallback ? styles.fallback : ''}`}>
+              <div className={`${styles.bubble} ${styles[styleClass]} ${isFallback ? styles.fallback : ''}`}>
                 {renderContent()}
               </div>
             ) : null}

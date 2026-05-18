@@ -16,8 +16,9 @@ export default function AiRoutingPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AiLogDetail | null>(null);
+  const [isRatingExpanded, setIsRatingExpanded] = useState(false);
   
-  const { summary, logs, loading, error } = useAiLogs();
+  const { summary, logs, ratingsData, loading, error } = useAiLogs();
 
   const handleOpenModal = (log: AiLogDetail) => {
     setSelectedLog(log);
@@ -68,6 +69,14 @@ export default function AiRoutingPage() {
     );
   };
 
+  const StarDisplay = ({ rating }: { rating: number }) => (
+    <span className={styles.stars}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={star <= rating ? styles.starFilled : styles.starEmpty}>★</span>
+      ))}
+    </span>
+  );
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -109,7 +118,45 @@ export default function AiRoutingPage() {
           changeValue={summary ? `Fallback: ${summary.fallbackRate}%` : "Fallback: 0%"} 
           changeType="neutral" 
         />
+        <SummaryCard 
+          title="고객 만족도" 
+          value={ratingsData.totalCount > 0 ? `${ratingsData.averageRating}/5` : "—"} 
+          changeValue={ratingsData.totalCount > 0 ? `${ratingsData.totalCount}건` : undefined} 
+          changeType={ratingsData.averageRating >= 4 ? 'positive' : ratingsData.averageRating >= 3 ? 'neutral' : 'negative'} 
+          onClick={() => setIsRatingExpanded(!isRatingExpanded)}
+        />
       </div>
+
+      {/* Rating Detail Panel (Expandable) */}
+      {isRatingExpanded && (
+        <div className={styles.ratingPanel}>
+          <div className={styles.ratingPanelHeader}>
+            <h3 className={styles.ratingPanelTitle}>AI 처리 요청 별점 상세</h3>
+            <button className={styles.ratingCloseBtn} onClick={() => setIsRatingExpanded(false)}>✕</button>
+          </div>
+          {ratingsData.ratings.length === 0 ? (
+            <div className={styles.ratingEmpty}>등록된 AI 피드백이 없습니다.</div>
+          ) : (
+            <div className={styles.ratingList}>
+              {ratingsData.ratings.map((item) => (
+                <div key={item.requestId} className={styles.ratingItem}>
+                  <div className={styles.ratingItemLeft}>
+                    <StarDisplay rating={item.rating} />
+                    <span className={styles.ratingDept}>{item.departmentId}</span>
+                  </div>
+                  <div className={styles.ratingItemCenter}>
+                    {item.summary || '요청 내용 없음'}
+                  </div>
+                  <div className={styles.ratingItemRight}>
+                    <span className={styles.ratingRoom}>{item.roomNo}호</span>
+                    <span className={styles.ratingDate}>{formatDate(item.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table Section */}
       <div className={styles.tableSection}>

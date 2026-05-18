@@ -6,7 +6,7 @@ import { handleResponse } from '@/lib/api';
 
 export interface StaffTask {
   id: number;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ESCALATED';
   priority: 'NORMAL' | 'URGENT';
   departmentId: string;
   summary: string;
@@ -28,6 +28,7 @@ export interface StaffTask {
     target_time?: string;
     [key: string]: any;
   };
+  reasoning?: string | null;
 }
 
 export interface EmergencyAlert {

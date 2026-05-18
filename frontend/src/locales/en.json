@@ -106,6 +106,7 @@
       "filterAll": "View All",
       "filterPositive": "👍 Compliment",
       "filterNegative": "👎 Complaint/Feedback",
+      "filterRating": "⭐ Ratings",
       "empty": "No feedback found.",
       "columns": {
         "date": "Received Date",
@@ -271,10 +272,10 @@
     "welcomeMessage": "Hello! I am the Hotel AI Assistant.\nI will help you have a comfortable stay.\nPlease let me know whatever you need!",
     "quickReplyPrompt": "How can I help you? Choose an option below or type your request!",
     "quickReplyOptions": [
-      "🛏️ Extra towels",
-      "🍳 Breakfast time",
-      "🧹 Room cleaning",
-      "🔑 Late checkout"
+      "Need 2 extra towels",
+      "When is breakfast?",
+      "Please clean my room",
+      "Can I extend checkout?"
     ],
     "progress": {
       "checking": "Checking your request...",

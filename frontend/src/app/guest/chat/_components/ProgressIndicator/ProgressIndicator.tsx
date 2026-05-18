@@ -1,10 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import styles from './ProgressIndicator.module.css';
-import SparklesIcon from '@/components/icons/SparklesIcon';
-import ChatBubble from '../ChatBubble';
 import { useTranslation } from '@/app/useTranslation';
 
-const ShimmerText = ({ text }: { text: string }) => {
+// 리렌더링 방지: 텍스트 업데이트와 완전 독립적으로 재생
+const MoonAnimation = React.memo(() => (
+  <div className={styles.lottieAvatar}>
+    <DotLottieReact
+      src="/moon_animation.lottie"
+      loop={true}
+      autoplay={false}
+      dotLottieRefCallback={(instance) => {
+        if (!instance) return;
+        const startFrom100 = () => {
+          try {
+            instance.setFrame(100);
+            instance.play();
+          } catch (e) { /* not ready */ }
+        };
+        if (instance.addEventListener) {
+          instance.addEventListener('load', startFrom100);
+        }
+      }}
+    />
+  </div>
+));
+MoonAnimation.displayName = 'MoonAnimation';
+
+const BreathingText = ({ text }: { text: string }) => {
   const [displayedText, setDisplayedText] = useState(text);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -14,14 +37,16 @@ const ShimmerText = ({ text }: { text: string }) => {
       const timer = setTimeout(() => {
         setDisplayedText(text);
         setIsTransitioning(false);
-      }, 300); // fade out duration
+      }, 500); // 부드러운 전환을 위해 500ms로 늘림
       return () => clearTimeout(timer);
     }
   }, [text, displayedText]);
 
   return (
-    <span className={`${styles.shimmerText} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
-      {displayedText}
+    <span className={isTransitioning ? styles.fadeOut : styles.fadeIn}>
+      <span className={styles.breathingText}>
+        {displayedText}
+      </span>
     </span>
   );
 };
@@ -30,7 +55,7 @@ interface ProgressIndicatorProps {
   domains?: string[];
 }
 
-export default function ProgressIndicator({ domains = [] }: ProgressIndicatorProps) {
+function ProgressIndicator({ domains = [] }: ProgressIndicatorProps) {
   const { t } = useTranslation();
 
   const getLabelText = () => {
@@ -52,12 +77,13 @@ export default function ProgressIndicator({ domains = [] }: ProgressIndicatorPro
   };
 
   return (
-    <ChatBubble variant="received">
-      <div className={styles.content}>
-        <span className={styles.description}>
-          <ShimmerText text={getLabelText()} />
-        </span>
-      </div>
-    </ChatBubble>
+    <div className={styles.wrapper}>
+      <MoonAnimation />
+      <span className={styles.description}>
+        <BreathingText text={getLabelText()} />
+      </span>
+    </div>
   );
 }
+
+export default React.memo(ProgressIndicator);

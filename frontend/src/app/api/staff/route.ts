@@ -82,15 +82,17 @@ export async function GET(request: NextRequest) {
           priority: item.priority,
           departmentId: item.departmentId,
           summary: item.summary,
-          rawText: "관리자 뷰에서는 상세 텍스트가 제공되지 않습니다.",
+          rawText: item.rawText || '',
           roomNumber: item.roomNo,
           assignedStaffName: item.assignedStaffName,
-          confidence: null,
+          confidence: item.confidence ?? null,
           createdAt: item.createdAt,
           version: item.version,
           cancelRequested: item.cancelRequested ?? false,
           cancelRequestedAt: item.cancelRequestedAt ?? null,
           entities: item.entities ?? null,
+          imageUrl: item.imageUrl ?? null,
+          reasoning: item.reasoning ?? null,
         }));
         return NextResponse.json(mappedData);
       }
@@ -98,7 +100,7 @@ export async function GET(request: NextRequest) {
       let finalData = data;
       if (role !== "ADMIN" && view === "my" && staffId) {
         finalData = finalData.filter((item: any) => {
-          return item.status === "PENDING" || item.assignedStaffId === staffId;
+          return item.status === "PENDING" || item.status === "ESCALATED" || item.assignedStaffId === staffId;
         });
       }
 
