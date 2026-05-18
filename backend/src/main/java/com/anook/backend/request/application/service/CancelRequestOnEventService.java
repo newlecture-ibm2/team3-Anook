@@ -32,12 +32,26 @@ public class CancelRequestOnEventService {
     @EventListener
     @Transactional
     public void onGuestCancel(RequestCancelledByGuestEvent event) {
-        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}, targetKeyword: {}",
-                event.getRoomNo(), event.getGuestId(), event.getDomainCode(), event.getTargetKeyword());
+        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}, targetKeyword: {}, targetRequestId: {}",
+                event.getRoomNo(), event.getGuestId(), event.getDomainCode(), event.getTargetKeyword(), event.getTargetRequestId());
 
-        // [Keyword Targeting] targetKeyword가 있으면 키워드 매칭으로 대상 탐색
+        // [ID Targeting] 최우선 순위: AI가 확정한 targetRequestId가 있으면 해당 요청 핀포인트 취소
+        if (event.getTargetRequestId() != null) {
+            Optional<Request> matched = requestPort.findById(event.getTargetRequestId());
+            if (matched.isPresent()) {
+                Request req = matched.get();
+                // 권한 검증: 본인(동일 객실/고객)의 취소 가능한 요청인지 확인
+                if (req.getRoomNo().equals(event.getRoomNo()) && req.getGuestId().equals(event.getGuestId()) && req.getStatus() == RequestStatus.PENDING) {
+                    cancelSingleRequest(req, event.getRoomNo());
+                    return;
+                }
+            }
+            log.warn("[Request] targetRequestId '{}' 매칭 실패 또는 권한 없음 → 최신 건 폴백", event.getTargetRequestId());
+        }
+
+        // [Keyword Targeting] ID가 없을 경우 대비 레거시 폴백: 단순 문자열 포함 여부 검사 (동의어 하드코딩 제거)
         if (event.getTargetKeyword() != null && !event.getTargetKeyword().isBlank()) {
-            Optional<Request> matched = findByKeyword(event.getRoomNo(), event.getGuestId(), event.getTargetKeyword());
+            Optional<Request> matched = findByKeywordFallback(event.getRoomNo(), event.getGuestId(), event.getTargetKeyword());
             if (matched.isPresent()) {
                 cancelSingleRequest(matched.get(), event.getRoomNo());
                 return;
@@ -61,37 +75,17 @@ public class CancelRequestOnEventService {
     }
 
     /**
-     * [Keyword Targeting] summary에 키워드가 포함된 취소 가능 요청을 찾는다.
-     * 여러 건이 매칭되면 가장 최근 것을 반환한다.
+     * [Fallback] ID 매칭 실패 시 사용할 단순 키워드 폴백.
+     * (동의어 하드코딩은 AI 라우터로 이관되어 제거됨)
      */
-    private Optional<Request> findByKeyword(String roomNo, Long guestId, String keyword) {
+    private Optional<Request> findByKeywordFallback(String roomNo, Long guestId, String keyword) {
         java.util.List<Request> cancellable = requestPort.findAllCancellableByRoomNoAndGuestId(roomNo, guestId);
         String lowerKeyword = keyword.toLowerCase();
-        
-        java.util.List<String> searchKeywords = new java.util.ArrayList<>();
-        searchKeywords.add(lowerKeyword);
-        
-        // 동의어(유의어) 확장 처리
-        if (lowerKeyword.contains("물") || lowerKeyword.contains("생수") || lowerKeyword.contains("워터")) {
-            searchKeywords.add("물");
-            searchKeywords.add("생수");
-            searchKeywords.add("워터");
-        }
-        if (lowerKeyword.contains("수건") || lowerKeyword.contains("타월") || lowerKeyword.contains("타올")) {
-            searchKeywords.add("수건");
-            searchKeywords.add("타월");
-            searchKeywords.add("타올");
-        }
-        if (lowerKeyword.contains("콜라") || lowerKeyword.contains("코카콜라") || lowerKeyword.contains("음료")) {
-            searchKeywords.add("콜라");
-            searchKeywords.add("음료");
-        }
         
         return cancellable.stream()
                 .filter(r -> {
                     if (r.getSummary() == null) return false;
-                    String summary = r.getSummary().toLowerCase();
-                    return searchKeywords.stream().anyMatch(summary::contains);
+                    return r.getSummary().toLowerCase().contains(lowerKeyword);
                 })
                 .findFirst(); // findAllCancellableByRoomNoAndGuestId는 최신순 정렬
     }
