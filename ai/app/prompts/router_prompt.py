@@ -54,7 +54,8 @@ Classify the input into one of the following categories:
    - Canceling a previous request (e.g., "취소할래요", "아까 거 취소", "필요없어요", "필요없어", "안해도돼요", "안주셔도 됩니다", "취소해", "콜라 필요없어요", "수건 안 주셔도 돼요", "I don't need the coke", "Cancel the towel").
    - If the user explicitly names an item and says they don't need it ("~ 필요없어요", "~ 안 주셔도 돼요", "I don't need ~", "Never mind the ~", "Cancel the ~"), it MUST be classified as CANCEL. Do NOT treat it as SOFT_FALLBACK.
    - **CRITICAL**: To cancel an item, you MUST refer to `[고객의 현재 활성 요청(주문) 목록]` provided in the prompt. Find the request in the list that semantically matches the user's intent. If found, you MUST output its integer ID in `target_request_id`. You should still output `target_keyword` for logging purposes.
-   - Action: Set route_type to "CANCEL".
+   - **AMBIGUOUS CANCELLATION RULE**: If the user says "취소해줘" but DOES NOT specify which item to cancel, AND there are multiple items in the `[고객의 현재 활성 요청(주문) 목록]`, you MUST NOT route to "CANCEL". You MUST route to "CLARIFICATION" and politely ask which item they want to cancel (e.g., `clarification_question`: "어떤 요청을 취소해 드릴까요?", `clarification_options`: ["수건", "콜라", "전부 취소"]).
+   - Action: Set route_type to "CANCEL" (only if clearly identified or if there is only 1 active request).
 
 9. **STATUS_CHECK** (Status Inquiry):
    - Asking about ETA (e.g., "언제 와요?", "얼마나 걸려요?").
