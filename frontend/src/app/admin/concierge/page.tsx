@@ -142,6 +142,7 @@ export default function ConciergePage() {
           onClose={() => setDetailTarget(null)}
           requestId={detailTarget}
           onUpdate={() => refetch && refetch()}
+          callerDepartment="CONCIERGE"
         />
       )}
     </div>

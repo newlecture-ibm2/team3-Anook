@@ -69,6 +69,11 @@ public interface ManageAdminRequestUseCase {
     void escalateRequest(Long id, String departmentId, String priority);
 
     /**
+     * 직원 이관 요청 — 부서 변경 + ESCALATED 상태 전환 (관리자 승인 대기)
+     */
+    void requestEscalation(Long id, String targetDepartmentId);
+
+    /**
      * 관리자 수동 요청 생성
      */
     AdminRequestDetailResult createRequest(CreateAdminRequestCommand command);
