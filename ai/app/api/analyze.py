@@ -1008,6 +1008,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             text_lower = request.text.lower()
             is_all = any(word in text_lower for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything"])
             
+            # AI가 명시적으로 특정 요청 ID를 지정하여 취소하려고 한 경우, 전체 취소로 오버라이드하지 않고 핀포인트 취소로 처리함
+            if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                is_all = False
+            
             # FALSE ALARM: EMERGENCY 도메인 취소 (오인 신고 정정)
             if primary.domain == "EMERGENCY":
                 false_alarm_reply_ko = "확인되었습니다. 긴급 호출을 취소 처리하겠습니다. 혹시 다른 도움이 필요하시면 말씀해 주세요."
