@@ -264,7 +264,9 @@ export function useChat() {
                   || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
 
                 if (isCancelResponse) {
-                  const hasInProgress = activeRequests.some(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+                  const hasInProgress = activeRequests.some(r => 
+                    r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS' || r.status === 'CANCEL_PENDING'
+                  );
 
                   if (hasInProgress) {
                     content = '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
