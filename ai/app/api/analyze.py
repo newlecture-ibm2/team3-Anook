@@ -546,16 +546,22 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     active_ctx = (
                         f"[고객의 현재 활성 요청(주문) 목록]\n"
                         f"{json.dumps(filtered, ensure_ascii=False)}\n\n"
-                        f"[주문 수정 규칙] 기존 주문을 수정(REPLACE)할 때, 변경되지 않은 기존 아이템은 "
-                        f"반드시 entities 출력에 포함하고, 응답에서도 유지됨을 안내하세요. "
-                        f"누락 시 해당 아이템이 영구 삭제됩니다."
+                        f"[주문 수정 및 부분 취소 규칙 (CRITICAL)]\n"
+                        f"기존 주문을 수정하거나 일부 항목만 취소할 때(REPLACE):\n"
+                        f"1. 대상 파악 주의: 직전 대화 주제에 무조건 의존하지 마세요. 사용자의 요청(예: '물 1병으로 바꿔줘')에 포함된 키워드('물')가 위 [현재 활성 요청 목록] 중 어느 티켓(예: '물 2병 및 수건 2개 요청')과 일치하는지 먼저 찾아야 합니다.\n"
+                        f"2. 위 목록에서 귀하의 부서와 관련된 기존 아이템들을 정확히 파악하세요.\n"
+                        f"3. 사용자의 취소/변경 요청을 반영하여 최종적으로 남게 되는 아이템들의 상태를 계산하세요.\n"
+                        f"4. 취소된 아이템은 entities에서 완전히 제외(삭제)하고, 절대 음수(-) 수량을 사용하지 마세요.\n"
+                        f"5. 변경되지 않고 남은 아이템들은 반드시 entities 출력에 그대로 포함해야 합니다. 누락 시 영구 삭제됩니다.\n"
                     )
-                    enriched_history = [{"role": "ai", "content": active_ctx}] + enriched_history
+                    user_message_with_ctx = request.text + "\n\n" + active_ctx
+                else:
+                    user_message_with_ctx = request.text
 
                 coro = DOMAIN_AGENTS[domain](
-                    user_message=request.text,
+                    user_message=user_message_with_ctx,
                     room_no=request.room_no,
-                    chat_history=enriched_history,
+                    chat_history=request.chat_history,
                     images=request.images
                 )
                 agent_tasks.append((domain, primary, coro))
