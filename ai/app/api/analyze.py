@@ -1099,7 +1099,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
 
         # STEP 3-g: STATUS_CHECK → 진행 상태 확인
-        if primary.mode == "STATUS_CHECK":
+        if primary.route_type == "STATUS_CHECK":
             response = {
                 "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
                 "summary": "요청 진행 상태 확인",

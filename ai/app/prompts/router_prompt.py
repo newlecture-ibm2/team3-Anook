@@ -51,7 +51,7 @@ Classify the input into one of the following categories:
    - Action: Set route_type to "INFO", assign domain. Set create_ticket=False.
 
 8. **CANCEL** (Request Cancellation):
-   - Canceling a previous request (e.g., "취소할래요", "아까 거 취소").
+   - Canceling a previous request (e.g., "취소할래요", "아까 거 취소", "필요없어요", "필요없어", "안해도돼요", "안주셔도 됩니다", "취소해").
    - Action: Set route_type to "CANCEL".
 
 9. **STATUS_CHECK** (Status Inquiry):
@@ -95,6 +95,7 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
   - Example: "수건 요청 취소" → target_keyword: "수건"
   - Example: "콜라 말고 주스로" → target_keyword: "콜라" (the item being REPLACED)
   - Example: "방금 거 취소" → target_keyword: null (no specific item mentioned)
+  - Example: "물 필요없어요" → target_keyword: "물"
   - Example: "취소해줘" → target_keyword: null
   - If the guest does not mention a specific item, set target_keyword to null.
   - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
@@ -167,7 +168,7 @@ You must output a JSON Array of objects.
 - **INFRASTRUCTURE INQUIRY RULE**: If the user asks for a reason ("왜", "이유") or complains generally about a hotel-wide infrastructure issue that cannot be fixed within their specific room (e.g., "엘리베이터가 왜 이렇게 느려요?", "와이파이가 전체적으로 안 터져요"), you MUST route it to "FRONT_ESCALATION" with domain "FRONT". DO NOT route it to "FACILITY", as the facility team does not answer guest chat inquiries. The front desk must explain the situation.
 - **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. You MUST strictly distinguish between a 'False Alarm' and a 'Cancel Request'.
   - **False Alarm**: If the user explicitly states that a complaint or problem they mentioned is no longer an issue, resolved itself, was a joke, or was a mistake IN THE EXACT SAME TURN (e.g., "옆방 너무 시끄러운데... 아 방금 나갔나 봐요. 일단 취소할게요", "불 안났어 장난이야"). For False Alarms where NO ticket was created yet, you MUST route to "SOFT_FALLBACK" with `create_ticket: false` and generate a polite, natural `reply` acknowledging the resolution. DO NOT route to CANCEL.
-  - **Cancel Request**: If the user explicitly requests to cancel a request or complaint that was ALREADY SUBMITTED as a ticket in a PREVIOUS turn (e.g., "아까 신고한 싸움 끝났어요 취소해주세요", "수건 가져다 달라는 거 취소할게요"), you MUST route to "CANCEL". If the AI already said it dispatched staff or registered the request, it is an active ticket, so you MUST route to CANCEL to properly withdraw it.
+  - **Cancel Request**: If the user explicitly requests to cancel a request or complaint that was ALREADY SUBMITTED as a ticket in a PREVIOUS turn (e.g., "아까 신고한 싸움 끝났어요 취소해주세요", "수건 가져다 달라는 거 취소할게요", "필요없어요"), you MUST route to "CANCEL". If the AI already said it dispatched staff or registered the request, it is an active ticket, so you MUST route to CANCEL to properly withdraw it.
 - **CONFIRMATION RESPONSE RULE**: If the last AI message in `[과거 대화 맥락]` ended with a confirmation question (e.g., "~해 드릴까요?", "~하시겠습니까?", "~드릴까요?") and the user replies positively (e.g., "네", "응", "예", "좋아", "yes", "ok") or negatively (e.g., "아니요", "괜찮아"), you MUST classify it as "DEPARTMENT" and assign the SAME `domain` as the ongoing conversation. DO NOT classify it as "CLARIFICATION" or "SOFT_FALLBACK".
 - If route_type is "SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", or "STATUS_CHECK", the domain MUST be `null`.
 - If route_type is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
