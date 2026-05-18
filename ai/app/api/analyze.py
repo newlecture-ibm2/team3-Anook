@@ -584,6 +584,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
         # STEP 3-c: CLARIFICATION → 되묻기
         if primary.route_type == "CLARIFICATION":
+            # ── [라우터 직접 생성 검증] ──
+            # 라우터가 직접 구체적인 질문/선택지를 생성했다면 (예: Ambiguous Cancellation), 에이전트 위임 없이 즉시 반환
+            if hasattr(primary, 'clarification_options') and primary.clarification_options and len(primary.clarification_options) > 0:
+                guest_reply = getattr(primary, 'clarification_question', None) or _get_static_reply("CLARIFICATION", request.language)
+                response = {
+                    "guest_reply": guest_reply,
+                    "summary": "취소 요청 대상 불분명" if "취소" in guest_reply else "추가 확인 필요",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                    "missing_fields": [],
+                    "clarification_options": primary.clarification_options,
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                }
+                print(f"[Analyze] ❓ CLARIFICATION → 라우터 직접 생성 옵션 사용")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
+
             # ── [에이전트 재위임 로직] ──
             # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
             # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
@@ -1033,6 +1053,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 # [Keyword Targeting] 취소 대상 키워드 전달
                 if hasattr(primary, 'target_keyword') and primary.target_keyword:
                     response["target_keyword"] = primary.target_keyword
+                # [ID Targeting] 취소 대상 ID 전달
+                if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                    response["target_request_id"] = primary.target_request_id
             
             print(f"[Analyze] 🛑 CANCEL 응답")
             print(f"[Analyze] 응답: {response}\n")
