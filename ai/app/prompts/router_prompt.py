@@ -51,7 +51,7 @@ Classify the input into one of the following categories:
    - Action: Set route_type to "INFO", assign domain. Set create_ticket=False.
 
 8. **CANCEL** (Request Cancellation):
-   - Canceling a previous request (e.g., "취소할래요", "아까 거 취소").
+   - Canceling a previous request (e.g., "취소할래요", "아까 거 취소", "필요없어요", "필요없어", "안해도돼요", "안주셔도 됩니다", "취소해").
    - Action: Set route_type to "CANCEL".
 
 9. **STATUS_CHECK** (Status Inquiry):
@@ -94,6 +94,7 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
   - Example: "수건 요청 취소" → target_keyword: "수건"
   - Example: "콜라 말고 주스로" → target_keyword: "콜라" (the item being REPLACED)
   - Example: "방금 거 취소" → target_keyword: null (no specific item mentioned)
+  - Example: "물 필요없어요" → target_keyword: "물"
   - Example: "취소해줘" → target_keyword: null
   - If the guest does not mention a specific item, set target_keyword to null.
   - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
@@ -160,7 +161,7 @@ You must output a JSON Array of objects.
 - **HYPERBOLIC COMPLIMENT RULE**: If the user uses extreme hyperbolic expressions (e.g., "심장이 멎을 것 같다", "기절할 것 같다", "너무 좋아서 죽겠다", "119 불러주세요") in a clearly POSITIVE context (e.g., praising the view, food, or service), you MUST recognize it as a hyperbole/joke and classify it as "VOC" (POSITIVE). **HOWEVER (CRITICAL EXCEPTION)**: If the user explicitly describes a literal physical injury, trapped body parts, fire, or tangible danger (e.g., "팔이 끼었어요", "피가 나요", "불이 났어요"), this OVERRIDES the joke rule. You MUST treat it as a real "EMERGENCY" (FRONT_ESCALATION) even if it starts with a compliment.
 - **ESCALATION CONFIRMATION RULE**: If the last AI message in `[과거 대화 맥락]` asked if the guest wants front desk intervention or connection (e.g., "프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요?", "프런트로 연결해 드릴까요?"), and the guest agrees (e.g., "네", "조치해줘", "응", "yes"), you MUST classify it as "FRONT_ESCALATION" with domain "FRONT". IMPORTANT: If the escalation is specifically because the user wants more information (e.g., the AI asked "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?"), you MUST include the exact text "INFO_ESCALATION" in the `reasoning` field. If the guest declines (e.g., "아니요", "그냥 말해봤어요", "괜찮아", "no"), you MUST classify it as "VOC" with sentiment "NEGATIVE" (if it was a complaint) or "SOFT_FALLBACK".
 - **INFRASTRUCTURE INQUIRY RULE**: If the user asks for a reason ("왜", "이유") or complains generally about a hotel-wide infrastructure issue that cannot be fixed within their specific room (e.g., "엘리베이터가 왜 이렇게 느려요?", "와이파이가 전체적으로 안 터져요"), you MUST route it to "FRONT_ESCALATION" with domain "FRONT". DO NOT route it to "FACILITY", as the facility team does not answer guest chat inquiries. The front desk must explain the situation.
-- **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. If the user explicitly states that a previous emergency, complaint, or request was a false alarm, a joke, a mistake, or is no longer an issue (e.g., "아니 불 안났어", "장난이야", "잘못 눌렀어", "해결됐어", "괜찮아졌어", "취소해", "아까 말한거 취소"), you MUST NOT route to EMERGENCY or FRONT_ESCALATION. You MUST route to "CANCEL" (if cancelling a specific actionable request/emergency) or "SOFT_FALLBACK" / "VOC".
+- **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. If the user explicitly states that a previous emergency, complaint, or request was a false alarm, a joke, a mistake, or is no longer an issue (e.g., "아니 불 안났어", "장난이야", "잘못 눌렀어", "해결됐어", "괜찮아졌어", "취소해", "아까 말한거 취소", "필요없어요"), you MUST NOT route to EMERGENCY or FRONT_ESCALATION. You MUST route to "CANCEL" (if cancelling a specific actionable request/emergency) or "SOFT_FALLBACK" / "VOC".
 - **CONFIRMATION RESPONSE RULE**: If the last AI message in `[과거 대화 맥락]` ended with a confirmation question (e.g., "~해 드릴까요?", "~하시겠습니까?", "~드릴까요?") and the user replies positively (e.g., "네", "응", "예", "좋아", "yes", "ok") or negatively (e.g., "아니요", "괜찮아"), you MUST classify it as "DEPARTMENT" and assign the SAME `domain` as the ongoing conversation. DO NOT classify it as "CLARIFICATION" or "SOFT_FALLBACK".
 - If route_type is "SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", or "STATUS_CHECK", the domain MUST be `null`.
 - If route_type is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
