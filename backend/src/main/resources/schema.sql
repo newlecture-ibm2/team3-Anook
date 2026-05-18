@@ -253,3 +253,6 @@ ALTER TABLE request ADD COLUMN IF NOT EXISTS reasoning TEXT;
 
 -- [2026-05-14] VOC 감성 분석 컬럼 추가
 ALTER TABLE message ADD COLUMN IF NOT EXISTS sentiment VARCHAR(10);
+
+-- [2026-05-15] 고객 피드백 별점 컬럼 추가 (1~5, NULL=미평가)
+ALTER TABLE request ADD COLUMN IF NOT EXISTS rating SMALLINT;

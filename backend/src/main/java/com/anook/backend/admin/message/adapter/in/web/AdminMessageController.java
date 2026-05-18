@@ -1,8 +1,14 @@
 package com.anook.backend.admin.message.adapter.in.web;
 
+import com.anook.backend.admin.message.application.port.in.DeleteAdminMessageUseCase;
 import com.anook.backend.admin.message.application.port.out.AdminMessageQueryPort;
+import com.anook.backend.message.application.dto.request.SendStaffMessageCommand;
+import com.anook.backend.message.application.dto.response.GetVocListResult;
+import com.anook.backend.message.application.port.in.GetVocListUseCase;
+import com.anook.backend.message.application.port.in.SendMessageUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,14 +18,7 @@ import java.util.Map;
  * 관리자 메시지 히스토리 Controller
  *
  * admin/message 모듈의 자체 Port를 통해 message 테이블을 조회합니다.
- * message 모듈의 UseCase/Port를 import하지 않고 독립적으로 동작합니다.
  */
-import com.anook.backend.admin.message.application.port.in.DeleteAdminMessageUseCase;
-import com.anook.backend.message.application.port.in.GetVocListUseCase;
-import com.anook.backend.message.application.port.in.SendMessageUseCase;
-import com.anook.backend.message.application.dto.request.SendStaffMessageCommand;
-import com.anook.backend.message.application.dto.response.GetVocListResult;
-
 @RestController
 @RequestMapping("/admin/messages")
 @RequiredArgsConstructor
@@ -29,12 +28,12 @@ public class AdminMessageController {
     private final SendMessageUseCase sendMessageUseCase;
     private final DeleteAdminMessageUseCase deleteAdminMessageUseCase;
     private final GetVocListUseCase getVocListUseCase;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * 메시지가 있는 객실 목록 조회
      *
      * GET /admin/messages/rooms
-     * 응답: [{ "roomId": 1, "roomNo": "101" }, ...]
      */
     @GetMapping("/rooms")
     public ResponseEntity<List<Map<String, Object>>> getMessageRooms(
@@ -71,13 +70,13 @@ public class AdminMessageController {
         }
         
         Long guestId = adminMessageQueryPort.getLatestGuestId(roomNo);
-        // 번역 대상 언어는 현재 DB에 없으므로 기본값(en) 또는 ko 사용
         sendMessageUseCase.sendStaffMessage(
                 new SendStaffMessageCommand(content, roomNo, guestId, "ko")
         );
         
         return ResponseEntity.ok().build();
     }
+
     /**
      * 관리자/직원이 특정 객실의 메시지 내역 삭제
      *
@@ -97,5 +96,24 @@ public class AdminMessageController {
     @GetMapping("/vocs")
     public ResponseEntity<List<GetVocListResult>> getVocList() {
         return ResponseEntity.ok(getVocListUseCase.getVocList());
+    }
+
+    /**
+     * [AN-332] 직원 상담 별점 피드백 조회
+     *
+     * GET /admin/messages/ratings
+     */
+    @GetMapping("/ratings")
+    public ResponseEntity<List<Map<String, Object>>> getStaffRatings() {
+        List<Map<String, Object>> ratings = jdbcTemplate.queryForList(
+                "SELECT r.id AS \"requestId\", r.room_no AS \"roomNo\", r.summary, r.rating, " +
+                "r.created_at AS \"createdAt\", r.updated_at AS \"updatedAt\", " +
+                "COALESCE(s.name, '-') AS \"staffName\" " +
+                "FROM request r " +
+                "LEFT JOIN staff s ON r.assigned_staff_id = s.id " +
+                "WHERE r.department_id = 'FRONT' AND r.rating IS NOT NULL " +
+                "ORDER BY r.created_at DESC"
+        );
+        return ResponseEntity.ok(ratings);
     }
 }

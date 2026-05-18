@@ -3,25 +3,30 @@
 import React, { useState, useMemo } from 'react';
 import styles from './page.module.css';
 import { useVocList } from './useVocList';
+import { useRatingList } from './useRatingList';
 import Tabs from '@/components/ui/Tab/Tabs';
 import VocTable from './_components/VocTable/VocTable';
+import RatingTable from './_components/RatingTable/RatingTable';
 import { useTranslation } from '@/app/useTranslation';
 
-type FilterType = 'ALL' | 'POSITIVE' | 'NEGATIVE';
+type FilterType = 'ALL' | 'POSITIVE' | 'NEGATIVE' | 'RATING';
 
 export default function VocPage() {
   const { t } = useTranslation();
   const { vocList, loading, error, refetch } = useVocList();
+  const { ratings, loading: ratingsLoading, averageRating } = useRatingList();
   const [filter, setFilter] = useState<FilterType>('ALL');
 
   const FILTER_OPTIONS = [
     { value: 'ALL', label: t.adminPage.voc.filterAll },
     { value: 'POSITIVE', label: t.adminPage.voc.filterPositive },
     { value: 'NEGATIVE', label: t.adminPage.voc.filterNegative },
+    { value: 'RATING', label: t.adminPage.voc.filterRating },
   ];
 
   const filteredVocs = useMemo(() => {
     if (filter === 'ALL') return vocList;
+    if (filter === 'RATING') return []; // 별점 탭에서는 VOC 목록 안 씀
     return vocList.filter(voc => voc.sentiment === filter);
   }, [vocList, filter]);
 
@@ -55,7 +60,11 @@ export default function VocPage() {
         />
       </div>
       
-      <VocTable vocs={filteredVocs} loading={loading} />
+      {filter === 'RATING' ? (
+        <RatingTable ratings={ratings} loading={ratingsLoading} averageRating={averageRating} />
+      ) : (
+        <VocTable vocs={filteredVocs} loading={loading} />
+      )}
     </div>
   );
 }

@@ -54,6 +54,9 @@ public class AdminRequestJpaEntity {
     @Column(name = "assigned_staff_id")
     private Long assignedStaffId;
 
+    @Column(name = "guest_id")
+    private Long guestId;
+
     @Column(nullable = false)
     private Integer version;
 
@@ -107,6 +110,14 @@ public class AdminRequestJpaEntity {
 
     public void updatePriority(String priority) {
         this.priority = priority;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateSummary(String summary, String rawText) {
+        this.summary = summary;
+        if (rawText != null && !rawText.isBlank()) {
+            this.rawText = (this.rawText != null ? this.rawText + "\n" : "") + rawText;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -172,7 +183,7 @@ public class AdminRequestJpaEntity {
 
     public static AdminRequestJpaEntity createManual(
             String departmentId, String roomNo, String summary,
-            String rawText, String priority, Long assignedStaffId) {
+            String rawText, String priority, Long assignedStaffId, Long guestId) {
         AdminRequestJpaEntity entity = new AdminRequestJpaEntity();
         entity.departmentId = departmentId;
         entity.roomNo = roomNo;
@@ -180,6 +191,7 @@ public class AdminRequestJpaEntity {
         entity.rawText = rawText;
         entity.priority = (priority != null && !priority.isBlank()) ? priority.toUpperCase() : "NORMAL";
         entity.assignedStaffId = assignedStaffId;
+        entity.guestId = guestId;
         entity.status = (assignedStaffId != null) ? "IN_PROGRESS" : "PENDING";
         entity.confidence = 1.0f;
         entity.version = 0;

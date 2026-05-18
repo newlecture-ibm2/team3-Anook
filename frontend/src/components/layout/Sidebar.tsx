@@ -7,6 +7,7 @@ import styles from './Sidebar.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import Logo from '@/components/ui/Logo';
 
 import {
   LayoutDashboard,
@@ -166,7 +167,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
       <div className={styles.logoRow}>
         {!isSidebarCollapsed && (
           <Link href="/" className={styles.logoLink}>
-            Anook
+            <Logo color="var(--color-primary)" />
           </Link>
         )}
         <button

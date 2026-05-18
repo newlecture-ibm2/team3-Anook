@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
+import { CancelIcon, ArrowBackIcon } from '@/components/icons';
+import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import styles from './TaskDetailModal.module.css';
 import { StaffTask } from '../../useTasks';
 import { useUiStore } from '@/stores/useUiStore';
 import { useNetworkStore } from '@/stores/useNetworkStore';
+
+interface ChatMsg {
+  id: number | string;
+  senderType: string;
+  content: string;
+}
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -130,6 +138,12 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   const [toDepartmentId, setToDepartmentId] = useState('');
   const [transferReason, setTransferReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [view, setView] = useState<'detail' | 'chatHistory'>('detail');
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatListRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [detailHeight, setDetailHeight] = useState<number | null>(null);
   const { showToast } = useUiStore();
   const isOnline = useNetworkStore((state) => state.isOnline);
 
@@ -139,6 +153,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
     setShowTransferForm(false);
     setToDepartmentId('');
     setTransferReason('');
+    setView('detail');
     onClose();
   };
 
@@ -229,29 +244,81 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
     badgeVariant = 'red';
   }
 
-  const formattedDate = new Date(task.createdAt).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const d = new Date(task.createdAt);
+  const formattedDate = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
   const rawTextParts = task.rawText ? task.rawText.split('\n|||TRANSFER_REASON|||') : [];
-  const mainText = rawTextParts[0] || '';
   const transferReasonText = rawTextParts.length > 1 ? rawTextParts.slice(1).join('\n').trim() : null;
 
-  const detailParts = mainText.split('[주문 상세]');
-  const customerText = detailParts[0].trim();
-  const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
+  const openChatHistory = async () => {
+    if (containerRef.current) {
+      setDetailHeight(containerRef.current.offsetHeight);
+    }
+    setView('chatHistory');
+    setChatLoading(true);
+    try {
+      const res = await fetch(`/api/staff/messages/rooms/${task.roomNumber}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setChatMessages(data);
+      setTimeout(() => {
+        chatListRef.current?.scrollTo({ top: chatListRef.current.scrollHeight });
+      }, 50);
+    } catch (err) {
+      console.error('[TaskDetailModal] chat fetch error:', err);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
-      <ModalCard size="md" padding="var(--space-32)">
-        <div className={styles.container}>
+      <ModalCard size="md" padding="0">
+
+        {/* ── 대화 내역 뷰 ── */}
+        {view === 'chatHistory' ? (
+          <div className={styles.chatHistoryContainer} style={detailHeight ? { height: detailHeight } : undefined}>
+            <div className={styles.chatHistoryHeader}>
+              <button className={styles.backBtn} onClick={() => setView('detail')} aria-label="뒤로">
+                <ArrowBackIcon width={18} height={18} color="currentColor" />
+              </button>
+              <span className={styles.chatHistoryTitle}>{task.roomNumber}호 대화 내역</span>
+              <button className={styles.closeIcon} onClick={handleClose} aria-label="닫기" style={{ position: 'static' }}>
+                <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
+              </button>
+            </div>
+            <div className={styles.chatHistoryMessages} ref={chatListRef}>
+              {chatLoading && <div className={styles.chatEmptyState}>불러오는 중...</div>}
+              {!chatLoading && chatMessages.length === 0 && <div className={styles.chatEmptyState}>대화 내역이 없습니다.</div>}
+              {!chatLoading && chatMessages.map((msg, idx) => {
+                const isGuest = msg.senderType === 'GUEST';
+                const isStaff = msg.senderType === 'STAFF';
+                return (
+                  <ChatBubble
+                    key={msg.id}
+                    variant={isGuest ? 'sent' : 'received'}
+                    isFallback={isStaff}
+                  >
+                    {msg.content}
+                  </ChatBubble>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+
+        <div className={styles.container} ref={containerRef}>
+          {/* X 닫기 버튼 (오른쪽 상단) */}
+          <button
+            className={styles.closeIcon}
+            onClick={handleClose}
+            aria-label="닫기"
+          >
+            <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
+          </button>
           <div className={styles.header}>
             <div className={styles.headerTop}>
-              <span className={styles.roomBadge}>[{task.roomNumber}호]</span>
+              <span className={styles.roomBadge}>{task.roomNumber}호</span>
               {task.priority === 'URGENT' && (
                 <StatusBadge variant="red">긴급</StatusBadge>
               )}
@@ -290,34 +357,33 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               </div>
             )}
 
-            {customerText && (
-              <div className={styles.descriptionSection}>
-                <h3 className={styles.descriptionTitle}>고객 원문</h3>
-                <div className={styles.descriptionBox}>
-                  {customerText}
-                </div>
-              </div>
-            )}
 
-            {/* entities가 없을 때만 rawText 기반 주문 상세 표시 (entities 있으면 중복이므로 숨김) */}
-            {orderDetail && !task.entities && (
-              <div className={styles.descriptionSection}>
-                <h3 className={styles.descriptionTitle}>주문/요청 상세</h3>
-                <div className={styles.orderDetailBox}>
-                  {orderDetail}
-                </div>
-              </div>
-            )}
 
-            {/* AI 분석 상세 내역 — 라벨 매핑 + 배열 특수 렌더러 + 폴백 */}
-            {task.entities && Object.keys(task.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0 && (
+            {/* AI 분석 상세 내역 — summary + entities + reasoning */}
+            {(task.entities && Object.keys(task.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0) || task.reasoning ? (
               <div className={styles.descriptionSection}>
-                <h3 className={styles.descriptionTitle}>AI 분석 상세 내역</h3>
+                <div className={styles.sectionHeader}>
+                  <h3 className={styles.descriptionTitle}>AI 분석 상세 내역</h3>
+                  <Button variant="secondary" onClick={openChatHistory} style={{ fontSize: '12px', padding: '4px 12px' }}>
+                    대화 내역 보기
+                  </Button>
+                </div>
                 <div className={styles.descriptionBox} style={{ backgroundColor: '#f0f4ff' }}>
-                  {renderEntities(task.entities)}
+                  {task.summary && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong>요약:</strong> {task.summary}
+                    </div>
+                  )}
+                  {task.entities && Object.keys(task.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0 && renderEntities(task.entities)}
+                  {task.reasoning && (
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+                      <strong>판단 근거:</strong>
+                      <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap' }}>{task.reasoning}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            ) : null}
 
             {task.imageUrl && (
               <div className={styles.descriptionSection}>
@@ -336,6 +402,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 </div>
               </div>
             )}
+
+
 
             {showTransferForm && (
               <div className={styles.transferForm}>
@@ -375,7 +443,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               {task.status === 'PENDING' && (
                 <>
                   <Button
-                    variant="outlined"
+                    variant="secondary"
                     onClick={() => setShowTransferForm(true)}
                     className={styles.actionButton}
                     disabled={isSubmitting || !isOnline}
@@ -430,12 +498,12 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 </>
               )}
 
-              <Button variant="outlined" onClick={handleClose} className={styles.closeButton}>
-                닫기
-              </Button>
+
             </div>
           )}
         </div>
+
+        )}
       </ModalCard>
     </ModalOverlay>
   );

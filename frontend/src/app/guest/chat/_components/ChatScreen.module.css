@@ -6,9 +6,9 @@
   /* Mobile standard max width */
   height: 100dvh;
   /* Use dvh for mobile browser URL bar compatibility */
-  background-color: var(--color-bg);
+  background-color: transparent;
   margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+
   position: relative;
   isolation: isolate; /* Force stacking context for backdrop-filter */
 }
@@ -42,20 +42,16 @@
 
 .statusBarContainer {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  width: auto;
-  border-radius: var(--radius-lg);
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   max-width: 100%;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
-  z-index: 10;
-  background-color: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
+  z-index: 9999;
+  cursor: pointer;
 }
 
 .requestList {
@@ -146,14 +142,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  min-width: 40px;
+  gap: 6px;
+  height: 20px;
 }
 
 .dot {
   width: 7px;
   height: 7px;
+  flex-shrink: 0;
   border-radius: 50%;
   background-color: var(--color-gray-400);
   animation: bounce 1.4s infinite ease-in-out both;

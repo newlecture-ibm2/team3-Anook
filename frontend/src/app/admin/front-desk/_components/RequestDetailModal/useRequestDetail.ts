@@ -87,12 +87,12 @@ export default function useRequestDetail() {
     }
   };
 
-  const changeDepartment = async (id: number, departmentId: string) => {
+  const changeDepartment = async (id: number, departmentId: string, summary?: string, description?: string) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/department`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ departmentId }),
+        body: JSON.stringify({ departmentId, summary, description }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return true;
@@ -102,5 +102,20 @@ export default function useRequestDetail() {
     }
   };
 
-  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, cancelRequest, loading, error };
+  const updateSummary = async (id: number, summary: string, description: string) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${id}/summary`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ summary, description }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err: any) {
+      setError(err.message || '제목 변경 실패');
+      return false;
+    }
+  };
+
+  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, updateSummary, cancelRequest, loading, error };
 }

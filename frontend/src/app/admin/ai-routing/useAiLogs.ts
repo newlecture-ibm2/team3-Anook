@@ -18,9 +18,25 @@ export interface AiLogDetail {
   createdAt: string;
 }
 
+export interface AiRatingItem {
+  requestId: number;
+  roomNo: string;
+  departmentId: string;
+  summary: string;
+  rating: number;
+  createdAt: string;
+}
+
+interface AiRatingsData {
+  averageRating: number;
+  totalCount: number;
+  ratings: AiRatingItem[];
+}
+
 export default function useAiLogs() {
   const [summary, setSummary] = useState<AiLogSummary | null>(null);
   const [logs, setLogs] = useState<AiLogDetail[]>([]);
+  const [ratingsData, setRatingsData] = useState<AiRatingsData>({ averageRating: 0, totalCount: 0, ratings: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +44,10 @@ export default function useAiLogs() {
     const fetchAiLogs = async () => {
       setLoading(true);
       try {
-        const [summaryRes, listRes] = await Promise.all([
+        const [summaryRes, listRes, ratingsRes] = await Promise.all([
           fetch('/api/admin/ai-logs/summary'),
-          fetch('/api/admin/ai-logs')
+          fetch('/api/admin/ai-logs'),
+          fetch('/api/admin/ai-logs/ratings')
         ]);
         
         if (!summaryRes.ok || !listRes.ok) {
@@ -43,6 +60,11 @@ export default function useAiLogs() {
         setSummary(summaryData);
         // Pageable response has 'content' array
         setLogs(listData.content || []);
+
+        if (ratingsRes.ok) {
+          const ratData = await ratingsRes.json();
+          setRatingsData(ratData);
+        }
       } catch (err: any) {
         setError(err.message || '알 수 없는 오류');
       } finally {
@@ -53,5 +75,5 @@ export default function useAiLogs() {
     fetchAiLogs();
   }, []);
 
-  return { summary, logs, loading, error };
+  return { summary, logs, ratingsData, loading, error };
 }

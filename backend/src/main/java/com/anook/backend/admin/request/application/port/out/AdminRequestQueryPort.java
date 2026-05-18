@@ -53,6 +53,11 @@ public interface AdminRequestQueryPort {
     void rejectCancellation(Long requestId);
 
     /**
+     * 요약(제목) 및 설명 변경
+     */
+    void updateSummary(Long requestId, String summary, String description);
+
+    /**
      * 부서 변경 (관리자 수동 배정)
      */
     void changeDepartment(Long requestId, String departmentId);
@@ -76,7 +81,12 @@ public interface AdminRequestQueryPort {
      * 요청 저장 — 수동 생성
      */
     AdminRequest save(String departmentId, String roomNo, String summary,
-                      String rawText, String priority, Long assignedStaffId);
+                      String rawText, String priority, Long assignedStaffId, Long guestId);
+
+    /**
+     * 방 번호로 투숙객 ID 조회 — 기존 요청에서 guest_id를 찾아 반환
+     */
+    Long findGuestIdByRoomNo(String roomNo);
 
     // === 통계 ===
 
