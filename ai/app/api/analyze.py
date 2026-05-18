@@ -537,10 +537,25 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # 부서별 에이전트가 등록되어 있으면 호출
             if domain in DOMAIN_AGENTS:
+                # [공통 주문 보존 규칙] 활성 요청 목록을 chat_history 앞에 주입하여
+                # 모든 부서 에이전트가 REPLACE 시 기존 아이템을 보존하도록 컨텍스트 제공
+                enriched_history = list(request.chat_history)
+                if request.active_requests:
+                    import json
+                    filtered = [{"id": r.get("id"), "summary": r.get("summary")} for r in request.active_requests]
+                    active_ctx = (
+                        f"[고객의 현재 활성 요청(주문) 목록]\n"
+                        f"{json.dumps(filtered, ensure_ascii=False)}\n\n"
+                        f"[주문 수정 규칙] 기존 주문을 수정(REPLACE)할 때, 변경되지 않은 기존 아이템은 "
+                        f"반드시 entities 출력에 포함하고, 응답에서도 유지됨을 안내하세요. "
+                        f"누락 시 해당 아이템이 영구 삭제됩니다."
+                    )
+                    enriched_history = [{"role": "ai", "content": active_ctx}] + enriched_history
+
                 coro = DOMAIN_AGENTS[domain](
                     user_message=request.text,
                     room_no=request.room_no,
-                    chat_history=request.chat_history,
+                    chat_history=enriched_history,
                     images=request.images
                 )
                 agent_tasks.append((domain, primary, coro))
