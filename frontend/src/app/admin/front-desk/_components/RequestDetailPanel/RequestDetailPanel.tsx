@@ -7,6 +7,7 @@ import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import { CancelIcon, ArrowDownIcon, ArrowUpIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import RejectEscalationModal from '../RejectEscalationModal/RejectEscalationModal';
 import ApproveCancellationModal from '../ApproveCancellationModal/ApproveCancellationModal';
 import RejectCancellationModal from '../RejectCancellationModal/RejectCancellationModal';
@@ -164,7 +165,7 @@ export default function RequestDetailPanel({
 }: RequestDetailPanelProps) {
   const { approveEscalation } = useApproveEscalation();
   const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, loading } = useRequestDetail();
-  
+
   const [editPriority, setEditPriority] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -191,7 +192,7 @@ export default function RequestDetailPanel({
     fetch('/api/admin/departments')
       .then(res => res.json())
       .then((data: Department[]) => setDepartments(data.filter(d => d.id !== 'EMERGENCY')))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   if (!detail) return null;
@@ -202,7 +203,7 @@ export default function RequestDetailPanel({
     editPriority !== detail.priority ||
     editDeptId !== detail.departmentId;
 
-  const handleSave = async (newDeptId: string, newPriority: string) => {
+  const handleSave = async (newDeptId: string, newPriority: string, newSummary?: string, newDescription?: string) => {
     setSaving(true);
     let changed = false;
 
@@ -212,7 +213,8 @@ export default function RequestDetailPanel({
     }
 
     if (newDeptId !== detail.departmentId) {
-      const ok = await changeDepartment(detail.id, newDeptId);
+      // summary/description도 같은 요청에서 함께 업데이트 (한 트랜잭션)
+      const ok = await changeDepartment(detail.id, newDeptId, newSummary, newDescription);
       if (ok) changed = true;
     }
 
@@ -240,7 +242,7 @@ export default function RequestDetailPanel({
 
   const handleApproveEscalation = async () => {
     setConfirmType('none');
-    
+
     setSaving(true);
     // 상세 모달 내에서 직접 승인할 때는 현재 모달에 세팅된 editDeptId와 editPriority 값을 전달합니다.
     const ok = await approveEscalation(detail.id, editDeptId, editPriority);
@@ -264,159 +266,162 @@ export default function RequestDetailPanel({
 
   return (
     <div className={styles.panel}>
-        {/* 헤더 */}
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h2 className={styles.title}>요청 상세</h2>
+      {/* 헤더 */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>요청 상세</h2>
+        </div>
+        <div className={styles.headerRight}>
+          <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
+        </div>
+      </div>
+
+      {/* 기본 정보 */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>기본 정보</h3>
+        <div className={styles.grid}>
+          <div className={styles.gridItem}>
+            <span className={styles.label}>객실</span>
+            <span className={styles.value}>{detail.roomNo}</span>
+          </div>
+
+          <div className={styles.gridItem}>
+            <span className={styles.label}>생성 시간</span>
+            <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.label}>최종 수정</span>
+            <span className={styles.value}>{formatDateTime(detail.updatedAt)}</span>
           </div>
         </div>
+      </div>
 
-        {/* 기본 정보 */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>기본 정보</h3>
-          <div className={styles.grid}>
-            <div className={styles.gridItem}>
-              <span className={styles.label}>객실</span>
-              <span className={styles.value}>{detail.roomNo}</span>
-            </div>
-
-            <div className={styles.gridItem}>
-              <span className={styles.label}>생성 시간</span>
-              <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
-            </div>
-            <div className={styles.gridItem}>
-              <span className={styles.label}>최종 수정</span>
-              <span className={styles.value}>{formatDateTime(detail.updatedAt)}</span>
-            </div>
-          </div>
+      {/* 요약 + 원문 */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>요청 내용</h3>
+        <div className={styles.contentBlock}>
+          <span className={styles.label}>요약</span>
+          <p className={styles.contentText}>{detail.summary}</p>
         </div>
+        {(() => {
+          if (!detail.rawText) return null;
+          const transferParts = detail.rawText.split('\n|||TRANSFER_REASON|||');
+          const mainText = transferParts[0] || '';
+          const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
 
-        {/* 요약 + 원문 */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>요청 내용</h3>
-          <div className={styles.contentBlock}>
-            <span className={styles.label}>요약</span>
-            <p className={styles.contentText}>{detail.summary}</p>
-          </div>
-          {(() => {
-            if (!detail.rawText) return null;
-            const transferParts = detail.rawText.split('\n|||TRANSFER_REASON|||');
-            const mainText = transferParts[0] || '';
-            const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
+          const detailParts = mainText.split('[주문 상세]');
+          const customerText = detailParts[0].trim();
+          const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
-            const detailParts = mainText.split('[주문 상세]');
-            const customerText = detailParts[0].trim();
-            const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
+          // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
+          const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
 
-                // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
-                const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
-                
-                return (
-              <>
-                {customerText && (
-                  <div className={styles.contentBlock}>
-                    <span className={styles.label}>고객 원문</span>
-                    <p className={styles.rawText}>{customerText}</p>
-                  </div>
-                )}
-                {orderDetail && !hasValidEntities && (
-                  <div className={styles.contentBlock}>
-                    <span className={styles.label}>주문/요청 상세</span>
-                    <p className={styles.orderDetail}>{orderDetail}</p>
-                  </div>
-                )}
-                {transferReason && (
-                  <div className={styles.contentBlock}>
-                    <span className={styles.label}>부서 이관 사유</span>
-                    <p className={styles.transferReason}>{transferReason}</p>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-
-        {/* 첨부 사진 */}
-        {detail.imageUrl && (
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>첨부 사진</h3>
-            <div className={styles.contentBlock} style={{ textAlign: 'center' }}>
-              <img src={detail.imageUrl} alt="첨부 사진" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
-            </div>
-          </div>
-        )}
-
-        {/* AI 분석 결과 */}
-        {detail.entities && Object.keys(detail.entities).length > 0 && (
-          <div className={styles.section}>
-            <div 
-              className={styles.collapsibleHeader} 
-              onClick={() => setIsAiSectionOpen(!isAiSectionOpen)}
-            >
-              <h3 className={styles.collapsibleTitle}>AI 분석 결과 보기</h3>
-              {isAiSectionOpen ? <ArrowUpIcon width={20} height={20} color="var(--color-gray-500)" /> : <ArrowDownIcon width={20} height={20} color="var(--color-gray-500)" />}
-            </div>
-            
-            {isAiSectionOpen && (
-              <div className={styles.aiInfo} style={{ marginTop: 'var(--space-8)' }}>
-                <div className={styles.confidenceBadge}>
-                  신뢰도: {Math.round(detail.confidence * 100)}%
-                </div>
-                {(() => {
-                  if (!detail.entities) return null;
-                  // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
-                  const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
-                  if (displayableKeys.length === 0) return null;
-
-                  return (
-                    <div className={styles.entityList}>
-                      {renderEntities(detail.entities)}
-                    </div>
-                  );
-                })()}
-                {detail.reasoning && (
-                  <div className={styles.contentBlock}>
-                    <span className={styles.label}>판단 근거</span>
-                    <p className={styles.rawText}>{detail.reasoning}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className={styles.footer}>
-          <div className={styles.footerRight}>
-            {!showManualAssign && detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' && (
-              <Button variant="primary" onClick={() => setShowManualAssign(true)}>
-                수동 배정
-              </Button>
-            )}
-            {detail.status === 'ESCALATED' ? (
-              <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
-                에스컬레이션 승인
-              </Button>
-            ) : null}
-          </div>
-
-          {detail.status === 'ESCALATED' ? (
-            <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
-              에스컬레이션 반려
-            </Button>
-          ) : detail.cancelRequested ? (
+          return (
             <>
-              <Button variant="secondary" onClick={() => setConfirmType('cancelReject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
-                취소 반려
-              </Button>
-              <Button variant="primary" onClick={() => setConfirmType('cancelApprove')} disabled={saving || loading}>
-                취소 승인
-              </Button>
+              {customerText && (
+                <div className={styles.contentBlock}>
+                  <span className={styles.label}>고객 원문</span>
+                  <p className={styles.rawText}>{customerText}</p>
+                </div>
+              )}
+              {orderDetail && !hasValidEntities && (
+                <div className={styles.contentBlock}>
+                  <span className={styles.label}>주문/요청 상세</span>
+                  <p className={styles.orderDetail}>{orderDetail}</p>
+                </div>
+              )}
+              {transferReason && (
+                <div className={styles.contentBlock}>
+                  <span className={styles.label}>부서 이관 사유</span>
+                  <p className={styles.transferReason}>{transferReason}</p>
+                </div>
+              )}
             </>
-          ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
-            <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
-              강제 요청 취소
+          );
+        })()}
+      </div>
+
+      {/* 첨부 사진 */}
+      {detail.imageUrl && (
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>첨부 사진</h3>
+          <div className={styles.contentBlock} style={{ textAlign: 'center' }}>
+            <img src={detail.imageUrl} alt="첨부 사진" style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
+          </div>
+        </div>
+      )}
+
+      {/* AI 분석 결과 */}
+      {detail.entities && Object.keys(detail.entities).length > 0 && (
+        <div className={styles.section}>
+          <div
+            className={styles.collapsibleHeader}
+            onClick={() => setIsAiSectionOpen(!isAiSectionOpen)}
+          >
+            <h3 className={styles.collapsibleTitle}>AI 분석 결과 보기</h3>
+            {isAiSectionOpen ? <ArrowUpIcon width={20} height={20} color="var(--color-gray-500)" /> : <ArrowDownIcon width={20} height={20} color="var(--color-gray-500)" />}
+          </div>
+
+          {isAiSectionOpen && (
+            <div className={styles.aiInfo} style={{ marginTop: 'var(--space-8)' }}>
+              <div className={styles.confidenceBadge}>
+                신뢰도: {Math.round(detail.confidence * 100)}%
+              </div>
+              {(() => {
+                if (!detail.entities) return null;
+                // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
+                const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
+                if (displayableKeys.length === 0) return null;
+
+                return (
+                  <div className={styles.entityList}>
+                    {renderEntities(detail.entities)}
+                  </div>
+                );
+              })()}
+              {detail.reasoning && (
+                <div className={styles.contentBlock}>
+                  <span className={styles.label}>판단 근거</span>
+                  <p className={styles.rawText}>{detail.reasoning}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={styles.footer}>
+        <div className={styles.footerRight}>
+          {!showManualAssign && detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' && (
+            <Button variant="primary" onClick={() => setShowManualAssign(true)}>
+              수동 배정
+            </Button>
+          )}
+          {detail.status === 'ESCALATED' ? (
+            <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
+              에스컬레이션 승인
             </Button>
           ) : null}
+        </div>
+
+        {detail.status === 'ESCALATED' ? (
+          <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
+            에스컬레이션 반려
+          </Button>
+        ) : detail.cancelRequested ? (
+          <>
+            <Button variant="secondary" onClick={() => setConfirmType('cancelReject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
+              취소 반려
+            </Button>
+            <Button variant="primary" onClick={() => setConfirmType('cancelApprove')} disabled={saving || loading}>
+              취소 승인
+            </Button>
+          </>
+        ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
+          <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
+            강제 요청 취소
+          </Button>
+        ) : null}
       </div>
 
       <ConfirmModal

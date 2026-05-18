@@ -106,6 +106,7 @@
       "filterAll": "View All",
       "filterPositive": "👍 Compliment",
       "filterNegative": "👎 Complaint/Feedback",
+      "filterRating": "⭐ Ratings",
       "empty": "No feedback found.",
       "columns": {
         "date": "Received Date",

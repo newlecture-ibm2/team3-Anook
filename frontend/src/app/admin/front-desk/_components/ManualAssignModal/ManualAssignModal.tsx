@@ -28,28 +28,28 @@ interface ManualAssignModalProps {
   onClose: () => void;
   detail: RequestDetail;
   departments: Department[];
-  onSave: (editDeptId: string, editPriority: string) => Promise<void>;
+  onSave: (editDeptId: string, editPriority: string, editSummary?: string, editDescription?: string) => Promise<void>;
   saving: boolean;
 }
 
 export default function ManualAssignModal({ isOpen, onClose, detail, departments, onSave, saving }: ManualAssignModalProps) {
   const [editPriority, setEditPriority] = useState<string>('NORMAL');
   const [editDeptId, setEditDeptId] = useState(detail.departmentId);
+  const [editSummary, setEditSummary] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setEditPriority('NORMAL'); // 항상 기본값은 'NORMAL' (체크 해제 상태)
+      setEditPriority('NORMAL');
       setEditDeptId(detail.departmentId);
+      setEditSummary('');
+      setEditDescription('');
     }
   }, [isOpen, detail]);
 
   if (!isOpen) return null;
 
-  const hasChanges = editPriority !== detail.priority || editDeptId !== detail.departmentId;
-
-  // Create a mock request object for the preview card
-  const deptName = departments.find(d => d.id === editDeptId)?.name || detail.departmentName;
-  const isUrgent = editPriority === 'URGENT';
+  const canSubmit = editDeptId && editDeptId !== 'FRONT' && editSummary.trim().length > 0;
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
@@ -62,24 +62,57 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
         </div>
 
         <div className={styles.content}>
+          {/* 미리보기 카드 — 실시간 반영 */}
           <div className={styles.previewSection}>
             <div className={styles.previewCardWrapper}>
-              <TaskTicket 
+              <TaskTicket
                 ticketId={detail.id}
                 roomNo={detail.roomNo}
                 department={editDeptId}
                 priority={editPriority as 'NORMAL' | 'URGENT'}
-                title={detail.summary}
-                description=""
+                title={editSummary || '배정할 업무 내용을 입력하세요'}
+                description={editDescription}
                 status="TODO"
                 createdAt={detail.createdAt}
               />
             </div>
           </div>
 
+          {/* 편집 폼 */}
           <div className={styles.formSection}>
+            <div className={styles.editField}>
+              <label className={styles.label}>제목</label>
+              <input
+                type="text"
+                className={styles.inputField}
+                value={editSummary}
+                onChange={(e) => setEditSummary(e.target.value)}
+                placeholder="배정할 업무 내용을 입력하세요"
+              />
+            </div>
+
+            <div className={styles.editField}>
+              <label className={styles.label}>설명 / 이관 사유</label>
+              <textarea
+                className={styles.textareaField}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="필요시 설명 또는 이관 사유를 입력하세요"
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.editField}>
+              <Dropdown
+                label="배정 부서"
+                placeholder="부서를 선택하세요"
+                options={departments.filter(d => d.id !== 'FRONT').map(d => ({ value: d.id, label: d.name }))}
+                value={editDeptId}
+                onChange={(val) => setEditDeptId(val)}
+              />
+            </div>
+
             <div className={styles.editFieldHorizontal}>
-              <label className={styles.label}>우선순위</label>
               <label className={styles.checkboxLabel}>
                 <input
                   type="checkbox"
@@ -92,22 +125,12 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
                 </span>
               </label>
             </div>
-            
-            <div className={styles.editField}>
-              <Dropdown
-                label="배정 부서"
-                placeholder="부서를 선택하세요"
-                options={departments.filter(d => d.id !== 'FRONT').map(d => ({ value: d.id, label: d.name }))}
-                value={editDeptId}
-                onChange={(val) => setEditDeptId(val)}
-              />
-            </div>
           </div>
         </div>
 
         <div className={styles.footer}>
           <Button variant="secondary" onClick={onClose}>취소</Button>
-          <Button variant="primary" disabled={!hasChanges || saving} onClick={() => onSave(editDeptId, editPriority)}>
+          <Button variant="primary" disabled={!canSubmit || saving} onClick={() => onSave(editDeptId, editPriority, editSummary, editDescription)}>
             {saving ? '저장 중...' : '배정하기'}
           </Button>
         </div>

@@ -3,58 +3,108 @@
 import React, { useState } from 'react';
 import styles from './FeedbackCard.module.css';
 import { ReviewStarIcon } from '@/components/icons';
+import { Check, Home, Utensils, Wrench, ConciergeBell, Monitor, AlertTriangle, FileText } from 'lucide-react';
 
 const RATING_LABELS = ['', '별로예요', '그저 그래요', '보통이에요', '좋았어요', '최고예요!'];
 
+const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
+  HK: { icon: Home, label: '하우스키핑' },
+  FB: { icon: Utensils, label: '식음료' },
+  FACILITY: { icon: Wrench, label: '시설관리' },
+  CONCIERGE: { icon: ConciergeBell, label: '컨시어지' },
+  FRONT: { icon: Monitor, label: '프론트' },
+  EMERGENCY: { icon: AlertTriangle, label: '긴급' },
+  UNKNOWN: { icon: FileText, label: '기타' },
+};
+
 export interface FeedbackCardProps {
+  /** 요청 요약 (AI 요청 완료 시 전달) */
+  summary?: string;
+  /** 부서 코드 (아이콘/라벨 결정) */
+  domainCode?: string;
+  /** 완료 시간 */
+  completedAt?: string;
+  /** 별점 제출 핸들러 */
   onSubmit: (rating: number) => void;
 }
 
-export default function FeedbackCard({ onSubmit }: FeedbackCardProps) {
+export default function FeedbackCard({ summary, domainCode, completedAt, onSubmit }: FeedbackCardProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
 
   const activeRating = hoverRating || rating;
+  const domainInfo = DOMAIN_MAP[domainCode || 'UNKNOWN'] || DOMAIN_MAP['UNKNOWN'];
+
+  // 요청 정보가 있으면 요청 완료 카드, 없으면 상담 완료 카드
+  const hasRequestInfo = !!summary;
 
   const handleStarClick = (star: number) => {
+    if (submitted) return;
     setRating(star);
+    setSubmitted(true);
     onSubmit(star);
   };
 
-  return (
-    <div className={styles.card}>
-      {/* 헤더 */}
-      <div className={styles.textWrapper}>
-        <div className={styles.titleBox}>
-          <h2 className={styles.title}>
-            서비스가 만족스러우셨나요?
-          </h2>
-        </div>
-      </div>
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
 
-      {/* 별점 */}
-      <div className={styles.ratingWrapper}>
-        <div className={styles.stars}>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              className={styles.starButton}
-              onClick={() => handleStarClick(star)}
-              onMouseEnter={() => setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(0)}
-              aria-label={`${star}점`}
-            >
-              <ReviewStarIcon
-                className={`${styles.starIcon} ${star <= activeRating ? styles.starFilled : styles.starEmpty}`}
-                fill={star <= activeRating ? 'currentColor' : 'none'}
-              />
-            </button>
-          ))}
+  // 게스트용 제목: 도메인 라벨 + "요청 완료"
+  const displayTitle = hasRequestInfo
+    ? `${domainInfo.label} 요청 완료`
+    : '상담이 완료되었습니다';
+
+  return (
+    <div className={`glass-panel ${styles.card}`}>
+      <div className={styles.cardLayout}>
+        {/* Left Column: Icon */}
+        <div className={styles.leftColumn}>
+          <div className={styles.iconContainer}>
+            <Check size={20} color="var(--color-success, #10B981)" strokeWidth={3} />
+          </div>
         </div>
-        <span className={styles.ratingLabel}>
-          {RATING_LABELS[activeRating] || '별점을 선택해주세요'}
-        </span>
+
+        {/* Right Column */}
+        <div className={styles.rightColumn}>
+          <div className={styles.content}>
+            <div className={styles.summaryRow}>
+              <div className={styles.title}>{displayTitle}</div>
+              {completedAt && <div className={styles.timeLabel}>{formatTime(completedAt)}</div>}
+            </div>
+          </div>
+
+          <div className={styles.subtitle}>
+            {submitted
+              ? `${RATING_LABELS[rating]} — 감사합니다!`
+              : '서비스가 만족스러우셨나요?'}
+          </div>
+
+          {/* Inline Star Rating */}
+          <div className={styles.stars}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                className={styles.starButton}
+                onClick={() => handleStarClick(star)}
+                onMouseEnter={() => !submitted && setHoverRating(star)}
+                onMouseLeave={() => !submitted && setHoverRating(0)}
+                aria-label={`${star}점`}
+                disabled={submitted}
+              >
+                <ReviewStarIcon
+                  className={`${styles.starIcon} ${star <= activeRating ? styles.starFilled : styles.starEmpty}`}
+                  fill={star <= activeRating ? 'currentColor' : 'none'}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

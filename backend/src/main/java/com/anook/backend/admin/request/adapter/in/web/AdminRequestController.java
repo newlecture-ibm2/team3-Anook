@@ -30,7 +30,8 @@ public class AdminRequestController {
     /**
      * 전체 요청 목록 조회 (필터링 + 정렬)
      *
-     * GET /admin/requests?status=PENDING&dept=HK&priority=URGENT&sort=created_at_desc
+     * GET
+     * /admin/requests?status=PENDING&dept=HK&priority=URGENT&sort=created_at_desc
      */
     @GetMapping
     public ResponseEntity<List<AdminRequestListResult>> getAllRequests(
@@ -147,7 +148,27 @@ public class AdminRequestController {
         if (departmentId == null || departmentId.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        manageAdminRequestUseCase.changeDepartment(id, departmentId);
+        String summary = body.get("summary");
+        String description = body.get("description");
+        manageAdminRequestUseCase.changeDepartment(id, departmentId, summary, description);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 요약(제목) 및 설명 변경
+     *
+     * PATCH /admin/requests/{id}/summary
+     */
+    @PatchMapping("/{id}/summary")
+    public ResponseEntity<Void> updateSummary(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String summary = body.get("summary");
+        String description = body.get("description");
+        if (summary == null || summary.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        manageAdminRequestUseCase.updateSummary(id, summary, description);
         return ResponseEntity.noContent().build();
     }
 

@@ -5,6 +5,7 @@ import ChatInput from './ChatInput';
 
 import Pill from '@/components/ui/Pill/Pill';
 import ChatBackground from './ChatBackground';
+import ChatEndCard from './ChatEndCard/ChatEndCard';
 import FeedbackCard from './FeedbackCard';
 import RequestCard from './RequestCard/RequestCard';
 import RequestStatusBar from './RequestStatusBar/RequestStatusBar';
@@ -15,7 +16,7 @@ import { ArrowDownIcon } from '@/components/icons';
 export interface ChatMessage {
   id: string;
   variant: 'sent' | 'received';
-  type?: 'TEXT' | 'REQUEST_CARD' | 'AI_PROGRESS' | 'QUICK_REPLY' | 'FEEDBACK' | 'WELCOME' | 'FALLBACK' | 'STATUS_CARD';
+  type?: 'TEXT' | 'REQUEST_CARD' | 'AI_PROGRESS' | 'QUICK_REPLY' | 'FEEDBACK' | 'CHAT_END' | 'WELCOME' | 'FALLBACK' | 'STATUS_CARD';
   content: string;
   imageUrl?: string;
   meta?: Record<string, any>;
@@ -29,14 +30,22 @@ export interface ChatScreenProps {
   onSendMessage: (text: string) => void;
   onCancelRequest?: (requestId: number) => void;
   onConfirmRequest?: (requestId: number) => void;
+  onRateRequest?: (requestId: number, rating: number) => void;
   onStopMessage?: () => void;
   onPillSelect?: (msgId: string, option: string) => void;
 }
 
-export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
+export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRequests, onSendMessage, onCancelRequest, onConfirmRequest, onRateRequest, onStopMessage, onPillSelect }: ChatScreenProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [isRequestsExpanded, setIsRequestsExpanded] = useState(true);
+
+  // AI Progress의 domains를 별도로 추출 (ProgressIndicator를 map 밖에서 독립 렌더링)
+  const progressMsg = messages.find(m => m.type === 'AI_PROGRESS');
+  const progressDomains = progressMsg?.meta?.domains as string[] | undefined;
+
+  // FRONT(실시간 상담)은 요청 상태바에서 제외
+  const filteredRequests = activeRequests?.filter(r => r.domainCode !== 'FRONT');
 
   // Auto-scroll to bottom when messages or typing state changes
   useEffect(() => {
@@ -48,31 +57,26 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
 
   return (
     <div className={styles.chatScreen}>
-      <ChatBackground isAiTyping={isTyping} isUserTyping={showTypingBackground} />
+      <ChatBackground isAiTyping={isTyping} isUserTyping={showTypingBackground} isInitial={!hasInteracted} />
 
 
       
       {/* 고정 상태 바 컨테이너 */}
-      {activeRequests && activeRequests.length > 0 && (
+      {filteredRequests && filteredRequests.length > 0 && (
         <div 
           className={styles.statusBarContainer}
+          onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
           style={{
-            zIndex: 9999,
-            top: '12px',
-            left: '12px',
-            right: '12px',
-            width: 'auto',
-            borderRadius: 'var(--radius-lg)',
             backgroundColor: 'rgba(255, 255, 255, 0.5)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.8)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.8)',
             boxShadow: '0 8px 32px rgba(31, 38, 135, 0.05)',
-            transform: 'translateZ(0)'
+            transform: 'translateZ(0)',
           }}
         >
           <div className={styles.requestList}>
-            {[...activeRequests].reverse().map((req, index) => {
+            {[...filteredRequests].reverse().map((req, index) => {
               const isLatest = index === 0;
               const content = (
                 <RequestStatusBar
@@ -103,37 +107,28 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               );
             })}
           </div>
-          <div 
-            className={styles.multiRequestToggle}
-            onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
-          >
-            <span>{activeRequests.length}개의 진행 중인 요청</span>
+          <div className={styles.multiRequestToggle}>
+            <span>{filteredRequests.length}개의 진행 중인 요청</span>
             <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
-              <ArrowDownIcon width={24} height={24} strokeWidth={1.5} color="var(--color-gray-500)" />
+              <ArrowDownIcon width={20} height={20} strokeWidth={1} color="var(--color-gray-400)" />
             </span>
           </div>
         </div>
       )}
 
       <div 
-        className={`${styles.messageList} ${activeRequests && activeRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
-        style={activeRequests && activeRequests.length > 1 ? { '--status-bar-offset': `${activeRequests.length * 56}px` } as React.CSSProperties : undefined}
+        className={`${styles.messageList} ${filteredRequests && filteredRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
+        style={filteredRequests && filteredRequests.length > 1 ? { '--status-bar-offset': `${filteredRequests.length * 56}px` } as React.CSSProperties : undefined}
       >
         {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div className={styles.spacer} />}
         {messages.map((msg, index) => {
-          const isLatest = index === messages.length - 1;
 
           if (msg.type === 'AI_PROGRESS') {
-            return (
-              <ProgressIndicator
-                key={msg.id}
-                domains={msg.meta?.domains as string[]}
-              />
-            );
+            return null; // map 밖에서 독립 렌더링
           }
           if (msg.type === 'FALLBACK') {
             return (
-              <ChatBubble key={msg.id} variant="received" isFallback isLatest={isLatest}>
+              <ChatBubble key={msg.id} variant="received" bubbleStyle="sent" isFallback>
                 {msg.content}
               </ChatBubble>
             );
@@ -141,7 +136,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           if (msg.type === 'STATUS_CARD') {
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                {msg.content && <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble>}
+                {msg.content && <ChatBubble variant="received">{msg.content}</ChatBubble>}
               </div>
             );
           }
@@ -158,7 +153,9 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
                 graceRemaining={Number(msg.meta?.graceRemaining) || 0}
                 priority={String(msg.meta?.priority || 'NORMAL')}
                 createdAt={msg.meta?.createdAt as string}
+                cancelledAt={msg.meta?.cancelledAt as string}
                 cancelPending={Boolean(msg.meta?.cancelPending)}
+                cancelReason={msg.meta?.cancelReason as string}
                 onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
                 onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
               />
@@ -178,33 +175,53 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               <div key={msg.id} style={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
-                margin: isWelcome ? 'auto 0' : (isFirstChat ? 'auto 0 0 0' : '0')
+                flex: isWelcome ? 1 : undefined,
+                margin: isWelcome ? '0' : (isFirstChat ? 'auto 0 0 0' : '0')
               }}>
                 {isWelcome ? (
                   <div style={{ 
-                    marginBottom: 'var(--space-24)', 
-                    padding: '0 var(--space-8)',
-                    textAlign: 'center',
-                    lineHeight: '1.5'
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}>
-                    <div style={{ font: 'var(--text-h1-bold)', color: 'var(--color-gray-900)', marginBottom: 'var(--space-8)' }}>
-                      {welcomeLine1}
-                    </div>
-                    {welcomeLine2 && (
-                      <div style={{ font: 'var(--text-body-medium)', color: 'var(--color-gray-500)', whiteSpace: 'pre-wrap' }}>
-                        {welcomeLine2}
+                    <div style={{ 
+                      padding: '0 var(--space-8)',
+                      textAlign: 'center',
+                      lineHeight: '1.5',
+                      transform: 'translateY(6vh)'
+                    }}>
+                      <div style={{ marginBottom: 'var(--space-32)', display: 'flex', justifyContent: 'center' }}>
+                        <img 
+                          src="/icon.png" 
+                          alt="Anook AI" 
+                          style={{ 
+                            width: '40px', 
+                            height: '40px', 
+                            objectFit: 'contain'
+                          }} 
+                        />
                       </div>
-                    )}
+                      <div style={{ font: 'var(--text-h1-bold)', color: 'var(--color-gray-900)', marginBottom: 'var(--space-8)' }}>
+                        {welcomeLine1}
+                      </div>
+                      {welcomeLine2 && (
+                        <div style={{ font: 'var(--text-body-medium)', color: 'var(--color-gray-500)', whiteSpace: 'pre-wrap' }}>
+                          {welcomeLine2}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  msg.content ? <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble> : null
+                  msg.content ? <ChatBubble variant="received">{msg.content}</ChatBubble> : null
                 )}
                 {!msg.meta?.selectedOption && (
                   <div style={{ 
                     display: 'flex', 
                     justifyContent: isWelcome ? 'center' : 'flex-start',
-                    marginBottom: isWelcome ? '-16px' : '0',
-                    paddingLeft: isWelcome ? '0' : '0'
+                    marginBottom: isWelcome ? '-36px' : '0',
+                    paddingBottom: '0',
+                    paddingLeft: '0'
                   }}>
                     <Pill 
                       options={msg.meta?.options as string[]} 
@@ -226,26 +243,47 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
           if (msg.type === 'FEEDBACK') {
             return (
-              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                {msg.content && <ChatBubble variant="received" isLatest={isLatest}>{msg.content}</ChatBubble>}
-                <FeedbackCard onSubmit={(rating) => console.log('Feedback:', rating)} />
-              </div>
+              <ChatEndCard
+                key={msg.id}
+                summary={String(msg.meta?.summary || '')}
+                domainCode={String(msg.meta?.domainCode || 'UNKNOWN')}
+                completedAt={String(msg.meta?.completedAt || new Date().toISOString())}
+                onSubmitRating={(rating) => {
+                  const requestId = msg.meta?.requestId;
+                  if (requestId && onRateRequest) {
+                    onRateRequest(Number(requestId), rating);
+                  }
+                }}
+              />
+            );
+          }
+          if (msg.type === 'CHAT_END') {
+            return (
+              <FeedbackCard
+                key={msg.id}
+                completedAt={String(msg.meta?.completedAt || new Date().toISOString())}
+                onSubmit={(rating) => {
+                  const requestId = msg.meta?.requestId;
+                  if (requestId && onRateRequest) {
+                    onRateRequest(Number(requestId), rating);
+                  }
+                }}
+              />
             );
           }
           
           return (
-            <ChatBubble key={msg.id} variant={msg.variant} isLatest={isLatest} imageUrl={msg.imageUrl}>
+            <ChatBubble key={msg.id} variant={msg.variant} imageUrl={msg.imageUrl}>
               {msg.content}
             </ChatBubble>
           );
         })}
+        {progressMsg && (
+          <ProgressIndicator domains={progressDomains} />
+        )}
         {isStaffTyping && (
-          <ChatBubble variant="received" isFallback isLatest>
-            <span className={styles.typingDots}>
-              <span className={styles.dot} />
-              <span className={styles.dot} />
-              <span className={styles.dot} />
-            </span>
+          <ChatBubble variant="received" bubbleStyle="sent" isFallback>
+            <span className={styles.typingDots}><span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} /></span>
           </ChatBubble>
         )}
         <div ref={messagesEndRef} />

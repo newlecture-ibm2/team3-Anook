@@ -1,12 +1,5 @@
 .card {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-radius: var(--radius-lg);
-  padding: var(--space-16);
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.8);
   position: relative;
 }
 
@@ -34,7 +27,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
 }
 
 .iconContainer {
@@ -44,44 +38,88 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface); /* Fallback */
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
 }
 
-.bgHK { background-color: var(--color-dept-hk-bg); color: var(--color-dept-hk-text); }
-.bgFB { background-color: var(--color-dept-fb-bg); color: var(--color-dept-fb-text); }
-.bgFACILITY { background-color: var(--color-dept-facility-bg); color: var(--color-dept-facility-text); }
-.bgCONCIERGE { background-color: var(--color-dept-concierge-bg); color: var(--color-dept-concierge-text); }
-.bgFRONT { background-color: var(--color-dept-front-bg); color: var(--color-dept-front-text); }
-.bgEMERGENCY { background-color: var(--color-dept-emergency-bg); color: var(--color-dept-emergency-text); }
-.bgUNKNOWN { background-color: var(--color-surface); color: var(--color-primary); }
+.bgHK {
+  color: var(--color-dept-hk-text);
+}
+
+.bgFB {
+  color: var(--color-dept-fb-text);
+}
+
+.bgFACILITY {
+  color: var(--color-dept-facility-text);
+}
+
+.bgCONCIERGE {
+  color: var(--color-dept-concierge-text);
+}
+
+.bgFRONT {
+  color: var(--color-dept-front-text);
+}
+
+.bgEMERGENCY {
+  color: var(--color-dept-emergency-text);
+}
+
+.bgUNKNOWN {
+  color: var(--color-primary);
+}
+
+.cardBgHK {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-hk-bg) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
+
+.cardBgFB {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-fb-bg) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
+
+.cardBgFACILITY {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-facility-bg) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
+
+.cardBgCONCIERGE {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-concierge-bg) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
+
+.cardBgFRONT {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-dept-front-bg) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
+
+.cardBgEMERGENCY {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid var(--color-dept-emergency-border) !important;
+}
+
+.cardBgUNKNOWN {
+  background: linear-gradient(to right, color-mix(in srgb, var(--color-surface) 40%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.5) !important;
+}
 
 .circularSvg {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 36px;
-  height: 36px;
-  transform: translate(-50%, -50%) rotate(-90deg);
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
 }
 
-.circleBg {
-  fill: none;
-  stroke: var(--color-gray-200);
-  stroke-width: 3;
-}
 
 .circleProgress {
   fill: none;
-  stroke: var(--color-primary);
-  stroke-width: 3;
+  stroke: var(--timer-color, var(--color-primary));
+  stroke-width: 2.5;
   stroke-linecap: round;
-  transition: stroke-dasharray 1s linear;
+  transition: stroke-dashoffset 1s linear;
 }
 
 .timerText {
   font: var(--text-body-bold);
-  color: var(--color-primary);
+  color: var(--timer-color, var(--color-gray-700));
   z-index: 1;
 }
 
@@ -111,12 +149,13 @@
   color: var(--color-gray-900);
 }
 
-.detailsInline {
+.timeLabel {
   font: var(--text-caption-regular);
   color: var(--color-gray-500);
   text-align: right;
   flex-shrink: 0;
-  margin-top: 2px; /* Title font line-height compensation */
+  margin-top: 2px;
+  /* Title font line-height compensation */
 }
 
 .pendingMessage {
@@ -129,7 +168,7 @@
 .buttonGroup {
   display: flex;
   gap: var(--space-8);
-  margin-top: var(--space-24);
+  margin-top: var(--space-12);
   max-height: 100px;
   opacity: 1;
   overflow: hidden;
@@ -151,23 +190,10 @@
   gap: var(--space-4);
 }
 
-.cancelledText {
-  color: var(--color-error, #EF4444);
-}
-
 .cancelledCard {
   opacity: 0.7;
-  border: 1px solid var(--color-error, #EF4444);
-}
-
-.inProgressCard {
-  border: 1px solid var(--color-primary, #3B82F6);
-}
-
-.completedCard {
-  border: 1px solid var(--color-success, #10B981);
-}
-
-.cancelPendingCard {
-  border: 1px solid var(--color-warning, #F59E0B);
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: none !important;
+  filter: grayscale(100%);
 }

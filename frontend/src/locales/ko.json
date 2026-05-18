@@ -107,6 +107,7 @@
       "filterAll": "전체보기",
       "filterPositive": "👍 칭찬",
       "filterNegative": "👎 불만/의견",
+      "filterRating": "⭐ 별점",
       "empty": "조건에 맞는 피드백이 없습니다.",
       "columns": {
         "date": "수신 일시",
