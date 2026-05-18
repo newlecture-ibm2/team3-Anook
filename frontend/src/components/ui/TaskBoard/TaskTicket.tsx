@@ -118,6 +118,8 @@ export default function TaskTicket({
 
   if (orderDetails) {
     displayTitle = orderDetails; // e.g. "콜라 2개 외 1건" or "Coke 2items and 1other item(s)"
+  } else if (entities?.intent === 'ORDER_MODIFY' || entities?.intent === 'ORDER_CANCEL') {
+    // 주문 변경/취소의 경우 AI가 생성한 상세 summary(title)를 그대로 사용
   } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
     displayTitle = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
   }
