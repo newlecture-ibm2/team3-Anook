@@ -5,23 +5,26 @@ import ChatScreen from './_components/ChatScreen';
 import { useChat } from './useChat';
 
 export default function GuestChatPage() {
-  const { messages, isTyping, sendMessage, activeRequests, cancelRequest, confirmRequest, stopMessage, handlePillSelect } = useChat();
+  const { messages, isTyping, isStaffTyping, sendMessage, activeRequests, cancelRequest, confirmRequest, rateRequest, stopMessage, handlePillSelect } = useChat();
 
   return (
     <main style={{ 
       height: '100dvh', 
       display: 'flex', 
-      justifyContent: 'center', /* Centers horizontally when flex-direction is row */
-      alignItems: 'center', /* Centers vertically */
-      backgroundColor: 'var(--color-gray-100)' 
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'var(--color-gray-100)',
+      overflow: 'hidden'
     }}>
       <ChatScreen
         messages={messages}
         isTyping={isTyping}
+        isStaffTyping={isStaffTyping}
         activeRequests={activeRequests}
         onSendMessage={sendMessage}
         onCancelRequest={cancelRequest}
         onConfirmRequest={confirmRequest}
+        onRateRequest={rateRequest}
         onStopMessage={stopMessage}
         onPillSelect={handlePillSelect}
       />

@@ -1,21 +1,16 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-32);
-  padding: var(--space-48) var(--space-32);
-  height: 100vh;
-  box-sizing: border-box;
+  height: 100%;
+  gap: var(--space-24);
+  padding: 0;
 }
 
 .header {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
-  align-items: flex-start;
-}
-
-.headerLeft {
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-8);
 }
 
@@ -30,69 +25,47 @@
   margin: 0;
 }
 
+.splitLayout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  background-color: var(--color-white);
+  overflow: hidden;
+}
+
+.leftPane {
+  width: 25%;
+  min-width: 300px;
+  max-width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-gray-200);
+  overflow-y: auto;
+  padding: var(--space-24);
+  background-color: var(--color-white);
+}
+
+.rightPane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  overflow: hidden;
+}
+
+.cardGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 calc(var(--space-24) * -1);
+}
+
 .headerActions {
   display: flex;
   gap: var(--space-12);
   align-items: center;
-}
-
-.mainContent {
-  display: flex;
-  flex: 1;
-  gap: var(--space-16);
-  min-height: 0;
-}
-
-.sidebar {
-  width: 320px;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-gray-100);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow-y: auto;
-}
-
-.chatArea {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-gray-100);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.chatHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-24) var(--space-32);
-}
-
-.chatHeaderLeft {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.chatTitle {
-  font: var(--text-h2-bold);
-  color: var(--color-gray-900);
-  margin: 0;
-}
-
-.chatSubtitle {
-  font: var(--text-body-small);
-  color: var(--color-gray-500);
-}
-
-.chatHeaderActions {
-  position: relative;
-  display: flex;
-  align-items: center;
-  color: var(--color-gray-400);
-  cursor: pointer;
 }
 
 .popoverMenu {
@@ -124,11 +97,3 @@
   background-color: var(--color-tag-bg-red);
 }
 
-.chatBody {
-  flex: 1;
-  padding: var(--space-32);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-24);
-}

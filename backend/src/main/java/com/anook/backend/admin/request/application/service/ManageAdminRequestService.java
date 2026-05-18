@@ -165,21 +165,43 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
     @Override
     @Transactional
-    public void changeDepartment(Long id, String departmentId) {
-        AdminRequest request = adminRequestQueryPort.findById(id)
+    public void changeDepartment(Long id, String departmentId, String summary, String description) {
+        AdminRequest before = adminRequestQueryPort.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+        String previousDeptId = before.getDepartmentId();
+
+        // summary/description이 전달되면 같은 트랜잭션에서 먼저 업데이트
+        if (summary != null && !summary.isBlank()) {
+            adminRequestQueryPort.updateSummary(id, summary, description);
+        }
 
         adminRequestQueryPort.changeDepartment(id, departmentId);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
-                id, request.getStatus(), departmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+        // Re-fetch — summary + department 모두 반영된 최신 데이터
+        AdminRequest updated = adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        // entities, priority를 포함한 full payload (Guest RequestCard 렌더링용)
+        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+                id, updated.getStatus(), departmentId, updated.getSummary(), updated.getRoomNo(),
+                updated.getEntities(), 0, updated.getPriority()
         );
-        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToRoom(updated.getRoomNo(), payload);
         dispatchPort.dispatchToDepartment(departmentId, payload);
-        if (!departmentId.equals(request.getDepartmentId())) {
-            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        // 이전 부서에도 알림 (프론트 데스크 → 타 부서 이관 시 원래 부서에서 제거용)
+        if (!departmentId.equals(previousDeptId)) {
+            dispatchPort.dispatchToDepartment(previousDeptId, payload);
         }
         dispatchPort.dispatchToAdmin(payload);
+    }
+
+    @Override
+    @Transactional
+    public void updateSummary(Long id, String summary, String description) {
+        adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.updateSummary(id, summary, description);
     }
 
     @Override
@@ -276,13 +298,17 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
     @Override
     @Transactional
     public AdminRequestDetailResult createRequest(CreateAdminRequestCommand command) {
+        // 방 번호로 투숙객 ID 조회 (기존 요청에서 guest_id를 가져옴)
+        Long guestId = adminRequestQueryPort.findGuestIdByRoomNo(command.roomNo());
+
         AdminRequest saved = adminRequestQueryPort.save(
                 command.departmentId().toUpperCase(),
                 command.roomNo(),
                 command.summary(),
                 command.rawText(),
                 command.priority(),
-                command.assignedStaffId()
+                command.assignedStaffId(),
+                guestId
         );
 
         // [AN-307] 수동 생성 시 WebSocket 알림 발송 (고객 & 부서)

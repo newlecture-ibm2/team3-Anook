@@ -8,7 +8,12 @@ import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
-import { ChatMessage } from '@/components/ui/Modal/ChatModal';
+export interface ChatMessage {
+  id: number | string;
+  variant: 'sent' | 'received';
+  senderType?: string;
+  content: string;
+}
 
 export interface ChatPanelProps {
   roomNumber?: string;
@@ -22,6 +27,9 @@ export interface ChatPanelProps {
   showRagButton?: boolean;
   onRagRegister?: () => void;
   isEmergency?: boolean;
+  headerRightContent?: React.ReactNode;
+  searchTerm?: string;
+  onRagFlowChange?: (active: boolean) => void;
 }
 
 const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
@@ -32,7 +40,7 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   CANCELLED: { text: '취소됨', variant: 'gray' },
 };
 
-export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false }: ChatPanelProps) {
+export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, searchTerm, onRagFlowChange }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -105,9 +113,9 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
         setMessages(prev => {
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
           // 낙관적 업데이트로 인한 중복 방지 (내용으로 비교)
-          if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp'))) {
+          if (type === 'STAFF_MESSAGE' && prev.some(m => m.variant === 'sent' && m.content === displayContent && String(m.id).startsWith('temp'))) {
             // tempId를 실제 messageId로 교체
-            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && m.id.startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent, senderType: 'STAFF' } : m);
+            return prev.map(m => (m.variant === 'sent' && m.content === displayContent && String(m.id).startsWith('temp')) ? { ...m, id: String(messageId), content: displayContent, senderType: 'STAFF' } : m);
           }
           return [...prev, {
             id: messageId ? String(messageId) : Date.now().toString(),
@@ -166,17 +174,20 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
     }
   };
 
-  // 상담 완료 버튼 클릭 시
+  // 상담 완료 버튼 클릭 시: 즉시 COMPLETED 처리 후 RAG 모달은 별도로 열기
   const handleCompleteConsultation = () => {
+    // 1. 즉시 COMPLETED 상태로 변경 (고객에게 바로 상담 종료 카드 전송)
+    if (requestId && onStatusChange && status !== 'COMPLETED') {
+      onStatusChange(requestId, 'COMPLETED');
+    }
+
+    // 2. 직원이 답변한 내용이 있으면 RAG 등록 모달 열기
     const staffMessages = messages.filter(m => m.senderType === 'STAFF');
     if (staffMessages.length > 0) {
       setIsRagConfirmOpen(true);
+      onRagFlowChange?.(true);
     } else {
-      if (requestId && onStatusChange && status !== 'COMPLETED') {
-        onStatusChange(requestId, 'COMPLETED');
-      } else {
-        if(onClose) onClose();
-      }
+      if(onClose) onClose();
     }
   };
 
@@ -185,13 +196,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
     if(onClose) onClose();
   };
 
-  // "등록하기" → page.tsx의 onRagRegister를 호출하여 RegisterTrainingModal 오픈
   const handleRagConfirm = () => {
     setIsRagConfirmOpen(false);
+    onRagFlowChange?.(false);
     if (onRagRegister) onRagRegister();
-    if (requestId && onStatusChange && status !== 'COMPLETED') {
-      onStatusChange(requestId, 'COMPLETED');
-    }
   };
 
   // "나중에 하기" → PENDING 상태로 저장 후 완료 처리
@@ -222,23 +230,20 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
       console.error('[ChatPanel] PENDING 등록 실패:', err);
     }
     setIsRagConfirmOpen(false);
-    
-    if (requestId && onStatusChange && status !== 'COMPLETED') {
-      onStatusChange(requestId, 'COMPLETED');
-    } else if (onClose) onClose();
+    onRagFlowChange?.(false);
+    if (onClose) onClose();
   };
 
-  // "건너뛰기" → 그냥 완료 처리
   const handleRagSkip = () => {
     setIsRagConfirmOpen(false);
-    if (requestId && onStatusChange && status !== 'COMPLETED') {
-      onStatusChange(requestId, 'COMPLETED');
-    } else if (onClose) onClose();
+    onRagFlowChange?.(false);
+    if (onClose) onClose();
   };
 
-  // 취소 (단순히 모달 닫기, 완료 처리 안 함)
   const handleRagCancel = () => {
     setIsRagConfirmOpen(false);
+    onRagFlowChange?.(false);
+    if (onClose) onClose();
   };
 
   // 상담 내용에서 초기 질문/답변 추출
@@ -261,11 +266,15 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
         <div className={styles.header}>
           <div className={styles.headerInfo}>
             <span className={styles.roomBadge}>{roomNumber}호</span>
-            <h3 className={styles.title}>{summary || '상담'}</h3>
+            <h3 className={styles.title}>{(summary || '상담').replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '')}</h3>
           </div>
           <div className={styles.headerRight}>
-            {status && STATUS_MAP[status] && (
-              <StatusBadge variant={STATUS_MAP[status].variant}>{STATUS_MAP[status].text}</StatusBadge>
+            {headerRightContent ? headerRightContent : (
+              (status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
+                <Button size="medium" variant="primary" onClick={handleCompleteConsultation}>
+                  상담 완료
+                </Button>
+              )
             )}
           </div>
         </div>
@@ -275,13 +284,39 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
           ) : messages.length === 0 ? (
             <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
-          ) : (
-            messages.map((msg) => (
-              <ChatBubble key={msg.id} variant={msg.variant} isFallback={msg.senderType === 'STAFF'}>
-                {msg.content}
-              </ChatBubble>
-            ))
-          )}
+          ) : (() => {
+            const filtered = searchTerm
+              ? messages.filter(m => m.content.toLowerCase().includes(searchTerm.toLowerCase()))
+              : messages;
+            return filtered.length === 0 ? (
+              <div className={styles.emptyState}>검색 결과가 없습니다.</div>
+            ) : (
+              filtered.map((msg) => {
+                const isAutoMsg = msg.content.includes('프론트 데스크 직원이 메시지를 확인했습니다') || 
+                                  msg.content.includes('긴급 대응팀이 배정되었습니다');
+                
+                // 관리자 패널 기준:
+                // - GUEST → 왼쪽(received) + surface color 스타일(sent)
+                // - AI → 오른쪽(sent) + AI 텍스트 스타일(received)
+                // - STAFF → 오른쪽(sent) + fallback 스타일
+                const isManualStaffMsg = msg.senderType === 'STAFF' && !isAutoMsg;
+
+                // 위치(variant)와 버블 스타일(bubbleStyle)을 독립적으로 지정
+                const bubbleStyle = msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const;
+
+                return (
+                  <ChatBubble 
+                    key={msg.id} 
+                    variant={msg.variant}
+                    bubbleStyle={bubbleStyle}
+                    isFallback={isManualStaffMsg}
+                  >
+                    {msg.content}
+                  </ChatBubble>
+                );
+              })
+            );
+          })()}
         </div>
 
         {!isReadOnly && status === 'PENDING' && (
@@ -293,9 +328,10 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
               onClick={async () => {
                 if (onStatusChange && requestId) {
                   await onStatusChange(requestId, 'IN_PROGRESS');
-                  // 긴급 대응 시작 시 고객에게 자동 메시지 전송
                   if (isEmergency) {
                     await handleSend('긴급 대응팀이 배정되었습니다. 신속히 조치하겠습니다. 안전한 곳에서 대기해 주시기 바랍니다.');
+                  } else {
+                    await handleSend('프론트 데스크 직원이 메시지를 확인했습니다. 곧 안내 드리겠습니다.');
                   }
                 }
               }} 
@@ -323,11 +359,6 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
             <div style={{ flex: 1 }}>
               <ChatInput isStaff placeholder="고객에게 답변을 입력하세요..." onSend={handleSend} />
             </div>
-            {(status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
-              <Button size="large" variant="primary" onClick={handleCompleteConsultation} style={{ marginBottom: '8px' }}>
-                상담 완료
-              </Button>
-            )}
           </div>
         )}
       </div>
@@ -380,7 +411,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
                 padding: '4px 0',
               }}
             >
-              등록하지 않고 삭제
+              등록하지 않기
             </button>
           </div>
         </ModalCard>

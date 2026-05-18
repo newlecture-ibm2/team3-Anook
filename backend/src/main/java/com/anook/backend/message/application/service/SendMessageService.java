@@ -263,6 +263,10 @@ public class SendMessageService implements SendMessageUseCase {
             targetLang = "ko"; // 기본값 (추후 팀원이 다국어 지원 시 수정 예정)
         }
 
+        // 0. 즉시 STAFF_TYPING 이벤트 전송 (번역 전 게스트에게 타이핑 인디케이터 표시)
+        dispatchPort.sendToRoom(command.roomNo(), Map.of(
+                "type", "STAFF_TYPING"));
+
         // 1. 번역 수행
         String translatedContent = aiPort.translate(command.content(), targetLang);
 

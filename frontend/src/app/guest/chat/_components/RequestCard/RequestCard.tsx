@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestCard.module.css';
-import Button from '@/components/ui/Button/Button';
+import GlassButton from '@/components/ui/Button/GlassButton';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
-import { useTranslation } from '@/app/useTranslation';
+import { Monitor, Home, Utensils, Wrench, ConciergeBell, AlertTriangle, FileText } from 'lucide-react';
 
 export interface RequestCardProps {
   requestId: number;
@@ -14,20 +14,22 @@ export interface RequestCardProps {
   graceRemaining: number;
   priority: string;
   createdAt?: string;
+  cancelledAt?: string;
   cancelPending?: boolean;
+  cancelReason?: string;
   onCancel?: () => void;
   onModify?: () => void;
   onAccept?: () => void;
 }
 
-const DOMAIN_MAP: Record<string, { icon: string; label: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
-  HK: { icon: '🏨', label: '하우스키핑', variant: 'green' },
-  FB: { icon: '🍽️', label: '식음료', variant: 'gray' },
-  FACILITY: { icon: '🔧', label: '시설관리', variant: 'gray' },
-  CONCIERGE: { icon: '🛎️', label: '컨시어지', variant: 'purple' },
-  FRONT: { icon: '🏢', label: '프론트', variant: 'purple' },
-  EMERGENCY: { icon: '🚨', label: '긴급', variant: 'red' },
-  UNKNOWN: { icon: '📋', label: '기타 요청', variant: 'gray' },
+const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
+  HK: { icon: Home, label: '하우스키핑' },
+  FB: { icon: Utensils, label: '식음료' },
+  FACILITY: { icon: Wrench, label: '시설관리' },
+  CONCIERGE: { icon: ConciergeBell, label: '컨시어지' },
+  FRONT: { icon: Monitor, label: '프론트' },
+  EMERGENCY: { icon: AlertTriangle, label: '긴급' },
+  UNKNOWN: { icon: FileText, label: '기타 요청' },
 };
 
 export default function RequestCard({
@@ -40,23 +42,51 @@ export default function RequestCard({
   graceRemaining,
   priority,
   createdAt,
+  cancelledAt,
   cancelPending,
+  cancelReason,
   onCancel,
   onModify,
   onAccept,
 }: RequestCardProps) {
-  const { t, language } = useTranslation();
-
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
   const isCancelPending = cancelPending === true;
-  const isEscalatedChat = entities?.intent === 'ESCALATION';
+  const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
   const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
   const isCompleted = progress >= 100 && !isCancelled;
+  
+
+
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
+  const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
+  const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
+
+  const DOMAIN_TIMER_COLORS: Record<string, string> = {
+    HK: 'var(--color-dept-hk-text)',
+    FB: 'var(--color-dept-fb-text)',
+    FACILITY: 'var(--color-dept-facility-text)',
+    CONCIERGE: 'var(--color-dept-concierge-text)',
+    FRONT: 'var(--color-dept-front-text)',
+    EMERGENCY: 'var(--color-dept-emergency-text)',
+  };
+  const timerColor = DOMAIN_TIMER_COLORS[domainCode] || 'var(--color-primary)';
   
   // Timer state
   const [timeLeft, setTimeLeft] = useState(graceRemaining);
+
+  // Format summary to hide internal notes from guest
+  let displaySummary = summary.includes('[직원 인수인계]') || summary.includes('[프론트 연결]') || summary.includes('미학습 정보') || isEscalatedChat
+    ? '프론트 데스크 직원 연결 요청'
+    : summary;
+  
+  if (isUrgent) {
+    displaySummary = `[긴급] ${displaySummary}`;
+  }
+
+  if (isCancelled) {
+    displaySummary += ' 취소';
+  }
 
   useEffect(() => {
     if (graceRemaining <= 0 || isCancelled) {
@@ -85,161 +115,93 @@ export default function RequestCard({
   const renderDetails = () => {
     if (!entities) return null;
     
-    // Example: "수건 ×2장"
-    if (entities.item) {
-      return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
+    const parts: string[] = [];
+    if (Array.isArray(entities.items)) {
+      entities.items.forEach((it: any) => {
+        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
+      });
+    } else if (entities.item) {
+      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
     }
-    // Fallback if no specific format matched, maybe raw text or other entity props
-    const HIDDEN_KEYS = ['intent', 'emergency_category', 'matched_keyword', 'severity'];
-    const parts = [];
-    if (entities.menu) parts.push(`${entities.menu}`);
-    if (entities.symptom) parts.push(`${entities.symptom}`);
-    // 시스템 내부용 키만 있는 경우 빈 문자열 반환
+
+    if (Array.isArray(entities.tasks)) {
+      entities.tasks.forEach((t: string) => parts.push(t));
+    }
+    
     if (parts.length === 0) {
-      const visibleEntries = Object.entries(entities).filter(([key]) => !HIDDEN_KEYS.includes(key));
-      if (visibleEntries.length === 0) return null;
+      if (entities.menu) {
+        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+      }
+      if (entities.symptom) parts.push(`${entities.symptom}`);
     }
-    return parts.join(', ');
+    
+    return parts.length > 0 ? parts.join(', ') : null;
   };
 
-  let targetIntent = entities?.intent;
-  let targetCount = entities?.count;
-  let orderDetails = '';
-  
-  // 만약 items나 tasks 배열이 있다면 (HK 등), 그 안의 세부 항목을 진짜 targetIntent로 사용합니다.
-  if (entities?.items && Array.isArray(entities.items) && entities.items.length > 0) {
-    targetIntent = entities.items[0].item;
-    targetCount = entities.items[0].count;
-  } else if (entities?.tasks && Array.isArray(entities.tasks) && entities.tasks.length > 0) {
-    targetIntent = entities.tasks[0];
-  } else if (entities?.intent === 'ROOM_SERVICE' && entities?.menu_items && Array.isArray(entities.menu_items) && entities.menu_items.length > 0) {
-    // F&B 룸서비스의 경우, 첫 번째 메뉴 이름을 사용
-    let firstMenu = entities.menu_items[0].name;
-    // 다국어 메뉴 매핑이 있으면 영어 등으로 번역
-    const tMenu = (t as any).menu;
-    if (tMenu && firstMenu in tMenu) {
-      firstMenu = tMenu[firstMenu];
-    }
-    const totalCount = entities.menu_items.reduce((sum: number, m: any) => sum + (m.quantity || 1), 0);
-    const extraCount = entities.menu_items.length - 1;
-    
-    if (extraCount > 0) {
-      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items} ${t.cardUI.and} ${extraCount}${t.cardUI.others}`;
-    } else {
-      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items}`;
-    }
-  }
+  const detailsText = renderDetails();
 
-  // 혹시라도 소문자로 왔을 경우를 대비해 대문자로 정규화
-  if (targetIntent && typeof targetIntent === 'string') {
-    targetIntent = targetIntent.toUpperCase();
-  }
-
-  const translatedIntent = targetIntent && t.intents ? t.intents[targetIntent as keyof typeof t.intents] : null;
-  
-  let displaySummary = summary;
-  if (language === 'en' && (entities as any)?.summary_en) {
-    displaySummary = (entities as any).summary_en as string;
-  }
-  
-  if (orderDetails) {
-    displaySummary = orderDetails; // e.g. "콜라 2개 외 1건" or "Coke 2items and 1other item(s)"
-  } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
-    // summary_en이 없고 번역된 인텐트가 있는 경우에만 인텐트를 표시 (폴백)
-    displaySummary = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
-  }
-
-  // summary_en을 쓰거나 번역된 인텐트가 있는 경우, 중복된 한국어 상세 정보(고장 등)를 숨김
-  const detailsText = (translatedIntent || (language === 'en' && (entities as any)?.summary_en)) ? null : renderDetails();
-
-  let statusText = t.cardUI.status.pending;
-  if (isCancelled) statusText = t.cardUI.status.cancelled;
-  else if (isCancelPending) statusText = t.cardUI.status.cancelPending;
-  else if (isEscalatedChat) statusText = t.cardUI.status.escalated;
-  else if (isCompleted) statusText = t.cardUI.status.completedMark;
-  else if (isInProgress) statusText = t.cardUI.status.inProgress;
-
-  const displayDomainLabel = t.ticketUI.department[domainCode as keyof typeof t.ticketUI.department] || domainInfo.label;
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
 
   return (
-    <div className={`${styles.card} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
-      {/* Header */}
-      <div className={styles.header}>
-        <Tag variant={domainInfo.variant}>
-          {domainInfo.icon} {displayDomainLabel}
-        </Tag>
-        <div className={styles.statusText}>
-          {statusText}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className={styles.content}>
-        <div className={styles.summary}>{displaySummary as string}</div>
-        {detailsText && <div className={styles.details}>{detailsText}</div>}
-      </div>
-
-      {/* Meta */}
-      {createdAt && (
-        <div className={styles.meta}>
-          🕐 {new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {t.cardUI.time.received}
-        </div>
-      )}
-
-      {/* Grace Period Timer & Buttons */}
-      {showButtons && (
-        <>
-          <div className={styles.guideText}>
-            <strong>{t.cardUI.message.autoAcceptGuide}</strong>
-          </div>
-          <div className={styles.timerContainer}>
-            <div className={styles.timerBarBg}>
-              <div 
-                className={styles.timerBarFill} 
-                style={{ animationDuration: `${graceRemaining}s` }}
-              />
-            </div>
-            <div className={styles.timerText}>{timeLeft}{t.cardUI.time.seconds}</div>
-          </div>
-          <div className={styles.buttonGroup}>
-            <Button variant="primary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onAccept}>{t.cardUI.button.accept}</Button>
-            <Button variant="secondary" style={{ flex: 1, borderRadius: 'var(--radius-full)' }} onClick={onCancel}>{t.cardUI.button.cancel}</Button>
-          </div>
-        </>
-      )}
-
-      {/* Expiry Message or Progress */}
-      {!showButtons && !isCancelled && (
-        <>
-          {isCancelPending ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              {t.cardUI.message.cancelPending}
-            </div>
-          ) : isEscalatedChat ? (
-            <div className={styles.completionMessage} style={{ color: 'var(--color-primary)' }}>
-              {t.cardUI.message.escalated}
+    <div className={`glass-panel ${styles.card} ${cardBgClass} ${isCancelled ? styles.cancelledCard : ''} ${isCancelPending ? styles.cancelPendingCard : ''} ${isInProgress ? styles.inProgressCard : ''} ${isCompleted ? styles.completedCard : ''}`}>
+      <div className={styles.cardLayout}>
+        {/* Left Column: Icon or Timer */}
+        <div className={styles.leftColumn}>
+          {showButtons ? (
+            <div className={`${styles.timerContainer} ${bgClass}`} style={{ '--timer-color': timerColor } as React.CSSProperties}>
+              <svg viewBox="0 0 36 36" className={styles.circularSvg}>
+                <path
+                  className={styles.circleProgress}
+                  strokeDasharray="100"
+                  strokeDashoffset={100 - (timeLeft / Math.max(graceRemaining, 1)) * 100}
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className={styles.timerText}>{timeLeft}</div>
             </div>
           ) : (
-            <div className={styles.completionMessage}>
-              {t.cardUI.message.forwarded}
+            <div className={`${styles.iconContainer} ${bgClass}`}>
+              <domainInfo.icon size={20} />
             </div>
           )}
-          
-          {/* Progress bar after grace period expires (Hide for Escalated Chat) */}
-          {!isEscalatedChat && (
-            <div className={styles.progressContainer}>
-              <div className={styles.progressBarBg}>
-                <div className={styles.progressBarFill} style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
-              </div>
-              <div className={styles.steps}>
-                <span className={progress >= 0 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.received}</span>
-                <span className={progress >= 50 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.inProgress}</span>
-                <span className={progress >= 100 ? styles.stepActive : styles.stepInactive}>{t.cardUI.status.completed}</span>
-              </div>
+        </div>
+
+        {/* Right Column: Content */}
+        <div className={styles.rightColumn}>
+          <div className={styles.content}>
+            <div className={styles.summaryRow}>
+              <div className={styles.summary}>{displaySummary}</div>
+              <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
-          )}
-        </>
-      )}
+          </div>
+
+          <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
+            {isCancelled ? (
+              <>요청이 취소되었습니다</>
+            ) : showButtons ? (
+              <>요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.</>
+            ) : isCancelPending ? (
+              <>취소 요청 확인 중</>
+            ) : isEscalatedChat ? (
+              <>직원이 응대할 예정입니다</>
+            ) : (
+              <>{domainInfo.label} 팀에 전달되었습니다</>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Buttons — full width below cardLayout */}
+      <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
+        <GlassButton variant="cancel" onClick={onCancel} fullWidth>요청 취소</GlassButton>
+        <GlassButton variant="primary" domainCode={domainCode} onClick={onAccept} fullWidth>진행</GlassButton>
+      </div>
     </div>
   );
 }

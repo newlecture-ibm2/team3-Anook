@@ -22,7 +22,8 @@
     "confirm": "Confirm",
     "close": "Close",
     "loading": "Loading...",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "retry": "Retry"
   },
   "adminPage": {
     "sidebar": {
@@ -41,8 +42,9 @@
         "emergency": "Emergency",
         "allRequests": "All Requests",
         "chatHistory": "Chat History",
-        "aiTraining": "AI Training",
-        "rag": "Knowledge Base",
+        "voc": "Customer Feedback",
+        "aiTraining": "Add New Knowledge",
+        "rag": "AI Knowledge",
         "aiRouting": "AI Routing Logs",
         "handover": "Handover",
         "staffManagement": "Staff Management"
@@ -74,6 +76,7 @@
         "FRONT": "Emergency"
       }
     },
+
     "taskBoard": {
       "searchPlaceholder": "Enter search term...",
       "filterAll": "All",
@@ -91,10 +94,30 @@
         "concierge": "Concierge",
         "emergency": "Emergency Response",
         "allRequests": "All Requests",
-        "aiTraining": "AI Training",
-        "rag": "Knowledge Base",
+        "aiTraining": "Add New Knowledge",
+        "rag": "Learned Knowledge",
         "aiRouting": "AI Routing Logs",
         "handover": "Handover"
+      }
+    },
+    "voc": {
+      "title": "Customer Feedback (VOC)",
+      "subtitle": "Page to collect and manage customer feedback such as compliments and complaints.",
+      "filterAll": "View All",
+      "filterPositive": "👍 Compliment",
+      "filterNegative": "👎 Complaint/Feedback",
+      "filterRating": "⭐ Ratings",
+      "empty": "No feedback found.",
+      "columns": {
+        "date": "Received Date",
+        "room": "Room",
+        "sentiment": "Category",
+        "content": "Customer Feedback Content",
+        "reply": "AI Auto Reply"
+      },
+      "sentiments": {
+        "positive": "Compliment",
+        "negative": "Complaint/Feedback"
       }
     },
     "rag": {
@@ -104,7 +127,9 @@
       "filterAll": "All",
       "filterLatest": "Latest",
       "empty": "No knowledge registered.",
+      "deleteTitle": "Confirm Deletion",
       "deleteConfirm": "Are you sure you want to delete this knowledge?",
+      "deleteButton": "Delete",
       "tabs": {
         "ALL": "All",
         "HK": "Housekeeping",
@@ -119,7 +144,11 @@
     "aiTraining": {
       "filterAll": "All",
       "filterMissing": "Missing",
-      "filterUnclear": "Unclear Intent"
+      "filterUnclear": "Unclear Intent",
+      "empty": "No items pending for review.",
+      "rejectTitle": "Confirm Exclusion",
+      "rejectSubtitle": "Are you sure you want to exclude this item from the review list?",
+      "rejectConfirm": "Exclude"
     },
     "frontDesk": {
       "title": "Front Desk",
@@ -151,6 +180,13 @@
     },
     "chatHistory": {
       "title": "Chat History",
+      "emptyMessage": "No messages",
+      "roomConversation": "Room {{room}} Conversation",
+      "roomChatRecord": "Room {{room}} Chat Record",
+      "selectRoomPrompt": "Please select a room to view the conversation",
+      "deleteTitle": "Delete Chat History",
+      "deleteSubtitle": "Are you sure you want to delete the chat history for Room {{room}}? This action cannot be undone.",
+      "deleteButton": "Delete",
       "searchPlaceholder": "Enter search term...",
       "filterAll": "All",
       "filterLatest": "Latest",
@@ -236,10 +272,10 @@
     "welcomeMessage": "Hello! I am the Hotel AI Assistant.\nI will help you have a comfortable stay.\nPlease let me know whatever you need!",
     "quickReplyPrompt": "How can I help you? Choose an option below or type your request!",
     "quickReplyOptions": [
-      "🛏️ Extra towels",
-      "🍳 Breakfast time",
-      "🧹 Room cleaning",
-      "🔑 Late checkout"
+      "Need 2 extra towels",
+      "When is breakfast?",
+      "Please clean my room",
+      "Can I extend checkout?"
     ],
     "progress": {
       "checking": "Checking your request...",

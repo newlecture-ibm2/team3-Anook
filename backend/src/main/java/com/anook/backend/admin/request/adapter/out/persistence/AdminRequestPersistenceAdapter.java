@@ -87,6 +87,14 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
     }
 
     @Override
+    public void updateSummary(Long requestId, String summary, String description) {
+        AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
+        entity.updateSummary(summary, description);
+        jpaRepository.save(entity);
+    }
+
+    @Override
     public void changeDepartment(Long requestId, String departmentId) {
         AdminRequestJpaEntity entity = jpaRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다. id=" + requestId));
@@ -129,10 +137,15 @@ public class AdminRequestPersistenceAdapter implements AdminRequestQueryPort {
 
     @Override
     public AdminRequest save(String departmentId, String roomNo, String summary,
-                             String rawText, String priority, Long assignedStaffId) {
+                             String rawText, String priority, Long assignedStaffId, Long guestId) {
         AdminRequestJpaEntity entity = AdminRequestJpaEntity.createManual(
-                departmentId, roomNo, summary, rawText, priority, assignedStaffId);
+                departmentId, roomNo, summary, rawText, priority, assignedStaffId, guestId);
         return jpaRepository.save(entity).toDomain();
+    }
+
+    @Override
+    public Long findGuestIdByRoomNo(String roomNo) {
+        return jpaRepository.findFirstGuestIdByRoomNo(roomNo);
     }
 
     // === 통계 ===

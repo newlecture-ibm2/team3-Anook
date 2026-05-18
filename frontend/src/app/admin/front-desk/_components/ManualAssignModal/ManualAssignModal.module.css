@@ -6,8 +6,7 @@
 }
 
 .title {
-  font-size: var(--text-lg);
-  font-weight: 700;
+  font: var(--text-h3-bold);
   color: var(--color-gray-900);
 }
 
@@ -15,7 +14,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--space-2);
+  padding: var(--space-4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,25 +39,18 @@
   gap: var(--space-12);
 }
 
-.sectionTitle {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-gray-500);
-}
-
 .previewCardWrapper {
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
   overflow: hidden;
   background-color: var(--color-gray-50);
-  /* Remove pointer events from preview card to make it look like just a preview */
   pointer-events: none;
 }
 
 .formSection {
   display: flex;
   flex-direction: column;
-  gap: var(--space-24);
+  gap: var(--space-16);
 }
 
 .editField {
@@ -70,14 +62,57 @@
 .editFieldHorizontal {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 }
 
 .label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-gray-700);
+  font: var(--text-caption-medium);
+  color: var(--color-gray-500);
+}
+
+.inputField {
+  width: 100%;
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font: var(--text-body-regular);
+  color: var(--color-gray-900);
+  background-color: var(--color-bg);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.inputField:focus {
+  border-color: var(--color-primary);
+}
+
+.inputField::placeholder {
+  color: var(--color-gray-300);
+}
+
+.textareaField {
+  width: 100%;
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font: var(--text-body-regular);
+  color: var(--color-gray-900);
+  background-color: var(--color-bg);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+  outline: none;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.textareaField:focus {
+  border-color: var(--color-primary);
+}
+
+.textareaField::placeholder {
+  color: var(--color-gray-300);
 }
 
 .checkboxLabel {
@@ -85,8 +120,7 @@
   align-items: center;
   gap: var(--space-8);
   cursor: pointer;
-  padding-top: var(--space-4);
-  padding-bottom: var(--space-4);
+  padding: var(--space-4) 0;
 }
 
 .checkbox {
@@ -97,15 +131,13 @@
 }
 
 .urgentText {
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font: var(--text-caption-medium);
   color: var(--color-gray-700);
 }
 
 .normalText {
-  font-size: var(--text-sm);
-  font-weight: 400;
-  color: var(--color-gray-700);
+  font: var(--text-caption-regular);
+  color: var(--color-gray-500);
 }
 
 .footer {

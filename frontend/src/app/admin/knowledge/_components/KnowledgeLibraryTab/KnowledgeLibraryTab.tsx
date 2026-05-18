@@ -157,10 +157,10 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
             }
           }
         }}
-        title="삭제 확인"
+        title={t.adminPage.rag.deleteTitle}
         subtitle={t.adminPage.rag.deleteConfirm}
         status="danger"
-        confirmText="삭제"
+        confirmText={t.adminPage.rag.deleteButton}
       />
     </div>
   );

@@ -111,15 +111,21 @@ export default function TaskTicket({
 
   const translatedIntent = targetIntent && t.intents ? t.intents[targetIntent as keyof typeof t.intents] : null;
   
-  let displayTitle = title;
-  if (language === 'en' && (entities as any)?.summary_en) {
-    displayTitle = (entities as any).summary_en as string;
-  }
+  // 수동 배정된 요청은 entities 기반 제목 덮어쓰기 스킵
+  // (ESCALATION intent가 있지만 FRONT가 아닌 부서 = 수동 배정으로 이관된 요청)
+  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
 
-  if (orderDetails) {
-    displayTitle = orderDetails; // e.g. "콜라 2개 외 1건" or "Coke 2items and 1other item(s)"
-  } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
-    displayTitle = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
+  let displayTitle = title;
+  if (!isManuallyReassigned) {
+    if (language === 'en' && (entities as any)?.summary_en) {
+      displayTitle = (entities as any).summary_en as string;
+    }
+
+    if (orderDetails) {
+      displayTitle = orderDetails;
+    } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
+      displayTitle = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
+    }
   }
 
   let timeDisplay = '';
@@ -139,13 +145,22 @@ export default function TaskTicket({
       timeDisplay = relTime.replace(language === 'ko' ? ' 전' : ' ago', t.ticketUI.time.elapsed);
     }
   } else {
-    timeDisplay = getRelativeTime(createdAt, language, t.ticketUI.time);
+    timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
   }
 
   let displayDescription = description;
+  if (isManuallyReassigned && displayDescription) {
+    // 수동 배정: rawText 원본에서 마지막 줄(admin 이관 사유)만 추출
+    // rawText 구조: "원문\n\n[주문 상세]\n...\nadmin메모"
+    const lines = displayDescription.split('\n').filter(l => l.trim());
+    displayDescription = lines[lines.length - 1] || '';
+  } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
+    // 일반 요청: '[주문 상세]' 이후의 entities dump 제거 → 고객 원문만
+    displayDescription = displayDescription.split('[주문 상세]')[0].trim();
+  }
   if (language === 'en') {
-    if (description === '관리자') displayDescription = 'Admin';
-    else if (description === '직원') displayDescription = 'Staff';
+    if (displayDescription === '관리자') displayDescription = 'Admin';
+    else if (displayDescription === '직원') displayDescription = 'Staff';
   }
 
   return (
