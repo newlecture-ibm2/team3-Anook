@@ -1,0 +1,1 @@
+[{"guest_reply":"불쾌감을 드려 대단히 죄송합니다. 하우스키핑팀이 즉시 출동하여 해당 구역을 신속하고 깨끗하게 청소 및 소독 조치하겠습니다.","summary":"긴급 상황 자동 접수 (URGENT_CLEANUP)","domain_code":"EMERGENCY","priority":"EMERGENCY","entities":{"intent":"EMERGENCY","category":"URGENT_CLEANUP"},"confidence":1.0,"reasoning":"• 긴급 키워드 '토했' 감지\n• 1-Tier 즉시 라우팅"}]

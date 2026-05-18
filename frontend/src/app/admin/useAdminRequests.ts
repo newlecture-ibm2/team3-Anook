@@ -103,7 +103,7 @@ export default function useAdminRequests(dept?: string, searchQuery: string = ''
     filteredRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  const pending = filteredRequests.filter(r => r.status === 'PENDING');
+  const pending = filteredRequests.filter(r => r.status === 'PENDING' || r.status === 'ESCALATED');
   const inProgress = filteredRequests.filter(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
   
   // inProgress 배열 내에서 취소 대기(cancelRequested) 항목을 최상단으로 정렬

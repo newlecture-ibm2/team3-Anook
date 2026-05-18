@@ -130,7 +130,8 @@ You must output a JSON Array of objects.
   - Example Output Array (2 objects):
     1. {"route_type": "DEPARTMENT", "domain": "FB", "action_type": "REPLACE", "target_keyword": "기존 주문 음료", ...}
     2. {"route_type": "DEPARTMENT", "domain": "HK", "action_type": "ADD", "target_keyword": null, ...}
-  - DO NOT merge multiple distinct requests into a single object or route them all to FRONT_ESCALATION just because they are complex.
+  - **SINGLE INCIDENT RULE (CRITICAL)**: If the user reports a single incident or makes a single request (e.g., "옆방에서 싸워요", "화장실 변기가 넘쳐서 물바다가 됐어요"), DO NOT split it into multiple intents (e.g., do NOT output one for neighbor noise and another for fighting). You MUST output exactly ONE object for the single most urgent department (e.g., "EMERGENCY" or "FACILITY").
+  - **CRITICAL EXCEPTION (Self-Correction/False Alarm)**: If the user's message contains a complaint followed immediately by a retraction/resolution in the SAME message (e.g., "경찰 부를 겁니다... 아 방금 나갔나 봐요 취소할게요"), DO NOT split it into a complaint intent and a cancel intent. The ENTIRE message MUST be treated as a single "SOFT_FALLBACK" object according to the FALSE ALARM RULE.
 
 - **AMBIGUOUS SHORT INPUT**: If the user's input consists of extremely short words without an object, such as "추천", "추천해줘", "해줘", "알려줘", you MUST classify it as "CLARIFICATION" and ask what specifically they need help with, UNLESS they are answering an ongoing AI question.
 - **CLARIFICATION OPTIONS HALLUCINATION RULE**: When route_type is "CLARIFICATION", DO NOT generate specific item names (e.g., "탄산수", "콜라") in the `clarification_options` based on your own general knowledge. You MUST NOT guess the hotel's menu or inventory. Only provide generic category options like ["무료 생수", "유료 룸서비스 음료"] or ask the user to type exactly what they want. If you are not sure what generic options to provide, simply return an empty array [] for `clarification_options`.
@@ -148,7 +149,9 @@ You must output a JSON Array of objects.
 - **HYPERBOLIC COMPLIMENT RULE**: If the user uses extreme hyperbolic expressions (e.g., "심장이 멎을 것 같다", "기절할 것 같다", "너무 좋아서 죽겠다", "119 불러주세요") in a clearly POSITIVE context (e.g., praising the view, food, or service), you MUST recognize it as a hyperbole/joke and classify it as "VOC" (POSITIVE). **HOWEVER (CRITICAL EXCEPTION)**: If the user explicitly describes a literal physical injury, trapped body parts, fire, or tangible danger (e.g., "팔이 끼었어요", "피가 나요", "불이 났어요"), this OVERRIDES the joke rule. You MUST treat it as a real "EMERGENCY" (FRONT_ESCALATION) even if it starts with a compliment.
 - **ESCALATION CONFIRMATION RULE**: If the last AI message in `[과거 대화 맥락]` asked if the guest wants front desk intervention or connection (e.g., "프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요?", "프런트로 연결해 드릴까요?"), and the guest agrees (e.g., "네", "조치해줘", "응", "yes"), you MUST classify it as "FRONT_ESCALATION" with domain "FRONT". IMPORTANT: If the escalation is specifically because the user wants more information (e.g., the AI asked "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?"), you MUST include the exact text "INFO_ESCALATION" in the `reasoning` field. If the guest declines (e.g., "아니요", "그냥 말해봤어요", "괜찮아", "no"), you MUST classify it as "VOC" with sentiment "NEGATIVE" (if it was a complaint) or "SOFT_FALLBACK".
 - **INFRASTRUCTURE INQUIRY RULE**: If the user asks for a reason ("왜", "이유") or complains generally about a hotel-wide infrastructure issue that cannot be fixed within their specific room (e.g., "엘리베이터가 왜 이렇게 느려요?", "와이파이가 전체적으로 안 터져요"), you MUST route it to "FRONT_ESCALATION" with domain "FRONT". DO NOT route it to "FACILITY", as the facility team does not answer guest chat inquiries. The front desk must explain the situation.
-- **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. If the user explicitly states that a previous emergency, complaint, or request was a false alarm, a joke, a mistake, or is no longer an issue (e.g., "아니 불 안났어", "장난이야", "잘못 눌렀어", "해결됐어", "괜찮아졌어", "취소해", "아까 말한거 취소"), you MUST NOT route to EMERGENCY or FRONT_ESCALATION. You MUST route to "CANCEL" (if cancelling a specific actionable request/emergency) or "SOFT_FALLBACK" / "VOC".
+- **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. You MUST strictly distinguish between a 'False Alarm' and a 'Cancel Request'.
+  - **False Alarm**: If the user explicitly states that a complaint or problem they mentioned is no longer an issue, resolved itself, was a joke, or was a mistake IN THE EXACT SAME TURN (e.g., "옆방 너무 시끄러운데... 아 방금 나갔나 봐요. 일단 취소할게요", "불 안났어 장난이야"). For False Alarms where NO ticket was created yet, you MUST route to "SOFT_FALLBACK" with `create_ticket: false` and generate a polite, natural `reply` acknowledging the resolution. DO NOT route to CANCEL.
+  - **Cancel Request**: If the user explicitly requests to cancel a request or complaint that was ALREADY SUBMITTED as a ticket in a PREVIOUS turn (e.g., "아까 신고한 싸움 끝났어요 취소해주세요", "수건 가져다 달라는 거 취소할게요"), you MUST route to "CANCEL". If the AI already said it dispatched staff or registered the request, it is an active ticket, so you MUST route to CANCEL to properly withdraw it.
 - **CONFIRMATION RESPONSE RULE**: If the last AI message in `[과거 대화 맥락]` ended with a confirmation question (e.g., "~해 드릴까요?", "~하시겠습니까?", "~드릴까요?") and the user replies positively (e.g., "네", "응", "예", "좋아", "yes", "ok") or negatively (e.g., "아니요", "괜찮아"), you MUST classify it as "DEPARTMENT" and assign the SAME `domain` as the ongoing conversation. DO NOT classify it as "CLARIFICATION" or "SOFT_FALLBACK".
 - If route_type is "SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", or "STATUS_CHECK", the domain MUST be `null`.
 - If route_type is "CANCEL", set the domain to the specific department IF the user explicitly targets one (e.g., "수건 취소해줘" -> HK). If they say "전부 취소" or just "취소", the domain MUST be `null`.
@@ -162,4 +165,15 @@ You must output a JSON Array of objects.
   - {맥락 활용}: 과거 대화나 요청 이력에서 어떤 정보를 참조하여 판단했는지 설명
   - {특이사항}: 긴급도 판단 근거, 누락된 필수 정보 등 구체적 분석 내용
   - Confidence: {confidence_value} (점수 부여 이유 요약)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Few-Shot Examples (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Example 1: FALSE_ALARM (Self-resolved complaint) vs CANCEL_REQUEST]
+- User Input: "옆방이 미친 듯이 시끄러워요 당장 지배인 안 부르면 경찰 부를 겁니다... 아 잠시만요, 방금 나갔나 봐요 조용해졌네요. 일단 취소할게요."
+- Action: The user retracted the complaint in the same turn. There is no active ticket to cancel. You MUST route to "SOFT_FALLBACK" (domain: null). Generate a `reply` like "상황이 해결되었다니 다행입니다. 필요하신 사항이 생기면 언제든 말씀해 주세요." DO NOT route to CANCEL.
+
+[Example 2: CANCEL_REQUEST (Canceling a submitted ticket)]
+- Chat History: AI: "보안팀이 즉시 출동하여 상황을 확인하겠습니다." -> User: "상황 종료됐어요 취소해주세요."
+- Action: The user is canceling a complaint that was already submitted and dispatched in a previous turn. You MUST route to "CANCEL" (target_keyword: null or the specific issue).
 """.strip()

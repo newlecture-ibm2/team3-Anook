@@ -74,6 +74,7 @@ async def run_front_agent(user_message: str, room_no: str, chat_history: list = 
         "clarification_options": result.clarification_options,
         "summary": result.summary,
         "domain_code": domain_code,
+        "priority": getattr(result, "priority", "NORMAL"),
         "entities": result.entities,
         "confidence": result.confidence,
         "missing_fields": result.missing_fields,
