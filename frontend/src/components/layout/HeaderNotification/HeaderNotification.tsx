@@ -4,6 +4,7 @@ import useAdminRequests from '@/app/admin/useAdminRequests';
 import useEscalations from '@/app/admin/front-desk/useEscalations';
 import RejectCancellationModal from '@/app/admin/front-desk/_components/RejectCancellationModal/RejectCancellationModal';
 import RejectEscalationModal from '@/app/admin/front-desk/_components/RejectEscalationModal/RejectEscalationModal';
+import RequestDetailModal from '@/app/admin/front-desk/_components/RequestDetailModal/RequestDetailModal';
 import { useUiStore } from '@/stores/useUiStore';
 import styles from './HeaderNotification.module.css';
 
@@ -16,6 +17,9 @@ export default function HeaderNotification() {
   // 반려 모달 상태
   const [cancelRejectTarget, setCancelRejectTarget] = useState<number | null>(null);
   const [escalationRejectTarget, setEscalationRejectTarget] = useState<number | null>(null);
+  
+  // 상세 모달 상태
+  const [detailTarget, setDetailTarget] = useState<number | null>(null);
 
   // 데이터 패치
   const { requests: allRequests, refetch: refetchRequests } = useAdminRequests(undefined, '', 'all', true);
@@ -118,29 +122,29 @@ export default function HeaderNotification() {
             ) : (
               <div className={styles.list}>
                 {delayedCancelRequests.map(req => (
-                  <div key={`cancel-${req.id}`} className={styles.item}>
+                  <div key={`cancel-${req.id}`} className={styles.item} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                     <div className={styles.itemHeader}>
                       <span className={styles.tagCancel}>취소 요청 지연</span>
                       <span className={styles.roomNo}>객실 {req.roomNo}</span>
                     </div>
                     <p className={styles.summary}>{req.summary}</p>
                     <div className={styles.actions}>
-                      <button className={styles.btnApprove} onClick={() => handleApproveCancel(req.id)}>취소 승인</button>
-                      <button className={styles.btnReject} onClick={() => handleRejectCancel(req.id)}>반려</button>
+                      <button className={styles.btnApprove} onClick={(e) => { e.stopPropagation(); handleApproveCancel(req.id); }}>취소 승인</button>
+                      <button className={styles.btnReject} onClick={(e) => { e.stopPropagation(); handleRejectCancel(req.id); }}>반려</button>
                     </div>
                   </div>
                 ))}
                 
                 {nonEmergencyEscalations.map(req => (
-                  <div key={`esc-${req.id}`} className={styles.item}>
+                  <div key={`esc-${req.id}`} className={styles.item} onClick={() => setDetailTarget(req.id)} style={{ cursor: 'pointer' }}>
                     <div className={styles.itemHeader}>
                       <span className={styles.tagEscalate}>이관 요청</span>
                       <span className={styles.roomNo}>객실 {req.roomNo}</span>
                     </div>
                     <p className={styles.summary}>{req.summary}</p>
                     <div className={styles.actions}>
-                      <button className={styles.btnApprove} onClick={() => handleApproveEscalation(req.id)}>수락 (배정)</button>
-                      <button className={styles.btnReject} onClick={() => handleRejectEscalation(req.id)}>반려</button>
+                      <button className={styles.btnApprove} onClick={(e) => { e.stopPropagation(); handleApproveEscalation(req.id); }}>수락 (배정)</button>
+                      <button className={styles.btnReject} onClick={(e) => { e.stopPropagation(); handleRejectEscalation(req.id); }}>반려</button>
                     </div>
                   </div>
                 ))}
@@ -168,6 +172,20 @@ export default function HeaderNotification() {
           onClose={() => setEscalationRejectTarget(null)}
           requestId={escalationRejectTarget}
           onSuccess={() => { setEscalationRejectTarget(null); refetchEscalations(); }}
+        />
+      )}
+
+      {/* 상세 모달 */}
+      {detailTarget !== null && (
+        <RequestDetailModal
+          isOpen={true}
+          onClose={() => setDetailTarget(null)}
+          requestId={detailTarget}
+          onUpdate={() => {
+            refetchRequests();
+            refetchEscalations();
+          }}
+          callerDepartment="FRONT" // 알림을 확인하는 건 프론트데스크이므로 FRONT 전달
         />
       )}
     </>
