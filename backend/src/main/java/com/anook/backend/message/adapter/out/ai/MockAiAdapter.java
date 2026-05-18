@@ -5,7 +5,9 @@ import com.anook.backend.message.application.port.out.MessageAiResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 /**
  * Mock AI 어댑터 — 개발/테스트용 고정 응답
@@ -24,7 +26,7 @@ import java.util.Map;
 public class MockAiAdapter implements MessageAiPort {
 
     @Override
-    public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory, java.util.List<String> images) {
+    public List<MessageAiResult> analyze(String text, String roomNo, String language, List<Map<String, String>> chatHistory, List<String> images, List<Map<String, Object>> activeRequests) {
         log.info("[MockAI] 분석 요청 — room: {}, text: {}", roomNo, text);
 
         // 1초 딜레이 (AI 처리 시간 시뮬레이션)

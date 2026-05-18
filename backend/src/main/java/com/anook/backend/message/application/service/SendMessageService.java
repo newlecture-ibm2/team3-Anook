@@ -11,6 +11,7 @@ import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
 import com.anook.backend.message.application.port.out.MessageRoomStatusPort;
+import com.anook.backend.message.application.port.out.MessageActiveRequestPort;
 import com.anook.backend.global.util.PiiMaskingUtil;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class SendMessageService implements SendMessageUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncAiLoggingService asyncAiLoggingService;
     private final MessageRoomStatusPort roomStatusPort;
+    private final MessageActiveRequestPort activeRequestPort;
 
     @Autowired
     @Lazy
@@ -131,8 +133,11 @@ public class SendMessageService implements SendMessageUseCase {
                             "content", m.getContent()))
                     .toList();
 
+            // 3-1. 취소 문맥 분석을 위한 현재 고객의 활성(대기 중인) 주문 목록 조회
+            java.util.List<Map<String, Object>> activeRequests = activeRequestPort.findActiveRequests(roomNo, guestId);
+
             // AI 호출
-            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests);
 
             // 4. AI 응답 메시지 저장
             String combinedReply = analyses.stream()
