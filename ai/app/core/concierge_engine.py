@@ -3,6 +3,29 @@ from app.prompts.concierge_prompt import CONCIERGE_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
+# Step 1 전용: 대화에서 확인된 엔티티를 추출하는 경량 프롬프트
+ENTITY_EXTRACT_PROMPT = """You are an entity extraction assistant for a hotel concierge conversation.
+
+TASK: Read the conversation and extract ALL entities that the guest has confirmed or provided.
+
+RULES:
+1. Only include entities the guest explicitly stated (e.g., "개화꽃" → item: "개화꽃").
+2. If the AI mentioned an entity in its message (e.g., "개화꽃을 몇 송이?") and the guest did NOT deny it in their reply, treat it as confirmed.
+3. If the guest said "아무데서나" or "상관없어" for any field, set it to "호텔 지정".
+4. Convert time references to absolute format if possible.
+5. Output ONLY a flat JSON object. No explanation, no markdown.
+
+EXAMPLE:
+[대화]
+AI: 어떤 꽃을 배달해 드릴까요?
+고객: 개화꽃
+AI: 개화꽃을 몇 송이 배달해 드릴까요?
+고객: 10송이
+
+OUTPUT:
+{"intent": "DELIVERY", "item": "개화꽃", "quantity": 10}
+"""
+
 async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
     """
     컨시어지 에이전트 엔진 (Step 0-2)
@@ -31,9 +54,32 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     if chat_history:
         context = "\n".join([
             f"{'고객' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
-            for m in chat_history[-5:]
+            for m in chat_history[-15:]
         ])
         prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n[대화 맥락]\n{context}\n\n"
+        
+        # ── Step 1: 경량 Gemini 호출로 기존 엔티티 추출 ──
+        # 2턴(메시지 4개) 이상일 때만 실행 (첫 턴에는 추출할 엔티티 없음)
+        accumulated_entities = {}
+        if len(chat_history) >= 4:
+            try:
+                extract_result = await call_gemini_async(
+                    prompt=f"[대화]\n{context}",
+                    system_instruction=ENTITY_EXTRACT_PROMPT
+                )
+                if isinstance(extract_result, dict):
+                    # __ai_log_meta 등 내부 메타데이터 필터링
+                    accumulated_entities = {k: v for k, v in extract_result.items() if not k.startswith('__')}
+                    print(f"[CONCIERGE] 📋 Step 1 추출 엔티티: {accumulated_entities}")
+            except Exception as e:
+                print(f"[CONCIERGE] ⚠️ 엔티티 추출 실패 (무시, 기존 방식 진행): {e}")
+        
+        # Step 1 결과를 [확인된 정보] 블록으로 주입
+        if accumulated_entities:
+            entities_str = "\n".join([
+                f"- {k}: {v} ✅" for k, v in accumulated_entities.items() if v
+            ])
+            prompt += f"[확인된 정보 - 아래 값들은 이미 고객이 확인한 것이므로 반드시 유지하세요]\n{entities_str}\n\n"
     else:
         prompt = f"[현재 날짜 및 시각]\n{now_str}\n\n고객 객실: {room_no}\n"
         
