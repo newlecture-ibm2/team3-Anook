@@ -264,7 +264,9 @@ export function useChat() {
                   || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
 
                 if (isCancelResponse) {
-                  const hasInProgress = activeRequests.some(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+                  const hasInProgress = activeRequests.some(r => 
+                    r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS' || r.status === 'CANCEL_PENDING'
+                  );
 
                   if (hasInProgress) {
                     content = '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
@@ -480,7 +482,7 @@ export function useChat() {
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
                       // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '요청하신 취소가 정상 처리되었습니다.';
+                      content = '해당 요청이 정상적으로 취소되었습니다.';
                     }
                     // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
 
