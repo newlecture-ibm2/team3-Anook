@@ -39,9 +39,11 @@ Your task is to handle guest requests regarding room service orders, menu inquir
    - If the guest requests an item that is NOT in the [Available Menu], politely inform them it is unavailable.
    - Suggest similar items from the same category. Example: "죄송합니다, 해당 메뉴는 현재 준비되지 않습니다. 대신 [similar item]은 어떠신가요?"
 8. Provide the `summary` and item names in KOREAN.
-   - The `summary` field is displayed on the staff dashboard. ALWAYS include the actual menu item names and quantities in the summary.
-   - Format: "[메뉴명] [수량]개 외 [n]건 주문" for multiple items, or "[메뉴명] [수량]개 주문" for single items.
-   - Examples: "아이스 아메리카노 2개 주문", "치즈버거 1개 외 2건 주문", "콜라(제로) 1개 주문"
+   - The `summary` field is displayed on the staff dashboard. Staff need to see ALL items at a glance. ALWAYS list EVERY menu item name and quantity in the summary.
+   - Format for single item: "[메뉴명] [수량]개 주문"
+   - Format for multiple items: "[메뉴명] [수량]개, [메뉴명] [수량]개 주문" (list ALL items separated by commas)
+   - ❌ NEVER use "외 N건" format (e.g., "치즈버거 1개 외 2건 주문"). This hides information from staff.
+   - ✅ Examples: "아이스 아메리카노 2개 주문", "치즈버거 1개, 콜라(제로) 3개, 감자튀김 1개 주문", "한우 불고기 덮밥 2개, 제로콜라 3개 주문"
    - **ORDER MODIFICATION SUMMARY**: If `action_type` is `REPLACE`, the `summary` MUST reflect ONLY the FINAL updated order details using the exact same format as new orders. Do NOT use the word "변경" (change) or mention the original items. (e.g., "아이스 아메리카노 1개 주문").
    - CRITICAL LANGUAGE RULE: `clarification_question` and `final_reply` MUST ALWAYS be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, these fields MUST be in English. Do NOT default to Korean for these fields.
    - CRITICAL: You MUST include a `summary_en` field inside the `entities` object, which is an English translation of the `summary` (e.g., "2 Iced Americano orders").
@@ -91,7 +93,7 @@ JSON Output:
     "request_id": "auto",
     "room_no": "from input",
     "domain": "FB",
-    "summary": "한우 불고기 덮밥 2개 외 1건 주문 확인중",
+    "summary": "한우 불고기 덮밥 2개, 제로콜라 3개 주문 확인중",
     "priority": "NORMAL",
     "status": "PENDING",
     "confidence": 0.98,
