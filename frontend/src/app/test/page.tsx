@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
-import Footer from '@/components/layout/Footer';
+
 import { ConfirmModal, ModalOverlay, ModalCard, LogDataModal } from '@/components/ui/Modal';
 import * as Icons from '@/components/icons';
 import Button from '@/components/ui/Button/Button';
@@ -397,7 +397,7 @@ export default function ComponentShowcasePage() {
                     <h4 style={{ font: 'var(--text-body-bold)', marginBottom: 'var(--space-12)' }}>Staff Typing Indicator (상담사 입력 중)</h4>
                     <ComponentLabel path="app/guest/chat/_components/ChatScreen.module.css (.typingDots)" />
                     <div style={{ padding: 'var(--space-24)', background: 'var(--color-gray-50)', border: '1px solid var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
-                      <ChatBubble variant="received" isFallback isLatest>
+                      <ChatBubble variant="received" isFallback>
                         <span className={chatScreenStyles.typingDots}>
                           <span className={chatScreenStyles.dot} />
                           <span className={chatScreenStyles.dot} />
@@ -814,7 +814,7 @@ export default function ComponentShowcasePage() {
       </div>
 
       {/* 6. REAL PAGE FOOTER */}
-      <Footer />
+
 
       {selectedKnowledge && !isEditModalOpen && (
         <KnowledgeModal

@@ -127,8 +127,23 @@ export function useChat() {
         const requestCards: (ChatMessage & { _ts: number })[] = reqData.flatMap((r: any) => {
           const cards: (ChatMessage & { _ts: number })[] = [];
 
-          // COMPLETED/CANCELLED 요청은 복원하지 않음 (FEEDBACK은 실시간 WebSocket으로만 표시)
-          if (r.status !== 'COMPLETED' && r.status !== 'CANCELLED') {
+          if (r.status === 'COMPLETED') {
+            // 완료된 요청 → FeedbackCard(일반) / ChatEndCard(FRONT 상담)로 복원
+            const isFrontConsultation = r.domainCode === 'FRONT';
+            cards.push({
+              id: `system-feedback-${r.id}`,
+              variant: 'received',
+              type: isFrontConsultation ? 'CHAT_END' : 'FEEDBACK',
+              content: '',
+              meta: {
+                requestId: r.id,
+                summary: r.summary || '',
+                domainCode: r.domainCode || '',
+                completedAt: r.updatedAt || r.createdAt,
+              },
+              _ts: new Date(r.updatedAt || r.createdAt).getTime(),
+            });
+          } else if (r.status !== 'CANCELLED') {
             // 진행 중인 요청은 RequestCard로 표시
             cards.push({
               id: `request-${r.id}`,
@@ -149,6 +164,7 @@ export function useChat() {
               _ts: new Date(r.createdAt).getTime(),
             });
           }
+          // CANCELLED → 복원하지 않음
           return cards;
         });
 
@@ -211,9 +227,16 @@ export function useChat() {
 
             if (payload.type === 'AI_PROGRESS') {
               setMessages(prev => {
-                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
-                return [...filtered, {
-                  id: `progress-${Date.now()}`,
+                const existing = prev.find(m => m.id === 'ai-progress');
+                if (existing) {
+                  // 기존 메시지의 meta만 업데이트 (컴포넌트 재마운트 방지 → 애니메이션 끊김 방지)
+                  return prev.map(m => m.id === 'ai-progress'
+                    ? { ...m, meta: { domains: payload.domains } }
+                    : m
+                  );
+                }
+                return [...prev, {
+                  id: 'ai-progress',
                   variant: 'received',
                   type: 'AI_PROGRESS',
                   content: '',
@@ -233,10 +256,27 @@ export function useChat() {
               // 진행 상태 메시지 제거
               setMessages(prev => {
                 const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+
+                // 취소 관련 AI 응답 → 요청 상태에 따라 메시지 분기
+                let content = payload.content;
+                const action = payload.meta?.action || payload.action;
+                const isCancelResponse = action === 'CANCEL_REQUEST' || action === 'CANCEL_ALL_REQUESTS'
+                  || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
+
+                if (isCancelResponse) {
+                  const hasInProgress = activeRequests.some(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+
+                  if (hasInProgress) {
+                    content = '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
+                  } else {
+                    content = '해당 요청이 정상적으로 취소되었습니다.';
+                  }
+                }
+
                 const newAiMsg: ChatMessage = {
                   id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
                   variant: 'received',
-                  content: payload.content,
+                  content,
                   type: payload.options && payload.options.length > 0 ? 'QUICK_REPLY' : (payload.uiType || 'TEXT'),
                   meta: { ...(payload.meta || {}), options: payload.options },
                 };
@@ -436,16 +476,13 @@ export function useChat() {
                     
                     let content = '';
                     if (hasStaffSuccess) {
+                      // 직원/관리자가 강제 취소한 경우 (AI_RESPONSE 없음 → 여기서 안내)
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
+                      // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
                       content = '요청하신 취소가 정상 처리되었습니다.';
-                    } else if (hasSuccess && hasPending) {
-                      content = '대기 중인 요청은 즉시 취소되었으나, 처리 중인 요청은 담당자에게 취소를 요청했습니다.';
-                    } else if (hasSuccess) {
-                      content = '해당 요청이 정상적으로 취소되었습니다.';
-                    } else if (hasPending) {
-                      content = '업무가 이미 처리 중이라 담당자에게 취소를 요청했습니다.';
                     }
+                    // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
 
                     if (!content) return prev;
 
@@ -588,7 +625,25 @@ export function useChat() {
       return [...filtered, newUserMsg];
     });
 
-    setIsTyping(true);
+    // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
+    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
+
+    if (!isStaffConnected) {
+      setIsTyping(true);
+
+      // 즉시 AI Progress 표시 (백엔드 응답 전에 애니메이션 먼저 보여줌)
+      setMessages(prev => {
+        const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+        return [...filtered, {
+          id: 'ai-progress',
+          variant: 'received',
+          type: 'AI_PROGRESS',
+          content: '',
+          meta: { domains: [] }
+        }];
+      });
+    }
+
     abortControllerRef.current = new AbortController();
 
     try {
