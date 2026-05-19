@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useWebSocket } from '@/app/useWebSocket';
+import { useSSE } from '@/app/useSSE';
 import EmergencyBanner from '@/components/ui/EmergencyBanner/EmergencyBanner';
 
 export default function GlobalEmergencyListener() {
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
   const [emergencyAlert, setEmergencyAlert] = useState<{
     requestId: number;
     roomNo: string;

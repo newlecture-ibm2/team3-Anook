@@ -3,7 +3,7 @@ import styles from './ChatPanel.module.css';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
-import { useWebSocket } from '@/app/useWebSocket';
+import { useSSE } from '@/app/useSSE';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
@@ -44,7 +44,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
 
   // RAG 등록 플로우 상태
   const [isRagConfirmOpen, setIsRagConfirmOpen] = useState(false);

@@ -1,7 +1,7 @@
 package com.anook.backend.request.application.service;
 
 import com.anook.backend.message.application.event.RequestDetectedEvent;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.DomainCode;
@@ -88,7 +88,7 @@ public class CreateRequestOnEventService {
                         log.info("[Cancel&Replace] PENDING 요청 자동 취소 — id: {}, summary: {}, keyword: {}",
                                 existing.getId(), existing.getSummary(), event.getTargetKeyword());
 
-                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
+                        RequestSsePayload cancelPayload = RequestSsePayload.statusChanged(
                                 existing.getId(),
                                 RequestStatus.CANCELLED.name(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
@@ -109,7 +109,7 @@ public class CreateRequestOnEventService {
                         
                         log.info("[Cancel&Replace] IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", existing.getId());
                         
-                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.cancelRequestReceived(
+                        RequestSsePayload cancelPayload = RequestSsePayload.cancelRequestReceived(
                                 existing.getId(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                                 existing.getSummary(), 
@@ -184,7 +184,7 @@ public class CreateRequestOnEventService {
         int graceRemaining = skipGrace ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 
         // [AN-252] Generative UI: entities 포함 WebSocket payload 생성
-        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+        RequestSsePayload payload = RequestSsePayload.newRequest(
                 savedRequest.getId(),
                 savedRequest.getStatus().name(),
                 deptCode,

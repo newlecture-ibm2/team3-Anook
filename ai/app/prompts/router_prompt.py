@@ -63,6 +63,12 @@ Classify the input into one of the following categories:
    - Asking about ETA (e.g., "언제 와요?", "얼마나 걸려요?").
    - Action: Set route_type to "STATUS_CHECK".
 
+10. **BILLING_INQUIRY** (Cost / Billing Inquiry):
+   - Guest asks about their current charges, bill, or spending (e.g., "지금까지 쓴 비용 얼마야?", "룸서비스 얼마 나왔어?", "체크아웃할 때 얼마 내야 해?", "미니바 얼마야?").
+   - This requires real-time lookup of PMS billing data — NOT a static RAG answer.
+   - If the guest mentions a specific service category, extract it using standard codes: "FB" (for food, room service, meals), "HK_MINIBAR" (for minibar), "HK_LAUNDRY" (for laundry). If general bill, do not set category or set to "ALL".
+   - Action: Set route_type to "BILLING_INQUIRY", create_ticket=False. If a category is mentioned, set entities: {"category": "<STANDARD_CODE>"}.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ STEP 2: Assign a Domain
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -117,7 +123,7 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
 You must output a JSON Array of objects.
 [
   {
-    "route_type": "DEPARTMENT | CLARIFICATION | FRONT_ESCALATION | VOC | SOFT_FALLBACK | NON_ACTIONABLE | INFO | CANCEL | STATUS_CHECK",
+    "route_type": "DEPARTMENT | CLARIFICATION | FRONT_ESCALATION | VOC | SOFT_FALLBACK | NON_ACTIONABLE | INFO | CANCEL | STATUS_CHECK | BILLING_INQUIRY",
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "{system_language} reasoning",

@@ -18,7 +18,7 @@ import RegisterTrainingModal from './_components/RegisterTrainingModal/RegisterT
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
-import { useWebSocket } from '@/app/useWebSocket';
+import { useSSE } from '@/app/useSSE';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('active');
@@ -62,7 +62,7 @@ export default function FrontDeskPage() {
 
   // 새 메시지 알림 (레드닷) 상태
   const [newMessageRequestIds, setNewMessageRequestIds] = useState<Set<number>>(new Set());
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
   const activeChatRoomRef = useRef(activeChatRoom);
   useEffect(() => { activeChatRoomRef.current = activeChatRoom; }, [activeChatRoom]);
 
@@ -89,19 +89,28 @@ export default function FrontDeskPage() {
     });
   }, [mergedRequests]);
 
-  // IN_PROGRESS 방들의 WebSocket 구독 → 고객 메시지 감지
+  // inProgress 배열의 최신 상태를 유지하기 위한 ref (useEffect 내 클로저 문제 방지)
+  const inProgressRef = useRef(inProgress);
   useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
+    inProgressRef.current = inProgress;
+  }, [inProgress]);
 
-    inProgress.forEach(req => {
-      const unsub = subscribe(`/topic/room/${req.roomNo}`, (data: unknown) => {
-        const payload = data as Record<string, unknown>;
-        const type = payload.type as string;
-        // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
-        if (type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') {
-          if (type === 'GUEST_MESSAGE' && payload.content) {
-            setLastGuestMessages(prev => ({ ...prev, [String(req.roomNo)]: String(payload.content) }));
-          }
+  // IN_PROGRESS 방들의 고객 메시지 감지 (이제 각 방별로 구독하지 않고 frontdesk 채널 1개만 구독)
+  useEffect(() => {
+    const unsub = subscribe('/topic/frontdesk', (data: unknown) => {
+      const payload = data as Record<string, unknown>;
+      const type = payload.type as string;
+      const roomNo = payload.roomNo as string;
+      
+      // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
+      if ((type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') && roomNo) {
+        if (type === 'GUEST_MESSAGE' && payload.content) {
+          setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
+        }
+        
+        // 해당 roomNo에 속한 모든 inProgress 요청 찾기 (항상 최신 상태 참조)
+        const relatedRequests = inProgressRef.current.filter(r => String(r.roomNo) === String(roomNo));
+        relatedRequests.forEach(req => {
           // 현재 열린 채팅방이면 레드닷 표시하지 않음
           if (activeChatRoomRef.current?.requestId === req.id) return;
           setNewMessageRequestIds(prev => {
@@ -109,15 +118,14 @@ export default function FrontDeskPage() {
             next.add(req.id);
             return next;
           });
-        }
-      });
-      unsubscribers.push(unsub);
+        });
+      }
     });
 
     return () => {
-      unsubscribers.forEach(unsub => unsub());
+      unsub();
     };
-  }, [inProgress, subscribe]);
+  }, [subscribe]);
 
   // 긴급(EMERGENCY) 요청 자동 선택 로직
   const seenEmergencyRef = useRef<Set<number>>(new Set());

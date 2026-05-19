@@ -84,10 +84,13 @@ public class SendMessageService implements SendMessageUseCase {
         log.info("[Message] Guest 메시지 저장 완료 — id: {}, room: {}", guestMsg.getId(), cmd.roomNo());
 
         // 2-1. WebSocket Push → 직원 ChatModal에 고객 메시지 실시간 전달 (직원도 마스킹된 내용 확인)
-        dispatchPort.sendToRoom(cmd.roomNo(), Map.of(
+        Map<String, Object> guestPayload = Map.of(
                 "type", "GUEST_MESSAGE",
+                "roomNo", cmd.roomNo(), // 추가: 전체 대시보드 레드닷 표시용
                 "messageId", guestMsg.getId(),
-                "content", maskedContent));
+                "content", maskedContent);
+        dispatchPort.sendToRoom(cmd.roomNo(), guestPayload);
+        dispatchPort.sendToFrontdesk(guestPayload);
 
         // 3. AI 처리 — 직원이 실시간 상담 중인 방이면 AI 개입 스킵
         if (roomStatusPort.isStaffHandlingRoom(cmd.roomNo())) {
@@ -161,6 +164,7 @@ public class SendMessageService implements SendMessageUseCase {
             // 5. WebSocket Push → 고객 채팅 화면에 AI 응답 실시간 전달
             Map<String, Object> payload = new java.util.HashMap<>(Map.of(
                     "type", "AI_RESPONSE",
+                    "roomNo", roomNo, // 추가: 전체 대시보드 레드닷 표시용
                     "messageId", aiMsg.getId(),
                     "content", combinedReply
             ));
@@ -176,6 +180,7 @@ public class SendMessageService implements SendMessageUseCase {
             }
 
             dispatchPort.sendToRoom(roomNo, payload);
+            dispatchPort.sendToFrontdesk(payload);
 
             // 6. 태스크형 요청 감지 시 이벤트 발행 (여기서 message 책임 끝!)
             for (MessageAiResult analysis : analyses) {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Client } from '@stomp/stompjs';
+import { useSSE } from '@/app/useSSE';
 import { ChatMessage } from './_components/ChatScreen';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
@@ -37,7 +37,7 @@ export function useChat() {
   const [isStaffTyping, setIsStaffTyping] = useState(false);
   const [roomNo, setRoomNo] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
-  const stompClientRef = useRef<Client | null>(null);
+  const { subscribe } = useSSE();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // 연속된 시스템 메시지 방지 및 통합용 Ref
@@ -214,20 +214,8 @@ export function useChat() {
   useEffect(() => {
     if (!roomNo) return;
 
-    const client = new Client({
-      brokerURL: process.env.NODE_ENV === 'production'
-        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`
-        : 'ws://localhost:8080/ws',
-      debug: function (str) {
-        console.log(str);
-      },
-      reconnectDelay: 5000,
-      onConnect: () => {
-        console.log('STOMP Connected');
-        client.subscribe(`/topic/room/${roomNo}`, (message) => {
-          if (message.body) {
-            const payload = JSON.parse(message.body);
-            console.log('[WS-RECEIVE]', payload);
+    const unsubscribe = subscribe(`/topic/room/${roomNo}`, (payload: any) => {
+            console.log('[SSE-RECEIVE]', payload);
 
             // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
             if (payload.type === 'SESSION_EXPIRED') {
@@ -568,24 +556,10 @@ export function useChat() {
                 return prev;
               });
             }
-          }
-        });
-      },
-      onStompError: (frame) => {
-        console.error('Broker reported error: ' + frame.headers['message']);
-        console.error('Additional details: ' + frame.body);
-      },
     });
 
-    client.activate();
-    stompClientRef.current = client;
-
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-      }
-    };
-  }, [roomNo]);
+    return () => unsubscribe();
+  }, [roomNo, subscribe]);
 
   // 3. 메시지 전송
   const sendMessage = async (text: string, imageFile?: File) => {

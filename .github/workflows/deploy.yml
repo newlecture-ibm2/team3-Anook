@@ -27,6 +27,7 @@ jobs:
       SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
       NEO4J_USER: ${{ vars.NEO4J_USER }}
       NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+      KOREAEXIM_AUTH_KEY: ${{ secrets.KOREAEXIM_AUTH_KEY }}
       # 추가로 필요한 환경변수가 생기면 여기에 계속 추가하세요.
 
     steps:
@@ -55,6 +56,7 @@ jobs:
           FRONTEND_PORT=${{ vars.FRONTEND_PORT }}
           NEO4J_USER=${{ vars.NEO4J_USER }}
           NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}
+          KOREAEXIM_AUTH_KEY=${{ secrets.KOREAEXIM_AUTH_KEY }}
           SPRING_PROFILE=prod
           ENVEOF
           sed -i 's/^[[:space:]]*//' .env

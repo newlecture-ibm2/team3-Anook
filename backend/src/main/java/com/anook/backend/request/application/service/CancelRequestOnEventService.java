@@ -1,7 +1,7 @@
 package com.anook.backend.request.application.service;
 
 import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.Request;
@@ -100,7 +100,7 @@ public class CancelRequestOnEventService {
                 log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
 
                 // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
-                RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                RequestSsePayload payload = RequestSsePayload.statusChanged(
                         request.getId(), request.getStatus().name(),
                         request.getDomainCode() != null ? request.getDomainCode().name() : null,
                         request.getSummary(), request.getRoomNo()
@@ -118,7 +118,7 @@ public class CancelRequestOnEventService {
 
                 log.info("[Request] 최근 요청 취소 승인 대기 처리 완료 — id: {}", request.getId());
 
-                RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRequestReceived(
+                RequestSsePayload payload = RequestSsePayload.cancelRequestReceived(
                         request.getId(),
                         request.getDomainCode() != null ? request.getDomainCode().name() : null,
                         request.getSummary(), request.getRoomNo()
