@@ -16,6 +16,7 @@ import RejectCancellationModal from '../RejectCancellationModal/RejectCancellati
 import useApproveEscalation from '../ApproveEscalationModal/useApproveEscalation';
 import useRequestDetail from './useRequestDetail';
 import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 interface Department {
   id: string;
@@ -57,13 +58,13 @@ const PRIORITIES = [
   { value: 'URGENT', label: '긴급' },
 ];
 
-const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
-  PENDING: { text: '대기 중', variant: 'red' },
-  ASSIGNED: { text: '배정됨', variant: 'purple' },
-  IN_PROGRESS: { text: '처리 중', variant: 'green' },
-  COMPLETED: { text: '완료', variant: 'gray' },
-  CANCELLED: { text: '취소됨', variant: 'gray' },
-  ESCALATED: { text: '에스컬레이션', variant: 'red' },
+const STATUS_VARIANT_MAP: Record<string, 'red' | 'purple' | 'green' | 'gray'> = {
+  PENDING: 'red',
+  ASSIGNED: 'purple',
+  IN_PROGRESS: 'green',
+  COMPLETED: 'gray',
+  CANCELLED: 'gray',
+  ESCALATED: 'red',
 };
 
 /** 직원에게 보여줄 필요 없는 내부 키 (섹션 표시 판단 + 순회에서 모두 제외) */
@@ -172,6 +173,7 @@ export default function RequestDetailModal({
   const showToast = useUiStore((s) => s.showToast);
 
   const { t, language } = useTranslation();
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(detail?.summary, language);
 
   useEffect(() => {
     if (isOpen) {
@@ -196,7 +198,22 @@ export default function RequestDetailModal({
 
   if (!detail) return null;
 
-  const statusInfo = STATUS_MAP[detail.status] ?? { text: detail.status, variant: 'gray' as const };
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING': return t.cardUI.status.pending;
+      case 'ASSIGNED': return t.status.assigned || 'Assigned';
+      case 'IN_PROGRESS': return t.cardUI.status.inProgress;
+      case 'COMPLETED': return t.cardUI.status.completedMark;
+      case 'CANCELLED': return t.cardUI.status.cancelled;
+      case 'ESCALATED': return t.cardUI.status.escalated;
+      default: return status;
+    }
+  };
+
+  const statusInfo = {
+    text: getStatusText(detail.status),
+    variant: STATUS_VARIANT_MAP[detail.status] ?? 'gray',
+  };
 
   const hasChanges =
     editPriority !== detail.priority ||
@@ -287,7 +304,9 @@ export default function RequestDetailModal({
           <div className={styles.grid}>
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.adminPage.requestDetailModal.roomNo}</span>
-              <span className={styles.value}>{detail.roomNo}</span>
+              <span className={styles.value}>
+                {language === 'ko' ? `${detail.roomNo}호` : `NO.${detail.roomNo}`}
+              </span>
             </div>
 
             <div className={styles.gridItem}>
@@ -307,7 +326,7 @@ export default function RequestDetailModal({
           <div className={styles.contentBlock}>
             <span className={styles.label}>{t.adminPage.requestDetailModal.summary}</span>
             <p className={styles.contentText}>
-              {language === 'en' && detail.entities?.summary_en ? detail.entities.summary_en : detail.summary}
+              {isTranslating ? t.common.loading : translatedSummary || detail.summary}
             </p>
           </div>
           {(() => {
@@ -411,8 +430,11 @@ export default function RequestDetailModal({
             <div className={styles.editField}>
               <Dropdown
                 label={t.adminPage.requestDetailModal.assignDept}
-                placeholder="부서를 선택하세요"
-                options={departments.map(d => ({ value: d.id, label: d.name }))}
+                placeholder={t.adminPage.requestDetailModal.selectDept || "부서를 선택하세요"}
+                options={departments.map(d => ({ 
+                  value: d.id, 
+                  label: t.ticketUI.department[d.id as keyof typeof t.ticketUI.department] || d.name 
+                }))}
                 value={editDeptId}
                 onChange={(val) => setEditDeptId(val)}
               />

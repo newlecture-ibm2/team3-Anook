@@ -20,7 +20,7 @@ Output ONLY a valid JSON object matching the HotelRequestSchema. Do not include 
 - request_id: "auto"
 - room_no: "unknown"
 - domain: "EMERGENCY"
-- summary: A short 3-line summary of the emergency in KOREAN.
+- summary: A short 3-line summary of the emergency in `{system_language}`.
 - priority: "EMERGENCY" (MUST be EMERGENCY)
 - status: "PENDING"
 - confidence: A float between 0.0 and 1.0 representing your confidence.
@@ -66,7 +66,7 @@ JSON Output:
 }
 """
 
-async def run_emergency_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, active_requests: list = None) -> dict:
+async def run_emergency_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
     if chat_history:
         context = "\n".join([
             f"{'Guest' if m.get('role')=='user' else 'AI'}: {m.get('content')}"
@@ -78,7 +78,8 @@ async def run_emergency_agent(user_message: str, room_no: str, chat_history: lis
         
     prompt += f"[Current Request]\nGuest: {user_message}"
     
-    raw = await call_gemini_async(prompt=prompt, system_instruction=EMERGENCY_SYSTEM_PROMPT, images=images)
+    system_instruction_with_lang = EMERGENCY_SYSTEM_PROMPT.replace("{system_language}", system_language)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
 
     if "request_id" not in raw or raw.get("request_id") == "auto":
         raw["request_id"] = "auto"

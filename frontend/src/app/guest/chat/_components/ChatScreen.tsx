@@ -12,6 +12,7 @@ import RequestStatusBar from './RequestStatusBar/RequestStatusBar';
 import ProgressIndicator from './ProgressIndicator/ProgressIndicator';
 import { ActiveRequest } from '../useChat';
 import { ArrowDownIcon } from '@/components/icons';
+import { useTranslation } from '@/app/useTranslation';
 
 export interface ChatMessage {
   id: string;
@@ -39,6 +40,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [isRequestsExpanded, setIsRequestsExpanded] = useState(true);
+  const { t } = useTranslation();
 
   // AI Progress의 domains를 별도로 추출 (ProgressIndicator를 map 밖에서 독립 렌더링)
   const progressMsg = messages.find(m => m.type === 'AI_PROGRESS');
@@ -109,7 +111,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
             })}
           </div>
           <div className={styles.multiRequestToggle}>
-            <span>{filteredRequests.length}개의 진행 중인 요청</span>
+            <span>{t.guestChat?.activeRequestsCount?.replace('{count}', String(filteredRequests.length)) || `${filteredRequests.length}개의 진행 중인 요청`}</span>
             <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
               <ArrowDownIcon width={20} height={20} strokeWidth={1} color="var(--color-gray-400)" />
             </span>

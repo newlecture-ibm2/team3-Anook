@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
 VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK", "VOC"}
 
-def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None, active_requests: List[dict] = None) -> List[RouterOutputSchema]:
+def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None, system_language: str = "ko", active_requests: List[str] = None) -> List[RouterOutputSchema]:
     """
     고객 메시지를 분류하여 RouterOutputSchema의 리스트를 반환한다.
     다중 요청(Multi-intent)일 경우 여러 개의 스키마 객체가 반환된다.
@@ -70,9 +70,10 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
         final_prompt = f"{active_requests_str}[현재 요청]\n고객: {user_message}"
 
     # ── 2) Gemini 호출 ──
+    system_instruction_with_lang = ROUTER_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw_result = call_gemini(
         prompt=final_prompt,
-        system_instruction=ROUTER_SYSTEM_PROMPT,
+        system_instruction=system_instruction_with_lang,
         temperature=0.1,  # 분류 작업이므로 최대한 결정적으로
         images=images
     )

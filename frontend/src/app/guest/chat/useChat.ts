@@ -24,6 +24,7 @@ export interface ActiveRequest {
 export function useChat() {
   const { t } = useTranslation();
   const setLanguage = useUiStore((state) => state.setLanguage);
+  const setChatLanguage = useUiStore((state) => state.setChatLanguage);
 
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome-1',
@@ -38,6 +39,10 @@ export function useChat() {
   const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([]);
   const stompClientRef = useRef<Client | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 연속된 시스템 메시지 방지 및 통합용 Ref
+  const cancelEventsBatch = useRef<Set<'SUCCESS' | 'PENDING' | 'STAFF_SUCCESS' | 'GUEST_CANCEL_APPROVED'>>(new Set());
+  const cancelBatchTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Update welcome message if language changes and it is the only message
   useEffect(() => {
@@ -54,17 +59,6 @@ export function useChat() {
       return prev;
     });
   }, [t.guestChat.welcomeMessage, t.guestChat.quickReplyOptions]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const browserLang = navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en';
-      setLanguage(browserLang);
-    }
-  }, [setLanguage]);
-
-  // 연속된 시스템 메시지 방지 및 통합용 Ref
-  const cancelEventsBatch = useRef<Set<'SUCCESS' | 'PENDING' | 'STAFF_SUCCESS' | 'GUEST_CANCEL_APPROVED'>>(new Set());
-  const cancelBatchTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 0. 세션 정보 가져오기
   useEffect(() => {
@@ -83,6 +77,24 @@ export function useChat() {
     };
     fetchSession();
   }, []);
+
+  // 최신 번역 객체를 Ref에 저장하여 WebSocket 콜백(stale closure)에서도 최신 언어를 참조할 수 있도록 함
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+
+  // AI 특수 코드 매핑 함수 (다국어 언어팩 연동, 환각 방어)
+  const translateContent = (content: string) => {
+    if (!content) return content;
+    const currentT = tRef.current;
+    if (content.includes('[FORWARD_FB]')) return currentT.aiReplies?.forwardFb || content;
+    if (content.includes('[FORWARD_HK]')) return currentT.aiReplies?.forwardHk || content;
+    if (content.includes('[FORWARD_FACILITY]')) return currentT.aiReplies?.forwardFacility || content;
+    if (content.includes('[FORWARD_FRONT]')) return currentT.aiReplies?.forwardFront || content;
+    if (content.includes('[INFO_NOT_FOUND]')) return currentT.aiReplies?.infoNotFound || content;
+    return content;
+  };
 
   // 1. 대화 내역 + 요청 카드 복원 + 상태바 복원
   useEffect(() => {
@@ -114,7 +126,7 @@ export function useChat() {
         const chatMessages: (ChatMessage & { _ts: number })[] = msgData.map(msg => ({
           id: msg.id.toString(),
           variant: msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const,
-          content: msg.content,
+          content: msg.senderType === 'AI' ? translateContent(msg.content) : msg.content,
           type: 'TEXT' as const,
           _ts: new Date(msg.createdAt).getTime(),
         }));
@@ -259,6 +271,24 @@ export function useChat() {
 
                 // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
                 let content = payload.content;
+                const action = payload.meta?.action || payload.action;
+                const isCancelResponse = action === 'CANCEL_REQUEST' || action === 'CANCEL_ALL_REQUESTS'
+                  || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
+
+                if (isCancelResponse) {
+                  const hasInProgress = activeRequests.some(r => 
+                    r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS' || r.status === 'CANCEL_PENDING'
+                  );
+
+                  if (hasInProgress) {
+                    content = tRef.current.aiReplies?.cancelPending || '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
+                  } else {
+                    content = tRef.current.aiReplies?.cancelSuccess || '해당 요청이 정상적으로 취소되었습니다.';
+                  }
+                }
+
+                // AI 특수 코드 매핑 (다국어 언어팩 연동, AI 할루시네이션 대비 includes 사용)
+                content = translateContent(content);
 
                 const newAiMsg: ChatMessage = {
                   id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
@@ -576,9 +606,18 @@ export function useChat() {
     if (!roomNo) return;
     if (isTyping) return; // 이미 AI가 응답 중이면 새로운 요청 원천 차단
 
-    // 언어 미러링: 고객 입력에 한글이 있으면 ko, 없으면 en으로 전체 UI 테마 즉시 변경
+    // 언어 미러링: 고객 입력 언어를 감지하여 UI 테마 및 채팅 요약 타겟 언어 설정
     const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
-    setLanguage(hasKorean ? 'ko' : 'en');
+    const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
+    const hasChinese = /[\u4E00-\u9FFF]/.test(text);
+    
+    let detectedChatLang = 'en';
+    if (hasKorean) detectedChatLang = 'ko';
+    else if (hasJapanese) detectedChatLang = 'ja';
+    else if (hasChinese) detectedChatLang = 'zh';
+
+    setLanguage(detectedChatLang as any);
+    setChatLanguage(detectedChatLang);
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -637,6 +676,10 @@ export function useChat() {
     try {
       const formData = new FormData();
       formData.append('content', text);
+      
+      // 언어 정보 (감지된 채팅 언어) 전송
+      formData.append('language', detectedChatLang);
+      
       if (base64Image) {
         formData.append('images', base64Image);
       }
