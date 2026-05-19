@@ -1,23 +1,20 @@
-package com.anook.backend.frontdesk.request.adapter.out.websocket;
+package com.anook.backend.frontdesk.request.adapter.out.sse;
 
+import com.anook.backend.global.sse.SseConnectionManager;
 import com.anook.backend.frontdesk.request.application.port.out.FrontdeskRequestDispatchPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * FrontdeskRequestDispatchPort 구현체 — 관리자 모듈 전용 WebSocket 전송 어댑터
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class FrontdeskRequestWebSocketDispatchAdapter implements FrontdeskRequestDispatchPort {
+public class FrontdeskRequestSseDispatchAdapter implements FrontdeskRequestDispatchPort {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final SseConnectionManager sseConnectionManager;
 
     @Override
     public void dispatchCancelRejected(String roomNo, Long requestId, String domainCode, String summary) {
@@ -58,11 +55,8 @@ public class FrontdeskRequestWebSocketDispatchAdapter implements FrontdeskReques
         send(destination, payload);
     }
 
-    /**
-     * WebSocket 메시지 전송 공통 로직
-     */
     private void send(String destination, Map<String, Object> payload) {
-        log.info("WebSocket 전송(Admin): destination={}, payload={}", destination, payload);
-        messagingTemplate.convertAndSend(destination, payload);
+        log.info("[SSE-Frontdesk] → destination={}, payload={}", destination, payload);
+        sseConnectionManager.sendToChannel(destination, payload);
     }
 }
