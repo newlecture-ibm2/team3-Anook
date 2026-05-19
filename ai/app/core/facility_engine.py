@@ -65,6 +65,11 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
     system_instruction_with_lang = FACILITY_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
     
+    if isinstance(raw, list):
+        if not raw:
+            raise ValueError("AI returned an empty list")
+        raw = raw[0]
+        
     # AI가 룸넘버를 누락할 경우를 대비한 안전 장치 (백엔드에서 받은 room_no 강제 주입)
     if "room_no" not in raw or raw["room_no"] in ["unknown", "", "from input"]:
         raw["room_no"] = room_no
