@@ -61,7 +61,7 @@
 }
 
 .label {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-500);
 }
 
@@ -124,7 +124,7 @@
   padding: var(--space-4) var(--space-12);
   background: var(--color-gray-100);
   border-radius: var(--radius-sm);
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-700);
 }
 
@@ -225,7 +225,7 @@
 }
 
 .confirmText {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-700);
   margin-right: var(--space-4);
 }
