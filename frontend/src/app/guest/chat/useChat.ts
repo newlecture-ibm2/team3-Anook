@@ -628,7 +628,9 @@ export function useChat() {
     });
 
     // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
+    // [수정] 백엔드의 isStaffHandlingRoom 로직과 동일하게 IN_PROGRESS (또는 ASSIGNED) 상태일 때만 직원 연결로 간주
+    // (PENDING 상태로 방치된 중복 FRONT 요청이 있을 때 애니메이션이 영구 차단되는 현상 방지)
+    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && (r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED'));
 
     if (!isStaffConnected) {
       setIsTyping(true);
