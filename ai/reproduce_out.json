@@ -1,0 +1,64 @@
+Status: 200
+[
+  {
+    "guest_reply": "[FORWARD_FB]",
+    "summary": "제로 콜라 2개 주문",
+    "domain_code": "FB",
+    "agent_domain": "FB",
+    "priority": "NORMAL",
+    "entities": {
+      "intent": "ROOM_SERVICE",
+      "menu_items": [
+        {
+          "name": "콜라",
+          "quantity": 2,
+          "selected_option": "제로"
+        }
+      ],
+      "allergen_warning": "",
+      "special_requests": ""
+    },
+    "confidence": 0.98,
+    "missing_fields": [],
+    "clarification_options": [],
+    "reasoning": "✅ \"네\" → ROOM_SERVICE (주문 확정) 감지\n✅ 분류 로직: 이전 대화에서 콜라 주문에 대한 확인 요청이 있었으므로, \"네\"는 해당 주문을 확정하는 의도로 분류했습니다.\n✅ 맥락 활용: 이전 턴에서 \"제로 콜라 2개(8.00달러)입니다. 이대로 주문을 접수해 드릴까요?\"라는 AI의 질문에 대한 긍정 답변으로 판단하여, 콜라(제로) 2개 주문을 확정했습니다.\n✅ 특이사항: \"택시도 예약해주세요\"는 F&B 도메인 밖의 요청이므로, F&B 에이전트는 이 부분을 무시하고 F&B 관련 요청만 처리했습니다.\n✅ Confidence: 0.98",
+    "action_type": "ADD",
+    "ai_log_meta": {
+      "model_name": "gemini-2.5-flash",
+      "raw_prompt": "[과거 대화 맥락]\n고객: 콜라 주세요\nAI: 콜라는 일반과 제로 중 어떤 것으로, 몇 개 준비해 드릴까요?\n고객: 제로로 2개 주세요\nAI: 제로 콜라 2개(8.00달러)입니다. 이대로 주문을 접수해 드릴까요?\n\n[현재 요청]\n고객: 네 그리고 택시도 예약해주세요",
+      "raw_response": "[\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"FB\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"네\\\" → 이전 AI의 주문 확인 질문에 대한 긍정 응답 감지\\n• 분류 로직: 이전 대화 맥락에서 제로 콜라 2개 주문에 대한 확인이므로, 해당 주문을 접수하는 DEPARTMENT (FB)로 분류\\n• 맥락 활용: AI의 마지막 질문이 '이대로 주문을 접수해 드릴까요?'였고, 고객이 '네'라고 응답하여 주문 확정 의도를 파악함.\\n• 특이사항: 기존 주문에 대한 확정 요청이므로 action_type은 ADD.\\n• Confidence: 1.0 (명확한 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"제로 콜라 2개 주문 확인\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  },\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"CONCIERGE\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"택시도 예약해주세요\\\" → 택시 예약 요청 감지\\n• 분류 로직: 택시 예약은 컨시어지 서비스에 해당하므로 DEPARTMENT (CONCIERGE)로 분류\\n• 맥락 활용: 이전 대화와 별개로 새로운 요청이 추가되었음을 파악함.\\n• 특이사항: 새로운 요청이므로 action_type은 ADD.\\n• Confidence: 1.0 (명확한 요청)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"택시 예약 요청\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  }\n]",
+      "prompt_tokens": 8490,
+      "completion_tokens": 486,
+      "latency_ms": 5859,
+      "is_fallback": false
+    }
+  },
+  {
+    "guest_reply": "어디로 가시나요? 몇 시에 출발하시겠어요? 그리고 탑승 인원은 몇 분이신가요?",
+    "summary": "제로 콜라 2개 주문 접수 및 택시 예약 정보 확인 중",
+    "domain_code": null,
+    "agent_domain": "CONCIERGE",
+    "priority": "NORMAL",
+    "entities": {
+      "intent": "TAXI"
+    },
+    "confidence": 0.95,
+    "missing_fields": [
+      "destination",
+      "time",
+      "passenger_count"
+    ],
+    "clarification_options": [],
+    "reasoning": "• \"네\" → 이전 콜라 주문 접수 확인 (AI의 확인 질문에 대한 긍정 답변) 💬\n• \"택시도 예약해주세요\" → TAXI 의도 감지 🚕\n• TAXI 의도에 필수적인 'destination', 'time', 'passenger_count' 필드가 누락되었음을 확인 ❓\n• {분류 로직}: 고객의 명확한 택시 요청으로 컨시어지(CONCIERGE) 도메인의 TAXI 서비스로 분류했습니다.\n• {맥락 활용}: 이전 대화에서 콜라 주문에 대한 확인 요청이 있었고, 고객의 '네' 답변으로 해당 주문이 완료되었음을 인지하여 `final_reply`에 콜라 주문 접수 완료 메시지를 포함했습니다. 📝\n• `action_type`은 택시 예약 요청이 아직 불완전하므로 `null`로 설정했습니다. 🚫\n• `needs_clarification`을 true로 설정하고, 누락된 필드에 대한 질문을 `clarification_question`에 담았습니다. 🗣️\n• Confidence: 0.95",
+    "action_type": "ADD",
+    "ai_log_meta": {
+      "model_name": "gemini-2.5-flash",
+      "raw_prompt": "[과거 대화 맥락]\n고객: 콜라 주세요\nAI: 콜라는 일반과 제로 중 어떤 것으로, 몇 개 준비해 드릴까요?\n고객: 제로로 2개 주세요\nAI: 제로 콜라 2개(8.00달러)입니다. 이대로 주문을 접수해 드릴까요?\n\n[현재 요청]\n고객: 네 그리고 택시도 예약해주세요",
+      "raw_response": "[\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"FB\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"네\\\" → 이전 AI의 주문 확인 질문에 대한 긍정 응답 감지\\n• 분류 로직: 이전 대화 맥락에서 제로 콜라 2개 주문에 대한 확인이므로, 해당 주문을 접수하는 DEPARTMENT (FB)로 분류\\n• 맥락 활용: AI의 마지막 질문이 '이대로 주문을 접수해 드릴까요?'였고, 고객이 '네'라고 응답하여 주문 확정 의도를 파악함.\\n• 특이사항: 기존 주문에 대한 확정 요청이므로 action_type은 ADD.\\n• Confidence: 1.0 (명확한 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"제로 콜라 2개 주문 확인\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  },\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"CONCIERGE\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"택시도 예약해주세요\\\" → 택시 예약 요청 감지\\n• 분류 로직: 택시 예약은 컨시어지 서비스에 해당하므로 DEPARTMENT (CONCIERGE)로 분류\\n• 맥락 활용: 이전 대화와 별개로 새로운 요청이 추가되었음을 파악함.\\n• 특이사항: 새로운 요청이므로 action_type은 ADD.\\n• Confidence: 1.0 (명확한 요청)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"택시 예약 요청\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  }\n]",
+      "prompt_tokens": 8490,
+      "completion_tokens": 486,
+      "latency_ms": 5859,
+      "is_fallback": false
+    }
+  }
+]

@@ -99,6 +99,11 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         system_instruction_with_lang = CONCIERGE_SYSTEM_PROMPT.replace("{system_language}", system_language)
         raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
         
+        if isinstance(raw, list):
+            if not raw:
+                raise ValueError("AI returned an empty list")
+            raw = raw[0]
+            
         # AI가 null을 반환할 경우를 대비해 데이터 세척 (Pydantic 검증 오류 방지)
         # 문자열 필드에 null이 들어오면 빈 문자열("")로 대체
         clean_fields = ["clarification_question", "summary", "request_id", "room_no"]

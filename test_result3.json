@@ -1,0 +1,60 @@
+[
+  {
+    "guest_reply": "[FORWARD_FB]",
+    "summary": "클래식 치즈버거 1개 주문",
+    "domain_code": "FB",
+    "agent_domain": "FB",
+    "priority": "NORMAL",
+    "entities": {
+      "intent": "ROOM_SERVICE",
+      "menu_items": [
+        {
+          "name": "클래식 치즈버거",
+          "quantity": 1
+        }
+      ],
+      "allergen_warning": "밀, 유제품"
+    },
+    "confidence": 0.95,
+    "missing_fields": [],
+    "clarification_options": [],
+    "reasoning": "• \"응 둘 다 접수해줘\" → ROOM_SERVICE 의도 감지 및 이전 요청 확인\n• 분류 로직: 이전 대화에서 AI가 '치즈버거 1개 15달러입니다. 접수할까요?'라고 물었고, 고객이 '응'으로 긍정하여 치즈버거 주문을 확정하는 것으로 판단했습니다. 택시 예약은 F&B 도메인 밖이므로 처리하지 않습니다.\n• 맥락 활용: 이전 AI의 치즈버거 주문 확인 질문에 대한 긍정 답변을 통해 주문을 확정했습니다.\n• 특이사항: 알러지 정보(밀, 유제품)를 포함했습니다.\n• Confidence: 0.95",
+    "action_type": "ADD",
+    "ai_log_meta": {
+      "model_name": "gemini-2.5-flash",
+      "raw_prompt": "[과거 대화 맥락]\nAI: 치즈버거 1개 15달러입니다. 접수할까요?\nAI: 3시에 강남역으로 가는 택시 예약입니다. 이대로 접수할까요?\n\n[현재 요청]\n고객: 응 둘 다 접수해줘",
+      "raw_response": "[\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"FB\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"응\\\" → 긍정 응답 감지\\n• \\\"둘 다 접수해줘\\\" → 이전 대화 맥락에서 AI가 확인 요청한 두 가지 사항(치즈버거 주문, 택시 예약)을 모두 접수하라는 의도 감지\\n• 분류 로직: 첫 번째 요청인 치즈버거 주문은 식음료 관련이므로 FB 부서로 분류. 사용자가 접수를 요청했으므로 DEPARTMENT로 라우팅.\\n• 맥락 활용: 이전 AI의 \\\"치즈버거 1개 15달러입니다. 접수할까요?\\\" 질문에 대한 긍정 응답으로 판단.\\n• 특이사항: 다중 의도 중 첫 번째 의도 처리.\\n• Confidence: 1.0 (명확한 긍정 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"치즈버거 주문 접수\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  },\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"CONCIERGE\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"응\\\" → 긍정 응답 감지\\n• \\\"둘 다 접수해줘\\\" → 이전 대화 맥락에서 AI가 확인 요청한 두 가지 사항(치즈버거 주문, 택시 예약)을 모두 접수하라는 의도 감지\\n• 분류 로직: 두 번째 요청인 택시 예약은 컨시어지 서비스이므로 CONCIERGE 부서로 분류. 사용자가 접수를 요청했으므로 DEPARTMENT로 라우팅.\\n• 맥락 활용: 이전 AI의 \\\"3시에 강남역으로 가는 택시 예약입니다. 이대로 접수할까요?\\\" 질문에 대한 긍정 응답으로 판단.\\n• 특이사항: 다중 의도 중 두 번째 의도 처리.\\n• Confidence: 1.0 (명확한 긍정 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"택시 예약 접수\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  }\n]",
+      "prompt_tokens": 8467,
+      "completion_tokens": 606,
+      "latency_ms": 5798,
+      "is_fallback": false
+    }
+  },
+  {
+    "guest_reply": "네, 2026년 5월 20일 오후 3시에 강남역으로 가는 택시 예약이 접수되었습니다. 치즈버거 주문 건도 함께 처리될 수 있도록 담당 부서에 전달하겠습니다.",
+    "summary": "택시 예약 접수 완료 (강남역, 2026-05-20 15:00)",
+    "domain_code": "CONCIERGE",
+    "agent_domain": "CONCIERGE",
+    "priority": "NORMAL",
+    "entities": {
+      "intent": "TAXI",
+      "destination": "강남역",
+      "time": "2026-05-20 15:00",
+      "passenger_count": 1
+    },
+    "confidence": 0.9,
+    "missing_fields": [],
+    "clarification_options": [],
+    "reasoning": "• \"응 둘 다 접수해줘\" → 이전 대화에서 확인 요청된 두 가지 항목(치즈버거 주문, 택시 예약)에 대한 최종 승인 감지.\n• {분류 로직}: '택시 예약'은 컨시어지(CONCIERGE)의 'TAXI' 서비스에 해당하며, '치즈버거 주문'은 컨시어지 지원 서비스 범위(SUPPORTED SERVICES)에 명시되지 않은 항목임. 복합 요청 처리 규칙에 따라 컨시어지 담당 서비스인 'TAXI'만 JSON으로 처리.\n• {맥락 활용}: AI의 이전 메시지에서 '강남역으로 가는 택시 예약' 및 '3시' 정보를 추출하여 목적지와 시간을 확정. '3시'는 현재 시각(16:08)을 고려하여 다음 날 오후 3시(15:00)로 추정. 탑승 인원은 명시되지 않았으나, AI가 '이대로 접수할까요?'라고 물었으므로 기본값인 1명으로 가정.\n• {특이사항}: 사용자 요청에 '둘 다'라는 표현이 포함되어 있으므로, 컨시어지 서비스 범위 외의 '치즈버거 주문' 건은 최종 답변에서 담당 부서로 전달될 것임을 안내하여 사용자 요청을 모두 처리하려는 의도를 반영.\n• Confidence: 0.9",
+    "action_type": "ADD",
+    "ai_log_meta": {
+      "model_name": "gemini-2.5-flash",
+      "raw_prompt": "[과거 대화 맥락]\nAI: 치즈버거 1개 15달러입니다. 접수할까요?\nAI: 3시에 강남역으로 가는 택시 예약입니다. 이대로 접수할까요?\n\n[현재 요청]\n고객: 응 둘 다 접수해줘",
+      "raw_response": "[\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"FB\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"응\\\" → 긍정 응답 감지\\n• \\\"둘 다 접수해줘\\\" → 이전 대화 맥락에서 AI가 확인 요청한 두 가지 사항(치즈버거 주문, 택시 예약)을 모두 접수하라는 의도 감지\\n• 분류 로직: 첫 번째 요청인 치즈버거 주문은 식음료 관련이므로 FB 부서로 분류. 사용자가 접수를 요청했으므로 DEPARTMENT로 라우팅.\\n• 맥락 활용: 이전 AI의 \\\"치즈버거 1개 15달러입니다. 접수할까요?\\\" 질문에 대한 긍정 응답으로 판단.\\n• 특이사항: 다중 의도 중 첫 번째 의도 처리.\\n• Confidence: 1.0 (명확한 긍정 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"치즈버거 주문 접수\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  },\n  {\n    \"route_type\": \"DEPARTMENT\",\n    \"domain\": \"CONCIERGE\",\n    \"confidence\": 1.0,\n    \"reasoning\": \"• \\\"응\\\" → 긍정 응답 감지\\n• \\\"둘 다 접수해줘\\\" → 이전 대화 맥락에서 AI가 확인 요청한 두 가지 사항(치즈버거 주문, 택시 예약)을 모두 접수하라는 의도 감지\\n• 분류 로직: 두 번째 요청인 택시 예약은 컨시어지 서비스이므로 CONCIERGE 부서로 분류. 사용자가 접수를 요청했으므로 DEPARTMENT로 라우팅.\\n• 맥락 활용: 이전 AI의 \\\"3시에 강남역으로 가는 택시 예약입니다. 이대로 접수할까요?\\\" 질문에 대한 긍정 응답으로 판단.\\n• 특이사항: 다중 의도 중 두 번째 의도 처리.\\n• Confidence: 1.0 (명확한 긍정 확인)\",\n    \"action_type\": \"ADD\",\n    \"target_keyword\": null,\n    \"reply\": null,\n    \"create_ticket\": true,\n    \"summary\": \"택시 예약 접수\",\n    \"priority\": \"NORMAL\",\n    \"clarification_question\": null,\n    \"clarification_options\": [],\n    \"sentiment\": null\n  }\n]",
+      "prompt_tokens": 8467,
+      "completion_tokens": 606,
+      "latency_ms": 5798,
+      "is_fallback": false
+    }
+  }
+]

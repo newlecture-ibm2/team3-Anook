@@ -87,6 +87,11 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     # 4. Gemini 호출
     system_instruction_with_lang = FB_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
+    
+    if isinstance(raw, list):
+        if not raw:
+            raise ValueError("AI returned an empty list")
+        raw = raw[0]
 
     # 5. Pydantic 검증
     if "request_id" not in raw or raw["request_id"] == "auto":
