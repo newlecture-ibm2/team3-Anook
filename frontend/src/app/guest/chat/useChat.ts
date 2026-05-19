@@ -582,14 +582,20 @@ export function useChat() {
     const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
     const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
     const hasChinese = /[\u4E00-\u9FFF]/.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
     
-    let detectedChatLang = 'en';
+    const currentLanguage = useUiStore.getState().language;
+    let detectedChatLang = currentLanguage; // Default to CURRENT language
+    
     if (hasKorean) detectedChatLang = 'ko';
     else if (hasJapanese) detectedChatLang = 'ja';
     else if (hasChinese) detectedChatLang = 'zh';
+    else if (hasEnglish) detectedChatLang = 'en';
 
-    setLanguage(detectedChatLang as any);
-    setChatLanguage(detectedChatLang);
+    if (detectedChatLang !== currentLanguage) {
+      setLanguage(detectedChatLang as any);
+      setChatLanguage(detectedChatLang);
+    }
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
