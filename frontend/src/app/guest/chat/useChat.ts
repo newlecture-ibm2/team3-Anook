@@ -250,6 +250,8 @@ export function useChat() {
               setIsTyping(false);
 
               if (payload.type === 'AI_SKIPPED') {
+                // AI_PROGRESS 메시지 제거
+                setMessages(prev => prev.filter(m => m.type !== 'AI_PROGRESS'));
                 return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
               }
 
@@ -279,6 +281,13 @@ export function useChat() {
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 AI 채팅 버블 스타일로 실시간 표시
               setIsStaffTyping(false);
+              
+              // [AN-337] 시스템 마커 메시지 필터링 (화면에 표시하지 않음)
+              const contentStr = payload.content as string;
+              if (contentStr && contentStr.startsWith('[SYSTEM]')) {
+                return;
+              }
+
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
               setMessages(prev => {
                 // 중복 방지
@@ -613,7 +622,7 @@ export function useChat() {
     });
 
     // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
+    const isStaffConnected = activeRequests.some(r => (r.domainCode === 'FRONT' || r.domainCode === 'EMERGENCY') && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
 
     if (!isStaffConnected) {
       setIsTyping(true);
