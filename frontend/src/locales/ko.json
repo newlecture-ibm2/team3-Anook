@@ -1,7 +1,7 @@
 {
   "guest": "투숙객",
   "staff": "직원",
-  "admin": "관리자",
+  "frontdesk": "프론트 데스크",
   "status": {
     "pending": "접수됨",
     "assigned": "배정됨",
@@ -26,7 +26,7 @@
     "retry": "다시 시도",
     "logout": "로그아웃"
   },
-  "adminPage": {
+  "frontdeskPage": {
     "sidebar": {
       "categories": {
         "requestManagement": "요청 관리",

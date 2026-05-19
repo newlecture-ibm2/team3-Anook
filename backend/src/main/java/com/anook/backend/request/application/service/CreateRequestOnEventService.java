@@ -203,7 +203,7 @@ public class CreateRequestOnEventService {
             if (savedRequest.getDomainCode() != null) {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }
-            dispatchPort.dispatchToAdmin(payload);
+            dispatchPort.dispatchToFrontdesk(payload);
         } else {
             // 일반: Grace Period 적용 — 10초 후 직원 알림
             log.info("[GracePeriod] 일반 요청 → {}초 후 직원 알림 예정 — id: {}", graceRemaining, savedRequest.getId());

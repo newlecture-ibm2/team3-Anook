@@ -1,7 +1,7 @@
 {
   "guest": "住客",
   "staff": "员工",
-  "admin": "管理员",
+  "frontdesk": "前台",
   "status": {
     "pending": "待处理",
     "assigned": "已分配",
@@ -26,7 +26,7 @@
     "retry": "重试",
     "logout": "退出登录"
   },
-  "adminPage": {
+  "frontdeskPage": {
     "sidebar": {
       "categories": {
         "requestManagement": "请求管理",

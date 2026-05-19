@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
-import useAdminRequests from '@/app/admin/useAdminRequests';
-import useEscalations from '@/app/admin/front-desk/useEscalations';
-import RejectCancellationModal from '@/app/admin/front-desk/_components/RejectCancellationModal/RejectCancellationModal';
-import RejectEscalationModal from '@/app/admin/front-desk/_components/RejectEscalationModal/RejectEscalationModal';
-import RequestDetailModal from '@/app/admin/front-desk/_components/RequestDetailModal/RequestDetailModal';
+import useFrontdeskRequests from '@/app/frontdesk/useFrontdeskRequests';
+import useEscalations from '@/app/frontdesk/requests/useEscalations';
+import RejectCancellationModal from '@/app/frontdesk/requests/_components/RejectCancellationModal/RejectCancellationModal';
+import RejectEscalationModal from '@/app/frontdesk/requests/_components/RejectEscalationModal/RejectEscalationModal';
+import RequestDetailModal from '@/app/frontdesk/requests/_components/RequestDetailModal/RequestDetailModal';
 import { useUiStore } from '@/stores/useUiStore';
 import styles from './HeaderNotification.module.css';
 
@@ -22,7 +22,7 @@ export default function HeaderNotification() {
   const [detailTarget, setDetailTarget] = useState<number | null>(null);
 
   // 데이터 패치
-  const { requests: allRequests, refetch: refetchRequests } = useAdminRequests(undefined, '', 'all', true);
+  const { requests: allRequests, refetch: refetchRequests } = useFrontdeskRequests(undefined, '', 'all', true);
   const { escalations, refetch: refetchEscalations } = useEscalations();
 
   // 30초마다 현재 시간 갱신 (1분 30초 지연 계산용)
@@ -58,7 +58,7 @@ export default function HeaderNotification() {
 
   const handleApproveCancel = async (id: number) => {
     try {
-      const res = await fetch(`/api/admin/requests/${id}/cancellation/approve`, { method: 'PATCH' });
+      const res = await fetch(`/api/frontdesk/requests/${id}/cancellation/approve`, { method: 'PATCH' });
       if (res.ok) {
         showToast('취소가 승인되었습니다.', 'success');
         refetchRequests();
@@ -79,7 +79,7 @@ export default function HeaderNotification() {
     try {
       // 이관 승인: 현재 부서 유지 + NORMAL 우선순위로 에스컬레이션 처리
       const target = escalations.find(r => r.id === id);
-      const res = await fetch(`/api/admin/requests/${id}/escalate`, {
+      const res = await fetch(`/api/frontdesk/requests/${id}/escalate`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ departmentId: target?.departmentId || 'FRONT', priority: 'NORMAL' })

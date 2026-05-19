@@ -12,7 +12,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * 채널 규칙:
  *   - /topic/room/{roomNo}    → 객실 단위 격리 (Guest 구독)
  *   - /topic/dept/{deptCode}  → 부서 단위 격리 (Staff 구독)
- *   - /topic/admin            → 관리자 전용 (Admin 구독)
+ *   - /topic/frontdesk        → 프론트 데스크 전용 (Frontdesk 구독)
  *
  * 연결 엔드포인트:
  *   - /ws  (Nginx가 /ws/** → app:8080 으로 프록시)

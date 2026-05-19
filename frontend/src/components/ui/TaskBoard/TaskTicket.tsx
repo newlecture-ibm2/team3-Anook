@@ -104,8 +104,8 @@ export default function TaskTicket({
 
   let displayDescription = description;
   if (isManuallyReassigned && displayDescription) {
-    // 수동 배정: rawText 원본에서 마지막 줄(admin 이관 사유)만 추출
-    // rawText 구조: "원문\n\n[주문 상세]\n...\nadmin메모"
+    // 수동 배정: rawText 원본에서 마지막 줄(frontdesk 이관 사유)만 추출
+    // rawText 구조: "원문\n\n[주문 상세]\n...\nfrontdesk메모"
     const lines = displayDescription.split('\n').filter(l => l.trim());
     displayDescription = lines[lines.length - 1] || '';
   } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
@@ -113,7 +113,7 @@ export default function TaskTicket({
     displayDescription = displayDescription.split('[주문 상세]')[0].trim();
   }
   if (language === 'en') {
-    if (displayDescription === '관리자') displayDescription = 'Admin';
+    if (displayDescription === '프론트 데스크') displayDescription = 'Frontdesk';
     else if (displayDescription === '직원') displayDescription = 'Staff';
   }
 

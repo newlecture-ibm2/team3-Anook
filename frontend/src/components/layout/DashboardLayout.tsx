@@ -6,14 +6,14 @@ import Sidebar, { SidebarProps } from './Sidebar';
 import GlobalEmergencyListener from './GlobalEmergencyListener';
 import { useUiStore } from '@/stores/useUiStore';
 import styles from './DashboardLayout.module.css';
-import CreateRequestModal from '@/app/admin/front-desk/_components/CreateRequestModal/CreateRequestModal';
+import CreateRequestModal from '@/app/frontdesk/requests/_components/CreateRequestModal/CreateRequestModal';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   role?: SidebarProps['role'];
 }
 
-export default function DashboardLayout({ children, role = 'admin' }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, role = 'frontdesk' }: DashboardLayoutProps) {
   const { isSidebarOpen, toggleSidebar, activeModal, closeModal, isSidebarCollapsed } = useUiStore();
 
   return (
@@ -35,8 +35,8 @@ export default function DashboardLayout({ children, role = 'admin' }: DashboardL
         </main>
       </div>
 
-      {/* 전역 요청 생성 모달 — 모든 admin 페이지에서 헤더 버튼으로 접근 가능 */}
-      {role === 'admin' && (
+      {/* 전역 요청 생성 모달 — 모든 frontdesk 페이지에서 헤더 버튼으로 접근 가능 */}
+      {role === 'frontdesk' && (
         <CreateRequestModal
           isOpen={activeModal === 'createRequest'}
           onClose={closeModal}

@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * 직원이 특정 객실의 대화 내역을 읽기 전용으로 조회하기 위한 포트.
- * (admin 모듈의 Port를 import하지 않고 staff 자체 포트로 정의)
+ * (frontdesk 모듈의 Port를 import하지 않고 staff 자체 포트로 정의)
  */
 public interface StaffMessageQueryPort {
 

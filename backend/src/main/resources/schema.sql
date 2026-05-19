@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS department (
     id          VARCHAR(20)  PRIMARY KEY,
     name        VARCHAR(50)  NOT NULL,
-    is_admin    BOOLEAN      NOT NULL DEFAULT FALSE
+    is_frontdesk BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
 -- 직원 역할
@@ -256,3 +256,6 @@ ALTER TABLE message ADD COLUMN IF NOT EXISTS sentiment VARCHAR(10);
 
 -- [2026-05-15] 고객 피드백 별점 컬럼 추가 (1~5, NULL=미평가)
 ALTER TABLE request ADD COLUMN IF NOT EXISTS rating SMALLINT;
+
+-- [2026-05-19] Admin 역할을 Frontdesk로 변경
+ALTER TABLE department RENAME COLUMN is_admin TO is_frontdesk;

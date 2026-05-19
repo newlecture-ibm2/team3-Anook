@@ -111,7 +111,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
-                dispatchPort.dispatchToAdmin(payload);
+                dispatchPort.dispatchToFrontdesk(payload);
             } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
                 request.requestCancellation();
                 requestPort.save(request);
@@ -128,7 +128,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
-                dispatchPort.dispatchToAdmin(payload);
+                dispatchPort.dispatchToFrontdesk(payload);
             }
 
         } catch (IllegalStateException e) {

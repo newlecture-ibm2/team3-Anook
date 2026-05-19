@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export interface SidebarProps {
-  role?: 'admin' | 'staff' | 'guest' | 'housekeeping' | 'facility' | 'fb' | 'concierge' | 'front-desk' | 'emergency';
+  role?: 'frontdesk' | 'staff' | 'guest' | 'housekeeping' | 'facility' | 'fb' | 'concierge' | 'emergency';
   className?: string;
   fakePathname?: string;
   onMenuClick?: (e: React.MouseEvent, href: string) => void;
@@ -82,7 +82,7 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
   );
 }
 
-export default function Sidebar({ role = 'admin', className = '', fakePathname, onMenuClick }: SidebarProps) {
+export default function Sidebar({ role = 'frontdesk', className = '', fakePathname, onMenuClick }: SidebarProps) {
   const actualPathname = usePathname() || '';
   const searchParams = useSearchParams();
   const searchString = searchParams?.toString();
@@ -109,44 +109,44 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
     }
   ];
 
-  const adminMenus = [
+  const frontdeskMenus = [
     {
       category: '',
       items: [
-        { label: t.adminPage.sidebar.menus.dashboard, href: '/admin/dashboard', icon: LayoutDashboard },
-        { label: t.adminPage.sidebar.menus.frontDesk, href: '/admin/front-desk', icon: Monitor },
-        { label: t.adminPage.sidebar.menus.housekeeping, href: '/admin/housekeeping', icon: Home },
-        { label: t.adminPage.sidebar.menus.fb, href: '/admin/fb', icon: Utensils },
-        { label: t.adminPage.sidebar.menus.facility, href: '/admin/facility', icon: Wrench },
-        { label: t.adminPage.sidebar.menus.concierge, href: '/admin/concierge', icon: MessageSquare },
+        { label: t.frontdeskPage.sidebar.menus.dashboard, href: '/frontdesk/dashboard', icon: LayoutDashboard },
+        { label: t.frontdeskPage.sidebar.menus.frontDesk, href: '/frontdesk/requests', icon: Monitor },
+        { label: t.frontdeskPage.sidebar.menus.housekeeping, href: '/frontdesk/housekeeping', icon: Home },
+        { label: t.frontdeskPage.sidebar.menus.fb, href: '/frontdesk/fb', icon: Utensils },
+        { label: t.frontdeskPage.sidebar.menus.facility, href: '/frontdesk/facility', icon: Wrench },
+        { label: t.frontdeskPage.sidebar.menus.concierge, href: '/frontdesk/concierge', icon: MessageSquare },
       ]
     },
     {
-      category: t.adminPage.sidebar.categories.requestManagement,
+      category: t.frontdeskPage.sidebar.categories.requestManagement,
       items: [
-        { label: t.adminPage.sidebar.menus.allRequests, href: '/admin/all-requests', icon: Layers },
-        { label: t.adminPage.sidebar.menus.chatHistory, href: '/admin/chat-history', icon: History },
-        { label: t.adminPage.sidebar.menus.voc, href: '/admin/voc', icon: MessageCircle },
+        { label: t.frontdeskPage.sidebar.menus.allRequests, href: '/frontdesk/all-requests', icon: Layers },
+        { label: t.frontdeskPage.sidebar.menus.chatHistory, href: '/frontdesk/chat-history', icon: History },
+        { label: t.frontdeskPage.sidebar.menus.voc, href: '/frontdesk/voc', icon: MessageCircle },
       ]
     },
     {
-      category: t.adminPage.sidebar.categories.aiSystem,
+      category: t.frontdeskPage.sidebar.categories.aiSystem,
       items: [
-        { label: t.adminPage.sidebar.menus.rag, href: '/admin/knowledge', icon: Database },
-        { label: t.adminPage.sidebar.menus.aiRouting, href: '/admin/ai-routing', icon: FileSearch },
+        { label: t.frontdeskPage.sidebar.menus.rag, href: '/frontdesk/knowledge', icon: Database },
+        { label: t.frontdeskPage.sidebar.menus.aiRouting, href: '/frontdesk/ai-routing', icon: FileSearch },
       ]
     },
     {
-      category: t.adminPage.sidebar.categories.operations,
+      category: t.frontdeskPage.sidebar.categories.operations,
       items: [
-        { label: t.adminPage.sidebar.menus.handover, href: '/admin/handover', icon: FileText },
-        { label: t.adminPage.sidebar.menus.staffManagement, href: '/admin/staff-management', icon: Users },
+        { label: t.frontdeskPage.sidebar.menus.handover, href: '/frontdesk/handover', icon: FileText },
+        { label: t.frontdeskPage.sidebar.menus.staffManagement, href: '/frontdesk/staff-management', icon: Users },
       ]
     }
   ];
 
   const isDepartment = ['housekeeping', 'facility', 'fb', 'concierge', 'staff'].includes(role);
-  const menus = isDepartment ? deptMenus : adminMenus;
+  const menus = isDepartment ? deptMenus : frontdeskMenus;
 
   const flatMenus = menus.flatMap(g => g.items);
   const activeMenu = flatMenus.reduce((bestMatch, menu) => {

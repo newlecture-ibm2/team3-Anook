@@ -26,7 +26,7 @@ export default function WebSocketTestPage() {
   const [channels, setChannels] = useState({
     room: true,
     dept: true,
-    admin: true,
+    frontdesk: true,
   });
   const clientRef = useRef<Client | null>(null);
 
@@ -98,7 +98,7 @@ export default function WebSocketTestPage() {
 
     if (channels.room) addSub('/topic/room/707', '🚪 room/707');
     if (channels.dept) addSub('/topic/dept/HK', '🏢 dept/HK');
-    if (channels.admin) addSub('/topic/admin', '👑 admin');
+    if (channels.frontdesk) addSub('/topic/frontdesk', '👑 frontdesk');
 
     return () => subscriptions.forEach((sub) => sub.unsubscribe());
   }, [isManualConnected, channels]);
@@ -189,7 +189,7 @@ export default function WebSocketTestPage() {
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ fontSize: '16px', color: '#6ee7b7', marginBottom: '12px' }}>📡 구독 채널</h2>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {(['room', 'dept', 'admin'] as const).map((ch) => (
+          {(['room', 'dept', 'frontdesk'] as const).map((ch) => (
             <label key={ch} style={{
               padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px',
               background: channels[ch] ? 'rgba(59, 130, 246, 0.2)' : '#1a1a2e',
@@ -201,7 +201,7 @@ export default function WebSocketTestPage() {
                 checked={channels[ch]}
                 onChange={() => setChannels((prev) => ({ ...prev, [ch]: !prev[ch] }))}
               />
-              {ch === 'room' ? '🚪 /topic/room/707' : ch === 'dept' ? '🏢 /topic/dept/HK' : '👑 /topic/admin'}
+              {ch === 'room' ? '🚪 /topic/room/707' : ch === 'dept' ? '🏢 /topic/dept/HK' : '👑 /topic/frontdesk'}
             </label>
           ))}
         </div>

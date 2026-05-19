@@ -13,7 +13,7 @@ interface HeaderProps {
   role?: string;
 }
 
-export default function Header({ className = '', role = 'admin' }: HeaderProps) {
+export default function Header({ className = '', role = 'frontdesk' }: HeaderProps) {
   const { toggleSidebar, openModal } = useUiStore();
 
   return (
@@ -25,7 +25,7 @@ export default function Header({ className = '', role = 'admin' }: HeaderProps) 
       </div>
 
       <div className={styles.right} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-16)' }}>
-        {role === 'admin' && (
+        {role === 'frontdesk' && (
           <>
             <Button variant="primary" onClick={() => openModal('createRequest')} style={{ padding: '6px 12px', fontSize: '13px' }}>
               + 요청 생성

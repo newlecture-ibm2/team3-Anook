@@ -41,10 +41,10 @@ export default function GlobalEmergencyListener() {
       }
     };
 
-    const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
+    const unsubscribeFrontdesk = subscribe('/topic/frontdesk', handleEvent);
     
     return () => {
-      unsubscribeAdmin();
+      unsubscribeFrontdesk();
     };
   }, [subscribe]);
 
@@ -64,7 +64,7 @@ export default function GlobalEmergencyListener() {
         alert={emergencyAlert}
         onDismiss={() => setEmergencyAlert(null)}
         onClick={() => {
-          window.location.href = '/admin/front-desk';
+          window.location.href = '/frontdesk/requests';
         }}
       />
     </div>

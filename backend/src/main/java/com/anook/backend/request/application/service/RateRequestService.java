@@ -12,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 고객 피드백 별점 등록 서비스
  *
  * 모든 피드백은 request.rating 컬럼에 저장합니다.
- * - AI 처리 요청: /admin/ai-routing 에서 조회
- * - 직원 상담 요청 (FRONT): /admin/voc 별점 탭에서 조회
+ * - AI 처리 요청: /frontdesk/ai-routing 에서 조회
+ * - 직원 상담 요청 (FRONT): /frontdesk/voc 별점 탭에서 조회
  */
 @Slf4j
 @Service

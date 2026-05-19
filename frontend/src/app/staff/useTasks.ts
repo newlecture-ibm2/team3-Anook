@@ -192,14 +192,14 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
       }
     };
 
-    const unsubscribeAdmin = subscribe('/topic/admin', handleEvent);
+    const unsubscribeFrontdesk = subscribe('/topic/frontdesk', handleEvent);
     const deptChannel = `/topic/dept/${currentDeptId}`;
     const unsubscribeDept = subscribe(deptChannel, handleEvent);
 
     console.info(`[useTasks] WebSocket Subscribed: ${deptChannel}`);
 
     return () => {
-      unsubscribeAdmin();
+      unsubscribeFrontdesk();
       unsubscribeDept();
     };
   }, [subscribe, fetchTasks, currentDeptId]);

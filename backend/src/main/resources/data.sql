@@ -3,7 +3,7 @@
 -- ============================================================
 
 -- 부서 (UPSERT: 부서명/관리자 여부 변경 시 자동 반영)
-INSERT INTO department (id, name, is_admin) VALUES
+INSERT INTO department (id, name, is_frontdesk) VALUES
     ('HK',        '하우스키핑',   FALSE),
     ('FB',        '식음료',       FALSE),
     ('FACILITY',  '시설관리',     FALSE),
@@ -12,7 +12,7 @@ INSERT INTO department (id, name, is_admin) VALUES
     ('EMERGENCY', '긴급대응팀',   FALSE)
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
-    is_admin = EXCLUDED.is_admin;
+    is_frontdesk = EXCLUDED.is_frontdesk;
 
 -- (room_type은 더 이상 사용하지 않음)
 
