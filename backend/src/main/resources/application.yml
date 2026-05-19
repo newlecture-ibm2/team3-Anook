@@ -37,3 +37,8 @@ ai:
     enabled: true  # AI 서버 완성 후 true로 변경 → PythonAiHttpAdapter 활성화
     url: ${AI_SERVER_URL:http://localhost:8000}
 
+# 한국수출입은행 환율 API (PMS 빌링 KRW → USD 변환)
+koreaexim:
+  base-url: https://oapi.koreaexim.go.kr
+  auth-key: ${KOREAEXIM_AUTH_KEY:}
+

@@ -41,7 +41,7 @@ def _fetch_menu_context() -> str:
                 else:
                     option_str = ""
                     
-                menu_lines.append(f"- [{category}] {name}: {price:,}원{allergy_str}{option_str}")
+                menu_lines.append(f"- [{category}] {name}: ${price:.2f}{allergy_str}{option_str}")
             return "\n".join(menu_lines)
         else:
             print(f"[FB Agent] 메뉴 조회 API 실패: HTTP {resp.status_code}")
@@ -155,7 +155,7 @@ def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
                 name = item.get("menuName", "")
                 qty = item.get("quantity", 0)
                 price = item.get("totalPrice", 0)
-                lines.append(f"- {name} {qty}개: {price:,}원")
+                lines.append(f"- {name} {qty}개: ${price:.2f}")
 
             detail = "\n".join(lines)
 
@@ -163,9 +163,9 @@ def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
             is_english = any(c.isascii() and c.isalpha() for c in user_message) and not any('\uac00' <= c <= '\ud7a3' for c in user_message)
 
             if is_english:
-                return f"Here is your room service usage so far:\n{detail}\n\nTotal: {total:,} KRW"
+                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${total:.2f}"
             else:
-                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: {total:,}원"
+                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: ${total:.2f}"
         else:
             print(f"[FB Agent] 영수증 조회 API 실패: HTTP {resp.status_code}")
             return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."

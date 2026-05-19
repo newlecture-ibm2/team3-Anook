@@ -222,6 +222,21 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         
     request.language = _detect_language(request.text, request.language)
 
+    # ── [개인정보 보호 필터링 및 자동 거절 (PII Masking & Privacy Guard)] ──
+    if has_pii(request.text):
+        masked_text = mask_pii(request.text)
+        print(f"[PII Guard] 민감 정보 차단: {masked_text}")
+        
+        return [{
+            "guest_reply": "[PII_GUARD]",
+            "summary": "개인정보 보호 차단",
+            "domain_code": None,
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": 1.0,
+            "action": "PII_GUARD"
+        }]
+
     # [수정] AI 모델은 이미지를 직접 판독하지 않도록 이미지 데이터를 비웁니다.
     # 사진은 단순 첨부파일(백엔드가 Redis에 저장) 용도로만 사용하며, AI는 오직 '텍스트'에 집중해 라우팅합니다.
     request.images = []
@@ -1204,6 +1219,64 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
 
+
+        # STEP 3-f2: BILLING_INQUIRY → 가상 PMS 비용 조회
+        if primary.route_type == "BILLING_INQUIRY":
+            from app.domains.billing.service import fetch_billing_summary
+            from app.prompts.billing_prompt import build_billing_prompt
+
+            entities = getattr(primary, 'entities', {}) or {}
+            target_category = entities.get("category") if isinstance(entities, dict) else None
+
+            try:
+                billing_data = await fetch_billing_summary(request.room_no, target_category, request.language)
+                items = billing_data.get("items", [])
+
+                if not items:
+                    cat_label = target_category or "전체"
+                    guest_reply_ko = f"현재까지 {cat_label} 이용 내역이 없습니다."
+                    guest_reply_en = f"There are no {cat_label} charges recorded for your room at this time."
+                    guest_reply = guest_reply_ko if request.language == "ko" else guest_reply_en
+                else:
+                    prompt_text = build_billing_prompt(billing_data, request.language)
+                    raw = await call_gemini_async(
+                        prompt=prompt_text,
+                        system_instruction='당신은 호텔 AI 컨시어지입니다. 아래 비용 내역을 자연스러운 문장으로 고객에게 안내하세요. 반드시 {"reply": "응답 내용"} 형식의 JSON으로만 출력하세요.'
+                    )
+                    if isinstance(raw, dict):
+                        guest_reply = raw.get("reply") or raw.get("text") or prompt_text
+                    else:
+                        guest_reply = prompt_text
+
+                response = {
+                    "guest_reply": guest_reply,
+                    "summary": "비용 조회",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {"intent": "BILLING_INQUIRY", "category": target_category or "ALL"},
+                    "confidence": primary.confidence,
+                    "action": "BILLING_INQUIRY",
+                    "reasoning": getattr(primary, 'reasoning', '비용 문의')
+                }
+            except Exception as e:
+                print(f"[Analyze] ⚠️ BILLING_INQUIRY 처리 실패: {e}")
+                err_ko = "비용 조회에 일시적 오류가 발생했습니다. 프런트 데스크에 문의해 주세요."
+                err_en = "We encountered a temporary error retrieving your billing information. Please contact the front desk."
+                response = {
+                    "guest_reply": err_ko if request.language == "ko" else err_en,
+                    "summary": "비용 조회 오류",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {"intent": "BILLING_INQUIRY"},
+                    "confidence": primary.confidence,
+                    "action": "BILLING_INQUIRY",
+                    "reasoning": getattr(primary, 'reasoning', '비용 문의')
+                }
+
+            print(f"[Analyze] 💰 BILLING_INQUIRY 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
 
         # STEP 3-g: STATUS_CHECK → 진행 상태 확인
         if primary.route_type == "STATUS_CHECK":

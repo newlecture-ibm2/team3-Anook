@@ -31,8 +31,8 @@ export default function FrontDeskPage() {
   // FRONT + EMERGENCY 요청 병합 (중복 제거)
   const mergedRequests = [...requests, ...emergencyRequests.filter(er => !requests.some(r => r.id === er.id))];
 
-  // 우선순위 정렬 가중치: EMERGENCY > URGENT > NORMAL
-  const priorityWeight = (p: string) => p === 'EMERGENCY' ? 0 : p === 'URGENT' ? 1 : 2;
+  // 우선순위 정렬 가중치: EMERGENCY > NORMAL
+  const priorityWeight = (p: string) => p === 'EMERGENCY' ? 0 : 1;
 
   const sortByPriority = <T extends { priority: string; createdAt: string }>(list: T[]) =>
     list.sort((a, b) => {
@@ -100,7 +100,7 @@ export default function FrontDeskPage() {
     activeListRef.current = [...pending, ...inProgress];
   }, [pending, inProgress]);
 
-  // 방들의 고객 메시지 감지 (이제 각 방별로 구독하지 않고 frontdesk 채널 1개만 구독)
+  // 활성 방들의 고객/AI 메시지 감지 (이제 각 방별로 구독하지 않고 frontdesk 채널 1개만 구독)
   useEffect(() => {
     const unsub = subscribe('/topic/frontdesk', (data: unknown) => {
       const payload = data as Record<string, unknown>;
@@ -111,7 +111,7 @@ export default function FrontDeskPage() {
         setLastMessageTimes(prev => ({ ...prev, [String(roomNo)]: Date.now() }));
       }
 
-      // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
+      // 고객/AI 메시지인 경우 레드닷 + 마지막 메시지 갱신
       if ((type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') && roomNo) {
         if (type === 'GUEST_MESSAGE' && payload.content) {
           setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
@@ -121,7 +121,9 @@ export default function FrontDeskPage() {
         if (activeChatRoomRef.current?.roomNumber === String(roomNo)) return;
         
         const relatedRequests = activeListRef.current.filter(r => String(r.roomNo) === String(roomNo));
-        if (relatedRequests.length > 0) {
+        const hasInProgress = relatedRequests.some(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED');
+        
+        if (hasInProgress) {
           setNewMessageRoomNos(prev => {
             const next = new Set(prev);
             next.add(String(roomNo));

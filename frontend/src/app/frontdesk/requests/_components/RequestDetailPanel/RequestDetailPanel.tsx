@@ -47,10 +47,7 @@ interface RequestDetailPanelProps {
   onClose?: () => void;
 }
 
-const PRIORITIES = [
-  { value: 'NORMAL', label: '보통' },
-  { value: 'URGENT', label: '긴급' },
-];
+
 
 const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
   PENDING: { text: '대기 중', variant: 'red' },
