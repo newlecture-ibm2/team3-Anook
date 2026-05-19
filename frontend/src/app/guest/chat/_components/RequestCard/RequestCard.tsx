@@ -3,6 +3,9 @@ import styles from './RequestCard.module.css';
 import GlassButton from '@/components/ui/Button/GlassButton';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
 import { Monitor, Home, Utensils, Wrench, ConciergeBell, AlertTriangle, FileText } from 'lucide-react';
+import { useTranslationApi } from '@/app/useTranslationApi';
+import { useUiStore } from '@/stores/useUiStore';
+import { useTranslation } from '@/app/useTranslation';
 
 export interface RequestCardProps {
   requestId: number;
@@ -56,8 +59,16 @@ export default function RequestCard({
   const isInProgress = progress >= 50 && progress < 100 && !isCancelled;
   const isCompleted = progress >= 100 && !isCancelled;
   
+  const { language: uiLanguage, chatLanguage } = useUiStore();
+  const [targetLang, setTargetLang] = useState<string>(chatLanguage);
 
+  useEffect(() => {
+    // chatLanguage가 변경될 때마다 업데이트 (초기 렌더링 또는 스토어 변경 시)
+    setTargetLang(chatLanguage);
+  }, [chatLanguage]);
 
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  const { t } = useTranslation();
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
   const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
@@ -76,16 +87,23 @@ export default function RequestCard({
   const [timeLeft, setTimeLeft] = useState(graceRemaining);
 
   // Format summary to hide internal notes from guest
-  let displaySummary = summary.includes('[직원 인수인계]') || summary.includes('[프론트 연결]') || summary.includes('미학습 정보') || isEscalatedChat
-    ? '프론트 데스크 직원 연결 요청'
-    : summary;
+  const baseSummary = translatedSummary || summary;
+  
+  let displaySummary = '';
+  if (isTranslating) {
+    displaySummary = t.cardUI?.message?.translating || 'Translating...';
+  } else {
+    displaySummary = baseSummary.includes('[직원 인수인계]') || baseSummary.includes('[프론트 연결]') || baseSummary.includes('미학습 정보') || isEscalatedChat
+      ? (t.cardUI?.message?.escalationRequest || 'Front desk staff connection request')
+      : baseSummary;
+  }
   
   if (isUrgent) {
-    displaySummary = `[긴급] ${displaySummary}`;
+    displaySummary = `[${t.ticketUI?.badge?.urgent || '긴급'}] ${displaySummary}`;
   }
 
   if (isCancelled) {
-    displaySummary += ' 취소';
+    displaySummary += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
   }
 
   useEffect(() => {
@@ -183,15 +201,15 @@ export default function RequestCard({
 
           <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
             {isCancelled ? (
-              <>요청이 취소되었습니다</>
+              <>{t.cardUI?.message?.cancelledCard || '요청이 취소되었습니다'}</>
             ) : showButtons ? (
-              <>요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.</>
+              <>{t.cardUI?.message?.autoAcceptGuide || '잠시 후 자동으로 접수됩니다.'}</>
             ) : isCancelPending ? (
-              <>취소 요청 확인 중</>
+              <>{t.cardUI?.status?.cancelPending || '취소 대기 중'}</>
             ) : isEscalatedChat ? (
-              <>직원이 응대할 예정입니다</>
+              <>{t.cardUI?.status?.escalated || '상담 대기 중'}</>
             ) : (
-              <>{domainInfo.label} 팀에 전달되었습니다</>
+              <>{t.cardUI?.message?.forwarded || '직원에게 전달되었습니다'}</>
             )}
           </div>
         </div>
@@ -199,8 +217,8 @@ export default function RequestCard({
 
       {/* Buttons — full width below cardLayout */}
       <div className={`${styles.buttonGroup} ${!showButtons ? styles.hiddenButtons : ''}`}>
-        <GlassButton variant="cancel" onClick={onCancel} fullWidth>요청 취소</GlassButton>
-        <GlassButton variant="primary" domainCode={domainCode} onClick={onAccept} fullWidth>진행</GlassButton>
+        <GlassButton variant="cancel" onClick={onCancel} fullWidth>{t.cardUI?.button?.cancel || '취소하기'}</GlassButton>
+        <GlassButton variant="primary" domainCode={domainCode} onClick={onAccept} fullWidth>{t.cardUI?.button?.accept || '바로등록'}</GlassButton>
       </div>
     </div>
   );

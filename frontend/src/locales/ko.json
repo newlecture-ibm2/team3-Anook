@@ -23,7 +23,8 @@
     "close": "닫기",
     "loading": "로딩 중...",
     "error": "오류가 발생했습니다",
-    "retry": "다시 시도"
+    "retry": "다시 시도",
+    "logout": "로그아웃"
   },
   "adminPage": {
     "sidebar": {
@@ -224,6 +225,7 @@
       "priority": "우선순위",
       "setUrgent": "긴급 작업으로 설정",
       "assignDept": "배정 부서",
+      "selectDept": "부서를 선택하세요",
       "buttons": {
         "forceCancel": "강제 요청 취소",
         "approveEscalation": "에스컬레이션 승인",
@@ -278,6 +280,7 @@
       "객실 청소 부탁해요",
       "체크아웃 연장 가능한가요?"
     ],
+    "activeRequestsCount": "{count}개의 진행 중인 요청",
     "progress": {
       "checking": "요청하신 내용을 확인하고 있습니다...",
       "forwardingPrefix": "",
@@ -357,12 +360,25 @@
       "cancelPending": "취소 대기 중",
       "escalated": "상담 대기 중"
     },
+    "statusBar": {
+      "checking": "확인 중",
+      "processing": "처리 중",
+      "completed": "처리 완료",
+      "templateWithDetailsPending": "{team} 팀에서 {details} 건을 확인하고 있습니다.",
+      "templateWithDetailsInProgress": "{team} 팀에서 {details} 건을 처리 중입니다.",
+      "templateWithDetailsCompleted": "{team} 팀에서 {details} 건을 완료했습니다.",
+      "templateNoDetailsPending": "{team} 담당 팀에서 확인하고 있습니다.",
+      "templateNoDetailsInProgress": "{team} 담당 팀에서 처리 중입니다.",
+      "templateNoDetailsCompleted": "{team} 담당 팀에서 완료했습니다."
+    },
     "message": {
       "cancelPending": "🔄 취소 요청이 접수되어 직원이 확인 중입니다",
       "escalated": "💬 프론트 직원이 채팅으로 응대할 예정입니다.",
       "forwarded": "✅ 직원에게 전달되었습니다",
       "cancelledCard": "요청이 취소되었습니다",
-      "autoAcceptGuide": "잠시 후 자동으로 접수됩니다."
+      "autoAcceptGuide": "잠시 후 자동으로 접수됩니다.",
+      "translating": "요약 중...",
+      "escalationRequest": "프론트 데스크 직원 연결 요청"
     },
     "button": {
       "accept": "바로등록",
@@ -411,5 +427,22 @@
     "제로콜라": "제로콜라",
     "콜라": "콜라",
     "클래식 치즈버거": "클래식 치즈버거"
+  },
+  "chatInput": {
+    "placeholder": "무엇이든 물어보세요...",
+    "listening": "듣고 있습니다...",
+    "camera": "사진 찍기",
+    "gallery": "보관함",
+    "imageTooLarge": "이미지 크기가 초과되었습니다. 더 작은 이미지를 선택해 주세요.",
+    "speechUnsupported": "현재 브라우저에서는 음성 인식을 지원하지 않습니다."
+  },
+  "aiReplies": {
+    "forwardFb": "F&B(룸서비스) 팀에 주문 내용을 전달하겠습니다.",
+    "forwardHk": "해당 부서(하우스키핑 팀)로 내용을 전달하겠습니다.",
+    "forwardFacility": "해당 부서(시설관리팀)로 수리 내용을 전달하겠습니다.",
+    "forwardFront": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트 데스크에 연결해 드리겠습니다.",
+    "infoNotFound": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크에 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
+    "cancelSuccess": "해당 요청이 정상적으로 취소되었습니다.",
+    "cancelPending": "이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다."
   }
 }

@@ -3,7 +3,7 @@ from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
+async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko") -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     
@@ -38,7 +38,8 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini One-pass 호출
-    raw = await call_gemini_async(prompt=prompt, system_instruction=HK_SYSTEM_PROMPT, images=images)
+    system_instruction_with_lang = HK_SYSTEM_PROMPT.replace("{system_language}", system_language)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
 
     # 5. reasoning 필드가 리스트로 올 경우 문자열로 변환 (Pydantic 검증 에러 방지)
     if isinstance(raw.get("reasoning"), list):

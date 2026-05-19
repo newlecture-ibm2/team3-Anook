@@ -113,12 +113,12 @@ You must output a JSON Array of objects.
     "route_type": "DEPARTMENT | CLARIFICATION | FRONT_ESCALATION | VOC | SOFT_FALLBACK | NON_ACTIONABLE | INFO | CANCEL | STATUS_CHECK",
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
-    "reasoning": "Korean reasoning",
+    "reasoning": "{system_language} reasoning",
     "action_type": "ADD | REPLACE",
     "target_keyword": "string or null",
     "reply": "string or null (For SOFT_FALLBACK, NON_ACTIONABLE)",
     "create_ticket": true | false,
-    "summary": "Short Korean summary (e.g., '룸서비스 지연 컴플레인')",
+    "summary": "Short {system_language} summary (e.g., '룸서비스 지연 컴플레인')",
     "priority": "NORMAL | URGENT",
     "clarification_question": "string or null (For CLARIFICATION)",
     "clarification_options": ["option1", "option2"] or [],
@@ -148,6 +148,7 @@ You must output a JSON Array of objects.
 - If the user cancels an ongoing ambiguous conversation (e.g., "never mind", "아니 괜찮아"), classify it as "CANCEL" so no actionable ticket is created and recent request is cancelled.
 - **OFFER REJECTION RULE**: 
   - **Case 1 (General/Escalation Offer)**: If the AI offered to connect to the front desk or provided simple info and asked "Would you like more help?", and the user says "No" (e.g., "아니요", "괜찮아요"), classify it as "SOFT_FALLBACK". 
+  - **REPLY INSTRUCTION FOR CASE 1**: The AI must output a polite closing message in `reply` field saying "Understood. Please let me know if you need anything else." in the guest's language ({language}).
   - **Case 2 (Task Confirmation)**: If the AI just provided a **complete service summary with all required entities** (e.g., "Shall I process the delivery for 50 roses?") and the user says "No", classify it as "CANCEL" with the relevant domain (e.g., CONCIERGE) so the recently created task is deleted.
 - **ESCALATION CONFIRMATION RULE**: If the last AI message in `[과거 대화 맥락]` asked if the guest wants to connect to the front desk (e.g., "프런트로 연결해 드릴까요?", "connect you to the front desk"), and the guest agrees (e.g., "네", "yes", "응"), you MUST classify it as "FRONT_ESCALATION" with domain "FRONT". 
   **EXCEPTION 1**: If the guest's current message contains a CLEAR NEW topic or specific service keywords (e.g., "꽃", "수건", "택시", "배달", "음식", "와이파이") that are UNRELATED to the escalation offer, you MUST IGNORE the previous escalation offer and treat the message as a COMPLETELY NEW REQUEST according to the CONTEXT RESET RULE.
@@ -167,7 +168,7 @@ You must output a JSON Array of objects.
 - DO NOT output any extra text, markdown formatting, or greetings outside the JSON array.
 - Regardless of the input language (Korean or English), classify it uniformly based on meaning.
 - CRITICAL LANGUAGE RULE: ALL text outputs intended for the guest (e.g., `clarification_question`, `clarification_options`, `reply`) MUST be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, you MUST generate these fields in English (e.g., `["Free Water", "Paid Drinks"]`). NEVER use Korean for guest-facing messages if the guest speaks English. DO NOT append department names in parentheses to options.
-- The `reasoning` and `summary` fields MUST be written in Korean.
+- The `reasoning` and `summary` fields MUST be written in `{system_language}`.
 - **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
   - “{특정 키워드/문구}” → {의도/증상} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)
   - {분류 로직}: 왜 이 부서로 분류했는지 단계별 설명 (예: 물품 요청이므로 하우스키핑 배정)

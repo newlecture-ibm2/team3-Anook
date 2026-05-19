@@ -23,7 +23,8 @@
     "close": "Close",
     "loading": "Loading...",
     "error": "An error occurred",
-    "retry": "Retry"
+    "retry": "Retry",
+    "logout": "Log out"
   },
   "adminPage": {
     "sidebar": {
@@ -223,6 +224,7 @@
       "priority": "Priority",
       "setUrgent": "Set as Urgent Task",
       "assignDept": "Assigned Dept",
+      "selectDept": "Select Department",
       "buttons": {
         "forceCancel": "Force Cancel Request",
         "approveEscalation": "Approve Escalation",
@@ -277,6 +279,7 @@
       "Please clean my room",
       "Can I extend checkout?"
     ],
+    "activeRequestsCount": "{count} active requests",
     "progress": {
       "checking": "Checking your request...",
       "forwardingPrefix": "Forwarding to the ",
@@ -356,12 +359,25 @@
       "cancelPending": "Cancel Pending",
       "escalated": "Awaiting Staff"
     },
+    "statusBar": {
+      "checking": "Checking",
+      "processing": "Processing",
+      "completed": "Completed",
+      "templateWithDetailsPending": "The {team} team is checking {details}.",
+      "templateWithDetailsInProgress": "The {team} team is processing {details}.",
+      "templateWithDetailsCompleted": "The {team} team has completed {details}.",
+      "templateNoDetailsPending": "The {team} team is checking your request.",
+      "templateNoDetailsInProgress": "The {team} team is processing your request.",
+      "templateNoDetailsCompleted": "The {team} team has completed your request."
+    },
     "message": {
       "cancelPending": "🔄 Cancel request received, staff is checking",
       "escalated": "💬 Front desk staff will respond shortly.",
       "forwarded": "✅ Forwarded to staff",
       "cancelledCard": "Request Cancelled",
-      "autoAcceptGuide": "Automatically submitted shortly."
+      "autoAcceptGuide": "Automatically submitted shortly.",
+      "translating": "Translating...",
+      "escalationRequest": "Front desk staff connection request"
     },
     "button": {
       "accept": "Submit Now",
@@ -410,5 +426,22 @@
     "제로콜라": "Zero Coke",
     "콜라": "Coke",
     "클래식 치즈버거": "Classic Cheeseburger"
+  },
+  "chatInput": {
+    "placeholder": "Ask me anything...",
+    "listening": "Listening...",
+    "camera": "Take Photo",
+    "gallery": "Gallery",
+    "imageTooLarge": "Image exceeds the maximum size limit. Please select a smaller image.",
+    "speechUnsupported": "Speech recognition is not supported in this browser."
+  },
+  "aiReplies": {
+    "forwardFb": "I will forward your order to the F&B team.",
+    "forwardHk": "I will forward your request to the Housekeeping team.",
+    "forwardFacility": "I will forward your repair request to the Facility team.",
+    "forwardFront": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
+    "infoNotFound": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
+    "cancelSuccess": "Your request has been successfully cancelled.",
+    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. We will notify you once confirmed."
   }
 }

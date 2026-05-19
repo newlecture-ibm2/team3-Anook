@@ -12,13 +12,18 @@ import { sessionOptions, SessionData } from '@/lib/session';
  */
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+const AI_SERVER_URL = process.env.AI_SERVER_URL || 'http://localhost:8000';
 
 async function handleProxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
   const targetPath = '/' + path.join('/');
   const url = new URL(req.url);
   const queryString = url.search;
-  const backendUrl = `${BACKEND_URL}${targetPath}${queryString}`;
+  
+  let backendUrl = `${BACKEND_URL}${targetPath}${queryString}`;
+  if (targetPath === '/translate') {
+    backendUrl = `${AI_SERVER_URL}${targetPath}${queryString}`;
+  }
 
   // 세션에서 JWT 토큰 추출
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
@@ -46,6 +51,7 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
       // 프론트에서 FormData로 넘긴 것을 백엔드 호환 JSON으로 변환
       const formData = await req.formData();
       const content = formData.get('content') as string || '';
+      const language = formData.get('language') as string || 'ko';
 
       const images: string[] = [];
       for (const [key, value] of formData.entries()) {
@@ -59,7 +65,7 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
         }
       }
 
-      const payload = { content, images: images.length > 0 ? images : undefined };
+      const payload = { content, language, images: images.length > 0 ? images : undefined };
       fetchOptions.body = JSON.stringify(payload);
       headers['Content-Type'] = 'application/json';
     } else {

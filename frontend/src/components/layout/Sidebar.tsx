@@ -228,7 +228,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
           onMouseEnter={(e) => {
             if (isSidebarCollapsed) {
               const rect = e.currentTarget.getBoundingClientRect();
-              setTooltip({ label: '로그아웃', top: rect.top + rect.height / 2, left: rect.right + 8 });
+              setTooltip({ label: t.common.logout, top: rect.top + rect.height / 2, left: rect.right + 8 });
             }
           }}
           onMouseLeave={() => {
@@ -236,7 +236,7 @@ export default function Sidebar({ role = 'admin', className = '', fakePathname, 
           }}
         >
           <LogOut className={styles.icon} />
-          {!isSidebarCollapsed && <span className={styles.label}>로그아웃</span>}
+          {!isSidebarCollapsed && <span className={styles.label}>{t.common.logout}</span>}
         </button>
       </div>
 

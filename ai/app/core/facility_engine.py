@@ -33,7 +33,7 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
     return result.clarification_question if result.needs_clarification else getattr(result, "final_reply", "접수되었습니다.")
 
 
-async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
+async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko") -> dict:
     """시설관리 에이전트: 고객 메시지에서 시설/수리 관련 정보를 추출"""
     
     # 1. RAG 검색 → FACILITY 도메인 지식 (수리비, 담당자 등)
@@ -62,7 +62,8 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
         prompt += f"[관련 지식 (RAG)]\n{rag_context}\n\n"
     prompt += f"[현재 요청]\n고객 메시지: {user_message}"
     
-    raw = await call_gemini_async(prompt=prompt, system_instruction=FACILITY_SYSTEM_PROMPT, images=images)
+    system_instruction_with_lang = FACILITY_SYSTEM_PROMPT.replace("{system_language}", system_language)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
     
     # AI가 룸넘버를 누락할 경우를 대비한 안전 장치 (백엔드에서 받은 room_no 강제 주입)
     if "room_no" not in raw or raw["room_no"] in ["unknown", "", "from input"]:

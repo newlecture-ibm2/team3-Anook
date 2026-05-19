@@ -6,7 +6,7 @@ from app.prompts.front_prompt import FRONT_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_front_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
+async def run_front_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko") -> dict:
     """프론트데스크 에이전트: 고객 메시지에서 프론트 관련 정보를 추출"""
     
     # 1. RAG 검색 → FRONT 도메인 지식
@@ -35,7 +35,8 @@ async def run_front_agent(user_message: str, room_no: str, chat_history: list = 
         
     prompt += f"[현재 요청]\n고객: {user_message}"
     
-    raw = await call_gemini_async(prompt=prompt, system_instruction=FRONT_SYSTEM_PROMPT, images=images)
+    system_instruction_with_lang = FRONT_SYSTEM_PROMPT.replace("{system_language}", system_language)
+    raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
     
     # 방어 로직: 배열로 오면 첫 번째 요소 추출
     if isinstance(raw, list):
