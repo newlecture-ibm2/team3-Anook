@@ -125,3 +125,22 @@
   color: var(--color-gray-500);
   flex-shrink: 0;
 }
+
+.clearButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-gray-400);
+  transition: color 0.15s, background-color 0.15s;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+.clearButton:hover {
+  color: var(--color-gray-600);
+  background-color: var(--color-gray-100);
+}
