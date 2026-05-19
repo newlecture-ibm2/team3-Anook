@@ -33,14 +33,14 @@ interface ManualAssignModalProps {
 }
 
 export default function ManualAssignModal({ isOpen, onClose, detail, departments, onSave, saving }: ManualAssignModalProps) {
-  const [editPriority, setEditPriority] = useState<string>('NORMAL');
+
   const [editDeptId, setEditDeptId] = useState(detail.departmentId);
   const [editSummary, setEditSummary] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
   useEffect(() => {
     if (isOpen) {
-      setEditPriority('NORMAL');
+
       setEditDeptId(detail.departmentId);
       setEditSummary('');
       setEditDescription('');
@@ -69,7 +69,7 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
                 ticketId={detail.id}
                 roomNo={detail.roomNo}
                 department={editDeptId}
-                priority={editPriority as 'NORMAL' | 'URGENT'}
+                priority={'NORMAL'}
                 title={editSummary || '배정할 업무 내용을 입력하세요'}
                 description={editDescription}
                 status="TODO"
@@ -112,25 +112,13 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
               />
             </div>
 
-            <div className={styles.editFieldHorizontal}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={editPriority === 'URGENT'}
-                  onChange={(e) => setEditPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
-                  className={styles.checkbox}
-                />
-                <span className={editPriority === 'URGENT' ? styles.urgentText : styles.normalText}>
-                  긴급 작업으로 설정
-                </span>
-              </label>
-            </div>
+
           </div>
         </div>
 
         <div className={styles.footer}>
           <Button variant="secondary" onClick={onClose}>취소</Button>
-          <Button variant="primary" disabled={!canSubmit || saving} onClick={() => onSave(editDeptId, editPriority, editSummary, editDescription)}>
+          <Button variant="primary" disabled={!canSubmit || saving} onClick={() => onSave(editDeptId, 'NORMAL', editSummary, editDescription)}>
             {saving ? '저장 중...' : '배정하기'}
           </Button>
         </div>

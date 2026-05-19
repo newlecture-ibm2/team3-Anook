@@ -52,7 +52,7 @@ export default function RequestCard({
   onModify,
   onAccept,
 }: RequestCardProps) {
-  const isUrgent = priority === 'URGENT';
+
   const isCancelled = status === 'CANCELLED';
   const isCancelPending = cancelPending === true;
   const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
@@ -98,9 +98,7 @@ export default function RequestCard({
       : baseSummary;
   }
   
-  if (isUrgent) {
-    displaySummary = `[${t.ticketUI?.badge?.urgent || '긴급'}] ${displaySummary}`;
-  }
+
 
   if (isCancelled) {
     displaySummary += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
@@ -127,7 +125,7 @@ export default function RequestCard({
   }, [graceRemaining, isCancelled]);
 
   // Determine if we should show buttons
-  const showButtons = !isUrgent && !isCancelled && timeLeft > 0;
+  const showButtons = !isCancelled && timeLeft > 0;
 
   // Render entities description
   const renderDetails = () => {

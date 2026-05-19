@@ -53,10 +53,7 @@ interface RequestDetailModalProps {
   callerDepartment?: string;
 }
 
-const PRIORITIES = [
-  { value: 'NORMAL', label: '보통' },
-  { value: 'URGENT', label: '긴급' },
-];
+
 
 const STATUS_VARIANT_MAP: Record<string, 'red' | 'purple' | 'green' | 'gray'> = {
   PENDING: 'red',
@@ -413,20 +410,6 @@ export default function RequestDetailModal({
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>{t.frontdeskPage.requestDetailModal.assignment}</h3>
           <div className={styles.editRow}>
-            <div className={styles.editField}>
-              <label className={styles.label}>{t.frontdeskPage.requestDetailModal.priority}</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
-                <input
-                  type="checkbox"
-                  checked={editPriority === 'URGENT'}
-                  onChange={(e) => setEditPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
-                />
-                <span style={{ fontSize: '14px', fontWeight: editPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
-                  {t.frontdeskPage.requestDetailModal.setUrgent}
-                </span>
-              </label>
-            </div>
             <div className={styles.editField}>
               <Dropdown
                 label={t.frontdeskPage.requestDetailModal.assignDept}
