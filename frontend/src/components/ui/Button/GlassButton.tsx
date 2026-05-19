@@ -32,7 +32,7 @@ export default function GlassButton({
       style={customStyle}
       {...props}
     >
-      {children}
+      <span className={styles.btnText}>{children}</span>
     </button>
   );
 }

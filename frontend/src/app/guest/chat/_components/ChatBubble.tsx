@@ -82,7 +82,7 @@ export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl,
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <img src={imageUrl} alt="첨부 이미지 확대" className={styles.lightboxImage} />
             <button className={styles.lightboxClose} onClick={() => setIsLightboxOpen(false)} aria-label="닫기">
-              <CancelIcon width={24} height={24} color="#fff" />
+              <CancelIcon width={20} height={20} color="currentColor" />
             </button>
           </div>
         </div>

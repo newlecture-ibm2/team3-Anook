@@ -666,6 +666,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
+                    system_language=request.language,
                     active_requests=getattr(request, 'active_requests', [])
                 )
                 agent_tasks.append((domain, primary, coro))
@@ -774,7 +775,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language,
+                        system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -802,7 +803,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
-                    system_language=request.system_language,
+                    system_language=request.language,
                     active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
@@ -851,7 +852,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language,
+                        system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -1069,7 +1070,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                             room_no=request.room_no,
                             chat_history=request.chat_history,
                             images=request.images,
-                            system_language=request.system_language
+                            system_language=request.language
                         )
                         # 에이전트 결과를 통째로 response 객체로 만듦
                         response = {
