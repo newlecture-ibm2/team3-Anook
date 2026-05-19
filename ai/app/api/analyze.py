@@ -151,10 +151,10 @@ STATIC_REPLIES = {
         "zh": "您需要我将您连接到前台以获取更详细的信息吗？"
     },
     "EMERGENCY_REPLY": {
-        "ko": "🚨 응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 직원을 파견하겠습니다. 부디 안전한 곳에 머물러 주십시오.",
-        "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe.",
-        "ja": "緊急事態を認識しました。直ちに119番とホテルのセキュリティチームを呼び、最も近いスタッフを派遣します。安全な場所にとどまってください。",
-        "zh": "我们已经确认了紧急情况。将立即呼叫119和酒店安保团队，并派遣最近的员工。请待在安全的地方。"
+        "ko": "🚨 응급 상황을 인지하였습니다. 즉시 호텔 보안팀을 호출하고 직원을 파견하겠습니다. 부디 안전한 곳에 머물러 주십시오.",
+        "en": "We have recognized an emergency. We are immediately dispatching hotel security. Please stay safe.",
+        "ja": "緊急事態を認識しました。直ちにホテルのセキュリティチームを呼び、スタッフを派遣します。安全な場所にとどまってください。",
+        "zh": "我们已经确认了紧急情况。将立即呼叫酒店安保团队，并派遣员工。请待在安全的地方。"
     },
     "OPTION_YES": {
         "ko": "네",
