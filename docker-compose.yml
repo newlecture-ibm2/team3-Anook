@@ -89,7 +89,11 @@ services:
       - ./ai:/app # 소스 코드 실시간 동기화 (Hot Reload)
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
-      - db
+      db:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+    restart: on-failure
     networks:
       - Anook-network
 
@@ -115,6 +119,12 @@ services:
     # 배포용이므로 7474, 7687 포트를 외부에 열지 않아 보안을 유지합니다.
     volumes:
       - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
     networks:
       - Anook-network
 
