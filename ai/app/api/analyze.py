@@ -222,6 +222,21 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
         
     request.language = _detect_language(request.text, request.language)
 
+    # ── [개인정보 보호 필터링 및 자동 거절 (PII Masking & Privacy Guard)] ──
+    if has_pii(request.text):
+        masked_text = mask_pii(request.text)
+        print(f"[PII Guard] 민감 정보 차단: {masked_text}")
+        
+        return [{
+            "guest_reply": "[PII_GUARD]",
+            "summary": "개인정보 보호 차단",
+            "domain_code": None,
+            "priority": "NORMAL",
+            "entities": {},
+            "confidence": 1.0,
+            "action": "PII_GUARD"
+        }]
+
     # [수정] AI 모델은 이미지를 직접 판독하지 않도록 이미지 데이터를 비웁니다.
     # 사진은 단순 첨부파일(백엔드가 Redis에 저장) 용도로만 사용하며, AI는 오직 '텍스트'에 집중해 라우팅합니다.
     request.images = []

@@ -451,6 +451,7 @@
     "forwardFront": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
     "infoNotFound": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
     "cancelSuccess": "Your request has been successfully cancelled.",
-    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. We will notify you once confirmed."
+    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. We will notify you once confirmed.",
+    "piiGuard": "To protect your valuable personal information, we do not accept sensitive information via chat. For detailed inquiries, please contact the front desk (extension 0) using the phone in your room for safe assistance."
   }
 }

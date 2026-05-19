@@ -93,6 +93,7 @@ export function useChat() {
     if (content.includes('[FORWARD_FACILITY]')) return currentT.aiReplies?.forwardFacility || content;
     if (content.includes('[FORWARD_FRONT]')) return currentT.aiReplies?.forwardFront || content;
     if (content.includes('[INFO_NOT_FOUND]')) return currentT.aiReplies?.infoNotFound || content;
+    if (content.includes('[PII_GUARD]')) return currentT.aiReplies?.piiGuard || content;
     return content;
   };
 

@@ -29,7 +29,7 @@ export default function ApproveEscalationModal({
 }: ApproveEscalationModalProps) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDept, setSelectedDept] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState('NORMAL');
+
   const { approveEscalation, loading } = useApproveEscalation();
 
   useEffect(() => {
@@ -46,8 +46,8 @@ export default function ApproveEscalationModal({
   }, [isOpen]);
 
   const handleApprove = async () => {
-    if (!selectedDept || !selectedPriority) return;
-    const success = await approveEscalation(requestId, selectedDept, selectedPriority);
+    if (!selectedDept) return;
+    const success = await approveEscalation(requestId, selectedDept, 'NORMAL');
     if (success) {
       onClose();
       if (onSuccess) onSuccess();
@@ -72,21 +72,7 @@ export default function ApproveEscalationModal({
           />
         </div>
 
-        <div className={styles.inputGroup}>
-          <label className={styles.label}>우선순위</label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
-            <input
-              type="checkbox"
-              checked={selectedPriority === 'URGENT'}
-              onChange={(e) => setSelectedPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
-              disabled={loading}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
-            />
-            <span style={{ fontSize: '14px', fontWeight: selectedPriority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
-              긴급 작업으로 설정
-            </span>
-          </label>
-        </div>
+
 
         <div className={styles.buttonGroup}>
           <Button variant="secondary" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
