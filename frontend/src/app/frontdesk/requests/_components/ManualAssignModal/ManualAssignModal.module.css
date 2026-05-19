@@ -115,30 +115,7 @@
   color: var(--color-gray-300);
 }
 
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  cursor: pointer;
-  padding: var(--space-4) 0;
-}
 
-.checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--color-error);
-}
-
-.urgentText {
-  font: var(--text-caption-medium);
-  color: var(--color-gray-700);
-}
-
-.normalText {
-  font: var(--text-caption-regular);
-  color: var(--color-gray-500);
-}
 
 .footer {
   display: flex;

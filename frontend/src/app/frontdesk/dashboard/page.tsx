@@ -10,7 +10,7 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
 const PRIORITY_NAMES: Record<string, string> = {
-  URGENT: '긴급', HIGH: '높음', NORMAL: '보통', LOW: '낮음'
+  HIGH: '높음', NORMAL: '보통', LOW: '낮음'
 };
 
 const DONUT_COLORS = ['#111827', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];

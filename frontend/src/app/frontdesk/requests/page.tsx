@@ -31,8 +31,8 @@ export default function FrontDeskPage() {
   // FRONT + EMERGENCY 요청 병합 (중복 제거)
   const mergedRequests = [...requests, ...emergencyRequests.filter(er => !requests.some(r => r.id === er.id))];
 
-  // 우선순위 정렬 가중치: EMERGENCY > URGENT > NORMAL
-  const priorityWeight = (p: string) => p === 'EMERGENCY' ? 0 : p === 'URGENT' ? 1 : 2;
+  // 우선순위 정렬 가중치: EMERGENCY > NORMAL
+  const priorityWeight = (p: string) => p === 'EMERGENCY' ? 0 : 1;
 
   const sortByPriority = <T extends { priority: string; createdAt: string }>(list: T[]) =>
     list.sort((a, b) => {

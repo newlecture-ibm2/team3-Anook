@@ -32,7 +32,7 @@ export default function CreateRequestModal({
   const [roomNo, setRoomNo] = useState('');
   const [summary, setSummary] = useState('');
   const [rawText, setRawText] = useState('');
-  const [priority, setPriority] = useState('NORMAL');
+
 
   const [departments, setDepartments] = useState<Department[]>([]);
 
@@ -50,7 +50,7 @@ export default function CreateRequestModal({
     setRoomNo('');
     setSummary('');
     setRawText('');
-    setPriority('NORMAL');
+
   };
 
   const handleClose = () => {
@@ -60,7 +60,7 @@ export default function CreateRequestModal({
 
   const handleSubmit = async () => {
     if (!departmentId || !roomNo || !summary) return;
-    const payload: any = { departmentId, roomNo, summary, priority };
+    const payload: any = { departmentId, roomNo, summary, priority: 'NORMAL' };
     if (rawText) payload.rawText = rawText;
     
     const success = await createRequest(payload);
@@ -123,22 +123,8 @@ export default function CreateRequestModal({
             />
           </div>
 
-          {/* 하단 2열: 우선순위 + 배정 부서 */}
+          {/* 배정 부서 */}
           <div className={styles.row}>
-            <div className={styles.field}>
-              <label className={styles.label}>우선순위</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', height: '40px', paddingLeft: '4px' }}>
-                <input
-                  type="checkbox"
-                  checked={priority === 'URGENT'}
-                  onChange={(e) => setPriority(e.target.checked ? 'URGENT' : 'NORMAL')}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-error)' }}
-                />
-                <span style={{ fontSize: '14px', fontWeight: priority === 'URGENT' ? 600 : 400, color: 'var(--color-gray-700)' }}>
-                  긴급 작업으로 설정
-                </span>
-              </label>
-            </div>
             <div className={styles.field}>
               <Dropdown
                 label="배정 부서 *"
