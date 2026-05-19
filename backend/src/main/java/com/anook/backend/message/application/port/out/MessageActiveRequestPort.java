@@ -18,12 +18,4 @@ public interface MessageActiveRequestPort {
      */
     List<String> getActiveRequestSummaries(String roomNo);
 
-    /**
-     * 해당 객실, 해당 고객의 PENDING 상태(또는 취소 가능한) 요청 목록을 조회
-     *
-     * @param roomNo 객실 번호
-     * @param guestId 고객 ID
-     * @return 활성 요청 목록 (id, department_id, summary, status 등 포함)
-     */
-    List<Map<String, Object>> findActiveRequests(String roomNo, Long guestId);
 }
