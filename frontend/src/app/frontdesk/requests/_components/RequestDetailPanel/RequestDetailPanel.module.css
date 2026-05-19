@@ -122,11 +122,9 @@
 .rawText {
   font: var(--text-body-medium);
   color: var(--color-gray-700);
-  background: var(--color-gray-50);
-  padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-md);
   margin: 0;
   white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 .orderDetail {
@@ -180,11 +178,8 @@
 .entityList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
-  background: var(--color-gray-50);
-  padding: var(--space-16);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-gray-200);
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
 }
 
 .editRow {
