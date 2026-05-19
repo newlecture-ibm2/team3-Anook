@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestStatusBar.module.css';
+import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 export interface RequestStatusBarProps {
   requestId: number;
@@ -9,64 +11,59 @@ export interface RequestStatusBarProps {
   entities?: Record<string, unknown>;
   createdAt?: string;
   progress: number;
+  isMini?: boolean;
 }
 
-const DOMAIN_MAP: Record<string, { icon: string; label: string }> = {
-  HK: { icon: '🏨', label: '하우스키핑' },
-  FB: { icon: '🍽️', label: '식음료' },
-  FACILITY: { icon: '🔧', label: '시설관리' },
-  CONCIERGE: { icon: '🛎️', label: '컨시어지' },
-  FRONT: { icon: '🏢', label: '프론트' },
-  EMERGENCY: { icon: '🚨', label: '긴급' },
-  UNKNOWN: { icon: '📋', label: '기타 요청' },
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  PENDING: '대기 중',
-  IN_PROGRESS: '처리 중',
-  COMPLETED: '처리 완료',
-  CANCELLED: '취소됨',
-  CANCEL_PENDING: '취소 대기 중',
-  ESCALATED: '긴급 대기 중',
+const DOMAIN_MAP: Record<string, { icon: string, key: string }> = {
+  HK: { icon: '🏨', key: 'HK' },
+  FB: { icon: '🍽️', key: 'FB' },
+  FACILITY: { icon: '🔧', key: 'FACILITY' },
+  CONCIERGE: { icon: '🛎️', key: 'CONCIERGE' },
+  FRONT: { icon: '🏢', key: 'FRONT' },
+  EMERGENCY: { icon: '🚨', key: 'EMERGENCY' },
+  UNKNOWN: { icon: '📋', key: 'UNKNOWN' },
 };
 
 export default function RequestStatusBar({
-  requestId,
   domainCode,
   summary,
   status,
   entities,
-  createdAt,
   progress,
+  isMini = false
 }: RequestStatusBarProps) {
-  const [expanded, setExpanded] = useState(false);
   const [visible, setVisible] = useState(true);
+  const { t, language } = useTranslation();
+  
+  // Translation for summary
+  const { translatedText } = useTranslationApi(summary, language);
+  const displaySummary = translatedText || summary;
 
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
-  const statusLabel = STATUS_TEXT[status] || '알 수 없음';
+  // @ts-ignore
+  const domainLabel = domainInfo.key !== 'UNKNOWN' ? (t.ticketUI.department[domainInfo.key] || domainInfo.key) : (t.ticketUI.department.FRONT || '기타');
   
   // Render entities description
   const renderDetails = () => {
     if (!entities) return null;
     
-    // Old format fallback
-    if (entities.item) {
-      return `${entities.item} ${entities.count ? `×${entities.count}` : ''}`;
-    }
-    
-    // New Multi-intent format
     const parts: string[] = [];
     if (Array.isArray(entities.items)) {
       entities.items.forEach((it: any) => {
         parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
       });
+    } else if (entities.item) {
+      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
     }
+
     if (Array.isArray(entities.tasks)) {
       entities.tasks.forEach((t: string) => parts.push(t));
     }
     
     if (parts.length === 0) {
-      if (entities.menu) parts.push(`${entities.menu}`);
+      if (entities.menu) {
+        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+      }
       if (entities.symptom) parts.push(`${entities.symptom}`);
     }
     
@@ -75,7 +72,15 @@ export default function RequestStatusBar({
 
   const detailsText = renderDetails();
   
-  // Handle auto-hide on completion or cancellation
+  let computedProgress = 0;
+  if (status === 'PENDING' || status === 'CANCEL_PENDING' || status === 'ESCALATED') {
+    computedProgress = 0;
+  } else if (status === 'IN_PROGRESS') {
+    computedProgress = 50;
+  } else if (status === 'COMPLETED') {
+    computedProgress = 100;
+  }
+
   useEffect(() => {
     if (status === 'CANCELLED') {
       setVisible(false);
@@ -85,61 +90,91 @@ export default function RequestStatusBar({
       }, 3000);
       return () => clearTimeout(timer);
     } else {
-      setVisible(true); // reset visibility if status goes back to pending/assigned
+      setVisible(true);
     }
   }, [status]);
 
-  if (!visible) {
-    return <div className={styles.statusBarContainer + ' ' + styles.hidden} />;
-  }
+  if (!visible) return null;
 
   return (
-    <div className={styles.statusBarContainer}>
-      {/* Compact Progress View */}
-      <div className={styles.compactView} onClick={() => setExpanded(!expanded)}>
-        <div className={styles.progressSection}>
-          <div className={styles.inlineProgressBarContainer}>
-            <div className={styles.inlineProgressBarBg}>
-              <div 
-                className={styles.inlineProgressBarFill} 
-                style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} 
-              />
+    <div 
+      className={styles.statusBarContainer}
+      style={isMini ? { padding: 'var(--space-12) var(--space-24)', gap: 0 } : {}}
+    >
+      {!isMini && (
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.title}>{displaySummary}</div>
+            <div className={styles.details}>
+              <span className={styles.detailText}>
+                {detailsText ? (
+                  <>
+                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateWithDetailsPending?.replace('{team}', domainLabel).replace('{details}', detailsText)}
+                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateWithDetailsInProgress?.replace('{team}', domainLabel).replace('{details}', detailsText)}
+                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateWithDetailsCompleted?.replace('{team}', domainLabel).replace('{details}', detailsText)}
+                  </>
+                ) : (
+                  <>
+                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateNoDetailsPending?.replace('{team}', domainLabel)}
+                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateNoDetailsInProgress?.replace('{team}', domainLabel)}
+                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateNoDetailsCompleted?.replace('{team}', domainLabel)}
+                  </>
+                )}
+              </span>
             </div>
-            <div className={styles.progressDotsOverlay}>
-              <div className={`${styles.progressDot} ${progress > 0 ? styles.dotActive : ''}`} />
-              <div className={`${styles.progressDot} ${progress >= 50 ? styles.dotActive : ''}`} />
-              <div className={`${styles.progressDot} ${progress >= 100 ? styles.dotActive : ''}`} />
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.statusSection}>
-          <span className={styles.summary}>{statusLabel}</span>
-          <span className={`${styles.arrow} ${expanded ? styles.open : ''}`}>▾</span>
-        </div>
-      </div>
-
-      {/* Expandable Details View */}
-      {expanded && (
-        <div className={styles.expandedView}>
-          <div className={styles.detailsContainer}>
-            <div className={styles.detailsTitle}>📋 {summary}</div>
-            
-            <div className={styles.detailItem}>
-              <span className={styles.detailLabel}>담당 부서</span>
-              <span className={styles.detailValue}>{domainInfo.label}</span>
-            </div>
-            
-            {detailsText && (
-              <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>상세 내용</span>
-                <span className={styles.detailValue}>{detailsText}</span>
-              </div>
-            )}
-
           </div>
         </div>
       )}
+      
+      <div className={styles.stepperContainer}>
+        {/* Background lines */}
+        <div className={styles.stepperTrack}>
+          <div 
+            className={styles.stepperFill} 
+            style={{ width: `${computedProgress}%` }} 
+          />
+        </div>
+
+        {/* Nodes */}
+        <div className={styles.stepperNodes}>
+          {/* Step 1: 확인 중 (0%) */}
+          <div className={styles.stepWrapper}>
+            <div className={`${styles.node} ${computedProgress > 0 ? styles.nodeCompleted : computedProgress === 0 ? styles.nodeActive : styles.nodeInactive}`}>
+              {computedProgress > 0 ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : computedProgress === 0 ? <div className={styles.innerDot} /> : null}
+            </div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 0 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.checking || '확인 중'}</div>
+          </div>
+
+          {/* Step 2: 처리 중 (50%) */}
+          <div className={styles.stepWrapper}>
+            <div className={`${styles.node} ${computedProgress > 50 ? styles.nodeCompleted : computedProgress === 50 ? styles.nodeActive : styles.nodeInactive}`}>
+              {computedProgress > 50 ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : computedProgress === 50 ? <div className={styles.innerDot} /> : null}
+            </div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 50 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.processing || '처리 중'}</div>
+          </div>
+
+          {/* Step 3: 처리 완료 (100%) */}
+          <div className={styles.stepWrapper}>
+            <div className={`${styles.node} ${computedProgress >= 100 ? styles.nodeCompleted : styles.nodeInactive}`}>
+              {computedProgress >= 100 ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : null}
+            </div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 100 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.completed || '처리 완료'}</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

@@ -1,0 +1,127 @@
+'use client';
+
+import React, { useState } from 'react';
+import RequestCard from '@/components/ui/Card/RequestCard';
+import ChatPanel from '@/app/frontdesk/requests/_components/ChatPanel/ChatPanel';
+import useChatHistory from './useChatHistory';
+import styles from './page.module.css';
+import { useTranslation } from '@/app/useTranslation';
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import InputField from '@/components/ui/Inputfield/InputField';
+
+export default function ChatHistoryPage() {
+  const [searchValue, setSearchValue] = useState('');
+  const { rooms, selectedRoom, loadingRooms, error, selectRoom, fetchRooms, deleteRoom } = useChatHistory();
+  const { t } = useTranslation();
+
+  const [targetDate, setTargetDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // targetDate가 변경될 때마다 방 목록 새로고침
+  React.useEffect(() => {
+    fetchRooms(targetDate);
+  }, [targetDate, fetchRooms]);
+
+  const handleDeleteConfirm = async () => {
+    if (selectedRoom) {
+      await deleteRoom(selectedRoom);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Search bar component to inject into ChatPanel header
+  const searchBar = (
+    <div style={{ minWidth: '240px' }}>
+      <InputField
+        variant="search"
+        placeholder="대화 내용 검색..."
+        value={searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+      />
+    </div>
+  );
+
+  return (
+    <div className={styles.container}>
+      {/* Content Section (Split Layout) */}
+      <div className={styles.splitLayout}>
+        {/* Left Pane: Room List */}
+        <div className={styles.leftPane}>
+          {/* Date picker */}
+          <div style={{ marginBottom: 'var(--space-16)' }}>
+            <input
+              type="date"
+              style={{
+                padding: 'var(--space-8) var(--space-12)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-gray-200)',
+                font: 'var(--text-body-regular)',
+                color: 'var(--color-gray-700)',
+                width: '100%',
+              }}
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </div>
+
+          {loadingRooms ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
+          ) : error ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
+          ) : rooms.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>채팅 내역이 없습니다</div>
+          ) : (
+            <div className={styles.cardGrid}>
+              {rooms.map(room => (
+                <RequestCard
+                  key={room.roomNo}
+                  roomNumber={room.roomNo}
+                  title={t.frontdeskPage.chatHistory?.roomConversation?.replace('{{room}}', room.roomNo) || `${room.roomNo}호 대화`}
+                  description={room.lastMessage || t.frontdeskPage.chatHistory?.emptyMessage || '메시지 없음'}
+                  createdAt={room.lastMessageAt || ''}
+                  isSelected={selectedRoom === room.roomNo}
+                  onCardClick={() => {
+                    selectRoom(room.roomNo);
+                    setSearchValue('');
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Pane: Chat Panel */}
+        <div className={styles.rightPane}>
+          {selectedRoom ? (
+            <ChatPanel
+              roomNumber={selectedRoom}
+              status="COMPLETED"
+              summary={t.frontdeskPage.chatHistory?.roomChatRecord?.replace('{{room}}', selectedRoom) || `${selectedRoom}호 채팅 기록`}
+              onClose={() => {}}
+              headerRightContent={searchBar}
+              searchTerm={searchValue}
+            />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>
+              {t.frontdeskPage.chatHistory?.selectRoomPrompt || '대화를 확인할 객실을 선택해주세요'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title={t.frontdeskPage.chatHistory?.deleteTitle || '채팅 내역 삭제'}
+        subtitle={t.frontdeskPage.chatHistory?.deleteSubtitle?.replace('{{room}}', selectedRoom || '') || `정말 ${selectedRoom}호의 채팅 내역을 삭제하시겠습니까?`}
+        status="danger"
+        confirmText={t.frontdeskPage.chatHistory?.deleteButton || '삭제'}
+      />
+    </div>
+  );
+}

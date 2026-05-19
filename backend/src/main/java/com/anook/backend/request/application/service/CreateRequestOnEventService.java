@@ -1,7 +1,7 @@
 package com.anook.backend.request.application.service;
 
 import com.anook.backend.message.application.event.RequestDetectedEvent;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.DomainCode;
@@ -88,12 +88,14 @@ public class CreateRequestOnEventService {
                         log.info("[Cancel&Replace] PENDING 요청 자동 취소 — id: {}, summary: {}, keyword: {}",
                                 existing.getId(), existing.getSummary(), event.getTargetKeyword());
 
-                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
+                        RequestSsePayload cancelPayload = RequestSsePayload.statusChanged(
                                 existing.getId(),
                                 RequestStatus.CANCELLED.name(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                                 existing.getSummary(),
-                                existing.getRoomNo());
+                                existing.getRoomNo(),
+                                "AI",
+                                "REPLACED");
                         dispatchPort.dispatchToRoom(event.getRoomNo(), cancelPayload);
                     } catch (Exception e) {
                         log.warn("[Cancel&Replace] 기존 요청 자동 취소 실패: {}", e.getMessage());
@@ -107,7 +109,7 @@ public class CreateRequestOnEventService {
                         
                         log.info("[Cancel&Replace] IN_PROGRESS 요청 취소 승인 대기 처리 — id: {}", existing.getId());
                         
-                        RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.cancelRequestReceived(
+                        RequestSsePayload cancelPayload = RequestSsePayload.cancelRequestReceived(
                                 existing.getId(),
                                 existing.getDomainCode() != null ? existing.getDomainCode().name() : null,
                                 existing.getSummary(), 
@@ -174,13 +176,15 @@ public class CreateRequestOnEventService {
         }
 
 
-        // [AN-252] URGENT 판별: priority가 EMERGENCY인 경우에만 Grace Period 생략
+        // [AN-252] URGENT 판별: EMERGENCY이거나 FRONT(에스컬레이션) 도메인은 Grace Period 생략
         boolean isUrgent = savedRequest.getPriority() == Priority.EMERGENCY;
+        boolean isFrontEscalation = savedRequest.getDomainCode() == DomainCode.FRONT;
+        boolean skipGrace = isUrgent || isFrontEscalation;
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
-        int graceRemaining = isUrgent ? 0 : GracePeriodScheduler.GRACE_SECONDS;
+        int graceRemaining = skipGrace ? 0 : GracePeriodScheduler.GRACE_SECONDS;
 
         // [AN-252] Generative UI: entities 포함 WebSocket payload 생성
-        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+        RequestSsePayload payload = RequestSsePayload.newRequest(
                 savedRequest.getId(),
                 savedRequest.getStatus().name(),
                 deptCode,
@@ -193,13 +197,13 @@ public class CreateRequestOnEventService {
         // 고객에게는 항상 즉시 알림 (위젯 카드 렌더링)
         dispatchPort.dispatchToRoom(savedRequest.getRoomNo(), payload);
 
-        if (isUrgent) {
-            // URGENT: 즉시 직원/관리자 알림 (Grace Period 없음)
-            log.info("[GracePeriod] URGENT 요청 → 즉시 직원 알림 발송 — id: {}", savedRequest.getId());
+        if (skipGrace) {
+            // URGENT / FRONT 에스컬레이션: 즉시 직원/관리자 알림 (Grace Period 없음)
+            log.info("[GracePeriod] 즉시 발송 (urgent={}, front={}) — id: {}", isUrgent, isFrontEscalation, savedRequest.getId());
             if (savedRequest.getDomainCode() != null) {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }
-            dispatchPort.dispatchToAdmin(payload);
+            dispatchPort.dispatchToFrontdesk(payload);
         } else {
             // 일반: Grace Period 적용 — 10초 후 직원 알림
             log.info("[GracePeriod] 일반 요청 → {}초 후 직원 알림 예정 — id: {}", graceRemaining, savedRequest.getId());

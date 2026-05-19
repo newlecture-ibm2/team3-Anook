@@ -30,6 +30,10 @@ class RouterOutputSchema(BaseModel):
         default=None,
         description="취소/변경 대상이 되는 구체적인 아이템 명칭."
     )
+    target_request_id: Optional[int] = Field(
+        default=None,
+        description="취소 대상 주문을 명확히 식별한 경우 해당 주문의 고유 ID."
+    )
     reply: Optional[str] = Field(
         default=None,
         description="고객에게 직접 반환할 자연스러운 AI 응답 (SOFT_FALLBACK, NON_ACTIONABLE 등에서 사용)."

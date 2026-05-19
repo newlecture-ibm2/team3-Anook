@@ -11,6 +11,7 @@ import com.anook.backend.message.application.port.out.MessageAiPort;
 import com.anook.backend.message.application.port.out.MessageAiResult;
 import com.anook.backend.message.application.port.out.MessageRepositoryPort;
 import com.anook.backend.message.application.port.out.MessageRoomStatusPort;
+import com.anook.backend.message.application.port.out.MessageActiveRequestPort;
 import com.anook.backend.global.util.PiiMaskingUtil;
 import com.anook.backend.message.domain.model.Message;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class SendMessageService implements SendMessageUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncAiLoggingService asyncAiLoggingService;
     private final MessageRoomStatusPort roomStatusPort;
+    private final MessageActiveRequestPort activeRequestPort;
 
     @Autowired
     @Lazy
@@ -90,6 +92,8 @@ public class SendMessageService implements SendMessageUseCase {
         // 3. AI 처리 — 직원이 실시간 상담 중인 방이면 AI 개입 스킵
         if (roomStatusPort.isStaffHandlingRoom(cmd.roomNo())) {
             log.info("[Message] 직원 상담 중 — AI 호출 스킵 (room: {})", cmd.roomNo());
+            // 프론트엔드에 AI 스킵(직원 응대 중)임을 알려 타이핑 인디케이터를 해제
+            dispatchPort.sendToRoom(cmd.roomNo(), Map.of("type", "AI_SKIPPED"));
         } else {
             // AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
             self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
@@ -129,8 +133,11 @@ public class SendMessageService implements SendMessageUseCase {
                             "content", m.getContent()))
                     .toList();
 
+            // 3-1. 취소 문맥 분석을 위한 현재 고객의 활성(대기 중인) 주문 목록 조회
+            java.util.List<Map<String, Object>> activeRequests = activeRequestPort.findActiveRequests(roomNo, guestId);
+
             // AI 호출
-            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests);
 
             // 4. AI 응답 메시지 저장
             String combinedReply = analyses.stream()
@@ -176,8 +183,9 @@ public class SendMessageService implements SendMessageUseCase {
                     eventPublisher.publishEvent(new com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent(this, roomNo, guestId));
                     log.info("[Message] AllRequestsCancelledByGuestEvent 발행 — room: {}", roomNo);
                 } else if ("CANCEL_REQUEST".equals(analysis.action())) {
-                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword()));
-                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}", roomNo, analysis.domainCode(), analysis.targetKeyword());
+                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(
+                            this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId()));
+                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}, targetRequestId: {}", roomNo, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId());
                 } else if (analysis.domainCode() != null) {
                     boolean escalated = analysis.confidence() < 0.7;
 
@@ -260,6 +268,10 @@ public class SendMessageService implements SendMessageUseCase {
         if (targetLang == null || targetLang.isBlank()) {
             targetLang = "ko"; // 기본값 (추후 팀원이 다국어 지원 시 수정 예정)
         }
+
+        // 0. 즉시 STAFF_TYPING 이벤트 전송 (번역 전 게스트에게 타이핑 인디케이터 표시)
+        dispatchPort.sendToRoom(command.roomNo(), Map.of(
+                "type", "STAFF_TYPING"));
 
         // 1. 번역 수행
         String translatedContent = aiPort.translate(command.content(), targetLang);

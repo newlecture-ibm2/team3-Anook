@@ -1,7 +1,7 @@
 package com.anook.backend.request.application.service;
 
 import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.Request;
@@ -32,12 +32,27 @@ public class CancelRequestOnEventService {
     @EventListener
     @Transactional
     public void onGuestCancel(RequestCancelledByGuestEvent event) {
-        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}, targetKeyword: {}",
-                event.getRoomNo(), event.getGuestId(), event.getDomainCode(), event.getTargetKeyword());
+        log.info("[Request] RequestCancelledByGuestEvent 수신 — room: {}, guest: {}, domain: {}, targetKeyword: {}, targetRequestId: {}",
+                event.getRoomNo(), event.getGuestId(), event.getDomainCode(), event.getTargetKeyword(), event.getTargetRequestId());
 
-        // [Keyword Targeting] targetKeyword가 있으면 키워드 매칭으로 대상 탐색
+        // [ID Targeting] 최우선 순위: AI가 확정한 targetRequestId가 있으면 해당 요청 핀포인트 취소
+        if (event.getTargetRequestId() != null) {
+            Optional<Request> matched = requestPort.findById(event.getTargetRequestId());
+            if (matched.isPresent()) {
+                Request req = matched.get();
+                // 권한 검증: 본인(동일 객실/고객)의 취소 가능한 요청인지 확인
+                if (req.getRoomNo().equals(event.getRoomNo()) && req.getGuestId().equals(event.getGuestId()) && 
+                    (req.getStatus() == RequestStatus.PENDING || req.getStatus() == RequestStatus.IN_PROGRESS || req.getStatus() == RequestStatus.ESCALATED)) {
+                    cancelSingleRequest(req, event.getRoomNo());
+                    return;
+                }
+            }
+            log.warn("[Request] targetRequestId '{}' 매칭 실패 또는 권한 없음 → 최신 건 폴백", event.getTargetRequestId());
+        }
+
+        // [Keyword Targeting] ID가 없을 경우 대비 레거시 폴백: 단순 문자열 포함 여부 검사 (동의어 하드코딩 제거)
         if (event.getTargetKeyword() != null && !event.getTargetKeyword().isBlank()) {
-            Optional<Request> matched = findByKeyword(event.getRoomNo(), event.getGuestId(), event.getTargetKeyword());
+            Optional<Request> matched = findByKeywordFallback(event.getRoomNo(), event.getGuestId(), event.getTargetKeyword());
             if (matched.isPresent()) {
                 cancelSingleRequest(matched.get(), event.getRoomNo());
                 return;
@@ -61,27 +76,31 @@ public class CancelRequestOnEventService {
     }
 
     /**
-     * [Keyword Targeting] summary에 키워드가 포함된 취소 가능 요청을 찾는다.
-     * 여러 건이 매칭되면 가장 최근 것을 반환한다.
+     * [Fallback] ID 매칭 실패 시 사용할 단순 키워드 폴백.
+     * (동의어 하드코딩은 AI 라우터로 이관되어 제거됨)
      */
-    private Optional<Request> findByKeyword(String roomNo, Long guestId, String keyword) {
+    private Optional<Request> findByKeywordFallback(String roomNo, Long guestId, String keyword) {
         java.util.List<Request> cancellable = requestPort.findAllCancellableByRoomNoAndGuestId(roomNo, guestId);
         String lowerKeyword = keyword.toLowerCase();
+        
         return cancellable.stream()
-                .filter(r -> r.getSummary() != null && r.getSummary().toLowerCase().contains(lowerKeyword))
+                .filter(r -> {
+                    if (r.getSummary() == null) return false;
+                    return r.getSummary().toLowerCase().contains(lowerKeyword);
+                })
                 .findFirst(); // findAllCancellableByRoomNoAndGuestId는 최신순 정렬
     }
 
     private void cancelSingleRequest(Request request, String roomNo) {
         try {
-            if (request.getStatus() == RequestStatus.PENDING) {
+            if (request.getStatus() == RequestStatus.PENDING || request.getStatus() == RequestStatus.ESCALATED) {
                 request.changeStatus(RequestStatus.CANCELLED);
                 requestPort.save(request);
 
                 log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
 
                 // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
-                RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                RequestSsePayload payload = RequestSsePayload.statusChanged(
                         request.getId(), request.getStatus().name(),
                         request.getDomainCode() != null ? request.getDomainCode().name() : null,
                         request.getSummary(), request.getRoomNo()
@@ -92,13 +111,14 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToFrontdesk(payload);
             } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
                 request.requestCancellation();
                 requestPort.save(request);
 
                 log.info("[Request] 최근 요청 취소 승인 대기 처리 완료 — id: {}", request.getId());
 
-                RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRequestReceived(
+                RequestSsePayload payload = RequestSsePayload.cancelRequestReceived(
                         request.getId(),
                         request.getDomainCode() != null ? request.getDomainCode().name() : null,
                         request.getSummary(), request.getRoomNo()
@@ -108,6 +128,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToFrontdesk(payload);
             }
 
         } catch (IllegalStateException e) {

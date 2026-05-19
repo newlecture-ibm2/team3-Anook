@@ -3,6 +3,8 @@ import styles from './TaskTicket.module.css';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
 import { useNetworkStore } from '@/stores/useNetworkStore';
+import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
@@ -44,6 +46,8 @@ export default function TaskTicket({
   entities
 }: TaskTicketProps) {
   const isOnline = useNetworkStore((state) => state.isOnline);
+  const { t, language } = useTranslation();
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
 
   let displayDept = department;
   let deptKey = 'front';
@@ -53,27 +57,30 @@ export default function TaskTicket({
   if (department) {
     if (deptUpper.includes('HK') || deptUpper.includes('하우스키핑')) {
       deptKey = 'hk';
-      displayDept = '하우스키핑';
+      displayDept = t.ticketUI.department.HK;
     } else if (deptUpper.includes('FACILITY') || deptUpper.includes('시설')) {
       deptKey = 'facility';
-      displayDept = '시설관리';
+      displayDept = t.ticketUI.department.FACILITY;
     } else if (deptUpper.includes('FB') || deptUpper.includes('식음료')) {
       deptKey = 'fb';
-      displayDept = 'F&B';
+      displayDept = t.ticketUI.department.FB;
     } else if (deptUpper.includes('CONCIERGE') || deptUpper.includes('컨시어지')) {
       deptKey = 'concierge';
-      displayDept = '컨시어지';
+      displayDept = t.ticketUI.department.CONCIERGE;
     } else {
       deptKey = 'front';
-      displayDept = '프런트';
+      displayDept = t.ticketUI.department.FRONT;
     }
   }
 
   // 긴급 부서(EMERGENCY)로 배정된 경우 뱃지 덮어쓰기
   if (deptUpper && (deptUpper.includes('EMERGENCY') || deptUpper.includes('긴급대응팀'))) {
     deptKey = 'emergency';
-    displayDept = '응급상황 🚨';
+    displayDept = t.ticketUI.department.EMERGENCY;
   }
+
+  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
+  const displayTitle = translatedSummary || title;
 
   let timeDisplay = '';
   if (status === 'DONE') {
@@ -85,10 +92,29 @@ export default function TaskTicket({
     const hr = hours % 12 || 12;
     timeDisplay = `${String(hr).padStart(2, '0')}:${mins} ${ampm}`;
   } else if (status === 'IN_PROGRESS' && updatedAt) {
-    const relTime = getRelativeTime(updatedAt);
-    timeDisplay = relTime === '방금 전' ? '방금 시작' : relTime.replace(' 전', ' 경과');
+    const relTime = getRelativeTime(updatedAt, language, t.ticketUI.time);
+    if (relTime === t.ticketUI.time.justNow) {
+      timeDisplay = t.ticketUI.time.justStarted;
+    } else {
+      timeDisplay = relTime.replace(language === 'ko' ? ' 전' : ' ago', t.ticketUI.time.elapsed);
+    }
   } else {
-    timeDisplay = getRelativeTime(createdAt);
+    timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
+  }
+
+  let displayDescription = description;
+  if (isManuallyReassigned && displayDescription) {
+    // 수동 배정: rawText 원본에서 마지막 줄(frontdesk 이관 사유)만 추출
+    // rawText 구조: "원문\n\n[주문 상세]\n...\nfrontdesk메모"
+    const lines = displayDescription.split('\n').filter(l => l.trim());
+    displayDescription = lines[lines.length - 1] || '';
+  } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
+    // 일반 요청: '[주문 상세]' 이후의 entities dump 제거 → 고객 원문만
+    displayDescription = displayDescription.split('[주문 상세]')[0].trim();
+  }
+  if (language === 'en') {
+    if (displayDescription === '프론트 데스크') displayDescription = 'Frontdesk';
+    else if (displayDescription === '직원') displayDescription = 'Staff';
   }
 
   return (
@@ -98,7 +124,9 @@ export default function TaskTicket({
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {roomNo && (
             <>
-              <span className={styles.roomNo}>{roomNo}호</span>
+              <span className={styles.roomNo}>
+                {language === 'ko' ? `${roomNo}호` : `NO.${roomNo}`}
+              </span>
               <div className={styles.headerDivider} />
             </>
           )}
@@ -111,17 +139,17 @@ export default function TaskTicket({
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {isCancelled && (
             <span className={`${styles.textStatus} ${styles.textStatusCancelled}`}>
-              취소됨
+              {t.ticketUI.badge.cancelled}
             </span>
           )}
           {cancelRequested && (
             <span className={`${styles.textStatus} ${styles.textStatusCancelPending}`}>
-              취소 대기
+              {t.ticketUI.badge.cancelPending}
             </span>
           )}
           {priority === 'URGENT' && (
             <div className={`${styles.textStatus} ${styles.textStatusUrgent}`}>
-              긴급
+              {t.ticketUI.badge.urgent}
               <span className={styles.redDot} />
             </div>
           )}
@@ -131,17 +159,17 @@ export default function TaskTicket({
       {(entities?.is_contactless || entities?.target_time) && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', marginTop: '-4px' }}>
           {entities.is_contactless && (
-            <StatusBadge variant="purple">비대면 배달</StatusBadge>
+            <StatusBadge variant="purple">{t.ticketUI.badge.contactless}</StatusBadge>
           )}
           {entities.target_time && (
-            <StatusBadge variant="gray">희망 시간: {entities.target_time}</StatusBadge>
+            <StatusBadge variant="gray">{t.ticketUI.badge.targetTime}: {entities.target_time}</StatusBadge>
           )}
         </div>
       )}
 
       <div className={styles.content}>
-        <h3 className={styles.title}>{title}</h3>
-        <p className={styles.description}>{description}</p>
+        <h3 className={styles.title}>{isTranslating ? t.common.loading || 'Loading...' : (displayTitle as string)}</h3>
+        <p className={styles.description}>{displayDescription}</p>
       </div>
 
       <div className={styles.divider} />
@@ -164,7 +192,7 @@ export default function TaskTicket({
               disabled={!isOnline}
               title={!isOnline ? "오프라인 상태에서는 변경할 수 없습니다" : undefined}
             >
-              수락하기
+              {t.ticketUI.button.accept}
             </Button>
           )}
           {status === 'IN_PROGRESS' && onComplete && (
@@ -175,7 +203,7 @@ export default function TaskTicket({
               disabled={!isOnline}
               title={!isOnline ? "오프라인 상태에서는 변경할 수 없습니다" : undefined}
             >
-              업무 완료
+              {t.ticketUI.button.complete}
             </Button>
           )}
         </div>
@@ -184,7 +212,7 @@ export default function TaskTicket({
   );
 }
 
-function getRelativeTime(dateString: string | Date): string {
+function getRelativeTime(dateString: string | Date, language: string, timeTexts: any): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -204,10 +232,10 @@ function getRelativeTime(dateString: string | Date): string {
     const paddedHours = String(hours).padStart(2, '0');
     return `${year}.${month}.${day} ${paddedHours}:${minutes} ${ampm}`;
   } else if (diffHours > 0) {
-    return `${diffHours}시간 전`;
+    return `${diffHours}${language === 'en' ? ' ' : ''}${timeTexts.hoursAgo}`;
   } else if (diffMins > 0) {
-    return `${diffMins}분 전`;
+    return `${diffMins}${language === 'en' ? ' ' : ''}${timeTexts.minsAgo}`;
   } else {
-    return '방금 전';
+    return timeTexts.justNow;
   }
 }

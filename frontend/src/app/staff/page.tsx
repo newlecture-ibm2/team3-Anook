@@ -8,6 +8,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import TaskDetailModal from './_components/TaskDetailModal/TaskDetailModal';
 import { useTasks, StaffTask } from './useTasks';
+import BoardSkeleton from './_components/BoardSkeleton/BoardSkeleton';
 import styles from './page.module.css';
 
 const COLUMN_CONFIG = [
@@ -147,7 +148,7 @@ function DashboardContent() {
     };
 
     return {
-      TODO: sortByCancelRequested(filteredTasks.filter(t => t.status === 'PENDING')),
+      TODO: sortByCancelRequested(filteredTasks.filter(t => t.status === 'PENDING' || t.status === 'ESCALATED')),
       IN_PROGRESS: sortByCancelRequested(filteredTasks.filter(t => t.status === 'IN_PROGRESS')),
       DONE: filteredTasks.filter(t => t.status === 'COMPLETED' || t.status === 'CANCELLED'),
     };
@@ -179,7 +180,7 @@ function DashboardContent() {
       </div>
 
       {loading ? (
-        <div className={styles.loading}>데이터를 불러오는 중...</div>
+        <BoardSkeleton />
       ) : error ? (
         <div className={styles.error}>데이터를 불러오는 데 실패했습니다. ({error})</div>
       ) : (

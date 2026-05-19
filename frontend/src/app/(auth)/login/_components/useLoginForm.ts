@@ -27,8 +27,8 @@ export const useLoginForm = () => {
 
         if (staffResponse.ok) {
           const data = await staffResponse.json();
-          if (data.role === "ADMIN") {
-            router.push("/admin/dashboard");
+          if (data.role === "FRONTDESK") {
+            router.push("/frontdesk/dashboard");
           } else {
             router.push("/staff");
           }

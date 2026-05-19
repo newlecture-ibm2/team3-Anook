@@ -1,6 +1,6 @@
 package com.anook.backend.staff.request.application.service;
 
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.staff.request.application.port.in.ChangeRequestStatusUseCase;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
@@ -37,7 +37,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         log.info("요청 수락 완료: requestId={}, staffId={}", requestId, staffId);
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 request.getId(),
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
@@ -66,7 +66,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 request.getId(),
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
@@ -104,7 +104,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 requestId, staffId, oldDepartmentId, toDepartmentId, reason);
 
         // WebSocket 알림 (고객에게 상태 변경 알림)
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 request.getId(),
                 request.getStatus().name(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
@@ -122,6 +122,9 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         if (oldDepartmentId != null && !oldDepartmentId.equals(toDepartmentId)) {
             dispatchPort.dispatchToDepartment(oldDepartmentId, payload);
         }
+
+        // 프론트 데스크(어드민) 대시보드 알림 갱신을 위해 admin 채널로도 발송
+        dispatchPort.dispatchToFrontdesk(payload);
     }
 
     @Override
@@ -139,7 +142,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         requestRepositoryPort.save(request);
         log.info("요청 취소 승인 완료: requestId={}, staffId={}", requestId, staffId);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelApproved(
+        RequestSsePayload payload = RequestSsePayload.cancelApproved(
                 request.getId(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),
@@ -181,7 +184,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                     log.info("[Cancel&Replace] 취소 반려로 인한 변경 주문 자동 취소 — id: {}, summary: {}",
                             pending.getId(), pending.getSummary());
 
-                    RequestWebSocketPayload cancelPayload = RequestWebSocketPayload.statusChanged(
+                    RequestSsePayload cancelPayload = RequestSsePayload.statusChanged(
                             pending.getId(),
                             RequestStatus.CANCELLED.name(),
                             pending.getDomainCode() != null ? pending.getDomainCode().name() : null,
@@ -195,7 +198,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
             }
         }
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRejected(
+        RequestSsePayload payload = RequestSsePayload.cancelRejected(
                 request.getId(),
                 request.getDomainCode() != null ? request.getDomainCode().name() : "UNKNOWN",
                 request.getSummary(),

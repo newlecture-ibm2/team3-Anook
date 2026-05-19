@@ -9,7 +9,7 @@ import SummaryCard from '@/components/ui/Card/SummaryCard';
 import Button from '@/components/ui/Button/Button';
 import styles from './LogDataModal.module.css';
 
-import { AiLogDetail } from '@/app/admin/ai-routing/useAiLogs';
+import { AiLogDetail } from '@/app/frontdesk/ai-routing/useAiLogs';
 
 interface LogDataModalProps {
   isOpen: boolean;
