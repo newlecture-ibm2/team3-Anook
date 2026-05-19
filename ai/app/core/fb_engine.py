@@ -124,17 +124,38 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         # 주문 확정 시 AI가 고객 언어로 작성한 final_reply 사용 (다국어 미러링)
         guest_reply = result.final_reply or "룸서비스 주문이 접수되었습니다."
 
-    # 8. analyze.py 응답 포맷 반환 (needs_clarification 이면 domain_code=None으로 request 생성 방지)
+    # 8. analyze.py 응답 포맷 반환
+    # [AN-344] 더블체크 UX 제거:
+    # - missing_fields가 비어있고 intent가 ROOM_SERVICE인 확인 질문 단계에서는
+    #   domain_code="FB"를 유지하여 티켓을 생성함 → 백엔드에서 graceRemaining=-1 설정
+    #   → 프론트에서 정적 RequestCard(취소/진행 버튼)가 확인 질문과 함께 표시됨
+    # - missing_fields가 있거나 정보 문의(MENU_INQUIRY 등)인 경우에만 domain_code=None
+    missing = getattr(result, "missing_fields", [])
+    intent = result.entities.get("intent", "")
+    is_order_intent = intent in ("ROOM_SERVICE", "ORDER_MODIFY")
+    is_ready_for_confirm = result.needs_clarification and not missing and is_order_intent
+
+    if is_ready_for_confirm:
+        # 확인 질문 + 정적 카드를 동시에 표시 (더블체크 제거)
+        domain_code = "FB"
+    elif result.needs_clarification:
+        # 아직 정보가 부족하거나, 정보 문의 → 티켓 생성 방지
+        domain_code = None
+    else:
+        # 최종 확정 (고객이 "네" 응답 후) → 기존 흐름 유지
+        domain_code = "FB"
+
     return {
         "guest_reply": guest_reply,
         "summary": result.summary,
-        "domain_code": None if result.needs_clarification else "FB",
+        "domain_code": domain_code,
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
-        "missing_fields": getattr(result, "missing_fields", []),
+        "missing_fields": missing,
         "clarification_options": getattr(result, "clarification_options", []),
         "reasoning": result.reasoning,
+        "action_type": "ADD",  # 명시적으로 ADD를 설정하여 analyze.py의 카드 생성 방지 로직을 우회
     }
 
 
