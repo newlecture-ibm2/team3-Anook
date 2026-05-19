@@ -257,21 +257,8 @@ export function useChat() {
               setMessages(prev => {
                 const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
 
-                // 취소 관련 AI 응답 → 요청 상태에 따라 메시지 분기
+                // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
                 let content = payload.content;
-                const action = payload.meta?.action || payload.action;
-                const isCancelResponse = action === 'CANCEL_REQUEST' || action === 'CANCEL_ALL_REQUESTS'
-                  || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
-
-                if (isCancelResponse) {
-                  const hasInProgress = activeRequests.some(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
-
-                  if (hasInProgress) {
-                    content = '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
-                  } else {
-                    content = '해당 요청이 정상적으로 취소되었습니다.';
-                  }
-                }
 
                 const newAiMsg: ChatMessage = {
                   id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
@@ -535,7 +522,8 @@ export function useChat() {
                     );
                     if (hasRejectReason) return prev;
 
-                    const msgId = `system-cancel-reject-${payload.requestId}`;
+                    // 버그 수정: 타임스탬프를 추가하여 식별자 중복으로 인한 증발 현상 방지
+                    const msgId = `system-cancel-reject-${payload.requestId}-${Date.now()}`;
                     if (prev.some(m => m.id === msgId)) return prev;
                     return [...prev, {
                       id: msgId,
