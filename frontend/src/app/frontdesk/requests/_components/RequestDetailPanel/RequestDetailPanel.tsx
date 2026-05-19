@@ -349,7 +349,7 @@ export default function RequestDetailPanel({
       )}
 
       {/* AI 분석 결과 */}
-      {detail.entities && Object.keys(detail.entities).length > 0 && (
+      {((detail.entities && Object.keys(detail.entities).length > 0) || detail.reasoning) && (
         <div className={styles.section}>
           <div
             className={styles.collapsibleHeader}
