@@ -99,7 +99,7 @@ JSON Output:
         "allergen_warning": "대두, 밀"
     },
     "needs_clarification": true,
-    "clarification_question": "한우 불고기 덮밥 2개(44,000원)와 제로콜라 3개(9,000원) 총 53,000원입니다. (알러지 정보: 대두, 밀). 이대로 주문을 접수해 드릴까요?",
+    "clarification_question": "한우 불고기 덮밥 2개(44.00달러)와 제로콜라 3개(12.00달러) 총 56.00달러입니다. (알러지 정보: 대두, 밀). 이대로 주문을 접수해 드릴까요?",
     "missing_fields": []
 }
 
@@ -138,7 +138,7 @@ JSON Output:
         "allergen_warning": "밀, 유제품"
     },
     "needs_clarification": true,
-    "clarification_question": "클래식 치즈버거 1개(15,000원)입니다. (알러지 정보: 밀, 유제품). 이대로 주문을 접수해 드릴까요?",
+    "clarification_question": "클래식 치즈버거 1개(15.00달러)입니다. (알러지 정보: 밀, 유제품). 이대로 주문을 접수해 드릴까요?",
     "missing_fields": []
 }
 
@@ -179,7 +179,7 @@ JSON Output:
         "allergen_warning": ""
     },
     "needs_clarification": true,
-    "clarification_question": "아이스 아메리카노 1개(5,000원)입니다. 이대로 주문을 접수해 드릴까요?",
+    "clarification_question": "아이스 아메리카노 1개(5.00달러)입니다. 이대로 주문을 접수해 드릴까요?",
     "missing_fields": []
 }
 
@@ -232,7 +232,7 @@ JSON Output:
     "confidence": 0.95,
     "entities": {"intent": "MENU_INQUIRY"},
     "needs_clarification": true,
-    "clarification_question": "현재 주문 가능한 룸서비스 메뉴는 다음과 같습니다.\n- 클래식 치즈버거 (15,000원)\n- 한우 불고기 덮밥 (22,000원)\n- 아이스 아메리카노 (5,000원)\n- 콜라 (3,000원)\n원하시는 메뉴와 수량을 말씀해 주세요.",
+    "clarification_question": "현재 주문 가능한 룸서비스 메뉴는 다음과 같습니다.\n- 클래식 치즈버거 (15.00달러)\n- 한우 불고기 덮밥 (22.00달러)\n- 아이스 아메리카노 (5.00달러)\n- 콜라 (4.00달러)\n원하시는 메뉴와 수량을 말씀해 주세요.",
     "missing_fields": []
 }
 

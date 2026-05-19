@@ -6,7 +6,11 @@ class RouterOutputSchema(BaseModel):
     메인 라우터(Front Desk)가 사용자 입력의 의도를 최우선으로 판단할 때 사용하는 전용 스키마
     """
     route_type: str = Field(
-        description="처리 유형 (DEPARTMENT, CLARIFICATION, FRONT_ESCALATION, SOFT_FALLBACK, NON_ACTIONABLE, INFO, CANCEL, STATUS_CHECK)"
+        description="처리 유형 (DEPARTMENT, CLARIFICATION, FRONT_ESCALATION, SOFT_FALLBACK, NON_ACTIONABLE, INFO, CANCEL, STATUS_CHECK, BILLING_INQUIRY)"
+    )
+    entities: Optional[dict] = Field(
+        default_factory=dict,
+        description="라우터가 추출한 추가 엔티티 (예: BILLING_INQUIRY 시 category 등)."
     )
     domain: Optional[str] = Field(
         default=None, 

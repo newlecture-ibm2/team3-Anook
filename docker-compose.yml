@@ -55,6 +55,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE:-prod}
       - JWT_SECRET=${JWT_SECRET}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - KOREAEXIM_AUTH_KEY=${KOREAEXIM_AUTH_KEY}
       - AI_SERVER_URL=http://ai:8000
       - SPRING_DATA_REDIS_HOST=redis
     ports:
