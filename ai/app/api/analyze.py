@@ -121,13 +121,13 @@ STATIC_REPLIES = {
         "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。"
     },
     "INFO_NOT_FOUND": {
-        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
+        "ko": "그 부분은 제가 바로 답변드리기 어려워 프런트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
         "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
         "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。",
         "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。"
     },
     "ERROR": {
-        "ko": "앗, 잠시 통신이 원활하지 않았나 봐요. 🥲 번거로우시겠지만 조금만 이따가 다시 한 번 말씀해 주시겠어요? 🙏",
+        "ko": "잠시 통신이 원활하지 않았나 봐요. 🥲 번거로우시겠지만 조금만 이따가 다시 한 번 말씀해 주시겠어요? 🙏",
         "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
         "ja": "システムに一時的な問題が発生しているようです。少し経ってからもう一度お試しいただけますか？",
         "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？"
@@ -139,10 +139,10 @@ STATIC_REPLIES = {
         "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。"
     },
     "FALLBACK_FAILURE": {
-        "ko": "앗, 제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 언제든 '프런트 연결'이라고 말씀해 주세요! 🧑‍💼",
-        "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'.",
-        "ja": "リクエストを理解できませんでした。フロントデスクのサポートが必要な場合は、「フロントデスクに接続」と入力してください。",
-        "zh": "我无法理解您的请求。如果您需要前台的帮助，请回复“连接前台”。"
+        "ko": "제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 제가 연결해드릴까요?",
+        "en": "I'm having trouble understanding your request. If you need assistance, shall I connect you to the front desk?",
+        "ja": "リクエストを理解できませんでした。フロントデスクのサポートが必要な場合は、フロントデスクにお繋ぎいたしましょうか？",
+        "zh": "我无法理解您的请求。如果您需要前台的帮助，需要我为您连接前台吗？"
     },
     "NEED_MORE_INFO": {
         "ko": "조금 더 상세한 안내가 필요하시다면 프런트 데스크로 바로 연결해 드릴까요?",
@@ -359,7 +359,7 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                     recent_chat = "\n".join([f"{m.get('role', 'user')}: {m.get('content', '')}" for m in request.chat_history[-4:]])
                     escalation_prompt = (
                         f"고객과의 대화에서 AI가 여러 번 질문을 던졌지만, 고객이 명확한 답을 주지 않고 계속 겉도는 상황입니다.\n"
-                        f"정중하게 '요청하신 내용을 정확히 파악하기 어렵습니다. 원하시는 서비스를 다시 말씀해 주시거나, 프론트 연결을 원하시면 말씀해 주세요.' 라는 뉘앙스로 자연스럽게 안내하고 대화를 종료하세요.\n"
+                        f"정중하게 '제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 제가 연결해드릴까요?' 라는 뉘앙스로 자연스럽게 안내하세요.\n"
                         f"반드시 고객의 언어(주 언어: {request.language})로 작성하세요.\n\n"
                         f"[최근 대화]\n{recent_chat}"
                     )
@@ -379,7 +379,10 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                 response["entities"] = {}
                 response["confidence"] = 0.0
                 response["missing_fields"] = []
-                response["clarification_options"] = []
+                response["clarification_options"] = [
+                    _get_static_reply("OPTION_YES", request.language),
+                    _get_static_reply("OPTION_NO", request.language)
+                ]
         
         # ── [비동기 로깅 메타데이터 주입] ──
         # STEP 4에서 이미 에이전트별 메타가 세팅되었으면 스킵 (이중 주입 방지)
@@ -678,6 +681,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-b: SOFT_FALLBACK / NON_ACTIONABLE → 티켓 생성 없이 답변만
         if primary.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE"):
             guest_reply = primary.reply or _get_static_reply("FALLBACK_FAILURE", request.language)
+            fallback_msg = _get_static_reply("FALLBACK_FAILURE", request.language)
             response = {
                 "guest_reply": guest_reply,
                 "summary": "안내 및 거절",
@@ -687,6 +691,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "confidence": primary.confidence,
                 "reasoning": getattr(primary, 'reasoning', '알 수 없음')
             }
+            if guest_reply == fallback_msg:
+                response["clarification_options"] = [
+                    _get_static_reply("OPTION_YES", request.language),
+                    _get_static_reply("OPTION_NO", request.language)
+                ]
             print(f"[Analyze] 💬 {primary.route_type} 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
