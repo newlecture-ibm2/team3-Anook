@@ -169,8 +169,19 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     else:
         default_reply = f"요청하신 컨시어지 서비스({intent or '문의사항'})를 확인하였습니다. 담당 직원이 곧 안내해 드릴까요?"
     
-    # INFO 의도일 경우 티켓 생성 방지
-    domain_code = None if (result.needs_clarification or intent == 'INFO') else "CONCIERGE"
+    # [AN-344] 더블체크 UX 제거:
+    # missing_fields가 비어있고, 단순 정보 조회가 아닌 예약/요청 의도일 때
+    # 확인 질문 단계에서 카드를 함께 띄우도록 domain_code 유지
+    missing = getattr(result, "missing_fields", [])
+    is_request_intent = intent not in ['INFO', 'TOUR_INFO', 'MEDICAL_INFO']
+    is_ready_for_confirm = result.needs_clarification and not missing and is_request_intent
+    
+    if is_ready_for_confirm:
+        domain_code = "CONCIERGE"
+    elif result.needs_clarification or intent == 'INFO':
+        domain_code = None
+    else:
+        domain_code = "CONCIERGE"
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     
@@ -192,4 +203,5 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "clarification_options": getattr(result, "clarification_options", []),
         "missing_fields": getattr(result, "missing_fields", []),
         "reasoning": result.reasoning,
+        "action_type": "ADD",
     }
