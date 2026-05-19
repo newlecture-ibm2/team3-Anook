@@ -48,6 +48,7 @@ export default function TaskTicket({
   const isOnline = useNetworkStore((state) => state.isOnline);
   const { t, language } = useTranslation();
   const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
+  const displaySummary = translatedSummary || title;
 
   let displayDept = department;
   let deptKey = 'front';
