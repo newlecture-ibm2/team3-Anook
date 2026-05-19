@@ -38,7 +38,7 @@
 }
 
 .cancelBtn {
-  background: rgba(55, 65, 81, 0.08) !important;
+  background: rgba(100, 116, 139, 0.10) !important;
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: blur(4px) saturate(150%) !important;
@@ -46,11 +46,11 @@
 }
 
 .cancelBtn:hover:not(:disabled) {
-  background: rgba(55, 65, 81, 0.10) !important;
+  background: rgba(100, 116, 139, 0.13) !important;
 }
 
 .cancelBtn:active:not(:disabled) {
-  background: rgba(55, 65, 81, 0.04) !important;
+  background: rgba(100, 116, 139, 0.06) !important;
 }
 
 .primaryBtn {

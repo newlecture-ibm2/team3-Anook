@@ -22,9 +22,9 @@ export default function GlassButton({
 
   const customStyle = variant === 'primary' && domainCode ? {
     ...style,
-    '--btn-bg': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 70%, transparent)`,
-    '--btn-bg-hover': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 85%, transparent)`,
-    '--btn-bg-active': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 55%, transparent)`,
+    '--btn-bg': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 60%, transparent)`,
+    '--btn-bg-hover': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 75%, transparent)`,
+    '--btn-bg-active': `color-mix(in srgb, color-mix(in srgb, var(--color-dept-${domainCode.toLowerCase()}-bg, rgba(255, 255, 255, 0.8)) 90%, var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))) 45%, transparent)`,
     '--btn-text': `var(--color-dept-${domainCode.toLowerCase()}-text, var(--color-gray-900))`,
   } as React.CSSProperties : style;
 

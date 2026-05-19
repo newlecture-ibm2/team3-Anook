@@ -67,13 +67,13 @@ _background_tasks = set()
 
 STATIC_REPLIES = {
     "ESCALATION": {
-        "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+        "ko": "제가 바로 답변드리기 어려운 부분이라, 프론트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
         "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment! 😊",
         "ja": "すぐに対応できるよう、フロントデスクにお繋ぎいたします。少々お待ちくださいませ。😊",
         "zh": "我会立刻为您连接到前台以便进一步协助您。请稍等片刻！😊"
     },
     "ESCALATION_INFO": {
-        "ko": "더 자세한 정보를 위해 프런트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
+        "ko": "더 자세한 정보를 위해 프론트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
         "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment. 😊",
         "ja": "より詳細な情報については、フロントデスクにお繋ぎいたします！少々お待ちください。😊",
         "zh": "为了提供更详细的信息，我会为您连接到前台！请稍等片刻。😊"
@@ -133,7 +133,7 @@ STATIC_REPLIES = {
         "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。🚀😊"
     },
     "INFO_NOT_FOUND": {
-        "ko": "그 부분은 제가 바로 답변드리기 어려워 프런트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
+        "ko": "그 부분은 제가 바로 답변드리기 어려워 프론트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
         "en": "I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly. 🥲🙏",
         "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます. 🥲🙏",
         "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。🥲🙏"
@@ -145,7 +145,7 @@ STATIC_REPLIES = {
         "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？ 🥲🙏"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프런트 직원과 직접 연결하여 도움을 드리겠습니다.",
+        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프론트 직원과 직접 연결하여 도움을 드리겠습니다.",
         "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now. 🥲",
         "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。🥲",
         "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。🥲"
@@ -157,7 +157,7 @@ STATIC_REPLIES = {
         "zh": "我无法理解您的请求. 如果您需要前台的帮助, 需要我为您连接前台吗？ 🥲"
     },
     "NEED_MORE_INFO": {
-        "ko": "조금 더 상세한 안내가 필요하시다면 프런트 데스크로 바로 연결해 드릴까요?",
+        "ko": "조금 더 상세한 안내가 필요하시다면 프론트 데스크로 바로 연결해 드릴까요?",
         "en": "Would you like me to connect you to the front desk for more detailed information? 😊",
         "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？ 😊",
         "zh": "您需要我将您连接到前台以获取更详细的信息吗？ 😊"
@@ -439,12 +439,12 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 last_ai = msg.get("content", "")
                 break
         
-        if last_ai and "프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요" in last_ai:
+        if last_ai and "프론트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요" in last_ai:
             text_lower = request.text.lower().replace(" ", "")
             if any(w in text_lower for w in ["네", "응", "조치해", "필요해", "부탁해", "해주", "yes", "요청"]):
                 print(f"[Analyze] ⚡ 역질문 단답형 '네' 감지 → FRONT_ESCALATION 강제 라우팅")
                 return [{
-                    "guest_reply": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+                    "guest_reply": "제가 바로 답변드리기 어려운 부분이라, 프론트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
                     "summary": "프론트 연결 요청 (고객 확인)",
                     "domain_code": "FRONT",
                     "priority": "URGENT",
@@ -1108,7 +1108,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 
                 # [수정] 정보가 없을 때 강제 이관(ESCALATION) 대신 Soft Fallback을 통해 고객에게 연결 의사 묻기
                 response = {
-                    "guest_reply": "제가 바로 확인해 드리기 어려운 내용이네요. 프런트 데스크 직원을 바로 연결해 드릴까요?" if request.language == "ko" else "Oh, that's a bit tricky for me to answer right away. Shall I connect you to the front desk?",
+                    "guest_reply": "제가 바로 확인해 드리기 어려운 내용이네요. 프론트 데스크 직원을 바로 연결해 드릴까요?" if request.language == "ko" else "Oh, that's a bit tricky for me to answer right away. Shall I connect you to the front desk?",
                     "summary": "추가 정보 필요 (프론트 연결 제안)",
                     "domain_code": None,
                     "priority": "NORMAL",
@@ -1370,7 +1370,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 }
             except Exception as e:
                 print(f"[Analyze] ⚠️ BILLING_INQUIRY 처리 실패: {e}")
-                err_ko = "비용 조회에 일시적 오류가 발생했습니다. 프런트 데스크에 문의해 주세요."
+                err_ko = "비용 조회에 일시적 오류가 발생했습니다. 프론트 데스크에 문의해 주세요."
                 err_en = "We encountered a temporary error retrieving your billing information. Please contact the front desk."
                 response = {
                     "guest_reply": err_ko if request.language == "ko" else err_en,

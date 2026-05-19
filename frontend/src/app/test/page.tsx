@@ -105,7 +105,7 @@ export default function ComponentShowcasePage() {
       id: 1,
       domainCode: 'FRONT',
       question: '체크아웃 시간 연장(Late Checkout)',
-      answer: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프런트에 문의 바랍니다.',
+      answer: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프론트에 문의 바랍니다.',
       updatedAt: '2024-04-15'
     },
     {
