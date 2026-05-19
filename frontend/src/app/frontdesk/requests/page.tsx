@@ -95,44 +95,37 @@ export default function FrontDeskPage() {
     inProgressRef.current = inProgress;
   }, [inProgress]);
 
-  // 중복 구독 방지를 위해 roomNo 단위로 유니크하게 추출
-  const uniqueRooms = Array.from(new Set(inProgress.map(req => req.roomNo)));
-  const roomListStr = uniqueRooms.sort().join(',');
-
-  // IN_PROGRESS 방들의 WebSocket 구독 → 고객 메시지 감지
+  // IN_PROGRESS 방들의 고객 메시지 감지 (이제 각 방별로 구독하지 않고 frontdesk 채널 1개만 구독)
   useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
-    
-    uniqueRooms.forEach(roomNo => {
-      const unsub = subscribe(`/topic/room/${roomNo}`, (data: unknown) => {
-        const payload = data as Record<string, unknown>;
-        const type = payload.type as string;
-        // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
-        if (type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') {
-          if (type === 'GUEST_MESSAGE' && payload.content) {
-            setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
-          }
-          
-          // 해당 roomNo에 속한 모든 inProgress 요청 찾기 (항상 최신 상태 참조)
-          const relatedRequests = inProgressRef.current.filter(r => r.roomNo === roomNo);
-          relatedRequests.forEach(req => {
-            // 현재 열린 채팅방이면 레드닷 표시하지 않음
-            if (activeChatRoomRef.current?.requestId === req.id) return;
-            setNewMessageRequestIds(prev => {
-              const next = new Set(prev);
-              next.add(req.id);
-              return next;
-            });
-          });
+    const unsub = subscribe('/topic/frontdesk', (data: unknown) => {
+      const payload = data as Record<string, unknown>;
+      const type = payload.type as string;
+      const roomNo = payload.roomNo as string;
+      
+      // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
+      if ((type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') && roomNo) {
+        if (type === 'GUEST_MESSAGE' && payload.content) {
+          setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
         }
-      });
-      unsubscribers.push(unsub);
+        
+        // 해당 roomNo에 속한 모든 inProgress 요청 찾기 (항상 최신 상태 참조)
+        const relatedRequests = inProgressRef.current.filter(r => String(r.roomNo) === String(roomNo));
+        relatedRequests.forEach(req => {
+          // 현재 열린 채팅방이면 레드닷 표시하지 않음
+          if (activeChatRoomRef.current?.requestId === req.id) return;
+          setNewMessageRequestIds(prev => {
+            const next = new Set(prev);
+            next.add(req.id);
+            return next;
+          });
+        });
+      }
     });
 
     return () => {
-      unsubscribers.forEach(unsub => unsub());
+      unsub();
     };
-  }, [roomListStr, subscribe]); // inProgress 배열 대신 문자열을 의존성으로 사용하여 무한 렌더링 방지
+  }, [subscribe]);
 
   // 긴급(EMERGENCY) 요청 자동 선택 로직
   const seenEmergencyRef = useRef<Set<number>>(new Set());
