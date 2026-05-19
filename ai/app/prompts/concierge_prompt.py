@@ -129,6 +129,7 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
 2. CLARIFICATION: If a 'Required' field is missing:
    - Set "needs_clarification": true
    - "clarification_question": A polite question.
+   - CRITICAL: If ALL required fields are present and you are just asking for the FINAL confirmation (e.g., "이대로 예약해 드릴까요?"), you MUST set `clarification_options` to `["네", "아니오"]` (or the equivalent translated to the guest's language, e.g., `["Yes", "No"]`).
 3. OUTPUT LANGUAGE: summary, description MUST be in `{system_language}`.
    - CRITICAL LANGUAGE RULE: `clarification_question` and `final_reply` MUST ALWAYS be written in the EXACT SAME LANGUAGE as the guest's input. If the guest speaks English, these fields MUST be in English. Do NOT default to Korean for these fields.
 4. TIME FORMATTING: If the user provides a relative time (e.g. "내일 아침 8시", "모레 낮 12시"), you MUST convert it to an absolute format (YYYY-MM-DD HH:MM) using the `[현재 날짜 및 시각]` provided in the prompt. Do NOT output "내일 08:00" if you know the exact date.
