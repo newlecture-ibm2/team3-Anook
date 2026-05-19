@@ -153,15 +153,6 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
 
       <div
         className={`${styles.messageList} ${filteredRequests && filteredRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
-        style={
-          filteredRequests && filteredRequests.length > 0
-            ? { 
-                '--status-bar-offset': isRequestsExpanded 
-                  ? `calc(min(45vh, ${filteredRequests.length * 56}px) + 36px)` 
-                  : '60px'
-              } as React.CSSProperties 
-            : undefined
-        }
       >
         {!(messages.length === 1 && messages[0].type === 'WELCOME') && <div className={styles.spacer} />}
         {messages.map((msg, index) => {
