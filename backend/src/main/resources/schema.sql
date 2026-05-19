@@ -257,5 +257,14 @@ ALTER TABLE message ADD COLUMN IF NOT EXISTS sentiment VARCHAR(10);
 -- [2026-05-15] 고객 피드백 별점 컬럼 추가 (1~5, NULL=미평가)
 ALTER TABLE request ADD COLUMN IF NOT EXISTS rating SMALLINT;
 
--- [2026-05-19] Admin 역할을 Frontdesk로 변경
-ALTER TABLE department RENAME COLUMN is_admin TO is_frontdesk;
+-- [2026-05-19] Admin 역할을 Frontdesk로 변경 (안전한 RENAME)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'department' AND column_name = 'is_admin'
+    ) THEN
+        ALTER TABLE department RENAME COLUMN is_admin TO is_frontdesk;
+    END IF;
+END $$;
