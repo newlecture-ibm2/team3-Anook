@@ -402,6 +402,22 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
             <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
           ) : (
             messages.map((msg, idx) => {
+              const isSystemMsg = msg.senderType === 'SYSTEM' || msg.content.includes('[SYSTEM]');
+              
+              if (isSystemMsg) {
+                const cleanContent = msg.content.replace(/^\[SYSTEM\]\s*/, '');
+                return (
+                  <div key={msg.id} id={`chat-msg-${msg.id}`} className={styles.systemMessageContainer}>
+                    <div className={styles.systemMessageBadge}>
+                      <span className={styles.systemMessageText}>{cleanContent}</span>
+                      <span className={styles.systemMessageNote}>
+                        (※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
               const isAutoMsg = msg.content.includes('프론트 데스크 직원이 메시지를 확인했습니다') || 
                                 msg.content.includes('긴급 대응팀이 배정되었습니다');
               
