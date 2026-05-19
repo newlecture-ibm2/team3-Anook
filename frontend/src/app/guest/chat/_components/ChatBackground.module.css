@@ -109,7 +109,7 @@
 /* When AI is typing, the blobs move like a glass prism reflecting light */
 .active1 {
   animation: prismShimmer1 3s infinite alternate ease-in-out;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .active2 {
@@ -124,7 +124,7 @@
 
 .active4 {
   animation: prismShimmer4 2.5s infinite alternate ease-in-out;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .active5 {
