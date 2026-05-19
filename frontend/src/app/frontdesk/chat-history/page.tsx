@@ -12,7 +12,7 @@ import PopoverMenu from '@/components/ui/PopoverMenu/PopoverMenu';
 import { MoreIcon } from '@/components/icons';
 
 export default function ChatHistoryPage() {
-  const [searchValue, setSearchValue] = useState('');
+  const [roomSearchValue, setRoomSearchValue] = useState('');
   const { rooms, selectedRoom, loadingRooms, error, selectRoom, fetchRooms, deleteRoom } = useChatHistory();
   const { t } = useTranslation();
 
@@ -75,12 +75,25 @@ export default function ChatHistoryPage() {
     </div>
   );
 
+  const filteredRooms = roomSearchValue
+    ? rooms.filter(room => room.roomNumber.toLowerCase().includes(roomSearchValue.toLowerCase()))
+    : rooms;
+
   return (
     <div className={styles.container}>
       {/* Content Section (Split Layout) */}
       <div className={styles.splitLayout}>
         {/* Left Pane: Room List */}
         <div className={styles.leftPane}>
+          {/* Room Search Bar */}
+          <div style={{ marginBottom: 'var(--space-8)' }}>
+            <InputField
+              variant="search"
+              placeholder="객실 번호 검색..."
+              value={roomSearchValue}
+              onChange={(e) => setRoomSearchValue(e.target.value)}
+            />
+          </div>
           {/* Date picker */}
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <input
@@ -102,11 +115,11 @@ export default function ChatHistoryPage() {
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
-          ) : rooms.length === 0 ? (
+          ) : filteredRooms.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>채팅 내역이 없습니다</div>
           ) : (
             <div className={styles.cardGrid}>
-              {rooms.map(room => (
+              {filteredRooms.map(room => (
                 <RequestCard
                   key={room.roomNo}
                   roomNumber={room.roomNo}
