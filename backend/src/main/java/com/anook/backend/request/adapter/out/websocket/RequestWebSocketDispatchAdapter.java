@@ -32,8 +32,8 @@ public class RequestWebSocketDispatchAdapter implements DispatchPort {
     }
 
     @Override
-    public void dispatchToAdmin(RequestWebSocketPayload payload) {
-        String destination = "/topic/admin";
+    public void dispatchToFrontdesk(RequestWebSocketPayload payload) {
+        String destination = "/topic/frontdesk";
         log.info("WebSocket 전송: destination={}, payload={}", destination, payload);
         messagingTemplate.convertAndSend(destination, payload);
     }

@@ -23,8 +23,8 @@ import java.util.Map;
  * -H "Content-Type: application/json" \
  * -d '{"type":"NEW_REQUEST","taskId":100,"summary":"수건 2장 요청"}'
  *
- * # 관리자 채널에 메시지 전송
- * curl -X POST http://localhost:8080/test/ws/admin \
+ * # 프론트 데스크 채널에 메시지 전송
+ * curl -X POST http://localhost:8080/test/ws/frontdesk \
  * -H "Content-Type: application/json" \
  * -d '{"type":"ESCALATED","requestId":100,"reason":"ETC 코드"}'
  */
@@ -51,10 +51,10 @@ public class WebSocketTestController {
         return ResponseEntity.ok("✅ Sent to /topic/dept/" + deptCode);
     }
 
-    @PostMapping("/admin")
+    @PostMapping("/frontdesk")
     public ResponseEntity<String> testAdmin(
             @RequestBody Map<String, Object> payload) {
-        dispatchPort.sendToAdmin(payload);
-        return ResponseEntity.ok("✅ Sent to /topic/admin");
+        dispatchPort.sendToFrontdesk(payload);
+        return ResponseEntity.ok("✅ Sent to /topic/frontdesk");
     }
 }

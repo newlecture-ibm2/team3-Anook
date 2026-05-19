@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
       }
 
       const view = searchParams.get("view");
-      // ADMIN은 전체 부서를 조회해야 하므로, 명시적 파라미터만 사용
+      // FRONTDESK은 전체 부서를 조회해야 하므로, 명시적 파라미터만 사용
       // STAFF는 자기 부서만 봐야 하므로 session.departmentId로 fallback
-      const targetDeptId = role === "ADMIN"
+      const targetDeptId = role === "FRONTDESK"
         ? departmentId
         : (departmentId || session.departmentId);
 
-      const backendEndpoint = role === "ADMIN"
-        ? (targetDeptId ? `${BACKEND_URL}/admin/requests?dept=${targetDeptId}` : `${BACKEND_URL}/admin/requests`)
+      const backendEndpoint = role === "FRONTDESK"
+        ? (targetDeptId ? `${BACKEND_URL}/frontdesk/requests?dept=${targetDeptId}` : `${BACKEND_URL}/frontdesk/requests`)
         : (targetDeptId ? `${BACKEND_URL}/staff/requests?departmentId=${targetDeptId}` : `${BACKEND_URL}/staff/requests`);
 
       const response = await fetch(backendEndpoint, {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
       const data = await response.json();
       
-      if (role === "ADMIN") {
+      if (role === "FRONTDESK") {
         const mappedData = data.map((item: any) => ({
           id: item.id,
           status: item.status,
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       }
 
       let finalData = data;
-      if (role !== "ADMIN" && view === "my" && staffId) {
+      if (role !== "FRONTDESK" && view === "my" && staffId) {
         finalData = finalData.filter((item: any) => {
           return item.status === "PENDING" || item.status === "ESCALATED" || item.assignedStaffId === staffId;
         });

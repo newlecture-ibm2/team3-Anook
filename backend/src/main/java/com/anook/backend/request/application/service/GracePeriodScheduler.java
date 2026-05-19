@@ -72,7 +72,7 @@ public class GracePeriodScheduler {
                     log.info("[GracePeriod] 만료 → 직원 알림 발송 — requestId: {}, dept: {}", requestId, deptCode);
 
                     dispatchPort.dispatchToDepartment(deptCode, payload);
-                    dispatchPort.dispatchToAdmin(payload);
+                    dispatchPort.dispatchToFrontdesk(payload);
 
                     // 고객 UI에 Grace 만료 알림 (버튼 숨기기)
                     RequestWebSocketPayload graceExpired = RequestWebSocketPayload.graceExpired(requestId, roomNo);
@@ -123,7 +123,7 @@ public class GracePeriodScheduler {
                     );
 
                     dispatchPort.dispatchToDepartment(deptCode, payload);
-                    dispatchPort.dispatchToAdmin(payload);
+                    dispatchPort.dispatchToFrontdesk(payload);
 
                     // 고객 UI에 완료(만료) 알림
                     RequestWebSocketPayload graceExpired = RequestWebSocketPayload.graceExpired(requestId, roomNo);

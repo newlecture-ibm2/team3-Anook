@@ -63,10 +63,10 @@ export default function ComponentShowcasePage() {
   const { showToast } = useUiStore();
   const { messages, isTyping, sendMessage } = useChat();
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [sidebarRole, setSidebarRole] = useState<'admin' | 'housekeeping' | 'facility' | 'fb' | 'concierge'>('admin');
+  const [sidebarRole, setSidebarRole] = useState<'frontdesk' | 'housekeeping' | 'facility' | 'fb' | 'concierge'>('frontdesk');
   const [selectedQuickBtn, setSelectedQuickBtn] = useState<string>('');
   const [testProgress, setTestProgress] = useState<number>(33);
-  const [sidebarActivePath, setSidebarActivePath] = useState('/admin/dashboard');
+  const [sidebarActivePath, setSidebarActivePath] = useState('/frontdesk/dashboard');
   const [activeRoomId, setActiveRoomId] = useState<string | number>('1001');
   const [selectedKnowledge, setSelectedKnowledge] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -134,7 +134,7 @@ export default function ComponentShowcasePage() {
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const role = e.target.value as any;
     setSidebarRole(role);
-    setSidebarActivePath(role === 'admin' ? '/admin/dashboard' : `/dept/${role}/my-tasks`);
+    setSidebarActivePath(role === 'frontdesk' ? '/frontdesk/dashboard' : `/dept/${role}/my-tasks`);
   };
 
   const handleSidebarClick = (e: React.MouseEvent, href: string) => {
@@ -184,7 +184,7 @@ export default function ComponentShowcasePage() {
                 onChange={handleRoleChange}
                 style={{ font: 'var(--text-body-medium)', padding: 'var(--space-4)', borderRadius: 'var(--radius-sm)' }}
               >
-                <option value="admin">Admin</option>
+                <option value="frontdesk">Frontdesk</option>
                 <option value="housekeeping">하우스키핑</option>
                 <option value="fb">식음료(F&B)</option>
                 <option value="facility">시설관리</option>

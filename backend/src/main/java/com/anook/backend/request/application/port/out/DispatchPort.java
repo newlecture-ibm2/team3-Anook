@@ -18,7 +18,7 @@ public interface DispatchPort {
     void dispatchToDepartment(String deptCode, RequestWebSocketPayload payload);
 
     /**
-     * 전체 관리자에게 알림을 발송합니다. (/topic/admin)
+     * 전체 관리자에게 알림을 발송합니다. (/topic/frontdesk)
      */
-    void dispatchToAdmin(RequestWebSocketPayload payload);
+    void dispatchToFrontdesk(RequestWebSocketPayload payload);
 }

@@ -1,7 +1,7 @@
 {
   "guest": "ゲスト",
   "staff": "スタッフ",
-  "admin": "管理者",
+  "frontdesk": "フロントデスク",
   "status": {
     "pending": "保留中",
     "assigned": "割り当て済み",
@@ -26,7 +26,7 @@
     "retry": "再試行",
     "logout": "ログアウト"
   },
-  "adminPage": {
+  "frontdeskPage": {
     "sidebar": {
       "categories": {
         "requestManagement": "リクエスト管理",

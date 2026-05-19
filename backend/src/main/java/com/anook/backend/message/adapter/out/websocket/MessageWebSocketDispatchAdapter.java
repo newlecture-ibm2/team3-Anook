@@ -36,8 +36,8 @@ public class MessageWebSocketDispatchAdapter implements MessageDispatchPort {
     }
 
     @Override
-    public void sendToAdmin(Object payload) {
-        String destination = "/topic/admin";
+    public void sendToFrontdesk(Object payload) {
+        String destination = "/topic/frontdesk";
         log.info("[WS-Message] → {} | payload: {}", destination, payload);
         messagingTemplate.convertAndSend(destination, payload);
     }

@@ -124,7 +124,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         }
 
         // 프론트 데스크(어드민) 대시보드 알림 갱신을 위해 admin 채널로도 발송
-        dispatchPort.dispatchToAdmin(payload);
+        dispatchPort.dispatchToFrontdesk(payload);
     }
 
     @Override
