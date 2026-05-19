@@ -153,13 +153,6 @@
   gap: var(--space-8);
 }
 
-.confidenceBadge {
-  display: inline-flex;
-  align-self: flex-start;
-  font: var(--text-caption-medium);
-  color: var(--color-gray-500);
-}
-
 .jsonBlock {
   background: var(--color-gray-900);
   color: #a5d6ff;

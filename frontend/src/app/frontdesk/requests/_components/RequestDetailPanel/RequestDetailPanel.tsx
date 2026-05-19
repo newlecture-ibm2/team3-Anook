@@ -354,8 +354,9 @@ export default function RequestDetailPanel({
 
           {isAiSectionOpen && (
             <div className={styles.aiInfo} style={{ marginTop: 'var(--space-8)' }}>
-              <div className={styles.confidenceBadge}>
-                신뢰도: {Math.round(detail.confidence * 100)}%
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <span className={styles.label}>신뢰도</span>
+                <span className={styles.value}>{Math.round(detail.confidence * 100)}%</span>
               </div>
               {(() => {
                 if (!detail.entities) return null;
