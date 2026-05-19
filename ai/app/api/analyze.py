@@ -90,6 +90,18 @@ STATIC_REPLIES = {
         "ja": "申し訳ありませんが、キャンセルリクエストは却下されました。リクエストはすでに進行中であるか、部門の承認が必要です。",
         "zh": "抱歉，取消请求被拒绝。该请求已在处理中或需要部门批准。"
     },
+    "CANCEL_SUCCESS": {
+        "ko": "네, 요청하신 건이 정상적으로 즉시 취소 처리되었습니다. 😌 다른 필요하신 사항이 있다면 언제든 말씀해 주세요!",
+        "en": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
+        "ja": "リクエストは正常にキャンセルされました。😌 他にご要望がございましたら、いつでもお申し付けください。",
+        "zh": "您的请求已成功取消。😌 如果您还有其他需要，请随时告诉我！"
+    },
+    "CANCEL_PENDING": {
+        "ko": "해당 건은 이미 처리가 진행 중이어서 담당 부서로 취소 가능 여부를 확인 중입니다. 🏃‍♂️ 확인 후 바로 안내해 드릴게요!",
+        "en": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",
+        "ja": "すでに処理が進行中のため、担当部署にキャンセルをリクエストしました。🏃‍♂️ 確認次第お知らせいたします。",
+        "zh": "您的请求正在处理中，因此我们已向相关部门发送了取消请求。🏃‍♂️ 确认后我们将通知您。"
+    },
     "CANCEL_IN_PROGRESS": {
         "ko": "네, 요청하신 건에 대해 취소를 접수해 드릴게요! 😌 아직 대기 중이라면 바로 취소되며, 이미 처리 중이라면 부서 확인 후 안내해 드리겠습니다.",
         "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation.",
@@ -1163,37 +1175,94 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 print(f"[Analyze] 응답: {response}\n")
                 final_responses.append(response)
                 continue
-            elif is_all:
-                response = {
-                    "guest_reply": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다.",
-                    "summary": "전체 요청 취소",
-                    "domain_code": None,
-                    "priority": "NORMAL",
-                    "entities": {},
-                    "confidence": primary.confidence,
-                    "action": "CANCEL_ALL_REQUESTS",
-                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
-                }
             else:
-                reply_key = "TARGETED_CANCEL" if primary.domain else "CANCEL"
-                response = {
-                    "guest_reply": _get_static_reply(reply_key, request.language),
-                    "summary": "요청 취소",
-                    "domain_code": primary.domain if primary.domain else None,
-                    "priority": "NORMAL",
-                    "entities": {"intent": "CANCEL"},
-                    "confidence": primary.confidence,
-                    "action": "CANCEL_REQUEST",
-                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
-                }
-                if hasattr(primary, 'action_type'):
-                    response["action_type"] = primary.action_type
-                # [Keyword Targeting] 취소 대상 키워드 전달
-                if hasattr(primary, 'target_keyword') and primary.target_keyword:
-                    response["target_keyword"] = primary.target_keyword
-                # [ID Targeting] 취소 대상 ID 전달
-                if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
-                    response["target_request_id"] = primary.target_request_id
+                # active_requests에서 실제 취소할 대상 찾기
+                targets = []
+                active_reqs = getattr(request, 'active_requests', []) or []
+                
+                if is_all:
+                    targets = active_reqs
+                else:
+                    # 핀포인트 매칭 (ID, 키워드, 도메인 순)
+                    target_id = getattr(primary, 'target_request_id', None)
+                    target_kw = getattr(primary, 'target_keyword', None)
+                    target_dm = primary.domain
+                    
+                    if target_id is not None:
+                        targets = [r for r in active_reqs if r.get("id") == target_id]
+                    elif target_kw:
+                        kw_lower = target_kw.lower()
+                        targets = [r for r in active_reqs if r.get("summary") and kw_lower in r.get("summary", "").lower()]
+                    elif target_dm:
+                        dept_map = {"HK": "HK", "FACILITY": "FACILITY", "COFFEE": "FB", "FB": "FB", "CONCIERGE": "CONCIERGE"}
+                        target_dept_id = dept_map.get(target_dm)
+                        if target_dept_id:
+                            targets = [r for r in active_reqs if r.get("department_id") == target_dept_id]
+                    
+                    # 매칭된 대상이 전혀 없다면, 기본 폴백으로 가장 최신(첫 번째) active_request를 취소 대상으로 간주
+                    if not targets and active_reqs:
+                        targets = [active_reqs[0]]
+
+                # 타겟들의 상태 분석
+                has_pending = False
+                has_in_progress = False
+                for r in targets:
+                    status = r.get("status")
+                    if status in ("PENDING", "ESCALATED"):
+                        has_pending = True
+                    elif status in ("IN_PROGRESS", "ASSIGNED", "ACCEPTED"):
+                        has_in_progress = True
+
+                # 멘트 결정
+                if is_all:
+                    if has_pending and not has_in_progress:
+                        reply_text = _get_static_reply("CANCEL_SUCCESS", request.language)
+                    elif has_in_progress and not has_pending:
+                        reply_text = _get_static_reply("CANCEL_PENDING", request.language)
+                    else:
+                        # 믹스 혹은 기본값
+                        reply_text = "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다."
+                        if request.language != "ko":
+                            reply_text = _get_static_reply("CANCEL_IN_PROGRESS", request.language)
+                    
+                    response = {
+                        "guest_reply": reply_text,
+                        "summary": "전체 요청 취소",
+                        "domain_code": None,
+                        "priority": "NORMAL",
+                        "entities": {},
+                        "confidence": primary.confidence,
+                        "action": "CANCEL_ALL_REQUESTS",
+                        "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                    }
+                else:
+                    if has_pending and not has_in_progress:
+                        reply_text = _get_static_reply("CANCEL_SUCCESS", request.language)
+                    elif has_in_progress and not has_pending:
+                        reply_text = _get_static_reply("CANCEL_PENDING", request.language)
+                    else:
+                        # 대기/처리중 믹스이거나 대상이 없는 경우
+                        reply_key = "TARGETED_CANCEL" if primary.domain else "CANCEL"
+                        reply_text = _get_static_reply(reply_key, request.language)
+                        
+                    response = {
+                        "guest_reply": reply_text,
+                        "summary": "요청 취소",
+                        "domain_code": primary.domain if primary.domain else None,
+                        "priority": "NORMAL",
+                        "entities": {"intent": "CANCEL"},
+                        "confidence": primary.confidence,
+                        "action": "CANCEL_REQUEST",
+                        "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                    }
+                    if hasattr(primary, 'action_type'):
+                        response["action_type"] = primary.action_type
+                    # [Keyword Targeting] 취소 대상 키워드 전달
+                    if hasattr(primary, 'target_keyword') and primary.target_keyword:
+                        response["target_keyword"] = primary.target_keyword
+                    # [ID Targeting] 취소 대상 ID 전달
+                    if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                        response["target_request_id"] = primary.target_request_id
             
             print(f"[Analyze] 🛑 CANCEL 응답")
             print(f"[Analyze] 응답: {response}\n")
