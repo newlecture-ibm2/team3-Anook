@@ -1,13 +1,31 @@
 import psycopg2
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.domains.rag.service import init_neo4j_driver
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Eager Initialization: 서버 시작 시점에 Neo4j 연결 검증 (Fail-Fast)
+    print("Initializing Neo4j connection...")
+    try:
+        init_neo4j_driver()
+        print("Neo4j connection verified successfully.")
+    except Exception as e:
+        print(f"Failed to connect to Neo4j on startup: {e}")
+        # 연결 실패 시 서버 구동을 중단하려면 여기서 예외를 다시 던집니다.
+        raise e
+    yield
+    # 종료 로직 필요 시 여기에 작성
+    print("Shutting down...")
 
 app = FastAPI(
     title="Anook AI Service",
     description="FastAPI based AI service for Hotel Management",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS 설정

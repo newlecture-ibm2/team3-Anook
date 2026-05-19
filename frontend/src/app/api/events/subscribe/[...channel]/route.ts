@@ -23,13 +23,19 @@ export async function GET(
     const targetUrl = `${BACKEND_URL}/events/subscribe/${channelPath}`;
 
     // 프론트엔드 BFF에서 백엔드로 SSE 스트림을 프록시
+    const headers: Record<string, string> = {
+      Accept: "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    };
+
+    if (session.token) {
+      headers["Authorization"] = `Bearer ${session.token}`;
+    }
+
     const backendResponse = await fetch(targetUrl, {
       method: "GET",
-      headers: {
-        Accept: "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
+      headers,
     });
 
     if (!backendResponse.ok) {

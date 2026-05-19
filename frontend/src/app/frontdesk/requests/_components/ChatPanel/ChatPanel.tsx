@@ -4,6 +4,7 @@ import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
 import { CancelIcon } from '@/components/icons';
 import { useSSE } from '@/app/useSSE';
+import { useTranslation } from '@/app/useTranslation';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
@@ -17,9 +18,10 @@ export interface ChatMessage {
 
 export interface ChatPanelProps {
   roomNumber?: string;
-  requestId?: number;
+  requestIds?: number[];
+  representativeId?: number;
   status?: string;
-  onStatusChange?: (id: number, newStatus: string) => Promise<void>;
+  onStatusChange?: (ids: number[], newStatus: string) => Promise<void>;
   autoComplete?: boolean;
   onClose?: () => void;
   initialMessage?: string;
@@ -40,14 +42,26 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   CANCELLED: { text: '취소됨', variant: 'gray' },
 };
 
-export default function ChatPanel({ roomNumber = '1204', requestId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, searchTerm, onRagFlowChange }: ChatPanelProps) {
+export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, searchTerm, onRagFlowChange }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const { subscribe } = useSSE();
+  const { t } = useTranslation();
 
   // RAG 등록 플로우 상태
   const [isRagConfirmOpen, setIsRagConfirmOpen] = useState(false);
+
+  // AI 특수 코드 매핑 함수 (다국어 언어팩 연동)
+  const translateContent = (content: string) => {
+    if (!content) return content;
+    if (content.includes('[FORWARD_FB]')) return t.aiReplies?.forwardFb || content;
+    if (content.includes('[FORWARD_HK]')) return t.aiReplies?.forwardHk || content;
+    if (content.includes('[FORWARD_FACILITY]')) return t.aiReplies?.forwardFacility || content;
+    if (content.includes('[FORWARD_FRONT]')) return t.aiReplies?.forwardFront || content;
+    if (content.includes('[INFO_NOT_FOUND]')) return t.aiReplies?.infoNotFound || content;
+    return content;
+  };
 
   // 모달 열릴 때 실제 대화 내역 로드
   useEffect(() => {
@@ -64,7 +78,7 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
           id: String(msg.id),
           variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
           senderType: msg.senderType,
-          content: msg.content,
+          content: msg.senderType === 'AI' ? translateContent(msg.content) : msg.content,
         }));
 
         // 데이터가 없으면 데모용 더미 데이터 삽입
@@ -109,7 +123,8 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
       const messageId = payload.messageId as number | undefined;
 
       if (type === 'AI_RESPONSE' || type === 'STAFF_MESSAGE') {
-        const displayContent = payload.originalContent ? (payload.originalContent as string) : content;
+        const rawContent = payload.originalContent ? (payload.originalContent as string) : content;
+        const displayContent = type === 'AI_RESPONSE' ? translateContent(rawContent) : rawContent;
         setMessages(prev => {
           if (messageId && prev.some(m => m.id === String(messageId))) return prev;
           // 낙관적 업데이트로 인한 중복 방지 (내용으로 비교)
@@ -169,16 +184,16 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
     }
 
     // 3. PENDING 상태면 IN_PROGRESS로 변경
-    if (status === 'PENDING' && requestId && onStatusChange) {
-      await onStatusChange(requestId, 'IN_PROGRESS');
+    if (status === 'PENDING' && requestIds && requestIds.length > 0 && onStatusChange) {
+      await onStatusChange(requestIds, 'IN_PROGRESS');
     }
   };
 
   // 상담 완료 버튼 클릭 시: 즉시 COMPLETED 처리 후 RAG 모달은 별도로 열기
   const handleCompleteConsultation = () => {
     // 1. 즉시 COMPLETED 상태로 변경 (고객에게 바로 상담 종료 카드 전송)
-    if (requestId && onStatusChange && status !== 'COMPLETED') {
-      onStatusChange(requestId, 'COMPLETED');
+    if (requestIds && requestIds.length > 0 && onStatusChange && status !== 'COMPLETED') {
+      onStatusChange(requestIds, 'COMPLETED');
     }
 
     // 2. 직원이 답변한 내용이 있으면 RAG 등록 모달 열기
@@ -219,12 +234,12 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // 로컬 스토리지에 등록 상태 저장
-      if (requestId) {
+      if (representativeId) {
         const saved = localStorage.getItem('registeredRagIds');
         const set = saved ? new Set(JSON.parse(saved)) : new Set();
-        set.add(requestId);
+        set.add(representativeId);
         localStorage.setItem('registeredRagIds', JSON.stringify(Array.from(set)));
-        window.dispatchEvent(new CustomEvent('ragRegistered', { detail: requestId }));
+        window.dispatchEvent(new CustomEvent('ragRegistered', { detail: representativeId }));
       }
     } catch (err) {
       console.error('[ChatPanel] PENDING 등록 실패:', err);
@@ -326,8 +341,8 @@ export default function ChatPanel({ roomNumber = '1204', requestId, status, onSt
               size="large"
               fullWidth
               onClick={async () => {
-                if (onStatusChange && requestId) {
-                  await onStatusChange(requestId, 'IN_PROGRESS');
+                if (onStatusChange && requestIds && requestIds.length > 0) {
+                  await onStatusChange(requestIds, 'IN_PROGRESS');
                   if (isEmergency) {
                     await handleSend('긴급 대응팀이 배정되었습니다. 신속히 조치하겠습니다. 안전한 곳에서 대기해 주시기 바랍니다.');
                   } else {
