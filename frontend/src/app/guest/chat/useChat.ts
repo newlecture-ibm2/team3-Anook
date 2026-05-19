@@ -271,21 +271,7 @@ export function useChat() {
 
                 // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
                 let content = payload.content;
-                const action = payload.meta?.action || payload.action;
-                const isCancelResponse = action === 'CANCEL_REQUEST' || action === 'CANCEL_ALL_REQUESTS'
-                  || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
 
-                if (isCancelResponse) {
-                  const hasInProgress = activeRequests.some(r => 
-                    r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS' || r.status === 'CANCEL_PENDING'
-                  );
-
-                  if (hasInProgress) {
-                    content = tRef.current.aiReplies?.cancelPending || '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
-                  } else {
-                    content = tRef.current.aiReplies?.cancelSuccess || '해당 요청이 정상적으로 취소되었습니다.';
-                  }
-                }
 
                 // AI 특수 코드 매핑 (다국어 언어팩 연동, AI 할루시네이션 대비 includes 사용)
                 content = translateContent(content);
