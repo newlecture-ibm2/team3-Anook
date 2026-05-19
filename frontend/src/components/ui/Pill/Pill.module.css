@@ -9,7 +9,9 @@
 .button {
   padding: var(--space-8) var(--space-16);
   border-radius: var(--radius-full);
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  max-width: 100%;
   font: var(--text-body-md-medium);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);

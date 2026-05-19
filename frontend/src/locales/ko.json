@@ -77,7 +77,6 @@
         "FRONT": "긴급 대응"
       }
     },
-
     "taskBoard": {
       "searchPlaceholder": "검색어를 입력하세요...",
       "filterAll": "전체",
@@ -183,6 +182,8 @@
     "chatHistory": {
       "title": "채팅 히스토리",
       "emptyMessage": "메시지 없음",
+      "systemCompleted": "이전 상담 및 처리가 모두 완료되었습니다.",
+      "systemMessageNote": "(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)",
       "roomConversation": "{{room}}호 대화",
       "roomChatRecord": "{{room}}호 채팅 기록",
       "selectRoomPrompt": "대화를 확인할 객실을 선택해주세요",
@@ -369,16 +370,25 @@
       "templateWithDetailsCompleted": "{team} 팀에서 {details} 건을 완료했습니다.",
       "templateNoDetailsPending": "{team} 담당 팀에서 확인하고 있습니다.",
       "templateNoDetailsInProgress": "{team} 담당 팀에서 처리 중입니다.",
-      "templateNoDetailsCompleted": "{team} 담당 팀에서 완료했습니다."
+      "templateNoDetailsCompleted": "{team} 담당 팀에서 완료했습니다.",
+      "emergencyPending": "프론트 데스크에서 긴급 요청건을 확인하고 있습니다.",
+      "emergencyInProgress": "프론트 데스크에서 긴급 요청건을 처리 중입니다.",
+      "emergencyCompleted": "긴급 요청건이 처리 완료되었습니다."
     },
     "message": {
       "cancelPending": "🔄 취소 요청이 접수되어 직원이 확인 중입니다",
-      "escalated": "💬 프론트 직원이 채팅으로 응대할 예정입니다.",
-      "forwarded": "✅ 직원에게 전달되었습니다",
+      "escalated": "직원이 응대할 예정입니다",
+      "forwarded": "{team} 팀에 전달되었습니다",
       "cancelledCard": "요청이 취소되었습니다",
-      "autoAcceptGuide": "잠시 후 자동으로 접수됩니다.",
+      "autoAcceptGuide": "요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.",
+      "confirmGuide": "확인 후 진행 버튼을 눌러주세요.",
+      "cancelPendingShort": "취소 요청 확인 중",
       "translating": "요약 중...",
-      "escalationRequest": "프론트 데스크 직원 연결 요청"
+      "escalationRequest": "프론트 데스크 직원 연결 요청",
+      "cancelRequest": "요청 취소",
+      "proceed": "진행",
+      "urgentPrefix": "[긴급] ",
+      "cancelSuffix": " 취소"
     },
     "button": {
       "accept": "바로등록",
@@ -400,7 +410,7 @@
       "FB": "F&B",
       "CONCIERGE": "컨시어지",
       "FRONT": "프런트",
-      "EMERGENCY": "응급상황 🚨"
+      "EMERGENCY": "긴급"
     },
     "badge": {
       "cancelled": "취소됨",
@@ -419,6 +429,25 @@
       "hoursAgo": "시간 전",
       "minsAgo": "분 전",
       "justNow": "방금 전"
+    },
+    "entityLabels": {
+      "time": "시간",
+      "dest": "목적지",
+      "pax": "인원",
+      "paxUnit": "명",
+      "count": "수량",
+      "countUnit": "개",
+      "rest": "식당",
+      "target": "대상",
+      "req": "요청",
+      "store": "보관",
+      "pickup": "찾기",
+      "item": "물품",
+      "vendor": "업체",
+      "type": "분류",
+      "symptom": "증상",
+      "area": "지역",
+      "content": "내용"
     }
   },
   "menu": {
@@ -437,14 +466,13 @@
     "speechUnsupported": "현재 브라우저에서는 음성 인식을 지원하지 않습니다."
   },
   "aiReplies": {
-    "forwardFb": "F&B(룸서비스) 팀에 주문 내용을 전달하겠습니다.",
-    "forwardHk": "해당 부서(하우스키핑 팀)로 내용을 전달하겠습니다.",
-    "forwardFacility": "해당 부서(시설관리팀)로 수리 내용을 전달하겠습니다.",
-    "forwardConcierge": "컨시어지 팀에 요청 내용을 전달하겠습니다.",
-    "forwardFront": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트 데스크에 연결해 드리겠습니다.",
-    "infoNotFound": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크에 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
-    "cancelSuccess": "해당 요청이 정상적으로 취소되었습니다.",
-    "cancelPending": "이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.",
-    "piiGuard": "고객님의 소중한 개인정보 보호를 위해 채팅으로는 민감한 정보를 입력받지 않고 있습니다. 상세 확인이 필요하신 경우, 객실 내 전화기를 통해 프론트 데스크(내선 0번)로 연락해 주시면 안전하게 도와드리겠습니다."
+    "forwardFb": "네, F&B(룸서비스) 팀으로 주문 내용을 바로 전달해 드릴게요!",
+    "forwardHk": "네, 알겠습니다! 하우스키핑 팀으로 요청 내용을 신속하게 전달해 드릴게요.",
+    "forwardFacility": "불편을 드려 죄송합니다. 🥲 시설관리 팀으로 내용을 전달하여 최대한 빠르게 조치해 드릴게요! 🛠️",
+    "forwardFront": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프런트 데스크 직원에게 연결하여 도움을 드리겠습니다.",
+    "infoNotFound": "그 부분은 제가 바로 답변드리기 어려워 프런트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
+    "cancelSuccess": "해당 요청이 정상적으로 취소되었습니다. 😌 다른 필요하신 사항이 있다면 언제든 말씀해 주세요!",
+    "cancelPending": "해당 건은 이미 처리가 진행 중이어서 담당 부서로 취소 가능 여부를 확인 중입니다. 🏃‍♂️ 확인 후 바로 안내해 드릴게요!",
+    "piiGuard": "고객님의 소중한 개인정보 보호를 위해 채팅으로는 민감한 정보를 입력받지 않고 있습니다. 🔒 상세 확인이 필요하신 경우, 객실 내 전화기를 통해 프런트 데스크(내선 0번)로 연락해 주시면 안전하게 도와드리겠습니다. 😊"
   }
 }

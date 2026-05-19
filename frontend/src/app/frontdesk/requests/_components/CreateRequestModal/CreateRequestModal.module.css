@@ -40,7 +40,7 @@
 }
 
 .label {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-700);
 }
 

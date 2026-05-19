@@ -15,6 +15,25 @@ interface HeaderProps {
 
 export default function Header({ className = '', role = 'frontdesk' }: HeaderProps) {
   const { toggleSidebar, openModal } = useUiStore();
+  const [userInfo, setUserInfo] = React.useState<{ name?: string; role?: string; department?: string } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/auth/session')
+      .then((res) => {
+        if (res.ok) return res.json();
+        return null;
+      })
+      .then((data) => {
+        if (data && data.isLoggedIn) {
+          setUserInfo({
+            name: data.name,
+            role: data.role,
+            department: data.department
+          });
+        }
+      })
+      .catch((err) => console.error('Failed to fetch session in Header:', err));
+  }, []);
 
   return (
     <header className={`${styles.header} ${className}`.trim()}>
@@ -34,6 +53,14 @@ export default function Header({ className = '', role = 'frontdesk' }: HeaderPro
               <HeaderNotification />
             </Suspense>
           </>
+        )}
+        {userInfo && (
+          <div className={styles.userProfile}>
+            <span className={`${styles.roleBadge} ${userInfo.role === 'FRONTDESK' ? styles.admin : styles.staff}`}>
+              {userInfo.role === 'FRONTDESK' ? 'Admin' : userInfo.department || 'Staff'}
+            </span>
+            <span className={styles.userName}>{userInfo.name}</span>
+          </div>
         )}
         <LanguageToggle />
       </div>

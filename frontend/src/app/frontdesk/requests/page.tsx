@@ -19,9 +19,12 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
 import { useSSE } from '@/app/useSSE';
+import InputField from '@/components/ui/Inputfield/InputField';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('active');
+  const [roomSearchValue, setRoomSearchValue] = useState('');
+  const [chatSearchValue, setChatSearchValue] = useState('');
   const { requests, loading, error, refetch } = useFrontdeskRequests('FRONT');
   // 긴급대응(EMERGENCY) 부서 요청도 프론트 데스크에서 최우선으로 표시
   const { requests: emergencyRequests, loading: emergLoading, refetch: emergRefetch } = useFrontdeskRequests('EMERGENCY');
@@ -257,6 +260,15 @@ export default function FrontDeskPage() {
       return timeB - timeA;
     });
 
+    if (roomSearchValue) {
+      const query = roomSearchValue.toLowerCase();
+      return groupedRooms.filter(room => 
+        String(room.roomNo).toLowerCase().includes(query) || 
+        room.summaryText.toLowerCase().includes(query) || 
+        (room.rawText && room.rawText.toLowerCase().includes(query))
+      );
+    }
+
     return groupedRooms;
   };
   const groupedRooms = getGroupedRooms();
@@ -332,12 +344,21 @@ export default function FrontDeskPage() {
       <div className={styles.splitLayout}>
         {/* Left Pane: Request List */}
         <div className={styles.leftPane}>
+          {/* Room Search Bar */}
+          <div style={{ marginBottom: 'var(--space-16)' }}>
+            <InputField
+              variant="search"
+              placeholder="객실 번호 또는 요청 내용 검색..."
+              value={roomSearchValue}
+              onChange={(e) => setRoomSearchValue(e.target.value)}
+            />
+          </div>
           {/* Tabs inside left pane */}
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <Tabs
               options={[
-                { label: '진행 중', value: 'active', count: pending.length + inProgress.length },
-                { label: '상담 완료', value: 'completed', count: completed.length }
+                { label: '진행 중', value: 'active', count: new Set([...pending, ...inProgress].map(r => String(r.roomNo))).size },
+                { label: '상담 완료', value: 'completed', count: new Set(completed.map(r => String(r.roomNo))).size }
               ]}
               activeValue={activeTab}
               onChange={(val) => setActiveTab(val || 'active')}
@@ -426,6 +447,7 @@ export default function FrontDeskPage() {
               }}
               isEmergency={activeReq?.priority === 'EMERGENCY'}
               onRagFlowChange={setIsRagFlowActive}
+              showSearch={true}
               />
             );
           })() : (

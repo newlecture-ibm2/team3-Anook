@@ -25,10 +25,24 @@ export interface FeedbackCardProps {
   /** 완료 시간 */
   completedAt?: string;
   /** 별점 제출 핸들러 */
-  onSubmit: (rating: number) => void;
+  onSubmit?: (rating: number) => void;
+  /** 시스템 메시지 모드 여부 */
+  isSystemMessage?: boolean;
+  /** 시스템 메시지 내용 */
+  systemContent?: string;
+  /** 시스템 메시지 부제목/가이드 */
+  systemSubtitle?: string;
 }
 
-export default function FeedbackCard({ summary, domainCode, completedAt, onSubmit }: FeedbackCardProps) {
+export default function FeedbackCard({ 
+  summary, 
+  domainCode, 
+  completedAt, 
+  onSubmit,
+  isSystemMessage = false,
+  systemContent,
+  systemSubtitle
+}: FeedbackCardProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -43,7 +57,7 @@ export default function FeedbackCard({ summary, domainCode, completedAt, onSubmi
     if (submitted) return;
     setRating(star);
     setSubmitted(true);
-    onSubmit(star);
+    if (onSubmit) onSubmit(star);
   };
 
   const formatTime = (dateStr?: string) => {
@@ -53,6 +67,44 @@ export default function FeedbackCard({ summary, domainCode, completedAt, onSubmi
     const m = String(d.getMinutes()).padStart(2, '0');
     return `${h}:${m}`;
   };
+
+  if (isSystemMessage) {
+    return (
+      <div 
+        className={`glass-panel ${styles.card}`} 
+        style={{ 
+          margin: 'var(--space-8) 0', 
+          width: '100%', 
+          border: '1px solid var(--color-success, #10B981)',
+          background: 'linear-gradient(to right, color-mix(in srgb, var(--color-success, #10B981) 8%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.6)'
+        }}
+      >
+        <div className={styles.cardLayout}>
+          {/* Left Column: Icon */}
+          <div className={styles.leftColumn}>
+            <div className={styles.iconContainer} style={{ backgroundColor: 'color-mix(in srgb, var(--color-success, #10B981) 15%, #fff)' }}>
+              <Check size={20} color="var(--color-success, #10B981)" strokeWidth={3} />
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className={styles.rightColumn}>
+            <div className={styles.content}>
+              <div className={styles.summaryRow}>
+                <div className={styles.title}>
+                  {systemContent || '이전 상담 및 처리가 모두 완료되었습니다.'}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.subtitle}>
+              {systemSubtitle || '(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 게스트용 제목: 도메인 라벨 + "요청 완료"
   const displayTitle = hasRequestInfo

@@ -107,7 +107,13 @@ export default function RequestStatusBar({
             <div className={styles.title}>{displaySummary}</div>
             <div className={styles.details}>
               <span className={styles.detailText}>
-                {detailsText ? (
+                {domainCode === 'EMERGENCY' ? (
+                  <>
+                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && (t.cardUI.statusBar?.emergencyPending || '프론트 데스크에서 긴급 요청건을 확인하고 있습니다.')}
+                    {status === 'IN_PROGRESS' && (t.cardUI.statusBar?.emergencyInProgress || '프론트 데스크에서 긴급 요청건을 처리 중입니다.')}
+                    {status === 'COMPLETED' && (t.cardUI.statusBar?.emergencyCompleted || '긴급 요청건이 처리 완료되었습니다.')}
+                  </>
+                ) : detailsText ? (
                   <>
                     {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateWithDetailsPending?.replace('{team}', domainLabel).replace('{details}', detailsText)}
                     {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateWithDetailsInProgress?.replace('{team}', domainLabel).replace('{details}', detailsText)}
