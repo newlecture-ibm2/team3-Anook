@@ -428,6 +428,25 @@
       "hoursAgo": "시간 전",
       "minsAgo": "분 전",
       "justNow": "방금 전"
+    },
+    "entityLabels": {
+      "time": "시간",
+      "dest": "목적지",
+      "pax": "인원",
+      "paxUnit": "명",
+      "count": "수량",
+      "countUnit": "개",
+      "rest": "식당",
+      "target": "대상",
+      "req": "요청",
+      "store": "보관",
+      "pickup": "찾기",
+      "item": "물품",
+      "vendor": "업체",
+      "type": "분류",
+      "symptom": "증상",
+      "area": "지역",
+      "content": "내용"
     }
   },
   "menu": {

@@ -120,7 +120,7 @@ JSON Output:
         "allergen_warning": "대두, 밀"
     },
     "needs_clarification": true,
-    "clarification_question": "한우 불고기 덮밥 2개(44.00달러)와 제로콜라 3개(12.00달러) 총 56.00달러입니다. (알러지 정보: 대두, 밀). 이대로 주문을 접수해 드릴까요?",
+    "clarification_question": "다음과 같이 주문을 도와드릴까요?\n- 한우 불고기 덮밥 2개(44.00달러)\n- 제로콜라 3개(12.00달러)\n총 56.00달러입니다. (알러지 정보: 대두, 밀). 이대로 주문을 접수해 드릴까요?",
     "missing_fields": []
 }
 

@@ -430,6 +430,25 @@
       "hoursAgo": "小时前",
       "minsAgo": "分钟前",
       "justNow": "刚刚"
+    },
+    "entityLabels": {
+      "time": "时间",
+      "dest": "目的地",
+      "pax": "人数",
+      "paxUnit": "名",
+      "count": "数量",
+      "countUnit": "个",
+      "rest": "餐厅",
+      "target": "对象",
+      "req": "请求",
+      "store": "寄存",
+      "pickup": "领取",
+      "item": "物品",
+      "vendor": "商家",
+      "type": "分类",
+      "symptom": "症状",
+      "area": "区域",
+      "content": "内容"
     }
   },
   "menu": {

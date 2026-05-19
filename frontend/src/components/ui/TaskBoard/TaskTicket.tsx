@@ -82,12 +82,11 @@ export default function TaskTicket({
   const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
   
   const getFixedTitle = () => {
-    const baseSummary = translatedSummary || title;
-    if (isTranslating || isManuallyReassigned || baseSummary.includes('프론트 연결')) {
-      return baseSummary;
+    if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
+      return displaySummary;
     }
     const intent = entities?.intent as string | undefined;
-    switch (deptKey) {
+    switch (department?.toLowerCase()) {
       case 'fb':
         if (intent === 'DINING') return '룸서비스 음식 주문';
         if (intent === 'AMENITY') return '객실 어메니티 요청';
@@ -100,11 +99,10 @@ export default function TaskTicket({
         if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
         return '컨시어지 서비스 요청';
       case 'facility':
-        return '객실 시설 수리 요청';
       case 'hk':
-        return '객실 정비/비품 요청';
+        return displaySummary;
       default:
-        return baseSummary.split('(')[0].trim();
+        return displaySummary.split('(')[0].trim();
     }
   };
 
@@ -132,31 +130,63 @@ export default function TaskTicket({
 
   const renderDetails = () => {
     if (!entities) return null;
-    
+
+    // 심플한 요청(HK, FACILITY, EMERGENCY, FRONT)은 메인 타이틀(summary)만 보여주고 디테일은 생략
+    const lowerDept = department?.toLowerCase();
+    if (lowerDept === 'hk' || lowerDept === 'facility' || lowerDept === 'emergency' || lowerDept === 'front') return null;
+
+    const l = t.ticketUI?.entityLabels || {};
     const parts: string[] = [];
     if (entities.intent === 'TAXI') {
-      if (entities.time) parts.push(String(entities.time));
-      if (entities.destination) parts.push(String(entities.destination));
-      if (entities.passenger_count) parts.push(String(entities.passenger_count));
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '목적지'}: ${entities.destination}`);
+      if (entities.passenger_count) parts.push(`${l.pax || '인원'}: ${entities.passenger_count}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'RESTAURANT' || entities.intent === 'RESERVATION') {
+      if (entities.restaurant_name) parts.push(`${l.rest || '식당'}: ${entities.restaurant_name}`);
+      if (entities.target) parts.push(`${l.target || '대상'}: ${entities.target}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.party_size) parts.push(`${l.pax || '인원'}: ${entities.party_size}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'LUGGAGE_STORAGE') {
+      if (entities.action) parts.push(`${l.req || '요청'}: ${entities.action === 'store' ? (l.store || '보관') : (l.pickup || '찾기')}`);
+      if (entities.count) parts.push(`${l.count || '수량'}: ${entities.count}${l.countUnit || ''}`);
+    } else if (entities.intent === 'DELIVERY' || entities.intent === 'POSTAL_SERVICE') {
+      if (entities.item) parts.push(`${l.item || '물품'}: ${entities.item}`);
+      if (entities.store_name) parts.push(`${l.vendor || '업체'}: ${entities.store_name}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '도착지'}: ${entities.destination}`);
+    } else if (entities.intent === 'WAKE_UP_CALL') {
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+    } else if (entities.intent === 'MEDICAL_INFO') {
+      if (entities.type) parts.push(`${l.type || '분류'}: ${entities.type}`);
+      if (entities.symptom) parts.push(`${l.symptom || '증상'}: ${entities.symptom}`);
+    } else if (entities.intent === 'TOUR_INFO') {
+      if (entities.category) parts.push(`${l.type || '분류'}: ${entities.category}`);
+      if (entities.area) parts.push(`${l.area || '지역'}: ${entities.area}`);
     } else {
-      if (Array.isArray(entities.items)) {
+      if (Array.isArray(entities.menu_items)) {
+        entities.menu_items.forEach((it: any) => {
+          parts.push(`- ${it.name} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
+        });
+      } else if (Array.isArray(entities.items)) {
         entities.items.forEach((it: any) => {
-          parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
+          parts.push(`- ${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
         });
       } else if (entities.item) {
-        parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
+        parts.push(`- ${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
       }
       if (Array.isArray(entities.tasks)) {
-        entities.tasks.forEach((t: string) => parts.push(t));
+        entities.tasks.forEach((t: string) => parts.push(`- ${t}`));
       }
       if (parts.length === 0) {
         if (entities.menu) {
-          parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+          parts.push(`- ${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
         }
-        if (entities.symptom) parts.push(`${entities.symptom}`);
+      }
+      if (entities.symptom) {
+        parts.push(`${l.content || '내용'}: ${entities.symptom}`);
       }
     }
-    return parts.length > 0 ? parts.join(' • ') : null;
+    return parts.length > 0 ? parts.join('\n') : null;
   };
 
   const entityDetails = renderDetails();

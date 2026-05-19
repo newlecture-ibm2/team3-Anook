@@ -8,7 +8,7 @@ from app.domains.rag import service as rag_service
 
 import os
 
-def _fetch_menu_context() -> str:
+def _fetch_menu_context(system_language: str = "ko") -> str:
     """백엔드 PMS API를 호출하여 메뉴 데이터를 가져와 프롬프트 컨텍스트로 변환"""
     try:
         # 환경 변수에 BACKEND_URL이 있으면 사용하고 (배포용), 없으면 로컬 도커 환경의 호스트 접근 주소를 사용
@@ -45,7 +45,12 @@ def _fetch_menu_context() -> str:
                         opt_list.append(f"{req_label} {opt.get('groupName')}:{items}")
                     option_str = " " + " / ".join(opt_list)
                     
-                menu_lines.append(f"- [{category}] {name}: ${price:.2f}{allergy_str}{option_str}")
+                if system_language == "ko":
+                    price_str = f"{int(price):,}원"
+                else:
+                    price_str = f"${(price / 1300):.2f}"
+                    
+                menu_lines.append(f"- [{category}] {name}: {price_str}{allergy_str}{option_str}")
             return "\n".join(menu_lines)
         else:
             print(f"[FB Agent] 메뉴 조회 API 실패: HTTP {resp.status_code}")
@@ -58,7 +63,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     """F&B 에이전트: 메뉴 조회, RAG 지식 결합, 2턴 주문 확인 로직 처리"""
     
     # 1. pms_menu 백엔드 조회
-    menu_context = await asyncio.to_thread(_fetch_menu_context)
+    menu_context = await asyncio.to_thread(_fetch_menu_context, system_language)
     
     # 2. RAG 검색 → FB 도메인 지식 (운영시간, 기타 정책 등)
     rag_context = ""
@@ -107,7 +112,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
 
     # 6. SPENDING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
     if result.entities.get("intent") == "SPENDING_INQUIRY":
-        guest_reply = await asyncio.to_thread(_handle_spending_inquiry, room_no, user_message)
+        guest_reply = await asyncio.to_thread(_handle_spending_inquiry, room_no, user_message, system_language)
         return {
             "guest_reply": guest_reply,
             "summary": "룸서비스 이용 금액 조회",
@@ -159,7 +164,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     }
 
 
-def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
+def _handle_spending_inquiry(room_no: str, user_message: str, system_language: str = "ko") -> str:
     """백엔드 영수증 요약 API를 호출하여 이용 금액 안내 메시지를 생성"""
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
@@ -180,17 +185,17 @@ def _handle_spending_inquiry(room_no: str, user_message: str) -> str:
                 name = item.get("menuName", "")
                 qty = item.get("quantity", 0)
                 price = item.get("totalPrice", 0)
-                lines.append(f"- {name} {qty}개: ${price:.2f}")
+                if system_language == "ko":
+                    lines.append(f"- {name} {qty}개: {int(price):,}원")
+                else:
+                    lines.append(f"- {name} x{qty}: ${(price / 1300):.2f}")
 
             detail = "\n".join(lines)
 
-            # 고객 언어 감지 (간단한 휴리스틱)
-            is_english = any(c.isascii() and c.isalpha() for c in user_message) and not any('\uac00' <= c <= '\ud7a3' for c in user_message)
-
-            if is_english:
-                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${total:.2f}"
+            if system_language == "ko":
+                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: {int(total):,}원"
             else:
-                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: ${total:.2f}"
+                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${(total / 1300):.2f}"
         else:
             print(f"[FB Agent] 영수증 조회 API 실패: HTTP {resp.status_code}")
             return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."

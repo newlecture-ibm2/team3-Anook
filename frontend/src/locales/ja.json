@@ -430,6 +430,25 @@
       "hoursAgo": "時間前",
       "minsAgo": "分前",
       "justNow": "たった今"
+    },
+    "entityLabels": {
+      "time": "時間",
+      "dest": "目的地",
+      "pax": "人数",
+      "paxUnit": "名",
+      "count": "数量",
+      "countUnit": "個",
+      "rest": "レストラン",
+      "target": "対象",
+      "req": "リクエスト",
+      "store": "保管",
+      "pickup": "受け取り",
+      "item": "品物",
+      "vendor": "業者",
+      "type": "分類",
+      "symptom": "症状",
+      "area": "地域",
+      "content": "内容"
     }
   },
   "menu": {

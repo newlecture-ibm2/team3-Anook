@@ -427,6 +427,25 @@
       "hoursAgo": "hrs ago",
       "minsAgo": "mins ago",
       "justNow": "Just now"
+    },
+    "entityLabels": {
+      "time": "Time",
+      "dest": "Dest.",
+      "pax": "Pax",
+      "paxUnit": "",
+      "count": "Qty",
+      "countUnit": "",
+      "rest": "Restaurant",
+      "target": "Target",
+      "req": "Request",
+      "store": "Store",
+      "pickup": "Pickup",
+      "item": "Item",
+      "vendor": "Vendor",
+      "type": "Type",
+      "symptom": "Symptom",
+      "area": "Area",
+      "content": "Details"
     }
   },
   "menu": {

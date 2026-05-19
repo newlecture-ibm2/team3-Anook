@@ -196,6 +196,7 @@
   line-height: 1.4;
   margin-bottom: var(--space-4);
   word-break: keep-all;
+  white-space: pre-wrap;
 }
 
 .cancelledCard {
