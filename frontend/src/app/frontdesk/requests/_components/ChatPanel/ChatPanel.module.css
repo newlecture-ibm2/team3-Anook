@@ -92,34 +92,3 @@
   color: var(--color-gray-400);
   font: var(--text-body-medium);
 }
-
-.systemMessageContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin: var(--space-8) 0;
-}
-
-.systemMessageBadge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  background-color: var(--color-gray-50);
-  border: 1px dashed var(--color-gray-300);
-  padding: var(--space-8) var(--space-16);
-  border-radius: var(--radius-md);
-  text-align: center;
-  max-width: 85%;
-}
-
-.systemMessageText {
-  font: var(--text-body-medium);
-  color: var(--color-gray-700);
-}
-
-.systemMessageNote {
-  font: var(--text-caption-medium);
-  color: var(--color-gray-400);
-}

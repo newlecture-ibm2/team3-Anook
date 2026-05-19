@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
+import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
 export interface ChatMessage {
   id: number | string;
   variant: 'sent' | 'received';
@@ -407,13 +408,11 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
               if (isSystemMsg) {
                 const cleanContent = msg.content.replace(/^\[SYSTEM\]\s*/, '');
                 return (
-                  <div key={msg.id} id={`chat-msg-${msg.id}`} className={styles.systemMessageContainer}>
-                    <div className={styles.systemMessageBadge}>
-                      <span className={styles.systemMessageText}>{cleanContent}</span>
-                      <span className={styles.systemMessageNote}>
-                        (※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)
-                      </span>
-                    </div>
+                  <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%' }}>
+                    <FeedbackCard 
+                      isSystemMessage
+                      systemContent={cleanContent}
+                    />
                   </div>
                 );
               }
