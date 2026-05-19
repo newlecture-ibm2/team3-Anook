@@ -169,19 +169,21 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     else:
         default_reply = f"요청하신 컨시어지 서비스({intent or '문의사항'})를 확인하였습니다. 담당 직원이 곧 안내해 드릴까요?"
     
-    # [AN-344] 더블체크 UX 제거:
-    # missing_fields가 비어있고, 단순 정보 조회가 아닌 예약/요청 의도일 때
-    # 확인 질문 단계에서 카드를 함께 띄우도록 domain_code 유지
+    # [AN-344] 더블체크 UX 및 정보 제공 인텐트 처리 고도화:
+    # 1. 정보 안내 목적의 인텐트 (INFO, TOUR_INFO, MEDICAL_INFO)는 티켓을 생성하지 않도록 domain_code = None 처리합니다.
+    # 2. 예약/요청 의도(is_request_intent)일 때만 티켓 생성을 진행합니다.
+    #    - 필요한 필수 정보가 누락되어 되묻는 질문 단계(needs_clarification)일 때는 일단 카드를 띄우지 않도록 domain_code = None 처리합니다.
+    #    - 단, 모든 정보가 수집되어 확인 질문을 하거나 최종 접수 승인을 할 때는 domain_code = "CONCIERGE"로 설정하여 카드를 노출합니다.
     missing = getattr(result, "missing_fields", [])
     is_request_intent = intent not in ['INFO', 'TOUR_INFO', 'MEDICAL_INFO']
-    is_ready_for_confirm = result.needs_clarification and not missing and is_request_intent
     
-    if is_ready_for_confirm:
-        domain_code = "CONCIERGE"
-    elif result.needs_clarification or intent == 'INFO':
+    if not is_request_intent:
         domain_code = None
     else:
-        domain_code = "CONCIERGE"
+        if result.needs_clarification:
+            domain_code = None
+        else:
+            domain_code = "CONCIERGE"
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     
