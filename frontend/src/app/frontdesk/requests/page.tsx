@@ -357,8 +357,8 @@ export default function FrontDeskPage() {
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <Tabs
               options={[
-                { label: '진행 중', value: 'active', count: pending.length + inProgress.length },
-                { label: '상담 완료', value: 'completed', count: completed.length }
+                { label: '진행 중', value: 'active', count: new Set([...pending, ...inProgress].map(r => String(r.roomNo))).size },
+                { label: '상담 완료', value: 'completed', count: new Set(completed.map(r => String(r.roomNo))).size }
               ]}
               activeValue={activeTab}
               onChange={(val) => setActiveTab(val || 'active')}
