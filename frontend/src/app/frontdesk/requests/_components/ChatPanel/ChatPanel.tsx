@@ -334,7 +334,6 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--color-gray-600)', whiteSpace: 'nowrap' }}>
                     {matchIndices.length > 0 ? (
                       <>
-                        <span>{currentMatch + 1} / {matchIndices.length}</span>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <button 
                             onClick={() => setCurrentMatch(p => Math.max(0, p - 1))}
@@ -349,6 +348,7 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
                             <ArrowDownIcon width={16} height={16} color="var(--color-gray-600)" />
                           </button>
                         </div>
+                        <span>{currentMatch + 1} / {matchIndices.length}</span>
                       </>
                     ) : (
                       <span>0 / 0</span>
