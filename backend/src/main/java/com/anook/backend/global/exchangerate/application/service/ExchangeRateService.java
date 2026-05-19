@@ -1,9 +1,9 @@
-package com.anook.backend.exchangerate.application.service;
+package com.anook.backend.global.exchangerate.application.service;
 
-import com.anook.backend.exchangerate.application.port.in.GetExchangeRateUseCase;
-import com.anook.backend.exchangerate.application.port.in.RefreshExchangeRateUseCase;
-import com.anook.backend.exchangerate.application.port.out.ExchangeRateProviderPort;
-import com.anook.backend.exchangerate.domain.model.ExchangeRate;
+import com.anook.backend.global.exchangerate.application.port.in.GetExchangeRateUseCase;
+import com.anook.backend.global.exchangerate.application.port.in.RefreshExchangeRateUseCase;
+import com.anook.backend.global.exchangerate.application.port.out.ExchangeRateProviderPort;
+import com.anook.backend.global.exchangerate.domain.model.ExchangeRate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

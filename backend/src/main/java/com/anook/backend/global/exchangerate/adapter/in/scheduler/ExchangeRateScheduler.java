@@ -1,6 +1,6 @@
-package com.anook.backend.exchangerate.adapter.in.scheduler;
+package com.anook.backend.global.exchangerate.adapter.in.scheduler;
 
-import com.anook.backend.exchangerate.application.port.in.RefreshExchangeRateUseCase;
+import com.anook.backend.global.exchangerate.application.port.in.RefreshExchangeRateUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;

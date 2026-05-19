@@ -1,7 +1,7 @@
-package com.anook.backend.exchangerate.adapter.out.koreaexim;
+package com.anook.backend.global.exchangerate.adapter.out.koreaexim;
 
-import com.anook.backend.exchangerate.application.port.out.ExchangeRateProviderPort;
-import com.anook.backend.exchangerate.domain.model.ExchangeRate;
+import com.anook.backend.global.exchangerate.application.port.out.ExchangeRateProviderPort;
+import com.anook.backend.global.exchangerate.domain.model.ExchangeRate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;

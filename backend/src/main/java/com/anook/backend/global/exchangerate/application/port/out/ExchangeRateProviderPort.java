@@ -1,6 +1,6 @@
-package com.anook.backend.exchangerate.application.port.out;
+package com.anook.backend.global.exchangerate.application.port.out;
 
-import com.anook.backend.exchangerate.domain.model.ExchangeRate;
+import com.anook.backend.global.exchangerate.domain.model.ExchangeRate;
 
 import java.util.Optional;
 

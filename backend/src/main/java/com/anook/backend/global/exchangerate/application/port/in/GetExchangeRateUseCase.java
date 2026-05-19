@@ -1,4 +1,4 @@
-package com.anook.backend.exchangerate.application.port.in;
+package com.anook.backend.global.exchangerate.application.port.in;
 
 /**
  * 환율 조회 UseCase (In Port)

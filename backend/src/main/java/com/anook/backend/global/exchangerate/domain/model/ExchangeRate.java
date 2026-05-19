@@ -1,4 +1,4 @@
-package com.anook.backend.exchangerate.domain.model;
+package com.anook.backend.global.exchangerate.domain.model;
 
 import java.time.LocalDate;
 

@@ -1,6 +1,6 @@
 package com.anook.backend.pms.application.service;
 
-import com.anook.backend.exchangerate.application.port.in.GetExchangeRateUseCase;
+import com.anook.backend.global.exchangerate.application.port.in.GetExchangeRateUseCase;
 import com.anook.backend.pms.application.dto.response.BillingItemResult;
 import com.anook.backend.pms.application.dto.response.GetBillingSummaryResult;
 import com.anook.backend.pms.application.port.in.GetBillingUseCase;
