@@ -41,6 +41,27 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [isRequestsExpanded, setIsRequestsExpanded] = useState(true);
   const { t } = useTranslation();
+  const statusBarRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to collapse request status bar
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      if (
+        isRequestsExpanded &&
+        statusBarRef.current &&
+        !statusBarRef.current.contains(event.target as Node)
+      ) {
+        setIsRequestsExpanded(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isRequestsExpanded]);
 
   // AI Progress의 domains를 별도로 추출 (ProgressIndicator를 map 밖에서 독립 렌더링)
   const progressMsg = messages.find(m => m.type === 'AI_PROGRESS');
@@ -67,8 +88,8 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
       {/* 고정 상태 바 컨테이너 */}
       {filteredRequests && filteredRequests.length > 0 && (
         <div
+          ref={statusBarRef}
           className={styles.statusBarContainer}
-          onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.7)',
             backdropFilter: 'blur(14px)',
@@ -110,7 +131,13 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               );
             })}
           </div>
-          <div className={styles.multiRequestToggle}>
+          <div 
+            className={styles.multiRequestToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsRequestsExpanded(!isRequestsExpanded);
+            }}
+          >
             <span>{t.guestChat?.activeRequestsCount?.replace('{count}', String(filteredRequests.length)) || `${filteredRequests.length}개의 진행 중인 요청`}</span>
             <span className={`${styles.arrow} ${isRequestsExpanded ? styles.arrowOpen : ''}`}>
               <ArrowDownIcon width={20} height={20} strokeWidth={1} color="var(--color-gray-400)" />
