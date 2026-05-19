@@ -19,9 +19,12 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
 import { useSSE } from '@/app/useSSE';
+import InputField from '@/components/ui/Inputfield/InputField';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('active');
+  const [roomSearchValue, setRoomSearchValue] = useState('');
+  const [chatSearchValue, setChatSearchValue] = useState('');
   const { requests, loading, error, refetch } = useFrontdeskRequests('FRONT');
   // 긴급대응(EMERGENCY) 부서 요청도 프론트 데스크에서 최우선으로 표시
   const { requests: emergencyRequests, loading: emergLoading, refetch: emergRefetch } = useFrontdeskRequests('EMERGENCY');
@@ -257,6 +260,15 @@ export default function FrontDeskPage() {
       return timeB - timeA;
     });
 
+    if (roomSearchValue) {
+      const query = roomSearchValue.toLowerCase();
+      return groupedRooms.filter(room => 
+        String(room.roomNo).toLowerCase().includes(query) || 
+        room.summaryText.toLowerCase().includes(query) || 
+        (room.rawText && room.rawText.toLowerCase().includes(query))
+      );
+    }
+
     return groupedRooms;
   };
   const groupedRooms = getGroupedRooms();
@@ -326,12 +338,32 @@ export default function FrontDeskPage() {
     return undefined;
   };
 
+  const chatSearchBar = (
+    <div style={{ minWidth: '240px' }}>
+      <InputField
+        variant="search"
+        placeholder="대화 내용 검색..."
+        value={chatSearchValue}
+        onChange={(e) => setChatSearchValue(e.target.value)}
+      />
+    </div>
+  );
+
   return (
     <div className={styles.container}>
       {/* Content Section (Split Layout) */}
       <div className={styles.splitLayout}>
         {/* Left Pane: Request List */}
         <div className={styles.leftPane}>
+          {/* Room Search Bar */}
+          <div style={{ marginBottom: 'var(--space-16)' }}>
+            <InputField
+              variant="search"
+              placeholder="객실 번호 또는 요청 내용 검색..."
+              value={roomSearchValue}
+              onChange={(e) => setRoomSearchValue(e.target.value)}
+            />
+          </div>
           {/* Tabs inside left pane */}
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <Tabs
@@ -426,6 +458,8 @@ export default function FrontDeskPage() {
               }}
               isEmergency={activeReq?.priority === 'EMERGENCY'}
               onRagFlowChange={setIsRagFlowActive}
+              headerRightContent={chatSearchBar}
+              searchTerm={chatSearchValue}
               />
             );
           })() : (
