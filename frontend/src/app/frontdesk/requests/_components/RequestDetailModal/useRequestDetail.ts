@@ -30,32 +30,6 @@ export default function useRequestDetail() {
   const fetchDetail = async (id: number) => {
     setLoading(true);
     setError(null);
-    if (id === 1001) {
-      const mockData: RequestDetail = {
-        id: 1001,
-        status: 'PENDING',
-        priority: 'NORMAL',
-        departmentId: 'HK',
-        departmentName: '하우스키핑',
-        entities: { item: '수건', count: 2, is_contactless: true },
-        rawText: '수건 2장 더 가져다주세요. 비대면으로 문 앞에 놔주세요.',
-        summary: '수건 2장 추가 요청',
-        confidence: 0.95,
-        roomNo: '707',
-        assignedStaffId: null,
-        assignedStaffName: null,
-        version: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        cancelRequested: false,
-        cancelRequestedAt: null,
-        imageUrl: null,
-        reasoning: '수건 수량 및 비대면 요청 사항 확인'
-      };
-      setDetail(mockData);
-      setLoading(false);
-      return mockData;
-    }
     try {
       const res = await fetch(`/api/frontdesk/requests/${id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
