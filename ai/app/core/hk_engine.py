@@ -41,6 +41,11 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     system_instruction_with_lang = HK_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
 
+    if isinstance(raw, list):
+        if not raw:
+            raise ValueError("AI returned an empty list")
+        raw = raw[0]
+
     # 5. reasoning 필드가 리스트로 올 경우 문자열로 변환 (Pydantic 검증 에러 방지)
     if isinstance(raw.get("reasoning"), list):
         raw["reasoning"] = "\n".join(raw["reasoning"])

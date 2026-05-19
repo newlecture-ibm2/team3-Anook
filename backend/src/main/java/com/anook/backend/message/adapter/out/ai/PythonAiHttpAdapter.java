@@ -66,7 +66,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<java.util.List<Map<String, Object>>>() {})
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(60))
                     .block();
 
             if (responses == null || responses.isEmpty()) {

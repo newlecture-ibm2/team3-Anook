@@ -88,13 +88,15 @@ export function useChat() {
   const translateContent = (content: string) => {
     if (!content) return content;
     const currentT = tRef.current;
-    if (content.includes('[FORWARD_FB]')) return currentT.aiReplies?.forwardFb || content;
-    if (content.includes('[FORWARD_HK]')) return currentT.aiReplies?.forwardHk || content;
-    if (content.includes('[FORWARD_FACILITY]')) return currentT.aiReplies?.forwardFacility || content;
-    if (content.includes('[FORWARD_FRONT]')) return currentT.aiReplies?.forwardFront || content;
-    if (content.includes('[INFO_NOT_FOUND]')) return currentT.aiReplies?.infoNotFound || content;
-    if (content.includes('[PII_GUARD]')) return currentT.aiReplies?.piiGuard || content;
-    return content;
+    let newContent = content;
+    if (newContent.includes('[FORWARD_FB]')) newContent = newContent.replace('[FORWARD_FB]', currentT.aiReplies?.forwardFb || '');
+    if (newContent.includes('[FORWARD_HK]')) newContent = newContent.replace('[FORWARD_HK]', currentT.aiReplies?.forwardHk || '');
+    if (newContent.includes('[FORWARD_FACILITY]')) newContent = newContent.replace('[FORWARD_FACILITY]', currentT.aiReplies?.forwardFacility || '');
+    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', currentT.aiReplies?.forwardConcierge || '');
+    if (newContent.includes('[FORWARD_FRONT]')) newContent = newContent.replace('[FORWARD_FRONT]', currentT.aiReplies?.forwardFront || '');
+    if (newContent.includes('[INFO_NOT_FOUND]')) newContent = newContent.replace('[INFO_NOT_FOUND]', currentT.aiReplies?.infoNotFound || '');
+    if (newContent.includes('[PII_GUARD]')) newContent = newContent.replace('[PII_GUARD]', currentT.aiReplies?.piiGuard || '');
+    return newContent;
   };
 
   // 1. 대화 내역 + 요청 카드 복원 + 상태바 복원

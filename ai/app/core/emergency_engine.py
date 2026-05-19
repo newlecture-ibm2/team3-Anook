@@ -81,6 +81,11 @@ async def run_emergency_agent(user_message: str, room_no: str, chat_history: lis
     system_instruction_with_lang = EMERGENCY_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
 
+    if isinstance(raw, list):
+        if not raw:
+            raise ValueError("AI returned an empty list")
+        raw = raw[0]
+
     if "request_id" not in raw or raw.get("request_id") == "auto":
         raw["request_id"] = "auto"
     if "room_no" not in raw or raw.get("room_no") == "unknown":
