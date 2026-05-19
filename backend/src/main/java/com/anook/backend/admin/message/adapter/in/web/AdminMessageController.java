@@ -62,6 +62,7 @@ public class AdminMessageController {
      */
     @PostMapping("/rooms/{roomNo}/messages")
     public ResponseEntity<Void> sendStaffMessage(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal String staffIdStr,
             @PathVariable String roomNo,
             @RequestBody Map<String, String> body) {
         String content = body.get("content");
@@ -73,6 +74,15 @@ public class AdminMessageController {
         sendMessageUseCase.sendStaffMessage(
                 new SendStaffMessageCommand(content, roomNo, guestId, "ko")
         );
+        
+        try {
+            Long staffId = Long.parseLong(staffIdStr);
+            String sql = "UPDATE request SET assigned_staff_id = ?, status = 'IN_PROGRESS', updated_at = NOW() " +
+                         "WHERE room_no = ? AND department_id = 'FRONT' AND status IN ('PENDING', 'IN_PROGRESS') AND assigned_staff_id IS NULL";
+            jdbcTemplate.update(sql, staffId, roomNo);
+        } catch (Exception e) {
+            // 무시 (로깅 불필요)
+        }
         
         return ResponseEntity.ok().build();
     }
@@ -108,7 +118,7 @@ public class AdminMessageController {
         List<Map<String, Object>> ratings = jdbcTemplate.queryForList(
                 "SELECT r.id AS \"requestId\", r.room_no AS \"roomNo\", r.summary, r.rating, " +
                 "r.created_at AS \"createdAt\", r.updated_at AS \"updatedAt\", " +
-                "COALESCE(s.name, '-') AS \"staffName\" " +
+                "COALESCE(s.name, '관리자') AS \"staffName\" " +
                 "FROM request r " +
                 "LEFT JOIN staff s ON r.assigned_staff_id = s.id " +
                 "WHERE r.department_id = 'FRONT' AND r.rating IS NOT NULL " +

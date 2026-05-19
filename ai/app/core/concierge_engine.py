@@ -3,7 +3,7 @@ from app.prompts.concierge_prompt import CONCIERGE_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None) -> dict:
+async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, active_requests: list = None) -> dict:
     """
     컨시어지 에이전트 엔진 (Step 0-2)
     ───────────────────────────
@@ -39,6 +39,12 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         
     if rag_context:
         prompt += f"[관련 지식 (RAG)]\n{rag_context}\n\n"
+        
+    if active_requests:
+        prompt += "[현재 활성화된 예약 내역]\n"
+        for req in active_requests:
+            prompt += f"- {req}\n"
+        prompt += "\n"
         
     prompt += f"[현재 요청]\n고객 메시지: {user_message}"
     
