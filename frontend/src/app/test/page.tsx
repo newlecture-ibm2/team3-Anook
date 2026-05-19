@@ -38,6 +38,22 @@ import KnowledgeItem from '@/components/ui/Knowledge/KnowledgeItem';
 import KnowledgeModal from '@/components/ui/Knowledge/KnowledgeModal';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import BoardSkeleton from '@/app/staff/_components/BoardSkeleton/BoardSkeleton';
+
+// 실서비스 내 모든 모달 상세 수집 및 모킹용 임포트
+import CreateRequestModal from '@/app/frontdesk/requests/_components/CreateRequestModal/CreateRequestModal';
+import ApproveEscalationModal from '@/app/frontdesk/requests/_components/ApproveEscalationModal/ApproveEscalationModal';
+import RejectEscalationModal from '@/app/frontdesk/requests/_components/RejectEscalationModal/RejectEscalationModal';
+import ApproveCancellationModal from '@/app/frontdesk/requests/_components/ApproveCancellationModal/ApproveCancellationModal';
+import RejectCancellationModal from '@/app/frontdesk/requests/_components/RejectCancellationModal/RejectCancellationModal';
+import RegisterTrainingModal from '@/app/frontdesk/requests/_components/RegisterTrainingModal/RegisterTrainingModal';
+import AssignModal from '@/app/frontdesk/requests/_components/AssignModal/AssignModal';
+import ManualAssignModal from '@/app/frontdesk/requests/_components/ManualAssignModal/ManualAssignModal';
+import RequestDetailModal from '@/app/frontdesk/requests/_components/RequestDetailModal/RequestDetailModal';
+import StaffFormModal from '@/app/frontdesk/staff-management/_components/StaffFormModal/StaffFormModal';
+import RoleFormModal from '@/app/frontdesk/staff-management/_components/RoleFormModal/RoleFormModal';
+import TaskDetailModal from '@/app/staff/_components/TaskDetailModal/TaskDetailModal';
+import ChatHistoryModal from '@/app/staff/_components/TaskDetailModal/ChatHistoryModal';
+
 import chatScreenStyles from '@/app/guest/chat/_components/ChatScreen.module.css';
 import {
   LayoutDashboard, Inbox, AlertTriangle, Wrench, Home, Utensils,
@@ -151,7 +167,21 @@ export default function ComponentShowcasePage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const modalNames = [
-    'ConfirmModal', '기본 모달 (ModalOverlay+Card)',
+    'ConfirmModal',
+    '기본 모달 (ModalOverlay+Card)',
+    'CreateRequestModal',
+    'ApproveEscalationModal',
+    'RejectEscalationModal',
+    'ApproveCancellationModal',
+    'RejectCancellationModal',
+    'RegisterTrainingModal',
+    'AssignModal',
+    'ManualAssignModal',
+    'RequestDetailModal',
+    'StaffFormModal',
+    'RoleFormModal',
+    'TaskDetailModal',
+    'ChatHistoryModal'
   ];
 
   return (
@@ -850,8 +880,201 @@ export default function ComponentShowcasePage() {
 
       {/* Log Data Modal */}
       <LogDataModal
-        isOpen={isLogModalOpen}
-        onClose={() => setIsLogModalOpen(false)}
+        isOpen={isLogModalOpen || activeModal === 'LogDataModal'}
+        onClose={() => {
+          setIsLogModalOpen(false);
+          closeModal();
+        }}
+      />
+
+      {/* CreateRequestModal */}
+      <CreateRequestModal
+        isOpen={activeModal === 'CreateRequestModal'}
+        onClose={closeModal}
+        onSuccess={() => {
+          closeModal();
+          showToast('요청이 생성되었습니다.', 'success');
+        }}
+      />
+
+      {/* ApproveEscalationModal */}
+      <ApproveEscalationModal
+        isOpen={activeModal === 'ApproveEscalationModal'}
+        onClose={closeModal}
+        requestId={1001}
+        onSuccess={() => {
+          closeModal();
+          showToast('에스컬레이션이 승인되었습니다.', 'success');
+        }}
+      />
+
+      {/* RejectEscalationModal */}
+      <RejectEscalationModal
+        isOpen={activeModal === 'RejectEscalationModal'}
+        onClose={closeModal}
+        requestId={1001}
+        onSuccess={() => {
+          closeModal();
+          showToast('에스컬레이션이 반려되었습니다.', 'success');
+        }}
+      />
+
+      {/* ApproveCancellationModal */}
+      <ApproveCancellationModal
+        isOpen={activeModal === 'ApproveCancellationModal'}
+        onClose={closeModal}
+        requestId={1001}
+        onSuccess={() => {
+          closeModal();
+          showToast('취소가 승인되었습니다.', 'success');
+        }}
+      />
+
+      {/* RejectCancellationModal */}
+      <RejectCancellationModal
+        isOpen={activeModal === 'RejectCancellationModal'}
+        onClose={closeModal}
+        requestId={1001}
+        onSuccess={() => {
+          closeModal();
+          showToast('취소가 반려되었습니다.', 'success');
+        }}
+      />
+
+      {/* RegisterTrainingModal */}
+      <RegisterTrainingModal
+        isOpen={activeModal === 'RegisterTrainingModal'}
+        onClose={closeModal}
+        departmentId="HK"
+        summary="수건 추가 요청"
+        roomNo="707"
+        requestId={1001}
+      />
+
+      {/* AssignModal */}
+      <AssignModal
+        isOpen={activeModal === 'AssignModal'}
+        onClose={closeModal}
+        requestId={1001}
+        requestSummary="수건 2장 추가 요청"
+        roomNo="707"
+        onSuccess={() => {
+          closeModal();
+          showToast('수동 배정이 완료되었습니다.', 'success');
+        }}
+      />
+
+      {/* ManualAssignModal */}
+      <ManualAssignModal
+        isOpen={activeModal === 'ManualAssignModal'}
+        onClose={closeModal}
+        detail={{
+          id: 1001,
+          priority: 'NORMAL',
+          departmentId: 'HK',
+          departmentName: '하우스키핑',
+          roomNo: '707',
+          summary: '수건 2장 추가 요청',
+          createdAt: new Date().toISOString(),
+          status: 'PENDING'
+        }}
+        departments={[
+          { id: 'HK', name: '하우스키핑' },
+          { id: 'FACILITY', name: '시설관리' },
+          { id: 'FB', name: '식음료' },
+          { id: 'CONCIERGE', name: '컨시어지' }
+        ]}
+        onSave={async (editDeptId, editPriority, editSummary, editDescription) => {
+          closeModal();
+          showToast(`부서 ${editDeptId}로 이관/배정되었습니다.`, 'success');
+        }}
+        saving={false}
+      />
+
+      {/* RequestDetailModal */}
+      <RequestDetailModal
+        isOpen={activeModal === 'RequestDetailModal'}
+        onClose={closeModal}
+        requestId={1001}
+        onUpdate={() => {
+          closeModal();
+          showToast('요청 상세 정보가 업데이트되었습니다.', 'success');
+        }}
+      />
+
+      {/* StaffFormModal */}
+      <StaffFormModal
+        isOpen={activeModal === 'StaffFormModal'}
+        onClose={closeModal}
+        onSave={async (data) => {
+          closeModal();
+          showToast(`직원 ${data.name} 저장되었습니다.`, 'success');
+        }}
+        roles={[
+          { id: 1, name: '시니어 크루', departmentId: 'HK' },
+          { id: 2, name: '주니어 크루', departmentId: 'HK' }
+        ]}
+        departments={[
+          { id: 'HK', name: '하우스키핑' },
+          { id: 'FACILITY', name: '시설관리' }
+        ]}
+      />
+
+      {/* RoleFormModal */}
+      <RoleFormModal
+        isOpen={activeModal === 'RoleFormModal'}
+        onClose={closeModal}
+        onSave={async (data) => {
+          closeModal();
+          showToast(`역할 ${data.name} 저장되었습니다.`, 'success');
+        }}
+        departments={[
+          { id: 'HK', name: '하우스키핑' },
+          { id: 'FACILITY', name: '시설관리' }
+        ]}
+      />
+
+      {/* TaskDetailModal */}
+      <TaskDetailModal
+        isOpen={activeModal === 'TaskDetailModal'}
+        onClose={closeModal}
+        task={{
+          id: 1001,
+          roomNumber: '707',
+          priority: 'URGENT',
+          summary: '수건 2장 추가 및 화장실 전구 교체 요청',
+          status: 'PENDING',
+          departmentId: 'HK',
+          createdAt: new Date().toISOString(),
+          version: 1,
+          cancelRequested: false,
+          entities: { item: '수건', count: 2 },
+          reasoning: '고객이 수건 추가 및 긴급한 상황을 명시함',
+          rawText: '수건 2장 가져다주세요. 화장실 전구도 나갔어요.',
+          assignedStaffName: null,
+          assignedStaffId: null,
+          confidence: 1.0,
+          cancelRequestedAt: null
+        }}
+        onAccept={async (id, version) => {
+          closeModal();
+          showToast('업무를 수락했습니다.', 'success');
+        }}
+        onComplete={async (id, version) => {
+          closeModal();
+          showToast('업무를 완료했습니다.', 'success');
+        }}
+        onTransfer={async (id, version, toDept, reason) => {
+          closeModal();
+          showToast(`업무를 ${toDept} 부서로 이관했습니다. 사유: ${reason}`, 'success');
+        }}
+      />
+
+      {/* ChatHistoryModal */}
+      <ChatHistoryModal
+        isOpen={activeModal === 'ChatHistoryModal'}
+        onClose={closeModal}
+        roomNumber="707"
       />
     </div>
   );
