@@ -109,14 +109,14 @@ export default function RequestCard({
       case 'FB':
         if (intent === 'DINING') return '룸서비스 음식 주문';
         if (intent === 'AMENITY') return '객실 어메니티 요청';
-        return '룸서비스 주문';
+        return displaySummary;
       case 'CONCIERGE':
         if (intent === 'TAXI') return '택시 호출 예약';
         if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
         if (intent === 'RESTAURANT') return '식당 예약';
         if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
         if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
-        return '컨시어지 서비스 요청';
+        return displaySummary;
       case 'FACILITY':
       case 'HK':
         return displaySummary;
