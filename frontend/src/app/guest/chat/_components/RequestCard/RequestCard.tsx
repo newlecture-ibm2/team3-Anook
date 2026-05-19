@@ -108,6 +108,7 @@ export default function RequestCard({
   }
 
   useEffect(() => {
+    // graceRemaining === -1: 고객 확인 대기 모드 (FB/CONCIERGE) → 타이머 없이 버튼 정적 표시
     if (graceRemaining <= 0 || isCancelled) {
       setTimeLeft(0);
       return;
@@ -127,8 +128,10 @@ export default function RequestCard({
     return () => clearInterval(interval);
   }, [graceRemaining, isCancelled]);
 
-  // Determine if we should show buttons
-  const showButtons = !isUrgent && !isCancelled && timeLeft > 0;
+  // graceRemaining === -1: 정적 버튼 (타이머 없이 항시 표시)
+  // graceRemaining > 0: 타이머 카운트다운 중 버튼 표시
+  const isStaticConfirm = graceRemaining === -1 && !isUrgent && !isCancelled;
+  const showButtons = isStaticConfirm || (!isUrgent && !isCancelled && timeLeft > 0);
 
   // Render entities description
   const renderDetails = () => {
@@ -172,7 +175,7 @@ export default function RequestCard({
       <div className={styles.cardLayout}>
         {/* Left Column: Icon or Timer */}
         <div className={styles.leftColumn}>
-          {showButtons ? (
+          {showButtons && !isStaticConfirm ? (
             <div className={`${styles.timerContainer} ${bgClass}`} style={{ '--timer-color': timerColor } as React.CSSProperties}>
               <svg viewBox="0 0 36 36" className={styles.circularSvg}>
                 <path
@@ -203,6 +206,8 @@ export default function RequestCard({
           <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
             {isCancelled ? (
               <>{t.cardUI?.message?.cancelledCard || '요청이 취소되었습니다'}</>
+            ) : showButtons && isStaticConfirm ? (
+              <>{t.cardUI?.message?.confirmGuide || '확인 후 진행 버튼을 눌러주세요.'}</>
             ) : showButtons ? (
               <>{t.cardUI?.message?.autoAcceptGuide || '요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.'}</>
             ) : isCancelPending ? (

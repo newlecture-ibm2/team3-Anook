@@ -369,7 +369,10 @@
       "templateWithDetailsCompleted": "{team} 팀에서 {details} 건을 완료했습니다.",
       "templateNoDetailsPending": "{team} 담당 팀에서 확인하고 있습니다.",
       "templateNoDetailsInProgress": "{team} 담당 팀에서 처리 중입니다.",
-      "templateNoDetailsCompleted": "{team} 담당 팀에서 완료했습니다."
+      "templateNoDetailsCompleted": "{team} 담당 팀에서 완료했습니다.",
+      "emergencyPending": "프론트 데스크에서 긴급 요청건을 확인하고 있습니다.",
+      "emergencyInProgress": "프론트 데스크에서 긴급 요청건을 처리 중입니다.",
+      "emergencyCompleted": "긴급 요청건이 처리 완료되었습니다."
     },
     "message": {
       "cancelPending": "🔄 취소 요청이 접수되어 직원이 확인 중입니다",
@@ -377,6 +380,7 @@
       "forwarded": "{team} 팀에 전달되었습니다",
       "cancelledCard": "요청이 취소되었습니다",
       "autoAcceptGuide": "요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.",
+      "confirmGuide": "확인 후 진행 버튼을 눌러주세요.",
       "cancelPendingShort": "취소 요청 확인 중",
       "translating": "요약 중...",
       "escalationRequest": "프론트 데스크 직원 연결 요청",
@@ -405,7 +409,7 @@
       "FB": "F&B",
       "CONCIERGE": "컨시어지",
       "FRONT": "프런트",
-      "EMERGENCY": "응급상황 🚨"
+      "EMERGENCY": "긴급"
     },
     "badge": {
       "cancelled": "취소됨",

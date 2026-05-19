@@ -368,7 +368,10 @@
       "templateWithDetailsCompleted": "The {team} team has completed {details}.",
       "templateNoDetailsPending": "The {team} team is checking your request.",
       "templateNoDetailsInProgress": "The {team} team is processing your request.",
-      "templateNoDetailsCompleted": "The {team} team has completed your request."
+      "templateNoDetailsCompleted": "The {team} team has completed your request.",
+      "emergencyPending": "The front desk is checking your emergency request.",
+      "emergencyInProgress": "The front desk is handling your emergency request.",
+      "emergencyCompleted": "Your emergency request has been resolved."
     },
     "message": {
       "cancelPending": "🔄 Cancel request received, staff is checking",
@@ -376,6 +379,7 @@
       "forwarded": "Forwarded to the {team} team",
       "cancelledCard": "Request Cancelled",
       "autoAcceptGuide": "Please check your request. Auto-forwarding shortly.",
+      "confirmGuide": "Please press the proceed button to confirm.",
       "cancelPendingShort": "Checking cancel request",
       "translating": "Translating...",
       "escalationRequest": "Front desk staff connection request",
@@ -404,7 +408,7 @@
       "FB": "F&B",
       "CONCIERGE": "Concierge",
       "FRONT": "Front Desk",
-      "EMERGENCY": "Emergency 🚨"
+      "EMERGENCY": "Emergency"
     },
     "badge": {
       "cancelled": "Cancelled",
