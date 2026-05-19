@@ -63,16 +63,16 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
       <ChatBackground isAiTyping={isTyping} isUserTyping={showTypingBackground} isInitial={!hasInteracted} />
 
 
-      
+
       {/* 고정 상태 바 컨테이너 */}
       {filteredRequests && filteredRequests.length > 0 && (
-        <div 
+        <div
           className={styles.statusBarContainer}
           onClick={() => setIsRequestsExpanded(!isRequestsExpanded)}
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(10x)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.8)',
             boxShadow: '0 8px 32px rgba(31, 38, 135, 0.05)',
             transform: 'translateZ(0)',
@@ -99,8 +99,8 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               }
 
               return (
-                <div 
-                  key={req.requestId} 
+                <div
+                  key={req.requestId}
                   className={`${styles.expandableWrapper} ${isRequestsExpanded ? styles.expanded : ''}`}
                 >
                   <div className={styles.expandableInner}>
@@ -119,7 +119,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
         </div>
       )}
 
-      <div 
+      <div
         className={`${styles.messageList} ${filteredRequests && filteredRequests.length > 0 ? styles.messageListWithStatusBar : ''}`}
         style={filteredRequests && filteredRequests.length > 1 ? { '--status-bar-offset': `${filteredRequests.length * 56}px` } as React.CSSProperties : undefined}
       >
@@ -145,7 +145,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
           if (msg.type === 'REQUEST_CARD') {
             return (
-              <RequestCard 
+              <RequestCard
                 key={msg.id}
                 requestId={Number(msg.meta?.requestId)}
                 domainCode={String(msg.meta?.domainCode)}
@@ -175,34 +175,34 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               welcomeLine2 = lines.slice(1).join('\n') || '';
             }
             return (
-              <div key={msg.id} style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
+              <div key={msg.id} style={{
+                display: 'flex',
+                flexDirection: 'column',
                 flex: isWelcome ? 1 : undefined,
                 margin: isWelcome ? '0' : (isFirstChat ? 'auto 0 0 0' : '0')
               }}>
                 {isWelcome ? (
-                  <div style={{ 
+                  <div style={{
                     flex: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <div style={{ 
+                    <div style={{
                       padding: '0 var(--space-8)',
                       textAlign: 'center',
                       lineHeight: '1.5',
                       transform: 'translateY(6vh)'
                     }}>
                       <div style={{ marginBottom: 'var(--space-32)', display: 'flex', justifyContent: 'center' }}>
-                        <img 
-                          src="/icon.png" 
-                          alt="Anook AI" 
-                          style={{ 
-                            width: '40px', 
-                            height: '40px', 
+                        <img
+                          src="/icon.png"
+                          alt="Anook AI"
+                          style={{
+                            width: '40px',
+                            height: '40px',
                             objectFit: 'contain'
-                          }} 
+                          }}
                         />
                       </div>
                       <div style={{ font: 'var(--text-h1-bold)', color: 'var(--color-gray-900)', marginBottom: 'var(--space-8)' }}>
@@ -219,15 +219,15 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
                   msg.content ? <ChatBubble variant="received">{msg.content}</ChatBubble> : null
                 )}
                 {!msg.meta?.selectedOption && (
-                  <div style={{ 
-                    display: 'flex', 
+                  <div style={{
+                    display: 'flex',
                     justifyContent: isWelcome ? 'center' : 'flex-start',
                     marginBottom: isWelcome ? '-36px' : '0',
                     paddingBottom: '0',
                     paddingLeft: '0'
                   }}>
-                    <Pill 
-                      options={msg.meta?.options as string[]} 
+                    <Pill
+                      options={msg.meta?.options as string[]}
                       selectedOption={msg.meta?.selectedOption as string | undefined}
                       disabled={msg.meta?.pillDisabled as boolean | undefined}
                       onSelect={(option) => {
@@ -236,7 +236,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
                         } else {
                           onSendMessage(option);
                         }
-                      }} 
+                      }}
                       align={isWelcome ? 'center' : 'flex-start'}
                     />
                   </div>
@@ -274,7 +274,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
               />
             );
           }
-          
+
           return (
             <ChatBubble key={msg.id} variant={msg.variant} imageUrl={msg.imageUrl}>
               {msg.content}
@@ -291,13 +291,13 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       <div className={styles.footer}>
-        <ChatInput 
-          onSend={onSendMessage} 
-          isTyping={isTyping} 
-          onStop={onStopMessage} 
-          onUserTyping={setIsUserTyping} 
+        <ChatInput
+          onSend={onSendMessage}
+          isTyping={isTyping}
+          onStop={onStopMessage}
+          onUserTyping={setIsUserTyping}
           onFocus={() => setIsRequestsExpanded(false)}
         />
       </div>
