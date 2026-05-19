@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './ChatPanel.module.css';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
-import { CancelIcon } from '@/components/icons';
+import { CancelIcon, ArrowUpIcon, ArrowDownIcon } from '@/components/icons';
+import InputField from '@/components/ui/Inputfield/InputField';
 import { useSSE } from '@/app/useSSE';
 import { useTranslation } from '@/app/useTranslation';
 import Button from '@/components/ui/Button/Button';
@@ -322,35 +323,31 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
             {showSearch && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '240px' }}>
-                  <input
-                    type="text"
+                  <InputField
+                    variant="search"
                     placeholder="대화 내용 검색..."
                     value={internalSearch}
                     onChange={(e) => setInternalSearch(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-gray-300)',
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
                   />
                 </div>
                 {internalSearch && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-gray-600)', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--color-gray-600)', whiteSpace: 'nowrap' }}>
                     {matchIndices.length > 0 ? (
                       <>
                         <span>{currentMatch + 1} / {matchIndices.length}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <button 
                             onClick={() => setCurrentMatch(p => Math.max(0, p - 1))}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-gray-200)', borderRadius: '4px', cursor: 'pointer', padding: '4px' }}
-                          >↑</button>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                          >
+                            <ArrowUpIcon width={16} height={16} color="var(--color-gray-600)" />
+                          </button>
                           <button 
                             onClick={() => setCurrentMatch(p => Math.min(matchIndices.length - 1, p + 1))}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-gray-200)', borderRadius: '4px', cursor: 'pointer', padding: '4px' }}
-                          >↓</button>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                          >
+                            <ArrowDownIcon width={16} height={16} color="var(--color-gray-600)" />
+                          </button>
                         </div>
                       </>
                     ) : (
@@ -395,11 +392,10 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
               return (
                 <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ 
-                    transition: 'all 0.3s', 
+                    transition: 'background-color 0.3s', 
                     padding: '4px', 
                     borderRadius: '16px', 
-                    background: isTargetMatch ? 'rgba(255, 230, 0, 0.25)' : 'transparent',
-                    boxShadow: isTargetMatch ? '0 0 0 2px rgba(255, 230, 0, 0.5)' : 'none'
+                    background: isTargetMatch ? 'var(--color-gray-100)' : 'transparent',
                   }}>
                     <ChatBubble 
                       variant={msg.variant}
