@@ -53,7 +53,7 @@ export default function FrontDeskPage() {
 
   const { activeModal, closeModal } = useUiStore();
   // Chat Modal 상태
-  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestId: number, status: string, summary?: string, initialMessage?: string } | null>(null);
+  const [activeChatRoom, setActiveChatRoom] = useState<{ roomNumber: string, requestIds: number[], representativeId: number, status: string, summary?: string, initialMessage?: string } | null>(null);
   // RAG 등록 플로우 진행 중 플래그 (자동 카드 선택 방지)
   const [isRagFlowActive, setIsRagFlowActive] = useState(false);
   // 승인/반려 모달 상태
@@ -61,13 +61,14 @@ export default function FrontDeskPage() {
   const [rejectTarget, setRejectTarget] = useState<number | null>(null);
 
   // 새 메시지 알림 (레드닷) 상태
-  const [newMessageRequestIds, setNewMessageRequestIds] = useState<Set<number>>(new Set());
+  const [newMessageRoomNos, setNewMessageRoomNos] = useState<Set<string>>(new Set());
   const { subscribe } = useSSE();
   const activeChatRoomRef = useRef(activeChatRoom);
   useEffect(() => { activeChatRoomRef.current = activeChatRoom; }, [activeChatRoom]);
 
-  // 각 방의 마지막 고객 메시지 (카드 subtitle용)
+  // 각 방의 마지막 고객 메시지 및 마지막 메시지 시간
   const [lastGuestMessages, setLastGuestMessages] = useState<Record<string, string>>({});
+  const [lastMessageTimes, setLastMessageTimes] = useState<Record<string, number>>({});
   const fetchedRoomsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -85,54 +86,55 @@ export default function FrontDeskPage() {
         if (lastGuest) {
           setLastGuestMessages(prev => ({ ...prev, [roomNo]: lastGuest.content }));
         }
+        if (msgs.length > 0) {
+          const lastMsg = msgs[msgs.length - 1];
+          setLastMessageTimes(prev => ({ ...prev, [roomNo]: new Date(lastMsg.createdAt).getTime() }));
+        }
       } catch { /* ignore */ }
     });
   }, [mergedRequests]);
 
-  // inProgress 배열의 최신 상태를 유지하기 위한 ref (useEffect 내 클로저 문제 방지)
-  const inProgressRef = useRef(inProgress);
+  // activeList의 최신 상태를 유지하기 위한 ref
+  const activeListRef = useRef([...pending, ...inProgress]);
   useEffect(() => {
-    inProgressRef.current = inProgress;
-  }, [inProgress]);
+    activeListRef.current = [...pending, ...inProgress];
+  }, [pending, inProgress]);
 
-  // 중복 구독 방지를 위해 roomNo 단위로 유니크하게 추출
-  const uniqueRooms = Array.from(new Set(inProgress.map(req => req.roomNo)));
-  const roomListStr = uniqueRooms.sort().join(',');
-
-  // IN_PROGRESS 방들의 WebSocket 구독 → 고객 메시지 감지
+  // 방들의 고객 메시지 감지 (이제 각 방별로 구독하지 않고 frontdesk 채널 1개만 구독)
   useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
-    
-    uniqueRooms.forEach(roomNo => {
-      const unsub = subscribe(`/topic/room/${roomNo}`, (data: unknown) => {
-        const payload = data as Record<string, unknown>;
-        const type = payload.type as string;
-        // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
-        if (type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') {
-          if (type === 'GUEST_MESSAGE' && payload.content) {
-            setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
-          }
-          
-          // 해당 roomNo에 속한 모든 inProgress 요청 찾기 (항상 최신 상태 참조)
-          const relatedRequests = inProgressRef.current.filter(r => r.roomNo === roomNo);
-          relatedRequests.forEach(req => {
-            // 현재 열린 채팅방이면 레드닷 표시하지 않음
-            if (activeChatRoomRef.current?.requestId === req.id) return;
-            setNewMessageRequestIds(prev => {
-              const next = new Set(prev);
-              next.add(req.id);
-              return next;
-            });
+    const unsub = subscribe('/topic/frontdesk', (data: unknown) => {
+      const payload = data as Record<string, unknown>;
+      const type = payload.type as string;
+      const roomNo = payload.roomNo as string;
+      
+      if ((type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE' || type === 'STAFF_MESSAGE') && roomNo) {
+        setLastMessageTimes(prev => ({ ...prev, [String(roomNo)]: Date.now() }));
+      }
+
+      // 고객이 보낸 메시지인 경우 레드닷 + 마지막 메시지 갱신
+      if ((type === 'GUEST_MESSAGE' || type === 'AI_RESPONSE') && roomNo) {
+        if (type === 'GUEST_MESSAGE' && payload.content) {
+          setLastGuestMessages(prev => ({ ...prev, [String(roomNo)]: String(payload.content) }));
+        }
+        
+        // 현재 열린 채팅방이면 레드닷 표시하지 않음
+        if (activeChatRoomRef.current?.roomNumber === String(roomNo)) return;
+        
+        const relatedRequests = activeListRef.current.filter(r => String(r.roomNo) === String(roomNo));
+        if (relatedRequests.length > 0) {
+          setNewMessageRoomNos(prev => {
+            const next = new Set(prev);
+            next.add(String(roomNo));
+            return next;
           });
         }
-      });
-      unsubscribers.push(unsub);
+      }
     });
 
     return () => {
-      unsubscribers.forEach(unsub => unsub());
+      unsub();
     };
-  }, [roomListStr, subscribe]); // inProgress 배열 대신 문자열을 의존성으로 사용하여 무한 렌더링 방지
+  }, [subscribe]);
 
   // 긴급(EMERGENCY) 요청 자동 선택 로직
   const seenEmergencyRef = useRef<Set<number>>(new Set());
@@ -154,7 +156,8 @@ export default function FrontDeskPage() {
       setActiveTab('active');
       setActiveChatRoom({
         roomNumber: targetReq.roomNo,
-        requestId: targetReq.id,
+        requestIds: [targetReq.id],
+        representativeId: targetReq.id,
         status: targetReq.status,
         summary: targetReq.summary
       });
@@ -177,56 +180,99 @@ export default function FrontDeskPage() {
   };
 
 
-  const handleStatusChange = async (id: number, newStatus: string) => {
+  const handleStatusChange = async (ids: number[], newStatus: string) => {
     try {
-      const res = await fetch(`/api/frontdesk/requests/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (res.ok) {
-        if (refetch) refetch();
-        if (emergRefetch) emergRefetch();
-        if (allRefetch) allRefetch();
-        if (activeChatRoom?.requestId === id) {
-          // COMPLETED일 때도 ChatPanel을 유지 (RAG 등록 모달 플로우를 위해)
-          // ChatPanel의 onClose 콜백에서 setActiveChatRoom(null)이 호출됨
-          setActiveChatRoom(prev => prev ? { ...prev, status: newStatus } : null);
-        }
+      // 서버 과부하 및 DB Lock 방지를 위해 묶음(배치) 순차 처리
+      for (const id of ids) {
+        await fetch(`/api/frontdesk/requests/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+      }
+      if (refetch) refetch();
+      if (emergRefetch) emergRefetch();
+      if (allRefetch) allRefetch();
+      if (activeChatRoom && ids.includes(activeChatRoom.representativeId)) {
+        // COMPLETED일 때도 ChatPanel을 유지 (RAG 등록 모달 플로우를 위해)
+        // ChatPanel의 onClose 콜백에서 setActiveChatRoom(null)이 호출됨
+        setActiveChatRoom(prev => prev ? { ...prev, status: newStatus } : null);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const getFilteredRequests = () => {
-    if (activeTab === 'active') {
-      const activeList = [...pending, ...inProgress];
-      // 우선순위 → 최신순 정렬
-      return activeList.sort((a, b) => {
-        const pw = priorityWeight(a.priority) - priorityWeight(b.priority);
-        if (pw !== 0) return pw;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
+  const getGroupedRooms = () => {
+    const activeList = [...pending, ...inProgress];
+    const completedList = completed;
+    const targetList = activeTab === 'active' ? activeList : completedList;
+
+    const roomMap = new Map<string, typeof targetList>();
+    for (const req of targetList) {
+      const roomStr = String(req.roomNo);
+      if (!roomMap.has(roomStr)) roomMap.set(roomStr, []);
+      roomMap.get(roomStr)!.push(req);
     }
-    if (activeTab === 'completed') return completed;
-    return [];
+
+    const groupedRooms = Array.from(roomMap.entries()).map(([roomNo, reqs]) => {
+      let highestPriority = 'NORMAL';
+      if (reqs.some(r => r.priority === 'EMERGENCY')) highestPriority = 'EMERGENCY';
+      else if (reqs.some(r => r.priority === 'URGENT')) highestPriority = 'URGENT';
+
+      let repStatus = reqs[0].status;
+      const hasPending = reqs.some(r => r.status === 'PENDING' || r.status === 'ESCALATED');
+      const hasInProgress = reqs.some(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED');
+      if (activeTab === 'active') {
+        if (hasPending) repStatus = 'PENDING';
+        else if (hasInProgress) repStatus = 'IN_PROGRESS';
+      }
+
+      const sortedReqs = [...reqs].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const latestSummary = sortedReqs[0].summary.replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '');
+      const summaryText = reqs.length > 1 ? `${latestSummary} 외 ${reqs.length - 1}건` : latestSummary;
+
+      return {
+        roomNo,
+        highestPriority,
+        repStatus,
+        summaryText,
+        representativeId: sortedReqs[0].id,
+        allIds: reqs.map(r => r.id),
+        reqs: sortedReqs,
+        createdAt: sortedReqs[0].createdAt,
+        rawText: sortedReqs[0].rawText
+      };
+    });
+
+    groupedRooms.sort((a, b) => {
+      const pwA = priorityWeight(a.highestPriority);
+      const pwB = priorityWeight(b.highestPriority);
+      if (pwA !== pwB) return pwA - pwB; // 0 for EMERGENCY, 1 for URGENT, 2 for NORMAL
+
+      const timeA = lastMessageTimes[a.roomNo] || new Date(a.createdAt).getTime();
+      const timeB = lastMessageTimes[b.roomNo] || new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+
+    return groupedRooms;
   };
-  const filteredRequests = getFilteredRequests();
+  const groupedRooms = getGroupedRooms();
 
   useEffect(() => {
     // RAG 등록 플로우 진행 중에는 자동 카드 선택을 건너뜀 (모달이 닫힌 후 onClose에서 처리)
     if (isRagFlowActive) return;
-    if (filteredRequests.length > 0) {
-      const exists = activeChatRoom && filteredRequests.some(req => req.id === activeChatRoom.requestId);
+    if (groupedRooms.length > 0) {
+      const exists = activeChatRoom && groupedRooms.some(room => room.roomNo === activeChatRoom.roomNumber);
       if (!exists) {
-        const req = filteredRequests[0];
+        const room = groupedRooms[0];
         setActiveChatRoom({
-          roomNumber: req.roomNo.toString(),
-          requestId: req.id,
-          status: req.status,
-          summary: req.summary,
-          initialMessage: req.rawText || req.summary
+          roomNumber: room.roomNo,
+          requestIds: room.allIds,
+          representativeId: room.representativeId,
+          status: room.repStatus,
+          summary: room.summaryText,
+          initialMessage: room.rawText || room.summaryText
         });
         setDetailTarget(null);
       }
@@ -300,56 +346,56 @@ export default function FrontDeskPage() {
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
-        ) : filteredRequests.length === 0 ? (
+        ) : groupedRooms.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.frontdeskPage.frontDesk.empty}</div>
         ) : (
           <div className={styles.cardGrid}>
-            {filteredRequests.map(req => (
+            {groupedRooms.map(room => (
               <RequestCard
-                key={req.id}
-                roomNumber={req.roomNo}
-                title={req.summary.replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '')}
-                description={lastGuestMessages[String(req.roomNo)] || req.rawText || '요청 내용이 없습니다.'}
-                statusText={mapStatusText(req.status)}
-                statusVariant={mapStatusVariant(req.status)}
-                createdAt={req.createdAt}
-                isSelected={activeChatRoom?.requestId === req.id}
-                primaryActionText={getPrimaryActionText(req)}
-                secondaryActionText={getSecondaryActionText(req)}
+                key={room.roomNo}
+                roomNumber={room.roomNo}
+                title={room.summaryText}
+                description={lastGuestMessages[String(room.roomNo)] || room.rawText || '요청 내용이 없습니다.'}
+                statusText={mapStatusText(room.repStatus)}
+                statusVariant={mapStatusVariant(room.repStatus)}
+                createdAt={room.createdAt}
+                isSelected={activeChatRoom?.roomNumber === room.roomNo}
+                primaryActionText={getPrimaryActionText(room)}
+                secondaryActionText={getSecondaryActionText(room)}
                 onPrimaryAction={() => {
                   if (activeTab === 'active') {
-                    if (req.status === 'PENDING' || req.status === 'ESCALATED') {
-                      handleStatusChange(req.id, 'IN_PROGRESS');
-                      setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: 'IN_PROGRESS', summary: req.summary, initialMessage: req.rawText || req.summary });
-                    } else if (req.status === 'IN_PROGRESS' || req.status === 'ASSIGNED') {
-                      handleStatusChange(req.id, 'COMPLETED');
+                    if (room.repStatus === 'PENDING' || room.repStatus === 'ESCALATED') {
+                      handleStatusChange(room.allIds, 'IN_PROGRESS');
+                      setActiveChatRoom({ roomNumber: room.roomNo, requestIds: room.allIds, representativeId: room.representativeId, status: 'IN_PROGRESS', summary: room.summaryText, initialMessage: room.rawText || room.summaryText });
+                    } else if (room.repStatus === 'IN_PROGRESS' || room.repStatus === 'ASSIGNED') {
+                      handleStatusChange(room.allIds, 'COMPLETED');
                       setActiveChatRoom(null);
                     }
                   } else if (activeTab === 'completed') {
-                    setTrainingTarget(req);
+                    setTrainingTarget(room.reqs[0]);
                   }
                 }}
                 onSecondaryAction={
-                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, summary: req.summary, initialMessage: req.rawText || req.summary }) :
+                  activeTab === 'completed' ? () => setActiveChatRoom({ roomNumber: room.roomNo, requestIds: room.allIds, representativeId: room.representativeId, status: room.repStatus, summary: room.summaryText, initialMessage: room.rawText || room.summaryText }) :
                   undefined
                 }
                 reverseActions={true}
                 onCardClick={() => {
-                  setActiveChatRoom({ roomNumber: req.roomNo.toString(), requestId: req.id, status: req.status, summary: req.summary, initialMessage: req.rawText || req.summary });
+                  setActiveChatRoom({ roomNumber: room.roomNo, requestIds: room.allIds, representativeId: room.representativeId, status: room.repStatus, summary: room.summaryText, initialMessage: room.rawText || room.summaryText });
                   setDetailTarget(null);
                   // 레드닷 해제
-                  setNewMessageRequestIds(prev => {
+                  setNewMessageRoomNos(prev => {
                     const next = new Set(prev);
-                    next.delete(req.id);
+                    next.delete(room.roomNo);
                     return next;
                   });
                 }}
                 // custom props to pass to ChatModal through RequestCard
-                requestId={req.id}
-                status={req.status}
-                onStatusChange={handleStatusChange}
-                hasNewMessage={newMessageRequestIds.has(req.id)}
-                isEmergency={req.priority === 'EMERGENCY'}
+                requestId={room.representativeId}
+                status={room.repStatus}
+                onStatusChange={handleStatusChange as any}
+                hasNewMessage={newMessageRoomNos.has(room.roomNo)}
+                isEmergency={room.highestPriority === 'EMERGENCY'}
               />
             ))}
           </div>
@@ -359,20 +405,21 @@ export default function FrontDeskPage() {
         {/* Right Pane: Chat Window */}
         <div className={styles.rightPane}>
           {activeChatRoom ? (() => {
-            const activeReq = [...pending, ...inProgress, ...completed].find(r => r.id === activeChatRoom.requestId);
+            const activeReq = [...pending, ...inProgress, ...completed].find(r => r.id === activeChatRoom.representativeId);
             return (
               <ChatPanel
                 roomNumber={activeChatRoom.roomNumber}
-                requestId={activeChatRoom.requestId}
-                status={activeReq?.status || activeChatRoom.status}
-                summary={activeReq?.summary || activeChatRoom.summary}
+                requestIds={activeChatRoom.requestIds}
+                representativeId={activeChatRoom.representativeId}
+                status={activeChatRoom.status}
+                summary={activeChatRoom.summary}
                 initialMessage={activeChatRoom.initialMessage}
                 onStatusChange={handleStatusChange}
                 autoComplete={false}
               onClose={() => { setIsRagFlowActive(false); setActiveChatRoom(null); }}
-              showRagButton={activeTab === 'completed' && !registeredRagIds.has(activeChatRoom.requestId)}
+              showRagButton={activeTab === 'completed' && !registeredRagIds.has(activeChatRoom.representativeId)}
               onRagRegister={() => {
-                const req = [...pending, ...inProgress, ...completed].find((r: any) => r.id === activeChatRoom.requestId);
+                const req = [...pending, ...inProgress, ...completed].find((r: any) => r.id === activeChatRoom.representativeId);
                 if (req) setTrainingTarget(req);
               }}
               isEmergency={activeReq?.priority === 'EMERGENCY'}
@@ -390,7 +437,7 @@ export default function FrontDeskPage() {
         {(activeChatRoom || detailTarget !== null) && (
           <div className={styles.detailPane}>
             <RequestDetailPanel
-              requestId={(activeChatRoom ? activeChatRoom.requestId : detailTarget)!}
+              requestId={(activeChatRoom ? activeChatRoom.representativeId : detailTarget)!}
               onUpdate={() => refetch && refetch()}
               onClose={() => {
                 setActiveChatRoom(null);
