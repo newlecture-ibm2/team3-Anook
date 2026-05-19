@@ -14,7 +14,7 @@ import java.util.Map;
  * - graceRemaining: Grace Period 남은 초 (0이면 즉시 전달, 프론트 카운트다운용)
  * - priority: 요청 우선순위 (URGENT이면 Grace Period 스킵)
  */
-public record RequestWebSocketPayload(
+public record RequestSsePayload(
                 String type, // "NEW_REQUEST", "STATUS_CHANGED", "GRACE_EXPIRED"
                 Long requestId, // 요청 ID
                 String status, // 상태 (PENDING, IN_PROGRESS, COMPLETED 등)
@@ -30,18 +30,18 @@ public record RequestWebSocketPayload(
         /**
          * 신규 요청용 정적 팩토리 (Grace Period 포함)
          */
-        public static RequestWebSocketPayload newRequest(Long id, String status, String domainCode,
+        public static RequestSsePayload newRequest(Long id, String status, String domainCode,
                         String summary, String roomNo,
                         Map<String, Object> entities,
                         int graceRemaining, String priority) {
-                return new RequestWebSocketPayload("NEW_REQUEST", id, status, domainCode, summary, roomNo,
+                return new RequestSsePayload("NEW_REQUEST", id, status, domainCode, summary, roomNo,
                                 entities, graceRemaining, priority, null, null);
         }
 
         /**
          * 상태 변경용 정적 팩토리
          */
-        public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
+        public static RequestSsePayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo) {
                 return statusChanged(id, status, domainCode, summary, roomNo, null, null);
         }
@@ -49,7 +49,7 @@ public record RequestWebSocketPayload(
         /**
          * 상태 변경용 정적 팩토리 (취소 주체 포함)
          */
-        public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
+        public static RequestSsePayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo, String initiatedBy) {
                 return statusChanged(id, status, domainCode, summary, roomNo, initiatedBy, null);
         }
@@ -57,45 +57,45 @@ public record RequestWebSocketPayload(
         /**
          * 상태 변경용 정적 팩토리 (취소 사유 포함)
          */
-        public static RequestWebSocketPayload statusChanged(Long id, String status, String domainCode,
+        public static RequestSsePayload statusChanged(Long id, String status, String domainCode,
                         String summary, String roomNo, String initiatedBy, String cancelReason) {
-                return new RequestWebSocketPayload("STATUS_CHANGED", id, status, domainCode, summary, roomNo,
+                return new RequestSsePayload("STATUS_CHANGED", id, status, domainCode, summary, roomNo,
                                 null, 0, null, initiatedBy, cancelReason);
         }
 
         /**
          * Grace Period 만료 알림용 정적 팩토리
          */
-        public static RequestWebSocketPayload graceExpired(Long id, String roomNo) {
-                return new RequestWebSocketPayload("GRACE_EXPIRED", id, null, null, null, roomNo,
+        public static RequestSsePayload graceExpired(Long id, String roomNo) {
+                return new RequestSsePayload("GRACE_EXPIRED", id, null, null, null, roomNo,
                                 null, 0, null, null, null);
         }
 
-        public static RequestWebSocketPayload cancelRequestReceived(Long id, String domainCode, String summary,
+        public static RequestSsePayload cancelRequestReceived(Long id, String domainCode, String summary,
                         String roomNo) {
-                return new RequestWebSocketPayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary,
+                return new RequestSsePayload("CANCEL_REQUEST_RECEIVED", id, "IN_PROGRESS", domainCode, summary,
                                 roomNo, null, 0, "NORMAL", null, null);
         }
 
-        public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
+        public static RequestSsePayload cancelApproved(Long id, String domainCode, String summary,
                         String roomNo) {
                 return cancelApproved(id, domainCode, summary, roomNo, null);
         }
 
-        public static RequestWebSocketPayload cancelApproved(Long id, String domainCode, String summary,
+        public static RequestSsePayload cancelApproved(Long id, String domainCode, String summary,
                         String roomNo, String initiatedBy) {
-                return new RequestWebSocketPayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo,
+                return new RequestSsePayload("CANCEL_APPROVED", id, "CANCELLED", domainCode, summary, roomNo,
                                 null, 0, "NORMAL", initiatedBy, null);
         }
 
-        public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
+        public static RequestSsePayload cancelRejected(Long id, String domainCode, String summary,
                         String roomNo) {
                 return cancelRejected(id, domainCode, summary, roomNo, null);
         }
 
-        public static RequestWebSocketPayload cancelRejected(Long id, String domainCode, String summary,
+        public static RequestSsePayload cancelRejected(Long id, String domainCode, String summary,
                         String roomNo, String initiatedBy) {
-                return new RequestWebSocketPayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo,
+                return new RequestSsePayload("CANCEL_REJECTED", id, "IN_PROGRESS", domainCode, summary, roomNo,
                                 null, 0, "NORMAL", initiatedBy, null);
         }
 }

@@ -2,7 +2,7 @@ package com.anook.backend.frontdesk.emergency.application.service;
 
 import com.anook.backend.frontdesk.emergency.application.port.in.HandleEmergencyActionUseCase;
 import com.anook.backend.frontdesk.emergency.application.port.out.EmergencyRequestCommandPort;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 
@@ -40,7 +40,7 @@ public class HandleEmergencyActionService implements HandleEmergencyActionUseCas
 
     private void broadcastStatusChanged(Long taskId, String status) {
         requestRepositoryPort.findById(taskId).ifPresent(request -> {
-            RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+            RequestSsePayload payload = RequestSsePayload.statusChanged(
                     request.getId(),
                     status,
                     request.getDomainCode() != null ? request.getDomainCode().name() : null,

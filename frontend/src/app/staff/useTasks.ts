@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useState } from 'react';
-import { useWebSocket } from '@/app/useWebSocket';
+import { useSSE } from '@/app/useSSE';
 import { handleResponse } from '@/lib/api';
 
 export interface StaffTask {
@@ -55,7 +55,7 @@ export function useTasks(view?: 'my' | 'dept'): UseTasksReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
 
   const fetchTasks = useCallback(async (silent = false) => {
     if (!silent) {

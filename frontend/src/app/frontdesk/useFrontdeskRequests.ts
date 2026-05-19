@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useWebSocket } from '../useWebSocket';
+import { useSSE } from '../useSSE';
 
 interface FrontdeskRequest {
   id: number;
@@ -23,7 +23,7 @@ export default function useFrontdeskRequests(dept?: string, searchQuery: string 
   const [requests, setRequests] = useState<FrontdeskRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
 
   const fetchRequests = useCallback(async () => {
     try {

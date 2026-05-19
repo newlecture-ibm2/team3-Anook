@@ -9,12 +9,21 @@ NEO4J_URI = settings.NEO4J_URI
 NEO4J_USER = settings.NEO4J_USER
 NEO4J_PASSWORD = settings.NEO4J_PASSWORD
 
+# Neo4j Driver (Connection Pool) - Singleton
+_neo4j_driver = None
+
+def get_neo4j_driver():
+    global _neo4j_driver
+    if _neo4j_driver is None:
+        auth = (NEO4J_USER, NEO4J_PASSWORD) if NEO4J_PASSWORD else None
+        _neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
+    return _neo4j_driver
+
 def search_graph(query: str) -> List[Dict[str, Any]]:
     """
     사용자 질문에서 키워드를 바탕으로 Neo4j 그래프 데이터베이스를 탐색합니다.
     """
-    auth = (NEO4J_USER, NEO4J_PASSWORD) if NEO4J_PASSWORD else None
-    driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
+    driver = get_neo4j_driver()
     results = []
     try:
         with driver.session() as session:
@@ -35,8 +44,6 @@ def search_graph(query: str) -> List[Dict[str, Any]]:
                 })
     except Exception as e:
         print(f"Graph Search Error: {e}")
-    finally:
-        driver.close()
     
     return results
 

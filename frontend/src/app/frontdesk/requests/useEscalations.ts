@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useWebSocket } from '@/app/useWebSocket';
+import { useSSE } from '@/app/useSSE';
 
 interface EscalatedRequest {
   id: number;
@@ -38,7 +38,7 @@ export default function useEscalations() {
     fetchEscalations();
   }, [fetchEscalations]);
 
-  const { subscribe } = useWebSocket();
+  const { subscribe } = useSSE();
 
   useEffect(() => {
     const handleEvent = (message: any) => {

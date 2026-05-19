@@ -13,7 +13,7 @@ import com.anook.backend.frontdesk.request.application.port.out.FrontdeskRequest
 import com.anook.backend.frontdesk.request.application.port.out.FrontdeskRequestMessagePort;
 import com.anook.backend.frontdesk.request.application.port.out.FrontdeskRequestDispatchPort;
 import com.anook.backend.frontdesk.request.domain.model.FrontdeskRequest;
-import com.anook.backend.request.application.dto.response.RequestWebSocketPayload;
+import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.frontdesk.staff.application.dto.response.GetStaffResult;
 import com.anook.backend.frontdesk.staff.application.port.in.ManageStaffUseCase;
@@ -99,7 +99,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.assignStaff(id, command.staffId(), staff.departmentId());
         
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 id, "IN_PROGRESS", staff.departmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -132,7 +132,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
             frontdeskRequestMessagePort.sendStaffMessage(request.getRoomNo(), "[SYSTEM] 이전 상담 및 처리가 모두 완료되었습니다.");
         }
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 id, status.toUpperCase(), request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -152,7 +152,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.cancel(id);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 id, "CANCELLED", request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -185,7 +185,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
                 .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
 
         // entities, priority를 포함한 full payload (Guest RequestCard 렌더링용)
-        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+        RequestSsePayload payload = RequestSsePayload.newRequest(
                 id, updated.getStatus(), departmentId, updated.getSummary(), updated.getRoomNo(),
                 updated.getEntities(), 0, updated.getPriority()
         );
@@ -215,7 +215,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.approveCancellation(id);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelApproved(
+        RequestSsePayload payload = RequestSsePayload.cancelApproved(
                 id, request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -231,7 +231,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.rejectCancellation(id);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.cancelRejected(
+        RequestSsePayload payload = RequestSsePayload.cancelRejected(
                 id, request.getDepartmentId(), request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -268,7 +268,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.escalate(id, departmentId, priority);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 id, request.getStatus(), departmentId, request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -287,7 +287,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
 
         frontdeskRequestQueryPort.requestEscalation(id, targetDepartmentId);
 
-        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+        RequestSsePayload payload = RequestSsePayload.statusChanged(
                 id, "ESCALATED", targetDepartmentId, request.getSummary(), request.getRoomNo(), "STAFF"
         );
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
@@ -315,7 +315,7 @@ public class ManageFrontdeskRequestService implements ManageFrontdeskRequestUseC
         );
 
         // [AN-307] 수동 생성 시 WebSocket 알림 발송 (고객 & 부서)
-        RequestWebSocketPayload payload = RequestWebSocketPayload.newRequest(
+        RequestSsePayload payload = RequestSsePayload.newRequest(
                 saved.getId(),
                 saved.getStatus(),
                 saved.getDepartmentId(),
