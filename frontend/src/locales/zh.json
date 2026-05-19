@@ -181,6 +181,8 @@
     "chatHistory": {
       "title": "聊天记录",
       "emptyMessage": "无消息",
+      "systemCompleted": "先前的咨询和处理已全部完成。",
+      "systemMessageNote": "(※ 此消息为前台运营专用系统消息，住客不可见)",
       "roomConversation": "{{room}}房间对话",
       "roomChatRecord": "{{room}}房间聊天记录",
       "selectRoomPrompt": "请选择一个房间查看对话",

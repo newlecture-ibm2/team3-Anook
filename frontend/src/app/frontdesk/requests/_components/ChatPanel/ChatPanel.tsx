@@ -406,12 +406,16 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
               const isSystemMsg = msg.senderType === 'SYSTEM' || msg.content.includes('[SYSTEM]');
               
               if (isSystemMsg) {
-                const cleanContent = msg.content.replace(/^\[SYSTEM\]\s*/, '');
+                let cleanContent = msg.content.replace(/^\[SYSTEM\]\s*/, '');
+                if (cleanContent === '이전 상담 및 처리가 모두 완료되었습니다.') {
+                  cleanContent = t.frontdeskPage?.chatHistory?.systemCompleted || cleanContent;
+                }
                 return (
                   <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%' }}>
                     <FeedbackCard 
                       isSystemMessage
                       systemContent={cleanContent}
+                      systemSubtitle={t.frontdeskPage?.chatHistory?.systemMessageNote}
                     />
                   </div>
                 );
@@ -429,7 +433,7 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
               // 위치(variant)와 버블 스타일(bubbleStyle)을 독립적으로 지정
               const bubbleStyle = msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const;
               
-              const isTargetMatch = internalSearch && matchIndices.length > 0 && matchIndices[currentMatch] === idx;
+              const isTargetMatch = !!(internalSearch && matchIndices.length > 0 && matchIndices[currentMatch] === idx);
 
               return (
                 <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>

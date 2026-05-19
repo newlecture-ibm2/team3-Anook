@@ -182,6 +182,8 @@
     "chatHistory": {
       "title": "Chat History",
       "emptyMessage": "No messages",
+      "systemCompleted": "The previous consultation and processing have been completed.",
+      "systemMessageNote": "(※ This is a system-only message for front desk operations, not visible to guests)",
       "roomConversation": "Room {{room}} Conversation",
       "roomChatRecord": "Room {{room}} Chat Record",
       "selectRoomPrompt": "Please select a room to view the conversation",

@@ -30,6 +30,8 @@ export interface FeedbackCardProps {
   isSystemMessage?: boolean;
   /** 시스템 메시지 내용 */
   systemContent?: string;
+  /** 시스템 메시지 부제목/가이드 */
+  systemSubtitle?: string;
 }
 
 export default function FeedbackCard({ 
@@ -38,7 +40,8 @@ export default function FeedbackCard({
   completedAt, 
   onSubmit,
   isSystemMessage = false,
-  systemContent
+  systemContent,
+  systemSubtitle
 }: FeedbackCardProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -87,7 +90,7 @@ export default function FeedbackCard({
             </div>
 
             <div className={styles.subtitle} style={{ font: 'var(--text-caption-medium)', color: 'var(--color-gray-400)', marginTop: 'var(--space-4)' }}>
-              (※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)
+              {systemSubtitle || '(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)'}
             </div>
           </div>
         </div>

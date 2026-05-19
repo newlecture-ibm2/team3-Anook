@@ -181,6 +181,8 @@
     "chatHistory": {
       "title": "チャット履歴",
       "emptyMessage": "メッセージはありません",
+      "systemCompleted": "以前の相談および処理がすべて完了しました。",
+      "systemMessageNote": "(※ ゲストには表示されないフロント業務用のシステムメッセージです)",
       "roomConversation": "{{room}}号室の会話",
       "roomChatRecord": "{{room}}号室のチャット記録",
       "selectRoomPrompt": "会話を表示する部屋を選択してください",

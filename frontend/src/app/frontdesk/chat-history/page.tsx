@@ -76,7 +76,7 @@ export default function ChatHistoryPage() {
   );
 
   const filteredRooms = roomSearchValue
-    ? rooms.filter(room => room.roomNumber.toLowerCase().includes(roomSearchValue.toLowerCase()))
+    ? rooms.filter(room => room.roomNo.toLowerCase().includes(roomSearchValue.toLowerCase()))
     : rooms;
 
   return (
@@ -129,7 +129,7 @@ export default function ChatHistoryPage() {
                   isSelected={selectedRoom === room.roomNo}
                   onCardClick={() => {
                     selectRoom(room.roomNo);
-                    setSearchValue('');
+                    setRoomSearchValue('');
                   }}
                 />
               ))}

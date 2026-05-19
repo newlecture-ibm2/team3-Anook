@@ -183,6 +183,8 @@
     "chatHistory": {
       "title": "채팅 히스토리",
       "emptyMessage": "메시지 없음",
+      "systemCompleted": "이전 상담 및 처리가 모두 완료되었습니다.",
+      "systemMessageNote": "(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)",
       "roomConversation": "{{room}}호 대화",
       "roomChatRecord": "{{room}}호 채팅 기록",
       "selectRoomPrompt": "대화를 확인할 객실을 선택해주세요",
