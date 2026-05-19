@@ -371,16 +371,25 @@
       "templateWithDetailsCompleted": "{team} チームが {details} を完了しました。",
       "templateNoDetailsPending": "{team} チームが確認しています。",
       "templateNoDetailsInProgress": "{team} チームが対応中です。",
-      "templateNoDetailsCompleted": "{team} チームが完了しました。"
+      "templateNoDetailsCompleted": "{team} チームが完了しました。",
+      "emergencyPending": "フロントデスクで緊急リクエストを確認しています。",
+      "emergencyInProgress": "フロントデスクで緊急リクエストを処理しています。",
+      "emergencyCompleted": "緊急リクエストが解決されました。"
     },
     "message": {
       "cancelPending": "🔄 キャンセルリクエストを受付、スタッフが確認中です",
-      "escalated": "💬 フロントデスクのスタッフがまもなく対応いたします。",
-      "forwarded": "✅ スタッフに転送されました",
+      "escalated": "スタッフが間もなく対応いたします",
+      "forwarded": "{team} チームに転送されました",
       "cancelledCard": "リクエストはキャンセルされました",
-      "autoAcceptGuide": "まもなく自動的に送信されます。",
+      "autoAcceptGuide": "リクエスト内容を確認してください。まもなく自動的に転送されます。",
+      "confirmGuide": "確認後、進行ボタンを押してください。",
+      "cancelPendingShort": "キャンセル要請確認中",
       "translating": "翻訳中...",
-      "escalationRequest": "フロントデスクスタッフ接続リクエスト"
+      "escalationRequest": "フロントデスクスタッフ接続リクエスト",
+      "cancelRequest": "リクエストをキャンセル",
+      "proceed": "進行",
+      "urgentPrefix": "[緊急] ",
+      "cancelSuffix": " キャンセル済み"
     },
     "button": {
       "accept": "今すぐ送信",

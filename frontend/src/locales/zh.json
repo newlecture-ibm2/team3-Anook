@@ -371,16 +371,25 @@
       "templateWithDetailsCompleted": "{team} 团队已完成 {details}。",
       "templateNoDetailsPending": "{team} 团队正在确认您的请求。",
       "templateNoDetailsInProgress": "{team} 团队正在处理您的请求。",
-      "templateNoDetailsCompleted": "{team} 团队已完成您的请求。"
+      "templateNoDetailsCompleted": "{team} 团队已完成您的请求。",
+      "emergencyPending": "前台正在确认紧急请求。",
+      "emergencyInProgress": "前台正在处理紧急请求。",
+      "emergencyCompleted": "紧急请求已处理完毕。"
     },
     "message": {
       "cancelPending": "🔄 已收到取消请求，工作人员正在确认中",
-      "escalated": "💬 前台工作人员将很快与您联系。",
-      "forwarded": "✅ 已转交给工作人员",
+      "escalated": "工作人员将很快与您联系",
+      "forwarded": "已转交给 {team} 团队",
       "cancelledCard": "请求已取消",
-      "autoAcceptGuide": "即将自动受理。",
+      "autoAcceptGuide": "请确认请求内容。稍后将自动传送。",
+      "confirmGuide": "请确认后点击进行按钮。",
+      "cancelPendingShort": "取消请求确认中",
       "translating": "正在翻译...",
-      "escalationRequest": "前台员工连接请求"
+      "escalationRequest": "前台员工连接请求",
+      "cancelRequest": "取消请求",
+      "proceed": "进行",
+      "urgentPrefix": "[紧急] ",
+      "cancelSuffix": " 已取消"
     },
     "button": {
       "accept": "立即提交",
