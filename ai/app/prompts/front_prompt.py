@@ -10,14 +10,13 @@ OUTPUT FORMAT (strictly JSON):
   "request_id": "auto-generated",
   "room_no": "from input",
   "domain": "FRONT",
-  "summary": "3줄 요약 (Korean)",
+  "summary": "3줄 요약 ({system_language})",
   "priority": "NORMAL | URGENT",
   "status": "PENDING",
   "confidence": 0.0~1.0,
   "entities": {
     "intent": "COMPLAINT | INQUIRY | AMBIGUOUS | ESCALATION | OTHER",
-    "summary_en": "English translation of the summary",
-    "details": "세부 내용 (Korean)"
+    "details": "세부 내용 ({system_language})"
   },
   "needs_clarification": false,
   "clarification_question": "",
@@ -28,7 +27,7 @@ OUTPUT FORMAT (strictly JSON):
 
 RULES:
 - `intent` MUST always be included in the `entities` object (for dashboard statistics).
-- Write summary and details in KOREAN.
+- Write summary and details in `{system_language}`.
 
 [Clarification Ping-Pong Rule]
 - If the guest's request is ambiguous and you are unsure which department should handle it:
@@ -45,8 +44,8 @@ RULES:
 - If the request is completely out of scope, a severe complaint, or explicitly asks for a human staff:
   1. Set `intent` to "ESCALATION".
   2. Set `needs_clarification` to false.
-  3. Include a `"fallback_message"` key inside the `entities` object, translating "I will connect you to a front desk agent immediately. Please wait a moment." into the SAME LANGUAGE as the guest's input.
-  4. Set `summary` to a concise handover title in KOREAN using the format: "[프론트 연결] {핵심 사유}" (e.g., "[프론트 연결] 소음 관련 불만", "[프론트 연결] 체크아웃 연장 문의", "[프론트 연결] 고객 직접 요청"). Keep it under 20 characters after the prefix. Do NOT write long explanations in the summary.
+  3. Include a `"fallback_message"` key inside the `entities` object, with the exact string `[FORWARD_FRONT]`. Do NOT write any conversational text here.
+  4. Set `summary` to a concise handover title in `{system_language}` (e.g., "소음 관련 불만", "체크아웃 연장 문의", "고객 직접 요청"). Keep it under 20 characters. Do NOT write long explanations in the summary.
   5. Set `priority` to "URGENT" ONLY IF it is a severe complaint, safety issue, emergency, or noise complaint. If it is a simple request for a human staff (e.g., "직원 연결해주세요", "상담원 연결"), set `priority` to "NORMAL".
 
 [Information Inquiry Rule (RAG)]
@@ -54,7 +53,7 @@ RULES:
   1. Set `intent` to "INFO".
   2. Set `needs_clarification` to false.
   3. Include a `"fallback_message"` key inside the `entities` object with the answer formulated naturally using the `[관련 지식 (RAG)]` in the SAME LANGUAGE as the guest's input.
-  4. Set `summary` to KOREAN (e.g., "체크아웃 시간 문의").
+  4. Set `summary` to `{system_language}` (e.g., "체크아웃 시간 문의").
 
 - **REASONING FORMAT (MANDATORY)**: You MUST provide a detailed, step-by-step reasoning in the `reasoning` field **as a single string** using bullet points and emojis. Explain **how** you detected the intent and **how context was used**:
   - “{특정 키워드/문구}” → {의도/컴플레인} 감지 (어떤 표현이 결정적인 역할을 했는지 명시)

@@ -12,7 +12,7 @@ class HotelRequestSchema(BaseModel):
     
     domain: str = Field(description="담당 부서 코드 (HK, FB, FACILITY, CONCIERGE, FRONT, COMMON)")
     
-    summary: str = Field(description="어떤 요청/문의인지 프론트데스크 직원이 바로 이해할 수 있도록 3줄 요약 (반드시 한국어)")
+    summary: str = Field(description="어떤 요청/문의인지 프론트데스크 직원이 바로 이해할 수 있도록 3줄 요약 (반드시 전달받은 system_language 언어로 작성)")
     priority: str = Field(description="긴급도 (직원 UI 화면에 빨간색 긴급 뱃지로 표시: NORMAL, URGENT)")
     status: str = Field(default="PENDING", description="티켓 상태 (PENDING, ASSIGNED, IN_PROGRESS, COMPLETED 등)")
     confidence: float = Field(description="AI 확신도 (0.0 ~ 1.0)")

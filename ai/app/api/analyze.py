@@ -37,6 +37,7 @@ class AnalyzeRequest(BaseModel):
     text: str
     room_no: str
     language: Optional[str] = "ko"
+    system_language: Optional[str] = "ko"
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
     active_requests: Optional[List[str]] = []
@@ -67,61 +68,107 @@ _background_tasks = set()
 STATIC_REPLIES = {
     "ESCALATION": {
         "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
-        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!"
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
+        "ja": "すぐに対応できるよう、フロントデスクにお繋ぎいたします。少々お待ちくださいませ。",
+        "zh": "我会立刻为您连接到前台以便进一步协助您。请稍等片刻！"
     },
     "ESCALATION_INFO": {
         "ko": "더 자세한 정보를 위해 프런트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
-        "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment."
+        "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment.",
+        "ja": "より詳細な情報については、フロントデスクにお繋ぎいたします！少々お待ちください。",
+        "zh": "为了提供更详细的信息，我会为您连接到前台！请稍等片刻。"
     },
     "CLARIFICATION": {
         "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
-        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!"
+        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!",
+        "ja": "どのようなご用件か、もう少し詳しく教えていただけますか？すぐにお手伝いさせていただきます！",
+        "zh": "您能详细告诉我您的需求吗？我很乐意立刻帮助您！"
     },
     "CANCEL": {
         "ko": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 경우 담당 부서 확인 후 취소됩니다.",
-        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation."
+        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation.",
+        "ja": "待機中のリクエストは即座にキャンセルされます。すでにスタッフが対応を開始している場合は、担当部門の確認後にキャンセルされます。",
+        "zh": "待处理的请求将立即取消。如果工作人员已经开始处理，将在相关部门确认后取消。"
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
-        "en": "I will check the status of your most recent request right now."
+        "en": "I will check the status of your most recent request right now.",
+        "ja": "お客様の最新のリクエストの状況をただいま確認いたします。",
+        "zh": "我将立刻为您查询最近请求的处理状态。"
     },
     "TARGETED_CANCEL": {
         "ko": "지목하신 요청의 취소를 진행합니다. 대기 중인 건은 즉시 취소되며, 처리 중인 건은 부서 확인 후 취소됩니다.",
-        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation."
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation.",
+        "ja": "ご指定のリクエストのキャンセル手続きを行います。待機中のものは即座にキャンセルされ、対応中のものは部門の確認が必要となります。",
+        "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。"
     },
     "TASK_WAIT": {
         "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
-        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment."
+        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment.",
+        "ja": "かしこまりました！すぐに担当部門にお伝えいたします。少々お待ちくださいませ。",
+        "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。"
     },
     "INFO_NOT_FOUND": {
         "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
-        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly."
+        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
+        "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。",
+        "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。"
     },
     "ERROR": {
         "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
-        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?"
+        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
+        "ja": "システムに一時的な問題が発生しているようです。少し経ってからもう一度お試しいただけますか？",
+        "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？"
     },
     "COMPLAINT": {
         "ko": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트와 직접 연결해 드리겠습니다.",
-        "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now."
+        "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
+        "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。",
+        "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。"
     },
     "FALLBACK_FAILURE": {
         "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
-        "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'."
+        "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'.",
+        "ja": "リクエストを理解できませんでした。フロントデスクのサポートが必要な場合は、「フロントデスクに接続」と入力してください。",
+        "zh": "我无法理解您的请求。如果您需要前台的帮助，请回复“连接前台”。"
     },
     "NEED_MORE_INFO": {
         "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
-        "en": "Would you like me to connect you to the front desk for more detailed information?"
+        "en": "Would you like me to connect you to the front desk for more detailed information?",
+        "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？",
+        "zh": "您需要我将您连接到前台以获取更详细的信息吗？"
     },
     "EMERGENCY_REPLY": {
         "ko": "응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 가장 가까운 직원을 파견하겠습니다. 안전한 곳에 머물러 주십시오.",
-        "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe."
+        "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe.",
+        "ja": "緊急事態を認識しました。直ちに119番とホテルのセキュリティチームを呼び、最も近いスタッフを派遣します。安全な場所にとどまってください。",
+        "zh": "我们已经确认了紧急情况。将立即呼叫119和酒店安保团队，并派遣最近的员工。请待在安全的地方。"
+    },
+    "OPTION_YES": {
+        "ko": "네",
+        "en": "Yes",
+        "ja": "はい",
+        "zh": "是的"
+    },
+    "OPTION_NO": {
+        "ko": "아니요",
+        "en": "No",
+        "ja": "いいえ",
+        "zh": "不是"
     }
 }
 
 def _get_static_reply(key: str, lang: str) -> str:
+    # ── [프론트엔드 다국어 언어팩 연동 코드 맵핑] ──
+    # 프론트엔드가 [FORWARD_FRONT] 또는 [INFO_NOT_FOUND] 코드를 감지하고
+    # 각 언어팩(locale)에서 동적으로 번역된 멘트를 표시하도록 수정되었습니다.
+    if key in ["COMPLAINT", "ESCALATION"]:
+        return "[FORWARD_FRONT]"
+    if key in ["INFO_NOT_FOUND", "ESCALATION_INFO"]:
+        return "[INFO_NOT_FOUND]"
+
     lang = lang.lower()
-    if lang not in ["ko", "en"]:
+    if lang not in ["ko", "en", "ja", "zh"]:
         lang = "en"
     return STATIC_REPLIES.get(key, {}).get(lang, STATIC_REPLIES.get(key, {}).get("en", "We are processing your request."))
 
@@ -444,7 +491,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history, request.images, getattr(request, 'active_requests', []))
+        router_results = route(request.text, request.chat_history, request.images, getattr(request, 'active_requests', []), request.system_language)
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -624,6 +671,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
+                        system_language=request.system_language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -651,6 +699,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
+                    system_language=request.system_language,
                     active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
@@ -699,6 +748,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
+                        system_language=request.system_language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -915,7 +965,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                             user_message=request.text,
                             room_no=request.room_no,
                             chat_history=request.chat_history,
-                            images=request.images
+                            images=request.images,
+                            system_language=request.system_language
                         )
                         # 에이전트 결과를 통째로 response 객체로 만듦
                         response = {
@@ -969,7 +1020,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {},
                     "confidence": primary.confidence,
-                    "clarification_options": ["네", "아니요"],
+                    "clarification_options": [
+                        _get_static_reply("OPTION_YES", request.language),
+                        _get_static_reply("OPTION_NO", request.language)
+                    ],
                     "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             else:
@@ -1216,21 +1270,19 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             meta_copy["is_fallback"] = (response.get("domain_code") == "FRONT" or response.get("confidence", 1.0) < 0.4)
             response["ai_log_meta"] = meta_copy
 
-    # "아래 접수 내역을 확인해 주세요" 공통 문구 1회 추가 (취소 요청은 제외)
-    task_responses = [
-        r for r in final_responses 
-        if r.get("domain_code") 
-        and not (r.get("action") and str(r.get("action")).startswith("CANCEL"))
-    ]
-    if task_responses:
-        last_task = task_responses[-1]
-        if request.language == "ko":
-            append_msg = "아래 접수 내역을 확인해 주세요."
-        else:
-            append_msg = "Please check the request details below."
-        if last_task.get("guest_reply"):
-            last_task["guest_reply"] = f"{last_task['guest_reply']}\n{append_msg}"
-        else:
-            last_task["guest_reply"] = append_msg
-
     return final_responses
+
+
+class TranslateRequest(BaseModel):
+    text: str
+    target_language: str
+
+@router.post("/translate")
+async def translate_text(request: TranslateRequest) -> dict:
+    prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
+    translated_text = await call_gemini_async(
+        prompt=prompt,
+        system_instruction="You are a professional translator for a hotel dashboard UI. Provide exact, concise translations without formatting or conversational filler."
+    )
+    return {"translated_text": translated_text}
+

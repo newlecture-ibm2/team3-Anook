@@ -1,11 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ChatScreen from './_components/ChatScreen';
 import { useChat } from './useChat';
+import { useUiStore } from '@/stores/useUiStore';
 
 export default function GuestChatPage() {
   const { messages, isTyping, isStaffTyping, sendMessage, activeRequests, cancelRequest, confirmRequest, rateRequest, stopMessage, handlePillSelect } = useChat();
+  const { language, setLanguage } = useUiStore();
+  const [hasCheckedLanguage, setHasCheckedLanguage] = useState(false);
+
+  useEffect(() => {
+    if (!hasCheckedLanguage) {
+      const browserLang = navigator.language.slice(0, 2);
+      if (['ko', 'en', 'zh', 'ja'].includes(browserLang)) {
+        if (browserLang !== language) setLanguage(browserLang as any);
+      } else {
+        if (language !== 'en') setLanguage('en');
+      }
+      setHasCheckedLanguage(true);
+    }
+  }, [language, setLanguage, hasCheckedLanguage]);
 
   return (
     <main style={{ 

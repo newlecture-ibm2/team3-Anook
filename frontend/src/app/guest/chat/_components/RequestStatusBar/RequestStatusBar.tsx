@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RequestStatusBar.module.css';
+import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 export interface RequestStatusBarProps {
   requestId: number;
@@ -12,23 +14,14 @@ export interface RequestStatusBarProps {
   isMini?: boolean;
 }
 
-const STATUS_TEXT: Record<string, string> = {
-  PENDING: '대기 중',
-  IN_PROGRESS: '처리 중',
-  COMPLETED: '처리 완료',
-  CANCELLED: '취소됨',
-  CANCEL_PENDING: '취소 대기 중',
-  ESCALATED: '상담 대기 중',
-};
-
-const DOMAIN_MAP: Record<string, { icon: string; label: string }> = {
-  HK: { icon: '🏨', label: '하우스키핑' },
-  FB: { icon: '🍽️', label: '식음료' },
-  FACILITY: { icon: '🔧', label: '시설관리' },
-  CONCIERGE: { icon: '🛎️', label: '컨시어지' },
-  FRONT: { icon: '🏢', label: '프론트' },
-  EMERGENCY: { icon: '🚨', label: '긴급' },
-  UNKNOWN: { icon: '📋', label: '기타 요청' },
+const DOMAIN_MAP: Record<string, { icon: string, key: string }> = {
+  HK: { icon: '🏨', key: 'HK' },
+  FB: { icon: '🍽️', key: 'FB' },
+  FACILITY: { icon: '🔧', key: 'FACILITY' },
+  CONCIERGE: { icon: '🛎️', key: 'CONCIERGE' },
+  FRONT: { icon: '🏢', key: 'FRONT' },
+  EMERGENCY: { icon: '🚨', key: 'EMERGENCY' },
+  UNKNOWN: { icon: '📋', key: 'UNKNOWN' },
 };
 
 export default function RequestStatusBar({
@@ -40,9 +33,15 @@ export default function RequestStatusBar({
   isMini = false
 }: RequestStatusBarProps) {
   const [visible, setVisible] = useState(true);
+  const { t, language } = useTranslation();
+  
+  // Translation for summary
+  const { translatedText } = useTranslationApi(summary, language);
+  const displaySummary = translatedText || summary;
 
-  const statusLabel = STATUS_TEXT[status] || '알 수 없음';
   const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
+  // @ts-ignore
+  const domainLabel = domainInfo.key !== 'UNKNOWN' ? (t.ticketUI.department[domainInfo.key] || domainInfo.key) : (t.ticketUI.department.FRONT || '기타');
   
   // Render entities description
   const renderDetails = () => {
@@ -105,20 +104,20 @@ export default function RequestStatusBar({
       {!isMini && (
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.title}>{summary}</div>
+            <div className={styles.title}>{displaySummary}</div>
             <div className={styles.details}>
               <span className={styles.detailText}>
                 {detailsText ? (
                   <>
-                    <strong className={styles.highlight}>{domainInfo.label}</strong> 팀에서 <strong className={styles.highlight}>{detailsText}</strong> 건을 
-                    {status === 'PENDING' || status === 'CANCEL_PENDING' ? ' 확인하고 있습니다.' : 
-                     status === 'IN_PROGRESS' ? ' 처리 중입니다.' : ' 완료했습니다.'}
+                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateWithDetailsPending?.replace('{team}', domainLabel).replace('{details}', detailsText)}
+                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateWithDetailsInProgress?.replace('{team}', domainLabel).replace('{details}', detailsText)}
+                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateWithDetailsCompleted?.replace('{team}', domainLabel).replace('{details}', detailsText)}
                   </>
                 ) : (
                   <>
-                    <strong className={styles.highlight}>{domainInfo.label}</strong> 담당 팀에서 
-                    {status === 'PENDING' || status === 'CANCEL_PENDING' ? ' 확인하고 있습니다.' : 
-                     status === 'IN_PROGRESS' ? ' 처리 중입니다.' : ' 완료했습니다.'}
+                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateNoDetailsPending?.replace('{team}', domainLabel)}
+                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateNoDetailsInProgress?.replace('{team}', domainLabel)}
+                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateNoDetailsCompleted?.replace('{team}', domainLabel)}
                   </>
                 )}
               </span>
@@ -147,7 +146,7 @@ export default function RequestStatusBar({
                 </svg>
               ) : computedProgress === 0 ? <div className={styles.innerDot} /> : null}
             </div>
-            <div className={`${styles.stepLabel} ${computedProgress >= 0 ? styles.labelActive : ''}`}>확인 중</div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 0 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.checking || '확인 중'}</div>
           </div>
 
           {/* Step 2: 처리 중 (50%) */}
@@ -159,7 +158,7 @@ export default function RequestStatusBar({
                 </svg>
               ) : computedProgress === 50 ? <div className={styles.innerDot} /> : null}
             </div>
-            <div className={`${styles.stepLabel} ${computedProgress >= 50 ? styles.labelActive : ''}`}>처리 중</div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 50 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.processing || '처리 중'}</div>
           </div>
 
           {/* Step 3: 처리 완료 (100%) */}
@@ -171,7 +170,7 @@ export default function RequestStatusBar({
                 </svg>
               ) : null}
             </div>
-            <div className={`${styles.stepLabel} ${computedProgress >= 100 ? styles.labelActive : ''}`}>처리 완료</div>
+            <div className={`${styles.stepLabel} ${computedProgress >= 100 ? styles.labelActive : ''}`}>{t.cardUI.statusBar?.completed || '처리 완료'}</div>
           </div>
         </div>
       </div>

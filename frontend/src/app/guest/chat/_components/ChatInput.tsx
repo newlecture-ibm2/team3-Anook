@@ -6,24 +6,7 @@ import { useUiStore } from '@/stores/useUiStore';
 const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
-const LABELS = {
-  ko: {
-    placeholder: '무엇이든 물어보세요...',
-    listening: '듣고 있습니다...',
-    camera: '사진 찍기',
-    gallery: '보관함',
-    imageTooLarge: `이미지 크기가 ${MAX_IMAGE_SIZE_MB}MB를 초과합니다. 더 작은 이미지를 선택해 주세요.`,
-    speechUnsupported: '현재 브라우저에서는 음성 인식을 지원하지 않습니다.',
-  },
-  en: {
-    placeholder: 'Ask me anything...',
-    listening: 'Listening...',
-    camera: 'Take Photo',
-    gallery: 'Gallery',
-    imageTooLarge: `Image exceeds ${MAX_IMAGE_SIZE_MB}MB. Please select a smaller image.`,
-    speechUnsupported: 'Speech recognition is not supported in this browser.',
-  },
-};
+import { useTranslation } from '@/app/useTranslation';
 
 export interface ChatInputProps {
   placeholder?: string;
@@ -51,9 +34,10 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
   const menuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const language = useUiStore((state) => state.language) as 'ko' | 'en';
+  const language = useUiStore((state) => state.language);
   const showToast = useUiStore((state) => state.showToast);
-  const l = LABELS[language] || LABELS.ko;
+  const { t } = useTranslation();
+  const l = t.chatInput;
 
   React.useEffect(() => {
     if (onUserTyping) {
@@ -121,7 +105,12 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
       recognitionRef.current.stop();
       setIsRecording(false);
     } else {
-      recognitionRef.current.lang = language === 'ko' ? 'ko-KR' : 'en-US';
+      let speechLang = 'en-US';
+      if (language === 'ko') speechLang = 'ko-KR';
+      else if (language === 'ja') speechLang = 'ja-JP';
+      else if (language === 'zh') speechLang = 'zh-CN';
+      
+      recognitionRef.current.lang = speechLang;
       recognitionRef.current.start();
       setIsRecording(true);
     }

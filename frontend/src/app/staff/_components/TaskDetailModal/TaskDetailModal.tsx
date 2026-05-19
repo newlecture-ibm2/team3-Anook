@@ -9,6 +9,8 @@ import styles from './TaskDetailModal.module.css';
 import { StaffTask } from '../../useTasks';
 import { useUiStore } from '@/stores/useUiStore';
 import { useNetworkStore } from '@/stores/useNetworkStore';
+import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 interface ChatMsg {
   id: number | string;
@@ -146,6 +148,8 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
   const [detailHeight, setDetailHeight] = useState<number | null>(null);
   const { showToast } = useUiStore();
   const isOnline = useNetworkStore((state) => state.isOnline);
+  const { t, language } = useTranslation();
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(task?.summary, language);
 
   if (!isOpen || !task) return null;
 
@@ -318,7 +322,9 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
           </button>
           <div className={styles.header}>
             <div className={styles.headerTop}>
-              <span className={styles.roomBadge}>{task.roomNumber}호</span>
+              <span className={styles.roomBadge}>
+                {language === 'ko' ? `${task.roomNumber}호` : `NO.${task.roomNumber}`}
+              </span>
               {task.priority === 'URGENT' && (
                 <StatusBadge variant="red">긴급</StatusBadge>
               )}
@@ -326,7 +332,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 <StatusBadge variant="red">취소 대기중</StatusBadge>
               )}
             </div>
-            <h2 className={styles.title}>{task.summary}</h2>
+            <h2 className={styles.title}>{isTranslating ? t.common.loading || 'Loading...' : (translatedSummary || task.summary)}</h2>
           </div>
 
           <div className={styles.content}>
@@ -337,10 +343,10 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>상태</span>
               <span className={styles.infoValue}>
-                {task.status === 'PENDING' ? '대기 중' :
-                 task.status === 'IN_PROGRESS' ? '진행 중' :
-                 task.status === 'COMPLETED' ? '완료됨' :
-                 task.status === 'CANCELLED' ? '취소됨' : task.status}
+                {task.status === 'PENDING' ? t.cardUI.status.pending :
+                 task.status === 'IN_PROGRESS' ? t.cardUI.status.inProgress :
+                 task.status === 'COMPLETED' ? t.cardUI.status.completedMark :
+                 task.status === 'CANCELLED' ? t.cardUI.status.cancelled : task.status}
               </span>
             </div>
             <div className={styles.infoRow}>

@@ -4,6 +4,7 @@ import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
 import { useNetworkStore } from '@/stores/useNetworkStore';
 import { useTranslation } from '@/app/useTranslation';
+import { useTranslationApi } from '@/app/useTranslationApi';
 
 export interface TaskTicketProps {
   ticketId?: string | number;
@@ -46,6 +47,7 @@ export default function TaskTicket({
 }: TaskTicketProps) {
   const isOnline = useNetworkStore((state) => state.isOnline);
   const { t, language } = useTranslation();
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
 
   let displayDept = department;
   let deptKey = 'front';
@@ -77,58 +79,8 @@ export default function TaskTicket({
     displayDept = t.ticketUI.department.EMERGENCY;
   }
 
-  let targetIntent = entities?.intent;
-  let targetCount = entities?.count;
-  let orderDetails = '';
-  
-  // 만약 items나 tasks 배열이 있다면 (HK 등), 그 안의 세부 항목을 진짜 targetIntent로 사용합니다.
-  if (entities?.items && Array.isArray(entities.items) && entities.items.length > 0) {
-    targetIntent = entities.items[0].item;
-    targetCount = entities.items[0].count;
-  } else if (entities?.tasks && Array.isArray(entities.tasks) && entities.tasks.length > 0) {
-    targetIntent = entities.tasks[0];
-  } else if (entities?.intent === 'ROOM_SERVICE' && entities?.menu_items && Array.isArray(entities.menu_items) && entities.menu_items.length > 0) {
-    // F&B 룸서비스의 경우, 첫 번째 메뉴 이름을 사용
-    let firstMenu = entities.menu_items[0].name;
-    const tMenu = (t as any).menu;
-    if (tMenu && firstMenu in tMenu) {
-      firstMenu = tMenu[firstMenu];
-    }
-    const totalCount = entities.menu_items.reduce((sum: number, m: any) => sum + (m.quantity || 1), 0);
-    const extraCount = entities.menu_items.length - 1;
-    
-    if (extraCount > 0) {
-      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items} ${t.cardUI.and} ${extraCount}${t.cardUI.others}`;
-    } else {
-      orderDetails = `${firstMenu} ${totalCount}${t.cardUI.items}`;
-    }
-  }
-
-  // 혹시라도 소문자로 왔을 경우를 대비해 대문자로 정규화
-  if (targetIntent && typeof targetIntent === 'string') {
-    targetIntent = targetIntent.toUpperCase();
-  }
-
-  const translatedIntent = targetIntent && t.intents ? t.intents[targetIntent as keyof typeof t.intents] : null;
-  
-  // 수동 배정된 요청은 entities 기반 제목 덮어쓰기 스킵
-  // (ESCALATION intent가 있지만 FRONT가 아닌 부서 = 수동 배정으로 이관된 요청)
   const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
-
-  let displayTitle = title;
-  if (!isManuallyReassigned) {
-    if (language === 'en' && (entities as any)?.summary_en) {
-      displayTitle = (entities as any).summary_en as string;
-    }
-
-    if (orderDetails) {
-      displayTitle = orderDetails;
-    } else if (entities?.intent === 'ORDER_MODIFY' || entities?.intent === 'ORDER_CANCEL') {
-      // 주문 변경/취소의 경우 AI가 생성한 상세 summary(title)를 그대로 사용
-    } else if (translatedIntent && (!(entities as any)?.summary_en || language !== 'en')) {
-      displayTitle = targetCount ? `${translatedIntent} (${targetCount}${t.cardUI.items})` : translatedIntent;
-    }
-  }
+  const displayTitle = translatedSummary || title;
 
   let timeDisplay = '';
   if (status === 'DONE') {
@@ -172,7 +124,9 @@ export default function TaskTicket({
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {roomNo && (
             <>
-              <span className={styles.roomNo}>{roomNo}호</span>
+              <span className={styles.roomNo}>
+                {language === 'ko' ? `${roomNo}호` : `NO.${roomNo}`}
+              </span>
               <div className={styles.headerDivider} />
             </>
           )}
@@ -214,7 +168,7 @@ export default function TaskTicket({
       )}
 
       <div className={styles.content}>
-        <h3 className={styles.title}>{displayTitle as string}</h3>
+        <h3 className={styles.title}>{isTranslating ? t.common.loading || 'Loading...' : (displayTitle as string)}</h3>
         <p className={styles.description}>{displayDescription}</p>
       </div>
 
