@@ -156,11 +156,8 @@
 .confidenceBadge {
   display: inline-flex;
   align-self: flex-start;
-  padding: var(--space-4) var(--space-12);
-  background: var(--color-gray-100);
-  border-radius: var(--radius-sm);
   font: var(--text-label-medium);
-  color: var(--color-gray-700);
+  color: var(--color-gray-500);
 }
 
 .jsonBlock {
