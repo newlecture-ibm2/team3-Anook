@@ -129,7 +129,7 @@
 
 .active5 {
   animation: prismShimmer5 3s infinite alternate-reverse ease-in-out;
-  opacity: 0.55;
+  opacity: 0.4;
 }
 
 /* Gentle idle movement for initial welcome screen */
