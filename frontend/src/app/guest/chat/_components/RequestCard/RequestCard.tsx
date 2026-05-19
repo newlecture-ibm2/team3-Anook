@@ -25,14 +25,14 @@ export interface RequestCardProps {
   onAccept?: () => void;
 }
 
-const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
-  HK: { icon: Home, label: '하우스키핑' },
-  FB: { icon: Utensils, label: '식음료' },
-  FACILITY: { icon: Wrench, label: '시설관리' },
-  CONCIERGE: { icon: ConciergeBell, label: '컨시어지' },
-  FRONT: { icon: Monitor, label: '프론트' },
-  EMERGENCY: { icon: AlertTriangle, label: '긴급' },
-  UNKNOWN: { icon: FileText, label: '기타 요청' },
+const DOMAIN_ICONS: Record<string, React.ElementType> = {
+  HK: Home,
+  FB: Utensils,
+  FACILITY: Wrench,
+  CONCIERGE: ConciergeBell,
+  FRONT: Monitor,
+  EMERGENCY: AlertTriangle,
+  UNKNOWN: FileText,
 };
 
 export default function RequestCard({
@@ -69,7 +69,8 @@ export default function RequestCard({
 
   const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
   const { t } = useTranslation();
-  const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
+  const DomainIcon = DOMAIN_ICONS[domainCode] || DOMAIN_ICONS['UNKNOWN'];
+  const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
   const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
 
@@ -185,7 +186,7 @@ export default function RequestCard({
             </div>
           ) : (
             <div className={`${styles.iconContainer} ${bgClass}`}>
-              <domainInfo.icon size={20} />
+              <DomainIcon size={20} />
             </div>
           )}
         </div>
@@ -203,13 +204,13 @@ export default function RequestCard({
             {isCancelled ? (
               <>{t.cardUI?.message?.cancelledCard || '요청이 취소되었습니다'}</>
             ) : showButtons ? (
-              <>{t.cardUI?.message?.autoAcceptGuide || '잠시 후 자동으로 접수됩니다.'}</>
+              <>{t.cardUI?.message?.autoAcceptGuide || '요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.'}</>
             ) : isCancelPending ? (
-              <>{t.cardUI?.status?.cancelPending || '취소 대기 중'}</>
+              <>{t.cardUI?.message?.cancelPendingShort || '취소 요청 확인 중'}</>
             ) : isEscalatedChat ? (
-              <>{t.cardUI?.status?.escalated || '상담 대기 중'}</>
+              <>{t.cardUI?.message?.escalated || '직원이 응대할 예정입니다'}</>
             ) : (
-              <>{t.cardUI?.message?.forwarded || '직원에게 전달되었습니다'}</>
+              <>{(t.cardUI?.message?.forwarded || '{team} 팀에 전달되었습니다').replace('{team}', domainLabel)}</>
             )}
           </div>
         </div>

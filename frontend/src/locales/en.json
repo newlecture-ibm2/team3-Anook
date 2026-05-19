@@ -372,12 +372,17 @@
     },
     "message": {
       "cancelPending": "🔄 Cancel request received, staff is checking",
-      "escalated": "💬 Front desk staff will respond shortly.",
-      "forwarded": "✅ Forwarded to staff",
+      "escalated": "Staff will respond shortly",
+      "forwarded": "Forwarded to the {team} team",
       "cancelledCard": "Request Cancelled",
-      "autoAcceptGuide": "Automatically submitted shortly.",
+      "autoAcceptGuide": "Please check your request. Auto-forwarding shortly.",
+      "cancelPendingShort": "Checking cancel request",
       "translating": "Translating...",
-      "escalationRequest": "Front desk staff connection request"
+      "escalationRequest": "Front desk staff connection request",
+      "cancelRequest": "Cancel Request",
+      "proceed": "Proceed",
+      "urgentPrefix": "[Urgent] ",
+      "cancelSuffix": " Cancelled"
     },
     "button": {
       "accept": "Submit Now",
