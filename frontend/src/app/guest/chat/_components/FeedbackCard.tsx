@@ -70,12 +70,20 @@ export default function FeedbackCard({
 
   if (isSystemMessage) {
     return (
-      <div className={`glass-panel ${styles.card}`} style={{ margin: 'var(--space-8) auto', maxWidth: '85%' }}>
+      <div 
+        className={`glass-panel ${styles.card}`} 
+        style={{ 
+          margin: 'var(--space-8) 0', 
+          width: '100%', 
+          border: '1px solid var(--color-success, #10B981)',
+          background: 'linear-gradient(to right, color-mix(in srgb, var(--color-success, #10B981) 8%, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 70%), rgba(255, 255, 255, 0.6)'
+        }}
+      >
         <div className={styles.cardLayout}>
           {/* Left Column: Icon */}
           <div className={styles.leftColumn}>
-            <div className={styles.iconContainer} style={{ backgroundColor: 'var(--color-gray-100)' }}>
-              <Check size={20} color="var(--color-gray-500)" strokeWidth={3} />
+            <div className={styles.iconContainer} style={{ backgroundColor: 'color-mix(in srgb, var(--color-success, #10B981) 15%, #fff)' }}>
+              <Check size={20} color="var(--color-success, #10B981)" strokeWidth={3} />
             </div>
           </div>
 
@@ -83,13 +91,13 @@ export default function FeedbackCard({
           <div className={styles.rightColumn}>
             <div className={styles.content}>
               <div className={styles.summaryRow}>
-                <div className={styles.title} style={{ font: 'var(--text-body-medium)', color: 'var(--color-gray-800)' }}>
+                <div className={styles.title}>
                   {systemContent || '이전 상담 및 처리가 모두 완료되었습니다.'}
                 </div>
               </div>
             </div>
 
-            <div className={styles.subtitle} style={{ font: 'var(--text-caption-medium)', color: 'var(--color-gray-400)', marginTop: 'var(--space-4)' }}>
+            <div className={styles.subtitle}>
               {systemSubtitle || '(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)'}
             </div>
           </div>
