@@ -622,24 +622,7 @@ export function useChat() {
       return [...filtered, newUserMsg];
     });
 
-    // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    const isStaffConnected = activeRequests.some(r => (r.domainCode === 'FRONT' || r.domainCode === 'EMERGENCY') && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
-
-    if (!isStaffConnected) {
-      setIsTyping(true);
-
-      // 즉시 AI Progress 표시 (백엔드 응답 전에 애니메이션 먼저 보여줌)
-      setMessages(prev => {
-        const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
-        return [...filtered, {
-          id: 'ai-progress',
-          variant: 'received',
-          type: 'AI_PROGRESS',
-          content: '',
-          meta: { domains: [] }
-        }];
-      });
-    }
+    setIsTyping(true);
 
     abortControllerRef.current = new AbortController();
 

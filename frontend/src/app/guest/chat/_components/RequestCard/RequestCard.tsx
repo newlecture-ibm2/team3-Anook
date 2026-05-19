@@ -100,10 +100,35 @@ export default function RequestCard({
       : baseSummary;
   }
   
+  const getFixedTitle = () => {
+    if (isTranslating || isEscalatedChat || baseSummary.includes('프론트 연결')) {
+      return displaySummary;
+    }
+    const intent = entities?.intent as string | undefined;
+    switch (domainCode) {
+      case 'FB':
+        if (intent === 'DINING') return '룸서비스 음식 주문';
+        if (intent === 'AMENITY') return '객실 어메니티 요청';
+        return '룸서비스 주문';
+      case 'CONCIERGE':
+        if (intent === 'TAXI') return '택시 호출 예약';
+        if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
+        if (intent === 'RESTAURANT') return '식당 예약';
+        if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
+        if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
+        return '컨시어지 서비스 요청';
+      case 'FACILITY':
+        return '객실 시설 수리 요청';
+      case 'HK':
+        return '객실 정비/비품 요청';
+      default:
+        return displaySummary.split('(')[0].trim();
+    }
+  };
 
-
+  let finalTitle = getFixedTitle();
   if (isCancelled) {
-    displaySummary += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
+    finalTitle += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
   }
 
   useEffect(() => {
@@ -137,26 +162,33 @@ export default function RequestCard({
     if (!entities) return null;
     
     const parts: string[] = [];
-    if (Array.isArray(entities.items)) {
-      entities.items.forEach((it: any) => {
-        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
-      });
-    } else if (entities.item) {
-      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
-    }
-
-    if (Array.isArray(entities.tasks)) {
-      entities.tasks.forEach((t: string) => parts.push(t));
-    }
     
-    if (parts.length === 0) {
-      if (entities.menu) {
-        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+    if (entities.intent === 'TAXI') {
+      if (entities.time) parts.push(String(entities.time));
+      if (entities.destination) parts.push(String(entities.destination));
+      if (entities.passenger_count) parts.push(String(entities.passenger_count));
+    } else {
+      if (Array.isArray(entities.items)) {
+        entities.items.forEach((it: any) => {
+          parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
+        });
+      } else if (entities.item) {
+        parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
       }
-      if (entities.symptom) parts.push(`${entities.symptom}`);
+  
+      if (Array.isArray(entities.tasks)) {
+        entities.tasks.forEach((t: string) => parts.push(t));
+      }
+      
+      if (parts.length === 0) {
+        if (entities.menu) {
+          parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+        }
+        if (entities.symptom) parts.push(`${entities.symptom}`);
+      }
     }
     
-    return parts.length > 0 ? parts.join(', ') : null;
+    return parts.length > 0 ? parts.join(' • ') : null;
   };
 
   const detailsText = renderDetails();
@@ -197,10 +229,16 @@ export default function RequestCard({
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.summary}>{displaySummary}</div>
+              <div className={styles.summary}>{finalTitle}</div>
               <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
           </div>
+
+          {detailsText && (
+            <div className={styles.detailsText}>
+              {detailsText}
+            </div>
+          )}
 
           <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
             {isCancelled ? (

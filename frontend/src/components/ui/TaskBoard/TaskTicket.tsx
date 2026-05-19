@@ -80,7 +80,35 @@ export default function TaskTicket({
   }
 
   const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
-  const displayTitle = translatedSummary || title;
+  
+  const getFixedTitle = () => {
+    const baseSummary = translatedSummary || title;
+    if (isTranslating || isManuallyReassigned || baseSummary.includes('프론트 연결')) {
+      return baseSummary;
+    }
+    const intent = entities?.intent as string | undefined;
+    switch (deptKey) {
+      case 'fb':
+        if (intent === 'DINING') return '룸서비스 음식 주문';
+        if (intent === 'AMENITY') return '객실 어메니티 요청';
+        return '룸서비스 주문';
+      case 'concierge':
+        if (intent === 'TAXI') return '택시 호출 예약';
+        if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
+        if (intent === 'RESTAURANT') return '식당 예약';
+        if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
+        if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
+        return '컨시어지 서비스 요청';
+      case 'facility':
+        return '객실 시설 수리 요청';
+      case 'hk':
+        return '객실 정비/비품 요청';
+      default:
+        return baseSummary.split('(')[0].trim();
+    }
+  };
+
+  const displayTitle = getFixedTitle();
 
   let timeDisplay = '';
   if (status === 'DONE') {
@@ -102,16 +130,49 @@ export default function TaskTicket({
     timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
   }
 
+  const renderDetails = () => {
+    if (!entities) return null;
+    
+    const parts: string[] = [];
+    if (entities.intent === 'TAXI') {
+      if (entities.time) parts.push(String(entities.time));
+      if (entities.destination) parts.push(String(entities.destination));
+      if (entities.passenger_count) parts.push(String(entities.passenger_count));
+    } else {
+      if (Array.isArray(entities.items)) {
+        entities.items.forEach((it: any) => {
+          parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
+        });
+      } else if (entities.item) {
+        parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
+      }
+      if (Array.isArray(entities.tasks)) {
+        entities.tasks.forEach((t: string) => parts.push(t));
+      }
+      if (parts.length === 0) {
+        if (entities.menu) {
+          parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+        }
+        if (entities.symptom) parts.push(`${entities.symptom}`);
+      }
+    }
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
+
+  const entityDetails = renderDetails();
+
   let displayDescription = description;
   if (isManuallyReassigned && displayDescription) {
     // 수동 배정: rawText 원본에서 마지막 줄(frontdesk 이관 사유)만 추출
-    // rawText 구조: "원문\n\n[주문 상세]\n...\nfrontdesk메모"
     const lines = displayDescription.split('\n').filter(l => l.trim());
     displayDescription = lines[lines.length - 1] || '';
+  } else if (status !== 'IN_PROGRESS' && entityDetails) {
+    // Override rawText with entity details for TODO/DONE
+    displayDescription = entityDetails;
   } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
-    // 일반 요청: '[주문 상세]' 이후의 entities dump 제거 → 고객 원문만
     displayDescription = displayDescription.split('[주문 상세]')[0].trim();
   }
+  
   if (language === 'en') {
     if (displayDescription === '프론트 데스크') displayDescription = 'Frontdesk';
     else if (displayDescription === '직원') displayDescription = 'Staff';
