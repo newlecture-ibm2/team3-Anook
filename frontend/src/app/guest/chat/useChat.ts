@@ -92,7 +92,7 @@ export function useChat() {
     if (newContent.includes('[FORWARD_FB]')) newContent = newContent.replace('[FORWARD_FB]', currentT.aiReplies?.forwardFb || '');
     if (newContent.includes('[FORWARD_HK]')) newContent = newContent.replace('[FORWARD_HK]', currentT.aiReplies?.forwardHk || '');
     if (newContent.includes('[FORWARD_FACILITY]')) newContent = newContent.replace('[FORWARD_FACILITY]', currentT.aiReplies?.forwardFacility || '');
-    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', currentT.aiReplies?.forwardConcierge || '');
+    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', (currentT.aiReplies as any)?.forwardConcierge || '');
     if (newContent.includes('[FORWARD_FRONT]')) newContent = newContent.replace('[FORWARD_FRONT]', currentT.aiReplies?.forwardFront || '');
     if (newContent.includes('[INFO_NOT_FOUND]')) newContent = newContent.replace('[INFO_NOT_FOUND]', currentT.aiReplies?.infoNotFound || '');
     if (newContent.includes('[PII_GUARD]')) newContent = newContent.replace('[PII_GUARD]', currentT.aiReplies?.piiGuard || '');

@@ -67,8 +67,8 @@ export default function RequestStatusBar({
     const intent = entities?.intent as string | undefined;
     
     if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
-      if (t.intents?.[intent]) {
-        return t.intents[intent];
+      if ((t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
       }
     }
     
