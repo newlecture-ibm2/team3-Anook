@@ -562,7 +562,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=user_message_with_ctx,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
-                    images=request.images
+                    images=request.images,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -663,7 +664,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
-                        images=request.images
+                        images=request.images,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
@@ -689,7 +691,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
-                    images=request.images
+                    images=request.images,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
                 is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
@@ -736,7 +739,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
-                        images=request.images
+                        images=request.images,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),

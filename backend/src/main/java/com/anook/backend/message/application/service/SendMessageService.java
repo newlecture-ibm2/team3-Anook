@@ -133,8 +133,13 @@ public class SendMessageService implements SendMessageUseCase {
                             "content", m.getContent()))
                     .toList();
 
+<<<<<<< HEAD
             // 3-1. 취소 문맥 분석을 위한 현재 고객의 활성(대기 중인) 주문 목록 조회
             java.util.List<Map<String, Object>> activeRequests = activeRequestPort.findActiveRequests(roomNo, guestId);
+=======
+            // 3.5. 활성화된 예약 내역 조회 (가상 PMS/DB 실시간 확인)
+            java.util.List<String> activeRequests = activeRequestPort.getActiveRequestSummaries(roomNo);
+>>>>>>> origin/dev
 
             // AI 호출
             java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests);
