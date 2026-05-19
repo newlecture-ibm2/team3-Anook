@@ -1070,16 +1070,21 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if guest_reply == info_not_found_msg:
                 # [수정] 컨시어지인 경우 INFO_NOT_FOUND 상태에서도 에이전트에게 한 번 더 기회를 줌 (이미 위에서 처리되지 않은 경우)
                 if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
-                     # 이미 위에서 에이전트 폴백을 거쳤음에도 여기까지 왔다면, 최종적으로 프론트 연결
                      pass
                 
+                # [수정] 정보가 없을 때 강제 이관(ESCALATION) 대신 Soft Fallback을 통해 고객에게 연결 의사 묻기
                 response = {
-                    "guest_reply": _get_static_reply("ESCALATION", request.language),
-                    "summary": "AI 미학습 정보 (직원 연결)",
-                    "domain_code": "FRONT",
+                    "guest_reply": "해당 정보는 제가 직접 대답해드리기 어렵습니다. 제가 프런트데스크 직원에게 연결해 드릴까요?" if request.language == "ko" else "It is difficult for me to answer this directly. Shall I connect you to the front desk staff?",
+                    "summary": "추가 정보 필요 (프론트 연결 제안)",
+                    "domain_code": None,
                     "priority": "NORMAL",
-                    "entities": {"intent": "ESCALATION"},
+                    "entities": {},
                     "confidence": 0.0,
+                    "missing_fields": [],
+                    "clarification_options": [
+                        _get_static_reply("OPTION_YES", request.language),
+                        _get_static_reply("OPTION_NO", request.language)
+                    ],
                     "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             elif need_more_info_msg in guest_reply:
