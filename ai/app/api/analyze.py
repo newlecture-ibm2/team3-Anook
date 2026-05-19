@@ -39,6 +39,7 @@ class AnalyzeRequest(BaseModel):
     language: Optional[str] = "ko"
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
+    active_requests: Optional[List[str]] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -443,7 +444,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history, request.images)
+        router_results = route(request.text, request.chat_history, request.images, getattr(request, 'active_requests', []))
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -540,7 +541,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
-                    images=request.images
+                    images=request.images,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -621,7 +623,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
-                        images=request.images
+                        images=request.images,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
@@ -647,7 +650,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
-                    images=request.images
+                    images=request.images,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
                 is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
@@ -694,7 +698,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
-                        images=request.images
+                        images=request.images,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
@@ -1099,7 +1104,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
 
         # STEP 3-g: STATUS_CHECK → 진행 상태 확인
-        if primary.mode == "STATUS_CHECK":
+        if primary.route_type == "STATUS_CHECK":
             response = {
                 "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
                 "summary": "요청 진행 상태 확인",

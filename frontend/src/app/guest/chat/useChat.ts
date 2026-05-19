@@ -264,7 +264,9 @@ export function useChat() {
                   || (content && (content.includes('취소를 진행합니다') || content.includes('즉시 취소') || content.includes('취소 처리됩니다')));
 
                 if (isCancelResponse) {
-                  const hasInProgress = activeRequests.some(r => r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS');
+                  const hasInProgress = activeRequests.some(r => 
+                    r.status === 'ASSIGNED' || r.status === 'IN_PROGRESS' || r.status === 'CANCEL_PENDING'
+                  );
 
                   if (hasInProgress) {
                     content = '이미 처리가 진행 중이라 담당 부서에 취소 요청을 보냈습니다. 확인 후 안내드리겠습니다.';
@@ -480,7 +482,7 @@ export function useChat() {
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
                       // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '요청하신 취소가 정상 처리되었습니다.';
+                      content = '해당 요청이 정상적으로 취소되었습니다.';
                     }
                     // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
 
@@ -541,7 +543,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'TEXT',
-                      content: '안내: 취소 요청이 반려되어 기존 요청대로 진행됩니다.',
+                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프런트로 연락 부탁드립니다.',
                     }];
                   });
                 }, 800);
@@ -626,7 +628,9 @@ export function useChat() {
     });
 
     // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
+    // [수정] 백엔드의 isStaffHandlingRoom 로직과 동일하게 IN_PROGRESS (또는 ASSIGNED) 상태일 때만 직원 연결로 간주
+    // (PENDING 상태로 방치된 중복 FRONT 요청이 있을 때 애니메이션이 영구 차단되는 현상 방지)
+    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && (r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED'));
 
     if (!isStaffConnected) {
       setIsTyping(true);

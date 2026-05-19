@@ -102,6 +102,21 @@ export default function useRequestDetail() {
     }
   };
 
+  const requestEscalation = async (id: number, departmentId: string) => {
+    try {
+      const res = await fetch(`/api/admin/requests/${id}/request-escalation`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departmentId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return true;
+    } catch (err: any) {
+      setError(err.message || '이관 요청 실패');
+      return false;
+    }
+  };
+
   const updateSummary = async (id: number, summary: string, description: string) => {
     try {
       const res = await fetch(`/api/admin/requests/${id}/summary`, {
@@ -117,5 +132,5 @@ export default function useRequestDetail() {
     }
   };
 
-  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, updateSummary, cancelRequest, loading, error };
+  return { detail, fetchDetail, changePriority, assignStaff, changeDepartment, requestEscalation, updateSummary, cancelRequest, loading, error };
 }

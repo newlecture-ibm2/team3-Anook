@@ -124,9 +124,12 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
 
         adminRequestQueryPort.updateStatus(id, status.toUpperCase());
 
-        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성
+        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성 및 AI 컨텍스트 리셋
         if ("COMPLETED".equalsIgnoreCase(status)) {
             generateReceiptUseCase.generate(request.getRoomNo(), request.getDepartmentId(), request.getEntities());
+            
+            // [AN-337] 상담 완료 시 AI 컨텍스트 리셋을 위한 시스템 마커 메시지 삽입 (프론트엔드에서 필터링됨)
+            adminRequestMessagePort.sendStaffMessage(request.getRoomNo(), "[SYSTEM] 이전 상담 및 처리가 모두 완료되었습니다.");
         }
 
         RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
@@ -271,6 +274,25 @@ public class ManageAdminRequestService implements ManageAdminRequestUseCase {
         dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
         dispatchPort.dispatchToDepartment(departmentId, payload);
         if (!departmentId.equals(request.getDepartmentId())) {
+            dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
+        }
+        dispatchPort.dispatchToAdmin(payload);
+    }
+
+    @Override
+    @Transactional
+    public void requestEscalation(Long id, String targetDepartmentId) {
+        AdminRequest request = adminRequestQueryPort.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REQUEST_NOT_FOUND));
+
+        adminRequestQueryPort.requestEscalation(id, targetDepartmentId);
+
+        RequestWebSocketPayload payload = RequestWebSocketPayload.statusChanged(
+                id, "ESCALATED", targetDepartmentId, request.getSummary(), request.getRoomNo(), "STAFF"
+        );
+        dispatchPort.dispatchToRoom(request.getRoomNo(), payload);
+        dispatchPort.dispatchToDepartment(targetDepartmentId, payload);
+        if (!targetDepartmentId.equals(request.getDepartmentId())) {
             dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
         }
         dispatchPort.dispatchToAdmin(payload);
