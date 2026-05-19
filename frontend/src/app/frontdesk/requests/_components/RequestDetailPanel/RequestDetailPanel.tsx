@@ -307,7 +307,6 @@ export default function RequestDetailPanel({
           const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
 
           const detailParts = mainText.split('[주문 상세]');
-          const customerText = detailParts[0].trim();
           const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
           // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
@@ -315,12 +314,6 @@ export default function RequestDetailPanel({
 
           return (
             <>
-              {customerText && (
-                <div className={styles.contentBlock}>
-                  <span className={styles.label}>고객 원문</span>
-                  <p className={styles.rawText}>{customerText}</p>
-                </div>
-              )}
               {orderDetail && !hasValidEntities && (
                 <div className={styles.contentBlock}>
                   <span className={styles.label}>주문/요청 상세</span>
