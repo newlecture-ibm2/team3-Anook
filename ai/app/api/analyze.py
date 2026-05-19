@@ -84,6 +84,18 @@ STATIC_REPLIES = {
         "ja": "どのようなご用件か、もう少し詳しく教えていただけますか？すぐにお手伝いさせていただきます！",
         "zh": "您能详细告诉我您的需求吗？我很乐意立刻帮助您！"
     },
+    "CANCEL_REJECTED": {
+        "ko": "안타깝게도 해당 요청은 취소가 어렵습니다. 🥲 이미 처리가 시작되었거나 부서 확인이 필요한 상태이니 양해 부탁드립니다. 🙏",
+        "en": "Unfortunately, the cancellation request was rejected. The request is already in progress or requires department approval.",
+        "ja": "申し訳ありませんが、キャンセルリクエストは却下されました。リクエストはすでに進行中であるか、部門の承認が必要です。",
+        "zh": "抱歉，取消请求被拒绝。该请求已在处理中或需要部门批准。"
+    },
+    "CANCEL_IN_PROGRESS": {
+        "ko": "네, 요청하신 건에 대해 취소를 접수해 드릴게요! 😌 아직 대기 중이라면 바로 취소되며, 이미 처리 중이라면 부서 확인 후 안내해 드리겠습니다.",
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation.",
+        "ja": "ご指定のリクエストのキャンセル手続きを行います。待機中のものは即座にキャンセルされ、対応中のものは部門の確認が必要となります。",
+        "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。"
+    },
     "CANCEL": {
         "ko": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 경우 담당 부서 확인 후 취소됩니다.",
         "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation.",
@@ -103,43 +115,43 @@ STATIC_REPLIES = {
         "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。"
     },
     "TASK_WAIT": {
-        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
+        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 두었습니다. 🚀 조금만 기다려 주시면 금방 조치해 드릴게요. 😊",
         "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment.",
         "ja": "かしこまりました！すぐに担当部門にお伝えいたします。少々お待ちくださいませ。",
         "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。"
     },
     "INFO_NOT_FOUND": {
-        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
+        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
         "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
         "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。",
         "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。"
     },
     "ERROR": {
-        "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
+        "ko": "앗, 잠시 통신이 원활하지 않았나 봐요. 🥲 번거로우시겠지만 조금만 이따가 다시 한 번 말씀해 주시겠어요? 🙏",
         "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
         "ja": "システムに一時的な問題が発生しているようです。少し経ってからもう一度お試しいただけますか？",
         "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트와 직접 연결해 드리겠습니다.",
+        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프런트 직원과 직접 연결하여 도움을 드리겠습니다. 📞",
         "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
         "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。",
         "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。"
     },
     "FALLBACK_FAILURE": {
-        "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
+        "ko": "앗, 제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 언제든 '프런트 연결'이라고 말씀해 주세요! 🧑‍💼",
         "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'.",
         "ja": "リクエストを理解できませんでした。フロントデスクのサポートが必要な場合は、「フロントデスクに接続」と入力してください。",
         "zh": "我无法理解您的请求。如果您需要前台的帮助，请回复“连接前台”。"
     },
     "NEED_MORE_INFO": {
-        "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
+        "ko": "조금 더 상세한 안내가 필요하시다면 프런트 데스크로 바로 연결해 드릴까요? 📞",
         "en": "Would you like me to connect you to the front desk for more detailed information?",
         "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？",
         "zh": "您需要我将您连接到前台以获取更详细的信息吗？"
     },
     "EMERGENCY_REPLY": {
-        "ko": "응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 가장 가까운 직원을 파견하겠습니다. 안전한 곳에 머물러 주십시오.",
+        "ko": "🚨 응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 직원을 파견하겠습니다. 부디 안전한 곳에 머물러 주십시오.",
         "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe.",
         "ja": "緊急事態を認識しました。直ちに119番とホテルのセキュリティチームを呼び、最も近いスタッフを派遣します。安全な場所にとどまってください。",
         "zh": "我们已经确认了紧急情况。将立即呼叫119和酒店安保团队，并派遣最近的员工。请待在安全的地方。"
@@ -1074,7 +1086,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 
                 # [수정] 정보가 없을 때 강제 이관(ESCALATION) 대신 Soft Fallback을 통해 고객에게 연결 의사 묻기
                 response = {
-                    "guest_reply": "해당 정보는 제가 직접 대답해드리기 어렵습니다. 제가 프런트데스크 직원에게 연결해 드릴까요?" if request.language == "ko" else "It is difficult for me to answer this directly. Shall I connect you to the front desk staff?",
+                    "guest_reply": "제가 바로 확인해 드리기 어려운 내용이네요. 프런트 데스크 직원을 바로 연결해 드릴까요?" if request.language == "ko" else "Oh, that's a bit tricky for me to answer right away. Shall I connect you to the front desk?",
                     "summary": "추가 정보 필요 (프론트 연결 제안)",
                     "domain_code": None,
                     "priority": "NORMAL",
