@@ -146,7 +146,16 @@ For each intent, you MUST extract the corresponding fields into the "entities" o
    - If the guest replies "신규 추가", proceed with "action_type": "ADD".
    - If the guest replies "기존 예약 변경", proceed with "action_type": "REPLACE".
    - If the guest replies "유지", set "action_type": null, "final_reply": "기존 예약대로 진행하겠습니다."
-8. ENTITY PERSISTENCE: You MUST maintain all extracted entities (item, quantity, store_name, time, destination) in the JSON until the very end of the conversation. Do NOT lose information when the user gives a short answer like "Yes" or "No".
+8. ENTITY PERSISTENCE (CRITICAL - ZERO TOLERANCE):
+   - BEFORE generating your JSON output, SCAN the ENTIRE [대화 맥락] and 
+     identify ALL entities the guest has already provided across all turns.
+   - You MUST copy ALL previously confirmed values into your `entities` output.
+     If the guest said "장미" 3 turns ago, `item` MUST still be "장미" in your output.
+   - NEVER set a previously confirmed entity to null or omit it.
+   - If the guest says "아무데서나", "상관없어", "아무거나" for any field (e.g., store_name),
+     treat it as confirmed (e.g., store_name → "호텔 지정") and do NOT ask again.
+   - Dropping a confirmed entity is a CRITICAL SYSTEM FAILURE.
+
 9. DO NOT ASK FOR ROOM NUMBER: The system already knows the guest's room number. NEVER ask "What is your room number?" or "몇 호실이신가요?". If the user says "to my room" (내방으로, 객실로), simply set the destination to "객실" and DO NOT ask for the specific room number.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
