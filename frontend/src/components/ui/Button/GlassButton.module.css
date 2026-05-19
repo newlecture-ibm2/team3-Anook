@@ -25,13 +25,11 @@
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.25),
     0 6px 16px rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
 }
 
 .glassBtn:active:not(:disabled) {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(0);
 }
 
 .glassBtn:disabled {
