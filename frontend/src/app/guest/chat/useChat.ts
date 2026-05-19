@@ -269,7 +269,7 @@ export function useChat() {
               setMessages(prev => {
                 const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
 
-                // 취소 관련 AI 응답 → 요청 상태에 따라 메시지 분기
+                // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
                 let content = payload.content;
                 const action = payload.meta?.action || payload.action;
                 const isCancelResponse = action === 'CANCEL_REQUEST' || action === 'CANCEL_ALL_REQUESTS'
@@ -497,7 +497,7 @@ export function useChat() {
                       content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
                       // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '해당 요청이 정상적으로 취소되었습니다.';
+                      content = '요청하신 취소가 정상 처리되었습니다.';
                     }
                     // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
 
@@ -552,7 +552,8 @@ export function useChat() {
                     );
                     if (hasRejectReason) return prev;
 
-                    const msgId = `system-cancel-reject-${payload.requestId}`;
+                    // 버그 수정: 타임스탬프를 추가하여 식별자 중복으로 인한 증발 현상 방지
+                    const msgId = `system-cancel-reject-${payload.requestId}-${Date.now()}`;
                     if (prev.some(m => m.id === msgId)) return prev;
                     return [...prev, {
                       id: msgId,
@@ -652,9 +653,7 @@ export function useChat() {
     });
 
     // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    // [수정] 백엔드의 isStaffHandlingRoom 로직과 동일하게 IN_PROGRESS (또는 ASSIGNED) 상태일 때만 직원 연결로 간주
-    // (PENDING 상태로 방치된 중복 FRONT 요청이 있을 때 애니메이션이 영구 차단되는 현상 방지)
-    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && (r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED'));
+    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
 
     if (!isStaffConnected) {
       setIsTyping(true);

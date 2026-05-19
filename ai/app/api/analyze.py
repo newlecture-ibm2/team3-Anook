@@ -40,7 +40,7 @@ class AnalyzeRequest(BaseModel):
     system_language: Optional[str] = "ko"
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
-    active_requests: Optional[List[str]] = []
+    active_requests: Optional[List[dict]] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -584,8 +584,29 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # 부서별 에이전트가 등록되어 있으면 호출
             if domain in DOMAIN_AGENTS:
+                # [공통 주문 보존 규칙] 활성 요청 목록을 chat_history 앞에 주입하여
+                # 모든 부서 에이전트가 REPLACE 시 기존 아이템을 보존하도록 컨텍스트 제공
+                enriched_history = list(request.chat_history)
+                if request.active_requests:
+                    import json
+                    filtered = [{"id": r.get("id"), "summary": r.get("summary")} for r in request.active_requests]
+                    active_ctx = (
+                        f"[고객의 현재 활성 요청(주문) 목록]\n"
+                        f"{json.dumps(filtered, ensure_ascii=False)}\n\n"
+                        f"[주문 수정 및 부분 취소 규칙 (CRITICAL)]\n"
+                        f"기존 주문을 수정하거나 일부 항목만 취소할 때(REPLACE):\n"
+                        f"1. 대상 파악 주의: 직전 대화 주제에 무조건 의존하지 마세요. 사용자의 요청(예: '물 1병으로 바꿔줘')에 포함된 키워드('물')가 위 [현재 활성 요청 목록] 중 어느 티켓(예: '물 2병 및 수건 2개 요청')과 일치하는지 먼저 찾아야 합니다.\n"
+                        f"2. 위 목록에서 귀하의 부서와 관련된 기존 아이템들을 정확히 파악하세요.\n"
+                        f"3. 사용자의 취소/변경 요청을 반영하여 최종적으로 남게 되는 아이템들의 상태를 계산하세요.\n"
+                        f"4. 취소된 아이템은 entities에서 완전히 제외(삭제)하고, 절대 음수(-) 수량을 사용하지 마세요.\n"
+                        f"5. 변경되지 않고 남은 아이템들은 반드시 entities 출력에 그대로 포함해야 합니다. 누락 시 영구 삭제됩니다.\n"
+                    )
+                    user_message_with_ctx = request.text + "\n\n" + active_ctx
+                else:
+                    user_message_with_ctx = request.text
+
                 coro = DOMAIN_AGENTS[domain](
-                    user_message=request.text,
+                    user_message=user_message_with_ctx,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
@@ -632,6 +653,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
         # STEP 3-c: CLARIFICATION → 되묻기
         if primary.route_type == "CLARIFICATION":
+            # ── [라우터 직접 생성 검증] ──
+            # 라우터가 직접 구체적인 질문/선택지를 생성했다면 (예: Ambiguous Cancellation), 에이전트 위임 없이 즉시 반환
+            if hasattr(primary, 'clarification_options') and primary.clarification_options and len(primary.clarification_options) > 0:
+                guest_reply = getattr(primary, 'clarification_question', None) or _get_static_reply("CLARIFICATION", request.language)
+                response = {
+                    "guest_reply": guest_reply,
+                    "summary": "취소 요청 대상 불분명" if "취소" in guest_reply else "추가 확인 필요",
+                    "domain_code": None,
+                    "priority": "NORMAL",
+                    "entities": {},
+                    "confidence": primary.confidence,
+                    "missing_fields": [],
+                    "clarification_options": primary.clarification_options,
+                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                }
+                print(f"[Analyze] ❓ CLARIFICATION → 라우터 직접 생성 옵션 사용")
+                print(f"[Analyze] 응답: {response}\n")
+                final_responses.append(response)
+                continue
+
             # ── [에이전트 재위임 로직] ──
             # 직전 AI 메시지가 에이전트의 구체적 질문("?")이었다면,
             # 라우터가 CLARIFICATION으로 분류해도 해당 에이전트를 다시 호출하여
@@ -1046,6 +1087,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             text_lower = request.text.lower()
             is_all = any(word in text_lower for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything"])
             
+            # AI가 명시적으로 특정 요청 ID를 지정하여 취소하려고 한 경우, 전체 취소로 오버라이드하지 않고 핀포인트 취소로 처리함
+            if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                is_all = False
+            
             # FALSE ALARM: EMERGENCY 도메인 취소 (오인 신고 정정)
             if primary.domain == "EMERGENCY":
                 false_alarm_reply_ko = "확인되었습니다. 긴급 호출을 취소 처리하겠습니다. 혹시 다른 도움이 필요하시면 말씀해 주세요."
@@ -1091,6 +1136,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 # [Keyword Targeting] 취소 대상 키워드 전달
                 if hasattr(primary, 'target_keyword') and primary.target_keyword:
                     response["target_keyword"] = primary.target_keyword
+                # [ID Targeting] 취소 대상 ID 전달
+                if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                    response["target_request_id"] = primary.target_request_id
             
             print(f"[Analyze] 🛑 CANCEL 응답")
             print(f"[Analyze] 응답: {response}\n")

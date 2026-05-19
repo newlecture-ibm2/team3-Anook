@@ -53,8 +53,11 @@ Classify the input into one of the following categories:
 8. **CANCEL** (Request Cancellation):
    - Canceling a previous request (e.g., "취소할래요", "아까 거 취소", "필요없어요", "필요없어", "안해도돼요", "안주셔도 됩니다", "취소해", "콜라 필요없어요", "수건 안 주셔도 돼요", "I don't need the coke", "Cancel the towel").
    - If the user explicitly names an item and says they don't need it ("~ 필요없어요", "~ 안 주셔도 돼요", "I don't need ~", "Never mind the ~", "Cancel the ~"), it MUST be classified as CANCEL. Do NOT treat it as SOFT_FALLBACK.
-   - **CRITICAL**: The item might have been ordered earlier and no longer visible in the recent `[과거 대화 맥락]`. If the user explicitly tries to cancel a specific item, you MUST output CANCEL with the `target_keyword` even if you cannot find the item in the recent chat history.
-   - Action: Set route_type to "CANCEL".
+   - **CRITICAL**: To cancel an item, you MUST refer to `[고객의 현재 활성 요청(주문) 목록]` provided in the prompt. Find the request in the list that semantically matches the user's intent. If found, you MUST output its integer ID in `target_request_id`. You should still output `target_keyword` for logging purposes.
+   - **AMBIGUOUS CANCELLATION RULE**: If the user says "취소해줘" but DOES NOT specify which item to cancel (AND does NOT say "다 취소해줘", "전부 취소해줘", etc.), AND there are multiple items in the `[고객의 현재 활성 요청(주문) 목록]`, you MUST NOT route to "CANCEL". You MUST route to "CLARIFICATION" and politely ask which item they want to cancel. List the SPECIFIC item names from the active request list as `clarification_options` (e.g., ["아이스 아메리카노", "스테이크 샌드위치", "전부 취소"]). Do NOT use vague category names like "음료/식사 취소".
+   - **PARTIAL CANCELLATION OF MULTI-ITEM ORDERS (CRITICAL)**: Some requests in the active list may contain MULTIPLE items bundled together (e.g., summary: "아이스 아메리카노 3개, 스테이크 샌드위치 1개 주문" or "수건 2개, 물 1병"). If the user wants to cancel ONLY SOME items from such a bundled request (e.g., "아메리카노만 취소해줘" or "물 취소해줘"), you MUST NOT route to "CANCEL" — cancelling would remove the ENTIRE order including items the user wants to keep. Instead, route to "DEPARTMENT" with the appropriate domain (e.g., "FB" or "HK") so the corresponding agent can handle it as an ORDER_MODIFY (removing the cancelled item while preserving the rest).
+   - **ITEM CATEGORIZATION**: When listing clarification options, categorize items correctly. 아이스크림 is a DESSERT, not a beverage. 음료(beverages) are drinks like 커피, 콜라, 주스, etc.
+   - Action: Set route_type to "CANCEL" (only when cancelling an ENTIRE request, clearly identified, or if there is only 1 active request with a single item).
 
 9. **STATUS_CHECK** (Status Inquiry):
    - Asking about ETA (e.g., "언제 와요?", "얼마나 걸려요?").
@@ -96,10 +99,10 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
   - Example: "콜라 취소해줘" → target_keyword: "콜라"
   - Example: "수건 요청 취소" → target_keyword: "수건"
   - Example: "콜라 말고 주스로" → target_keyword: "콜라" (the item being REPLACED)
+  - **CRITICAL**: If the user says "X로 바꿔줘" (Change to X) WITHOUT mentioning the old item (e.g., "물 1병으로 바꿔줘"), you MUST check the `[과거 대화 맥락]` to find the item they just ordered and set THAT as the `target_keyword` (e.g., "콜라"). **NEVER set the target_keyword to the NEW item ("물")**. If you cannot determine the old item from context, set `target_keyword` to `null`.
   - Example: "방금 거 취소" → target_keyword: null (no specific item mentioned)
-  - Example: "물 필요없어요" → target_keyword: "물"
   - Example: "취소해줘" → target_keyword: null
-  - If the guest does not mention a specific item, set target_keyword to null.
+  - If the guest does not mention a specific item and it cannot be clearly inferred from the immediate context, set target_keyword to `null`.
   - For REPLACE, extract the ORIGINAL item being replaced, NOT the new item.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -171,8 +174,9 @@ You must output a JSON Array of objects.
 - **INFRASTRUCTURE INQUIRY RULE**: If the user asks for a reason ("왜", "이유", "why", "reason") or complains generally about a hotel-wide infrastructure issue that cannot be fixed within their specific room (e.g., "엘리베이터가 왜 이렇게 느려요?", "와이파이가 전체적으로 안 터져요", "Why is the elevator so slow?", "Wifi is down everywhere"), you MUST route it to "FRONT_ESCALATION" with domain "FRONT". DO NOT route it to "FACILITY", as the facility team does not answer guest chat inquiries. The front desk must explain the situation.
 - **FALSE ALARM / CORRECTION RULE (HIGHEST PRIORITY)**: This rule OVERRIDES all other EMERGENCY or FRONT_ESCALATION rules. You MUST strictly distinguish between a 'False Alarm' and a 'Cancel Request'.
 - **False Alarm**: If the user explicitly states that a complaint or problem they mentioned is no longer an issue, resolved itself, was a joke, or was a mistake IN THE EXACT SAME TURN (e.g., "옆방 너무 시끄러운데... 아 방금 나갔나 봐요. 일단 취소할게요", "불 안났어 장난이야", "Never mind, the noise stopped", "Just kidding about the fire"). For False Alarms where NO ticket was created yet, you MUST route to "SOFT_FALLBACK" with `create_ticket: false` and generate a polite, natural `reply` acknowledging the resolution. DO NOT route to CANCEL.
-- **Cancel Request**: If the user explicitly requests to cancel a request or complaint that was ALREADY SUBMITTED as a ticket in a PREVIOUS turn (e.g., "아까 신고한 싸움 끝났어요 취소해주세요", "수건 가져다 달라는 거 취소할게요", "필요없어요", "The fight is over, cancel the request", "Cancel the towel order"), you MUST route to "CANCEL". If the AI already said it dispatched staff or registered the request, it is an active ticket, so you MUST route to CANCEL to properly withdraw it.
+- **Cancel Request**: If the user explicitly requests to cancel a request or complaint that was ALREADY SUBMITTED as a ticket in a PREVIOUS turn (e.g., "아까 신고한 싸움 끝났어요 취소해주세요", "수건 가져다 달라는 거 취소할게요", "필요없어요", "The fight is over, cancel the request", "Cancel the towel order"), you MUST route to "CANCEL". If the AI already said it dispatched staff or registered the request, it is an active ticket, so you MUST route to CANCEL to properly withdraw it. When routing to CANCEL, you MUST find the corresponding request in `[고객의 현재 활성 요청(주문) 목록]` and output its ID in `target_request_id`.
 - **CONFIRMATION RESPONSE RULE**: If the last AI message in `[과거 대화 맥락]` ended with a confirmation question (e.g., "~해 드릴까요?", "~하시겠습니까?", "~드릴까요?") and the user replies positively (e.g., "네", "응", "예", "좋아", "yes", "ok") or negatively (e.g., "아니요", "괜찮아"), you MUST classify it as "DEPARTMENT" and assign the SAME `domain` as the ongoing conversation. DO NOT classify it as "CLARIFICATION" or "SOFT_FALLBACK".
+- **CANCELLATION CLARIFICATION RESPONSE RULE (CRITICAL)**: If the last AI message in `[과거 대화 맥락]` asked which item to cancel (e.g., "어떤 요청을 취소하시겠습니까?"), the user's answer (e.g., "수건 2개", "물", "첫 번째꺼") is specifying the TARGET of the cancellation. You MUST interpret this as a cancellation request. Route it to "CANCEL" (or "DEPARTMENT" for partial cancellation) and extract the item as the `target_keyword`. DO NOT treat it as a new order.
 - **CONFLICT RESOLUTION RESPONSE RULE**: If the last AI message in `[과거 대화 맥락]` asked how to handle an existing reservation (e.g., "기존 예약 외에 추가해 드릴까요, 아니면 기존 예약을 취소하고 변경해 드릴까요?"):
   - If the user chooses "신규 추가" (Add new): Route to "DEPARTMENT" with `action_type: "ADD"` and assign the SAME `domain` as the ongoing conversation.
   - If the user chooses "기존 예약 변경" (Change existing): Route to "DEPARTMENT" with `action_type: "REPLACE"`, assign the SAME `domain`, and set `target_keyword` to the specific service (e.g., "택시", "모닝콜").

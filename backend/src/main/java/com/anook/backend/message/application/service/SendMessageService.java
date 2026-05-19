@@ -133,8 +133,13 @@ public class SendMessageService implements SendMessageUseCase {
                             "content", m.getContent()))
                     .toList();
 
+<<<<<<< HEAD
+            // 3-1. 취소 문맥 분석을 위한 현재 고객의 활성(대기 중인) 주문 목록 조회
+            java.util.List<Map<String, Object>> activeRequests = activeRequestPort.findActiveRequests(roomNo, guestId);
+=======
             // 3.5. 활성화된 예약 내역 조회 (가상 PMS/DB 실시간 확인)
             java.util.List<String> activeRequests = activeRequestPort.getActiveRequestSummaries(roomNo);
+>>>>>>> origin/dev
 
             // AI 호출
             java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests);
@@ -183,8 +188,9 @@ public class SendMessageService implements SendMessageUseCase {
                     eventPublisher.publishEvent(new com.anook.backend.message.application.event.AllRequestsCancelledByGuestEvent(this, roomNo, guestId));
                     log.info("[Message] AllRequestsCancelledByGuestEvent 발행 — room: {}", roomNo);
                 } else if ("CANCEL_REQUEST".equals(analysis.action())) {
-                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword()));
-                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}", roomNo, analysis.domainCode(), analysis.targetKeyword());
+                    eventPublisher.publishEvent(new RequestCancelledByGuestEvent(
+                            this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId()));
+                    log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}, targetRequestId: {}", roomNo, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId());
                 } else if (analysis.domainCode() != null) {
                     boolean escalated = analysis.confidence() < 0.7;
 

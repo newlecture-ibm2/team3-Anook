@@ -5,7 +5,9 @@ import com.anook.backend.message.application.port.out.MessageAiResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 /**
  * Mock AI 어댑터 — 개발/테스트용 고정 응답
@@ -24,8 +26,13 @@ import java.util.Map;
 public class MockAiAdapter implements MessageAiPort {
 
     @Override
+<<<<<<< HEAD
+    public List<MessageAiResult> analyze(String text, String roomNo, String language, List<Map<String, String>> chatHistory, List<String> images, List<Map<String, Object>> activeRequests) {
+        log.info("[MockAI] 분석 요청 — room: {}, text: {}", roomNo, text);
+=======
     public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory, java.util.List<String> images, java.util.List<String> activeRequests) {
         log.info("[MockAI] 분석 요청(Mock) — room: {}, lang: {}, text: {}", roomNo, language, text);
+>>>>>>> origin/dev
 
         // 1초 딜레이 (AI 처리 시간 시뮬레이션)
         try {
@@ -48,6 +55,7 @@ public class MockAiAdapter implements MessageAiPort {
                     null,
                     null,
                     null,
+                    null,
                     "키워드 기반 매칭 (HK)"
             ));
         }
@@ -62,6 +70,7 @@ public class MockAiAdapter implements MessageAiPort {
                     0.88,
                     null,
                     "ADD",
+                    null,
                     null,
                     null,
                     null,
@@ -82,6 +91,7 @@ public class MockAiAdapter implements MessageAiPort {
                     null,
                     null,
                     null,
+                    null,
                     "키워드 기반 매칭 (FB)"
             ));
         }
@@ -90,7 +100,7 @@ public class MockAiAdapter implements MessageAiPort {
         return java.util.List.of(new MessageAiResult(
                 "안녕하세요! 아눅 호텔 컨시어지입니다. 무엇이든 편하게 말씀해 주세요.",
                 null,
-                null, null, Map.of(), 0.0, null, "ADD", null, null, null, null
+                null, null, Map.of(), 0.0, null, "ADD", null, null, null, null, null
         ));
     }
 

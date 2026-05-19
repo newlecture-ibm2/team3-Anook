@@ -49,6 +49,14 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
         if chat_history:
             chat_history.insert(0, {"role": "ai", "content": "[SYSTEM: 이전 요청은 직원 연결 또는 상담 완료로 종료되었습니다. 아래부터는 완전히 독립적인 새로운 요청으로 평가하세요.]"})
 
+    # ── 1.5) 활성 요청 목록(Context) 조립 ──
+    active_requests_str = ""
+    if active_requests:
+        import json
+        # 필요한 정보만 간결하게 추출 (전체 JSON은 토큰 낭비)
+        filtered_requests = [{"id": req.get("id"), "summary": req.get("summary")} for req in active_requests]
+        active_requests_str = "\n[고객의 현재 활성 요청(주문) 목록]\n" + json.dumps(filtered_requests, ensure_ascii=False) + "\n"
+
     # ── 1) 과거 대화 맥락 조립 ──
     if chat_history:
         context_lines = []
@@ -57,9 +65,9 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
             context_lines.append(f"{role}: {msg.get('content')}")
         
         context_str = "\n".join(context_lines)
-        final_prompt = f"[과거 대화 맥락]\n{context_str}\n\n[현재 요청]\n고객: {user_message}"
+        final_prompt = f"{active_requests_str}[과거 대화 맥락]\n{context_str}\n\n[현재 요청]\n고객: {user_message}"
     else:
-        final_prompt = user_message
+        final_prompt = f"{active_requests_str}[현재 요청]\n고객: {user_message}"
 
     # ── 2) Gemini 호출 ──
     system_instruction_with_lang = ROUTER_SYSTEM_PROMPT.replace("{system_language}", system_language)
