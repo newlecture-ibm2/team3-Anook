@@ -8,6 +8,8 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import InputField from '@/components/ui/Inputfield/InputField';
+import PopoverMenu from '@/components/ui/PopoverMenu/PopoverMenu';
+import { MoreIcon } from '@/components/icons';
 
 export default function ChatHistoryPage() {
   const [searchValue, setSearchValue] = useState('');
@@ -20,6 +22,7 @@ export default function ChatHistoryPage() {
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // targetDate가 변경될 때마다 방 목록 새로고침
   React.useEffect(() => {
@@ -33,15 +36,50 @@ export default function ChatHistoryPage() {
     }
   };
 
-  // Search bar component to inject into ChatPanel header
-  const searchBar = (
-    <div style={{ minWidth: '240px' }}>
-      <InputField
-        variant="search"
-        placeholder="대화 내용 검색..."
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-      />
+  // Search bar and More Menu component to inject into ChatPanel header
+  const headerRight = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+      <div style={{ minWidth: '240px' }}>
+        <InputField
+          variant="search"
+          placeholder="대화 내용 검색..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+        />
+      </div>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--color-gray-600)'
+          }}
+        >
+          <MoreIcon />
+        </button>
+        {isPopoverOpen && (
+          <PopoverMenu
+            items={[{ value: 'delete', label: '대화 내역 삭제' }]}
+            onSelect={(value) => {
+              if (value === 'delete') {
+                setIsDeleteModalOpen(true);
+              }
+              setIsPopoverOpen(false);
+            }}
+            onClose={() => setIsPopoverOpen(false)}
+            width={160}
+            style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 100 }}
+          />
+        )}
+      </div>
     </div>
   );
 
@@ -102,7 +140,7 @@ export default function ChatHistoryPage() {
               status="COMPLETED"
               summary={t.frontdeskPage.chatHistory?.roomChatRecord?.replace('{{room}}', selectedRoom) || `${selectedRoom}호 채팅 기록`}
               onClose={() => {}}
-              headerRightContent={searchBar}
+              headerRightContent={headerRight}
               searchTerm={searchValue}
             />
           ) : (
