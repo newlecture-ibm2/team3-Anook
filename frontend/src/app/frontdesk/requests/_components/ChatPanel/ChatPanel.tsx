@@ -43,6 +43,33 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   CANCELLED: { text: '취소됨', variant: 'gray' },
 };
 
+const renderHighlightedText = (text: string, search: string, isActiveMatch: boolean) => {
+  if (!search) return text;
+  const parts = text.split(new RegExp(`(${search.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === search.toLowerCase() ? (
+          <span 
+            key={i} 
+            style={{ 
+              backgroundColor: isActiveMatch ? '#ffd54f' : 'rgba(255, 230, 0, 0.3)', 
+              fontWeight: isActiveMatch ? 'bold' : 'normal',
+              borderRadius: '2px',
+              padding: '0 2px',
+              color: 'var(--color-gray-900)'
+            }}
+          >
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
 export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, showSearch, onRagFlowChange }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -392,17 +419,16 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
               return (
                 <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ 
-                    transition: 'background-color 0.3s', 
+                    transition: 'all 0.3s', 
                     padding: '4px', 
                     borderRadius: '16px', 
-                    background: isTargetMatch ? 'var(--color-gray-100)' : 'transparent',
                   }}>
                     <ChatBubble 
                       variant={msg.variant}
                       bubbleStyle={bubbleStyle}
                       isFallback={isManualStaffMsg}
                     >
-                      {msg.content}
+                      {renderHighlightedText(msg.content, internalSearch, isTargetMatch)}
                     </ChatBubble>
                   </div>
                 </div>
