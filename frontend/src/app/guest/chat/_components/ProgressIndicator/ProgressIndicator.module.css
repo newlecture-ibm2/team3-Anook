@@ -20,16 +20,35 @@
   width: 44px;
   height: 44px;
   margin-left: -6px;
-  overflow: hidden;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   filter: hue-rotate(-30deg) saturate(2.2) brightness(0.95);
-  background: radial-gradient(circle at 50% calc(50% - 2px), rgba(255, 255, 255, 0.6) 45%, rgba(255, 255, 255, 0) 85%);
+  position: relative;
+}
+
+.lottieAvatar::before {
+  content: '';
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.35) 40%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 .lottieAvatar>* {
+  position: relative;
+  z-index: 1;
   transform: scale(2.6) translateY(-2%);
 }
 
