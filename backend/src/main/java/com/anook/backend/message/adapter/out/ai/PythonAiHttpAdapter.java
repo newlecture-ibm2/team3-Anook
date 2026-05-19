@@ -52,6 +52,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
             body.put("text", text);
             body.put("room_no", roomNo);
             body.put("language", language);
+            body.put("system_language", language);
             body.put("chat_history", chatHistory);
             if (images != null && !images.isEmpty()) {
                 body.put("images", images);
