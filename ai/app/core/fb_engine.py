@@ -35,11 +35,15 @@ def _fetch_menu_context() -> str:
                 options = m.get("options")
                 allergy_str = f" (알러지: {allergens})" if allergens else ""
                 
-                # 프롬프트의 REQUIRED OPTION RULE에 맞게 포맷 유지: [선택옵션] 카테고리:옵션1|옵션2
-                if options:
-                    option_str = f" [선택옵션] {options}"
-                else:
-                    option_str = ""
+                # 프롬프트의 REQUIRED OPTION RULE에 맞게 포맷 유지
+                option_str = ""
+                if options and isinstance(options, list):
+                    opt_list = []
+                    for opt in options:
+                        req_label = "[필수옵션]" if opt.get("isRequired") else "[선택옵션]"
+                        items = "|".join(opt.get("items", []))
+                        opt_list.append(f"{req_label} {opt.get('groupName')}:{items}")
+                    option_str = " " + " / ".join(opt_list)
                     
                 menu_lines.append(f"- [{category}] {name}: ${price:.2f}{allergy_str}{option_str}")
             return "\n".join(menu_lines)

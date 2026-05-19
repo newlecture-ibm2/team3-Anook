@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS pms_menu (
     price       INTEGER      NOT NULL,
     category    VARCHAR(30)  NOT NULL,
     allergens   VARCHAR(200),
-    options     VARCHAR(500),
+    options     TEXT,
     available   BOOLEAN      NOT NULL DEFAULT TRUE
 );
 

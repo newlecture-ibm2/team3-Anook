@@ -19,6 +19,12 @@ def get_neo4j_driver():
         _neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
     return _neo4j_driver
 
+def init_neo4j_driver():
+    """서버 구동 시점에 미리 호출하여 연결을 맺고 검증(Fail-Fast)합니다."""
+    driver = get_neo4j_driver()
+    driver.verify_connectivity()
+    return driver
+
 def search_graph(query: str) -> List[Dict[str, Any]]:
     """
     사용자 질문에서 키워드를 바탕으로 Neo4j 그래프 데이터베이스를 탐색합니다.

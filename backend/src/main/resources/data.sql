@@ -97,18 +97,18 @@ INSERT INTO pms_menu (name, price, category, allergens, options, available) VALU
     ('클래식 치즈버거',      15000, 'MAIN',    '밀,유제품',        NULL,                          TRUE),
     ('트러플 머쉬룸 리조또', 28000, 'MAIN',    '유제품',           NULL,                          TRUE),
     ('한우 불고기 덮밥',     22000, 'MAIN',    '대두,밀',          NULL,                          TRUE),
-    ('시저 샐러드',          14000, 'MAIN',    '유제품,계란',      '드레싱:시저|발사믹|없음',      TRUE),
+    ('시저 샐러드',          14000, 'MAIN',    '유제품,계란',      '[{"groupName": "드레싱", "isRequired": true, "items": ["시저", "발사믹", "없음"]}]',      TRUE),
     ('해산물 파스타',        25000, 'MAIN',    '밀,갑각류,연체류', NULL,                          TRUE),
-    ('스테이크 샌드위치',    20000, 'MAIN',    '밀,유제품',        '굽기:레어|미디엄|웰던',        TRUE),
+    ('스테이크 샌드위치',    20000, 'MAIN',    '밀,유제품',        '[{"groupName": "굽기", "isRequired": true, "items": ["레어", "미디엄", "웰던"]}]',        TRUE),
     -- SIDE (사이드)
     ('감자튀김',             8000,  'SIDE',    NULL,               NULL,                          TRUE),
     ('시즌 과일 플레이트',   12000, 'SIDE',    NULL,               NULL,                          TRUE),
     ('모짜렐라 스틱',        10000, 'SIDE',    '밀,유제품',        NULL,                          TRUE),
     -- DRINK (음료)
-    ('콜라',                 4000,  'DRINK',   NULL,               '종류:일반|제로',               TRUE),
+    ('콜라',                 4000,  'DRINK',   NULL,               '[{"groupName": "종류", "isRequired": true, "items": ["일반", "제로"]}]',               TRUE),
     ('오렌지 주스',          6000,  'DRINK',   NULL,               NULL,                          TRUE),
-    ('아메리카노',           5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
-    ('캐모마일 티',          5000,  'DRINK',   NULL,               '온도:HOT|ICE',                TRUE),
+    ('아메리카노',           5000,  'DRINK',   NULL,               '[{"groupName": "온도", "isRequired": true, "items": ["HOT", "ICE"]}]',                TRUE),
+    ('캐모마일 티',          5000,  'DRINK',   NULL,               '[{"groupName": "온도", "isRequired": true, "items": ["HOT", "ICE"]}]',                TRUE),
     -- DESSERT (디저트)
     ('뉴욕 치즈케이크',      12000, 'DESSERT', '밀,유제품,계란',        NULL,                    TRUE),
     ('초콜릿 브라우니',      10000, 'DESSERT', '밀,유제품,계란,견과류', NULL,                    TRUE),
