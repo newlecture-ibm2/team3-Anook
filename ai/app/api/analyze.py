@@ -491,7 +491,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history, request.images, getattr(request, 'active_requests', []), request.system_language)
+        router_results = route(request.text, chat_history=request.chat_history, images=request.images, system_language=request.system_language, active_requests=getattr(request, 'active_requests', []))
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
