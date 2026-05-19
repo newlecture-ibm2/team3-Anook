@@ -547,7 +547,21 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         r.confidence = 1.0
 
     # ──────────────────────────────────────────────
-    # STEP 2-5: [Progress Indicator] 라우터 결과 기반 진행 상태 전송
+    # STEP 2-2: [전체 취소 + EMERGENCY 오분류 보정]
+    # "모든 요청 취소" 시 대부분의 route가 CANCEL인데 EMERGENCY만 FRONT_ESCALATION으로
+    # 분류되는 경우, EMERGENCY도 CANCEL로 강제 오버라이드 (새 긴급 티켓 생성 방지)
+    # ──────────────────────────────────────────────
+    text_lower_check = request.text.lower()
+    is_cancel_intent = any(word in text_lower_check for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything", "취소"])
+    cancel_routes = [r for r in router_results if r.route_type == "CANCEL"]
+    emergency_escalation_routes = [r for r in router_results if r.route_type == "FRONT_ESCALATION" and r.domain == "EMERGENCY"]
+
+    if is_cancel_intent and emergency_escalation_routes:
+        print(f"[Analyze] 🛡️ 전체 취소 + EMERGENCY 오분류 보정 — FRONT_ESCALATION → CANCEL 오버라이드")
+        for r in emergency_escalation_routes:
+            r.route_type = "CANCEL"
+            r.confidence = 1.0
+
     # ──────────────────────────────────────────────
     # ⚠️ 에이전트 실행 전에 반드시 전송 완료되어야 하므로 await로 직접 호출합니다.
     #    (create_task 사용 시, 응답이 먼저 도착하여 Progress UI가 표시되지 않는 레이스 컨디션 발생)
@@ -1383,7 +1397,7 @@ class TranslateRequest(BaseModel):
     text: str
     target_language: str
 
-@router.post("/translate")
+@router.post("/translate-summary")
 async def translate_text(request: TranslateRequest) -> dict:
     prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
     translated_text = await call_gemini_async(
