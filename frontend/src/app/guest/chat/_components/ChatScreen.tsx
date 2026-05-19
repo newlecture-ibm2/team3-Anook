@@ -90,6 +90,11 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
         <div
           ref={statusBarRef}
           className={styles.statusBarContainer}
+          onClick={() => {
+            if (!isRequestsExpanded) {
+              setIsRequestsExpanded(true);
+            }
+          }}
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.7)',
             backdropFilter: 'blur(14px)',
