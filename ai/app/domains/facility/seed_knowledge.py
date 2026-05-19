@@ -14,6 +14,13 @@ def seed_facility_knowledge():
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            # 중복 시딩 방지 (이미 해당 도메인의 지식이 존재하면 건너뜀)
+            cur.execute("SELECT COUNT(*) FROM knowledge_entry WHERE domain_code = %s", ("FACILITY",))
+            count = cur.fetchone()[0]
+            if count > 0:
+                print(f"⏩ [FACILITY] 지식이 이미 {count}건 존재합니다. 시딩(임베딩)을 건너뜁니다.")
+                return
+
             for item in FACILITY_KNOWLEDGE:
                 question = item["question"]
                 answer = item["answer"]
