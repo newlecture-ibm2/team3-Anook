@@ -133,7 +133,7 @@ STATIC_REPLIES = {
         "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프런트 직원과 직접 연결하여 도움을 드리겠습니다. 📞",
+        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프런트 직원과 직접 연결하여 도움을 드리겠습니다.",
         "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
         "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。",
         "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。"
@@ -145,7 +145,7 @@ STATIC_REPLIES = {
         "zh": "我无法理解您的请求。如果您需要前台的帮助，请回复“连接前台”。"
     },
     "NEED_MORE_INFO": {
-        "ko": "조금 더 상세한 안내가 필요하시다면 프런트 데스크로 바로 연결해 드릴까요? 📞",
+        "ko": "조금 더 상세한 안내가 필요하시다면 프런트 데스크로 바로 연결해 드릴까요?",
         "en": "Would you like me to connect you to the front desk for more detailed information?",
         "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？",
         "zh": "您需要我将您连接到前台以获取更详细的信息吗？"
