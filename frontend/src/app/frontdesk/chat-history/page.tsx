@@ -39,14 +39,6 @@ export default function ChatHistoryPage() {
   // Search bar and More Menu component to inject into ChatPanel header
   const headerRight = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
-      <div style={{ minWidth: '240px' }}>
-        <InputField
-          variant="search"
-          placeholder="대화 내용 검색..."
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-        />
-      </div>
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => setIsPopoverOpen(!isPopoverOpen)}
@@ -141,7 +133,7 @@ export default function ChatHistoryPage() {
               summary={t.frontdeskPage.chatHistory?.roomChatRecord?.replace('{{room}}', selectedRoom) || `${selectedRoom}호 채팅 기록`}
               onClose={() => {}}
               headerRightContent={headerRight}
-              searchTerm={searchValue}
+              showSearch={true}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>

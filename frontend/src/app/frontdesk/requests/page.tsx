@@ -338,17 +338,6 @@ export default function FrontDeskPage() {
     return undefined;
   };
 
-  const chatSearchBar = (
-    <div style={{ minWidth: '240px' }}>
-      <InputField
-        variant="search"
-        placeholder="대화 내용 검색..."
-        value={chatSearchValue}
-        onChange={(e) => setChatSearchValue(e.target.value)}
-      />
-    </div>
-  );
-
   return (
     <div className={styles.container}>
       {/* Content Section (Split Layout) */}
@@ -458,8 +447,7 @@ export default function FrontDeskPage() {
               }}
               isEmergency={activeReq?.priority === 'EMERGENCY'}
               onRagFlowChange={setIsRagFlowActive}
-              headerRightContent={chatSearchBar}
-              searchTerm={chatSearchValue}
+              showSearch={true}
               />
             );
           })() : (
