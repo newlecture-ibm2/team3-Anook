@@ -40,6 +40,7 @@ class AnalyzeRequest(BaseModel):
     system_language: Optional[str] = "ko"
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
+    active_requests: Optional[List[str]] = []
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -371,6 +372,23 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # ── [비동기 로깅 메타데이터 처리 보류] ──
     # agent_result 안에서 __ai_log_meta를 반환하도록 처리
 
+    from app.core.emergency_filter import emergency_pre_filter, get_emergency_reply
+    
+    # ── [긴급 상황 사전 필터 (1-Tier)] ──
+    em_match = emergency_pre_filter(request.text)
+    if em_match:
+        category = em_match["category"]
+        print(f"[Analyze] 🚨 긴급 상황 키워드 감지: {category}")
+        return [{
+            "guest_reply": get_emergency_reply(category, request.language),
+            "summary": f"긴급 상황 자동 접수 ({category})",
+            "domain_code": "EMERGENCY",
+            "priority": "EMERGENCY",
+            "entities": {"intent": "EMERGENCY", "category": category},
+            "confidence": 1.0,
+            "reasoning": f"• 긴급 키워드 '{em_match['matched_keyword']}' 감지\n• 1-Tier 즉시 라우팅"
+        }]
+
     # ── [실무 최적화: 역질문 단답형(네/아니요) 강제 라우팅 인터셉트] ──
     if request.chat_history:
         last_ai = None
@@ -473,7 +491,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
     # STEP 2: 라우터 엔진으로 도메인 분류
     # ──────────────────────────────────────────────
     try:
-        router_results = route(request.text, request.chat_history, request.images, request.system_language)
+        router_results = route(request.text, request.chat_history, request.images, getattr(request, 'active_requests', []), request.system_language)
         print(f"\n[Analyze] 🔀 라우터 결과: {[{'route_type': r.route_type, 'domain': r.domain, 'confidence': r.confidence} for r in router_results]}")
     except Exception as e:
         print(f"[Analyze] ❌ 라우터 실패: {e}")
@@ -570,7 +588,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
-                    images=request.images
+                    images=request.images,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -652,7 +671,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language
+                        system_language=request.system_language,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
@@ -679,7 +699,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
-                    system_language=request.system_language
+                    system_language=request.system_language,
+                    active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
                 is_escalation = agent_result.get("entities", {}).get("intent") == "ESCALATION"
@@ -727,7 +748,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language
+                        system_language=request.system_language,
+                        active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
                         "guest_reply": agent_result.get("guest_reply", "메뉴 정보를 확인 중입니다."),
@@ -791,6 +813,30 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 if domain == "CONCIERGE" and rag_results:
                     rag_results = [r for r in rag_results if r.get('similarity', 1.0) >= 0.3]
                     
+                    # --- [추가] 카테고리 주입 및 목표 카테고리 감지 ---
+                    from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
+                    answer_to_cat = {k['answer']: k.get('category') for k in CONCIERGE_KNOWLEDGE}
+                    for r in rag_results:
+                        r['category'] = answer_to_cat.get(r['answer'])
+                        
+                    target_category = None
+                    query_text = (search_query + " " + request.text).lower()
+                    
+                    restaurant_keywords = [
+                        "식당", "맛집", "먹을", "식사", "밥", "음식점", "레스토랑", "펍", "술집", 
+                        "restaurant", "food", "eat", "dining", "meal", "bar", "pub", "hungry", "cafe"
+                    ]
+                    tour_keywords = [
+                        "관광", "명소", "투어", "구경", "볼거리", "여행지", "가볼만한", "가볼 만한",
+                        "tour", "attraction", "sightseeing", "place to visit", "visit", "explore", "landmark"
+                    ]
+                    
+                    if any(kw in query_text for kw in restaurant_keywords):
+                        target_category = "restaurant"
+                    elif any(kw in query_text for kw in tour_keywords):
+                        target_category = "tour"
+                    # -----------------------------------------------
+
                     mentioned_places = []
                     if request.chat_history:
                         for msg in request.chat_history[-6:]:
@@ -825,7 +871,6 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     
                     last_category = None
                     if last_place:
-                        from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
                         for k in CONCIERGE_KNOWLEDGE:
                             if last_place in k['answer']:
                                 last_category = k.get('category')
@@ -833,7 +878,14 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     
                     if is_another_request and last_category:
                         # 동일 카테고리만 후보로 남김
-                        rec_results = [r for r in rec_results if r.get('category') == last_category]
+                        filtered_rec = [r for r in rec_results if r.get('category') == last_category]
+                        if filtered_rec:
+                            rec_results = filtered_rec
+                    elif target_category:
+                        # 첫 요청이라도 타겟 카테고리가 있으면 필터링
+                        filtered_rec = [r for r in rec_results if r.get('category') == target_category]
+                        if filtered_rec:
+                            rec_results = filtered_rec
 
                     is_reconfirm = "RE-CONFIRM" in (primary.reasoning or "").upper()
                     if not is_reconfirm and rec_results:
@@ -884,7 +936,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         info_prompt = (
                             f"고객 질문: {request.text}\n\n"
                             f"아래 제공된 [호텔 지식]을 바탕으로 고객의 질문에 친절하게 답변하세요. {additional_instructions}\n"
-                            f"**중요**: [호텔 지식]에 해당 서비스에 대한 정보가 조금이라도 포함되어 있다면, '모른다'고 하지 말고 최대한 정보를 제공하세요. "
+                            f"**중요**: [호텔 지식]에 해당 서비스에 대한 정보가 조금이라도 포함되어 있다면, '모른다'고 하지 말고 제공된 지식 안에서 최대한 정보를 제공하세요. "
                             f"만약 답변 내용이 택시, 꽃배달, 예약 등 서비스 관련 내용이라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스 이용을 유도하는 질문을 포함하세요.\n"
                             f"**주의**: 서비스 유도 질문을 포함했다면, 절대로 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장은 사용하지 마세요.\n"
                             f"서비스 유도 질문이 없는 일반적인 정보 안내인 경우에만 마지막에 '{_get_static_reply('NEED_MORE_INFO', request.language)}'를 덧붙이세요.\n\n"
@@ -1074,7 +1126,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "guest_reply": _get_static_reply(reply_key, request.language),
                 "summary": summary_val,
                 "domain_code": "EMERGENCY" if is_emergency else "FRONT",
-                "priority": "EMERGENCY" if is_emergency else "URGENT",
+                "priority": "EMERGENCY" if is_emergency else getattr(primary, 'priority', 'NORMAL'),
                 "entities": {"intent": "EMERGENCY" if is_emergency else "ESCALATION"},
                 "confidence": 0.0,
                 "reasoning": getattr(primary, 'reasoning', '알 수 없음')
@@ -1106,7 +1158,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
 
         # STEP 3-g: STATUS_CHECK → 진행 상태 확인
-        if primary.mode == "STATUS_CHECK":
+        if primary.route_type == "STATUS_CHECK":
             response = {
                 "guest_reply": _get_static_reply("STATUS_CHECK", request.language),
                 "summary": "요청 진행 상태 확인",
@@ -1143,11 +1195,25 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # (이전의 글로벌 이관 로직은 삭제됨: 잘못된 배정은 직원이 수동 이관함)
 
-            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
+            # 🚨 [카드 생성 방지 로직] 필수값(missing_fields)이 아직 다 채워지지 않았거나, 에이전트가 아직 최종 접수(ADD/REPLACE)를 확정하지 않았다면 절대 카드를 생성하지 않음 (대화로만 처리)
             # 단, 에스컬레이션/컴플레인 상황에서는 예외적으로 티켓을 무조건 생성하도록 방어 우회
             is_escalation = final_entities.get("intent") in ["ESCALATION", "COMPLAINT", "EMERGENCY"]
-            if agent_result.get("missing_fields") and not is_escalation:
+            
+            action_type = agent_result.get("action_type")
+            if action_type is None:
+                action_type = final_entities.get("action_type")
+            if action_type is None:
+                action_type = getattr(primary, 'action_type', None)
+            
+            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
                 final_domain_code = None
+            
+            # 🛡️ [컨시어지 확인 질문 방어] AI가 "~드릴까요?" 등 확인 질문을 던지는 단계에서는
+            # action_type과 무관하게 티켓 생성을 차단 (컨시어지 도메인에만 적용)
+            if domain == "CONCIERGE" and final_domain_code:
+                confirmation_patterns = ["까요?", "할까요?", "드릴까요?", "하시겠습니까?", "인가요?"]
+                if any(p in final_guest_reply for p in confirmation_patterns):
+                    final_domain_code = None
             
             # 이중 방어: FRONT 에이전트이고 에스컬레이션인데 여전히 domain_code가 없다면 강제 복구
             if domain == "FRONT" and is_escalation and not final_domain_code:

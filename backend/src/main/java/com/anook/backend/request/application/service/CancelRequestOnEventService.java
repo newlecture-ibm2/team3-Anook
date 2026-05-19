@@ -67,14 +67,38 @@ public class CancelRequestOnEventService {
     private Optional<Request> findByKeyword(String roomNo, Long guestId, String keyword) {
         java.util.List<Request> cancellable = requestPort.findAllCancellableByRoomNoAndGuestId(roomNo, guestId);
         String lowerKeyword = keyword.toLowerCase();
+        
+        java.util.List<String> searchKeywords = new java.util.ArrayList<>();
+        searchKeywords.add(lowerKeyword);
+        
+        // 동의어(유의어) 확장 처리
+        if (lowerKeyword.contains("물") || lowerKeyword.contains("생수") || lowerKeyword.contains("워터")) {
+            searchKeywords.add("물");
+            searchKeywords.add("생수");
+            searchKeywords.add("워터");
+        }
+        if (lowerKeyword.contains("수건") || lowerKeyword.contains("타월") || lowerKeyword.contains("타올")) {
+            searchKeywords.add("수건");
+            searchKeywords.add("타월");
+            searchKeywords.add("타올");
+        }
+        if (lowerKeyword.contains("콜라") || lowerKeyword.contains("코카콜라") || lowerKeyword.contains("음료")) {
+            searchKeywords.add("콜라");
+            searchKeywords.add("음료");
+        }
+        
         return cancellable.stream()
-                .filter(r -> r.getSummary() != null && r.getSummary().toLowerCase().contains(lowerKeyword))
+                .filter(r -> {
+                    if (r.getSummary() == null) return false;
+                    String summary = r.getSummary().toLowerCase();
+                    return searchKeywords.stream().anyMatch(summary::contains);
+                })
                 .findFirst(); // findAllCancellableByRoomNoAndGuestId는 최신순 정렬
     }
 
     private void cancelSingleRequest(Request request, String roomNo) {
         try {
-            if (request.getStatus() == RequestStatus.PENDING) {
+            if (request.getStatus() == RequestStatus.PENDING || request.getStatus() == RequestStatus.ESCALATED) {
                 request.changeStatus(RequestStatus.CANCELLED);
                 requestPort.save(request);
 
@@ -92,6 +116,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToAdmin(payload);
             } else if (request.getStatus() == RequestStatus.IN_PROGRESS) {
                 request.requestCancellation();
                 requestPort.save(request);
@@ -108,6 +133,7 @@ public class CancelRequestOnEventService {
                 if (request.getDepartmentId() != null) {
                     dispatchPort.dispatchToDepartment(request.getDepartmentId(), payload);
                 }
+                dispatchPort.dispatchToAdmin(payload);
             }
 
         } catch (IllegalStateException e) {

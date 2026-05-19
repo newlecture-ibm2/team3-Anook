@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
       let finalData = data;
       if (role !== "ADMIN" && view === "my" && staffId) {
         finalData = finalData.filter((item: any) => {
-          return item.status === "PENDING" || item.assignedStaffId === staffId;
+          return item.status === "PENDING" || item.status === "ESCALATED" || item.assignedStaffId === staffId;
         });
       }
 

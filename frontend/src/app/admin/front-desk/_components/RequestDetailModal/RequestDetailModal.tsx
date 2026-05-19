@@ -49,6 +49,8 @@ interface RequestDetailModalProps {
   onClose: () => void;
   requestId: number;
   onUpdate: () => void;
+  /** 모달을 연 페이지의 부서 ID. FRONT가 아닌 경우 부서 변경 시 이관 요청(ESCALATED)으로 처리 */
+  callerDepartment?: string;
 }
 
 const PRIORITIES = [
@@ -158,9 +160,10 @@ export default function RequestDetailModal({
   onClose,
   requestId,
   onUpdate,
+  callerDepartment = 'FRONT',
 }: RequestDetailModalProps) {
   const { approveEscalation } = useApproveEscalation();
-  const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, loading } = useRequestDetail();
+  const { detail, fetchDetail, changePriority, changeDepartment, requestEscalation, cancelRequest, loading } = useRequestDetail();
 
   const [editPriority, setEditPriority] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
@@ -226,8 +229,11 @@ export default function RequestDetailModal({
     }
 
     if (editDeptId !== detail.departmentId) {
-      const ok = await changeDepartment(detail.id, editDeptId);
-      if (ok) changed = true;
+      // 프론트데스크(관리자)는 즉시 부서 배정, 타부서(직원)는 이관 요청(승인 대기)
+      const deptChangeOk = callerDepartment === 'FRONT'
+        ? await changeDepartment(detail.id, editDeptId)
+        : await requestEscalation(detail.id, editDeptId);
+      if (deptChangeOk) changed = true;
     }
 
     setSaving(false);

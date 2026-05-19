@@ -55,7 +55,8 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
   }, [messages, isTyping, isStaffTyping]);
 
   const hasInteracted = messages.some(msg => msg.variant === 'sent');
-  const showTypingBackground = isUserTyping || hasInteracted;
+  // AI가 타이핑 중일 때는 화려한 애니메이션이 선명하게 보이도록 흰색 장막을 걷어냅니다.
+  const showTypingBackground = !isTyping && (isUserTyping || hasInteracted);
 
   return (
     <div className={styles.chatScreen}>

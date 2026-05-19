@@ -3,7 +3,7 @@ from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko") -> dict:
+async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     

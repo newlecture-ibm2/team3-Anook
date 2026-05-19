@@ -142,6 +142,7 @@ export default function FacilityPage() {
           onClose={() => setDetailTarget(null)}
           requestId={detailTarget}
           onUpdate={() => refetch && refetch()}
+          callerDepartment="FACILITY"
         />
       )}
     </div>
