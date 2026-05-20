@@ -282,8 +282,15 @@ public class SendMessageService implements SendMessageUseCase {
         dispatchPort.sendToRoom(command.roomNo(), Map.of(
                 "type", "STAFF_TYPING"));
 
-        // 1. 번역 수행
-        String translatedContent = aiPort.translate(command.content(), targetLang);
+        // 1. 번역 수행 (원문 언어와 대상 언어가 같으면 스킵 — Gemini가 같은 언어끼리 번역 시 요약/의역하는 버그 방지)
+        String translatedContent;
+        String detectedLang = detectLanguage(command.content());
+        if (detectedLang.equals(targetLang)) {
+            log.info("[Message] 원문 언어({})와 대상 언어({})가 동일 — 번역 스킵", detectedLang, targetLang);
+            translatedContent = command.content();
+        } else {
+            translatedContent = aiPort.translate(command.content(), targetLang);
+        }
 
         // 2. 메시지 도메인 생성 및 저장
         Message staffMsg = Message.createStaffMessage(command.roomNo(), command.guestId(), command.content());
@@ -298,5 +305,21 @@ public class SendMessageService implements SendMessageUseCase {
                 "messageId", staffMsg.getId(),
                 "content", translatedContent,
                 "originalContent", command.content()));
+    }
+
+    /**
+     * 텍스트의 주요 언어를 휴리스틱으로 감지합니다.
+     * - 한글(AC00-D7A3) 문자가 하나라도 있으면 "ko"
+     * - 영문 알파벳이 과반수이면 "en"
+     * - 그 외 기본값 "ko"
+     */
+    private String detectLanguage(String text) {
+        if (text == null || text.isBlank()) return "ko";
+        for (char c : text.toCharArray()) {
+            if (c >= '\uAC00' && c <= '\uD7A3') return "ko";
+        }
+        long alphaCount = text.chars().filter(c -> (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')).count();
+        if (alphaCount > text.length() / 2) return "en";
+        return "ko";
     }
 }

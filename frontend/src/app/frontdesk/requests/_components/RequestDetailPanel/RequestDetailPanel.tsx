@@ -47,10 +47,7 @@ interface RequestDetailPanelProps {
   onClose?: () => void;
 }
 
-const PRIORITIES = [
-  { value: 'NORMAL', label: '보통' },
-  { value: 'URGENT', label: '긴급' },
-];
+
 
 const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
   PENDING: { text: '대기 중', variant: 'red' },
@@ -310,7 +307,6 @@ export default function RequestDetailPanel({
           const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
 
           const detailParts = mainText.split('[주문 상세]');
-          const customerText = detailParts[0].trim();
           const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
           // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
@@ -318,12 +314,6 @@ export default function RequestDetailPanel({
 
           return (
             <>
-              {customerText && (
-                <div className={styles.contentBlock}>
-                  <span className={styles.label}>고객 원문</span>
-                  <p className={styles.rawText}>{customerText}</p>
-                </div>
-              )}
               {orderDetail && !hasValidEntities && (
                 <div className={styles.contentBlock}>
                   <span className={styles.label}>주문/요청 상세</span>
@@ -352,7 +342,7 @@ export default function RequestDetailPanel({
       )}
 
       {/* AI 분석 결과 */}
-      {detail.entities && Object.keys(detail.entities).length > 0 && (
+      {((detail.entities && Object.keys(detail.entities).length > 0) || detail.reasoning) && (
         <div className={styles.section}>
           <div
             className={styles.collapsibleHeader}
@@ -364,8 +354,9 @@ export default function RequestDetailPanel({
 
           {isAiSectionOpen && (
             <div className={styles.aiInfo} style={{ marginTop: 'var(--space-8)' }}>
-              <div className={styles.confidenceBadge}>
-                신뢰도: {Math.round(detail.confidence * 100)}%
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <span className={styles.label}>신뢰도</span>
+                <span className={styles.value}>{Math.round(detail.confidence * 100)}%</span>
               </div>
               {(() => {
                 if (!detail.entities) return null;

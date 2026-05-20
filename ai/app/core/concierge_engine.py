@@ -99,6 +99,11 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         system_instruction_with_lang = CONCIERGE_SYSTEM_PROMPT.replace("{system_language}", system_language)
         raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
         
+        if isinstance(raw, list):
+            if not raw:
+                raise ValueError("AI returned an empty list")
+            raw = raw[0]
+            
         # AI가 null을 반환할 경우를 대비해 데이터 세척 (Pydantic 검증 오류 방지)
         # 문자열 필드에 null이 들어오면 빈 문자열("")로 대체
         clean_fields = ["clarification_question", "summary", "request_id", "room_no"]
@@ -169,8 +174,21 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     else:
         default_reply = f"요청하신 컨시어지 서비스({intent or '문의사항'})를 확인하였습니다. 담당 직원이 곧 안내해 드릴까요?"
     
-    # INFO 의도일 경우 티켓 생성 방지
-    domain_code = None if (result.needs_clarification or intent == 'INFO') else "CONCIERGE"
+    # [AN-344] 더블체크 UX 및 정보 제공 인텐트 처리 고도화:
+    # 1. 정보 안내 목적의 인텐트 (INFO, TOUR_INFO, MEDICAL_INFO)는 티켓을 생성하지 않도록 domain_code = None 처리합니다.
+    # 2. 예약/요청 의도(is_request_intent)일 때만 티켓 생성을 진행합니다.
+    #    - 필요한 필수 정보가 누락되어 되묻는 질문 단계(needs_clarification)일 때는 일단 카드를 띄우지 않도록 domain_code = None 처리합니다.
+    #    - 단, 모든 정보가 수집되어 확인 질문을 하거나 최종 접수 승인을 할 때는 domain_code = "CONCIERGE"로 설정하여 카드를 노출합니다.
+    missing = getattr(result, "missing_fields", [])
+    is_request_intent = intent not in ['INFO', 'TOUR_INFO', 'MEDICAL_INFO']
+    
+    if not is_request_intent:
+        domain_code = None
+    else:
+        if result.needs_clarification:
+            domain_code = None
+        else:
+            domain_code = "CONCIERGE"
     
     # /analyze 응답 규격에 맞게 변환 (HotelRequestSchema 준수)
     
@@ -192,4 +210,5 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "clarification_options": getattr(result, "clarification_options", []),
         "missing_fields": getattr(result, "missing_fields", []),
         "reasoning": result.reasoning,
+        "action_type": result.entities.get("action_type", "ADD"),
     }

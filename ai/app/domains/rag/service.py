@@ -19,6 +19,12 @@ def get_neo4j_driver():
         _neo4j_driver = GraphDatabase.driver(NEO4J_URI, auth=auth)
     return _neo4j_driver
 
+def init_neo4j_driver():
+    """서버 구동 시점에 미리 호출하여 연결을 맺고 검증(Fail-Fast)합니다."""
+    driver = get_neo4j_driver()
+    driver.verify_connectivity()
+    return driver
+
 def search_graph(query: str) -> List[Dict[str, Any]]:
     """
     사용자 질문에서 키워드를 바탕으로 Neo4j 그래프 데이터베이스를 탐색합니다.
@@ -73,6 +79,50 @@ def embed_text(text: str) -> List[float]:
     텍스트를 임베딩 벡터로 변환합니다.
     """
     return generate_embedding(text)
+
+
+def upsert_knowledge_entry(cur, domain_code: str, question: str, answer: str) -> str:
+    """
+    질문 단위로 knowledge_entry를 INSERT/UPDATE/SKIP 분기 처리합니다.
+
+    - 신규 질문: 임베딩 생성 후 INSERT
+    - 기존 질문 & answer 변경됨: 임베딩 재생성 후 UPDATE
+    - 기존 질문 & answer 동일: 재임베딩 없이 SKIP
+
+    반환값: "inserted" | "updated" | "skipped"
+    """
+    cur.execute(
+        "SELECT answer FROM knowledge_entry WHERE domain_code = %s AND question = %s",
+        (domain_code, question),
+    )
+    row = cur.fetchone()
+
+    if row is None:
+        embedding_vector = embed_text(f"질문: {question}\n답변: {answer}")
+        cur.execute(
+            """
+            INSERT INTO knowledge_entry (question, answer, domain_code, status, embedding)
+            VALUES (%s, %s, %s, 'APPROVED', %s::vector)
+            """,
+            (question, answer, domain_code, embedding_vector),
+        )
+        return "inserted"
+
+    if row[0] != answer:
+        embedding_vector = embed_text(f"질문: {question}\n답변: {answer}")
+        cur.execute(
+            """
+            UPDATE knowledge_entry
+               SET answer = %s,
+                   embedding = %s::vector,
+                   updated_at = NOW()
+             WHERE domain_code = %s AND question = %s
+            """,
+            (answer, embedding_vector, domain_code, question),
+        )
+        return "updated"
+
+    return "skipped"
 
 def search_similar(query: str, domain_code: str, top_k: int = 3, threshold: float = 0.7) -> List[Dict[str, Any]]:
     """

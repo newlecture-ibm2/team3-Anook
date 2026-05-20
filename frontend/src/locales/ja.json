@@ -181,6 +181,8 @@
     "chatHistory": {
       "title": "チャット履歴",
       "emptyMessage": "メッセージはありません",
+      "systemCompleted": "以前の相談および処理がすべて完了しました。",
+      "systemMessageNote": "(※ ゲストには表示されないフロント業務用のシステムメッセージです)",
       "roomConversation": "{{room}}号室の会話",
       "roomChatRecord": "{{room}}号室のチャット記録",
       "selectRoomPrompt": "会話を表示する部屋を選択してください",
@@ -285,7 +287,7 @@
       "forwardingSuffix": "チームに転送中...",
       "domains": {
         "HK": "ハウスキーピング",
-        "FB": "ルームサービス",
+        "FB": "料飲",
         "FACILITY": "施設",
         "CONCIERGE": "コンシェルジュ",
         "FRONT": "フロントデスク",
@@ -304,7 +306,8 @@
     "LATE_CHECKOUT": "レイトチェックアウト",
     "AMENITY": "アメニティリクエスト",
     "BEDDING": "寝具リクエスト",
-    "ROOM_SERVICE": "ルームサービス",
+    "ROOM_SERVICE": "ルームサービス料理注文",
+    "DINING": "ルームサービス料理注文",
     "MENU_INQUIRY": "メニュー問い合わせ",
     "ALLERGY_CHECK": "アレルギー確認",
     "ORDER_MODIFY": "注文変更",
@@ -329,15 +332,15 @@
     "ODOR": "異臭",
     "NOISE": "騒音苦情",
     "OTHER": "その他のリクエスト",
-    "TAXI": "タクシーリクエスト",
+    "TAXI": "タクシー配車予約",
     "TOUR_INFO": "観光情報",
-    "LUGGAGE_STORAGE": "荷物預かり",
+    "LUGGAGE_STORAGE": "手荷物一時預かり/引き取り",
     "RESTAURANT": "レストラン予約",
     "RESERVATION": "予約",
     "DELIVERY": "配達リクエスト",
-    "WAKE_UP_CALL": "モーニングコール",
+    "WAKE_UP_CALL": "モーニングコール予約",
     "MEDICAL_INFO": "医療情報",
-    "POSTAL_SERVICE": "郵便サービス",
+    "POSTAL_SERVICE": "郵便物発送代行",
     "COMPLAINT": "苦情",
     "INQUIRY": "一般的な問い合わせ",
     "AMBIGUOUS": "曖昧なリクエスト",
@@ -371,16 +374,25 @@
       "templateWithDetailsCompleted": "{team} チームが {details} を完了しました。",
       "templateNoDetailsPending": "{team} チームが確認しています。",
       "templateNoDetailsInProgress": "{team} チームが対応中です。",
-      "templateNoDetailsCompleted": "{team} チームが完了しました。"
+      "templateNoDetailsCompleted": "{team} チームが完了しました。",
+      "emergencyPending": "フロントデスクで緊急リクエストを確認しています。",
+      "emergencyInProgress": "フロントデスクで緊急リクエストを処理しています。",
+      "emergencyCompleted": "緊急リクエストが解決されました。"
     },
     "message": {
       "cancelPending": "🔄 キャンセルリクエストを受付、スタッフが確認中です",
-      "escalated": "💬 フロントデスクのスタッフがまもなく対応いたします。",
-      "forwarded": "✅ スタッフに転送されました",
+      "escalated": "スタッフが間もなく対応いたします",
+      "forwarded": "{team} チームに転送されました",
       "cancelledCard": "リクエストはキャンセルされました",
-      "autoAcceptGuide": "まもなく自動的に送信されます。",
+      "autoAcceptGuide": "リクエスト内容を確認してください。まもなく自動的に転送されます。",
+      "confirmGuide": "確認後、進行ボタンを押してください。",
+      "cancelPendingShort": "キャンセル要請確認中",
       "translating": "翻訳中...",
-      "escalationRequest": "フロントデスクスタッフ接続リクエスト"
+      "escalationRequest": "フロントデスクスタッフ接続リクエスト",
+      "cancelRequest": "リクエストをキャンセル",
+      "proceed": "進行",
+      "urgentPrefix": "[緊急] ",
+      "cancelSuffix": " キャンセル済み"
     },
     "button": {
       "accept": "今すぐ送信",
@@ -421,6 +433,25 @@
       "hoursAgo": "時間前",
       "minsAgo": "分前",
       "justNow": "たった今"
+    },
+    "entityLabels": {
+      "time": "時間",
+      "dest": "目的地",
+      "pax": "人数",
+      "paxUnit": "名",
+      "count": "数量",
+      "countUnit": "個",
+      "rest": "レストラン",
+      "target": "対象",
+      "req": "リクエスト",
+      "store": "保管",
+      "pickup": "受け取り",
+      "item": "品物",
+      "vendor": "業者",
+      "type": "分類",
+      "symptom": "症状",
+      "area": "地域",
+      "content": "内容"
     }
   },
   "menu": {
@@ -439,12 +470,14 @@
     "speechUnsupported": "お使いのブラウザは音声認識をサポートしていません。"
   },
   "aiReplies": {
-    "forwardFb": "ご注文を料飲チームにお伝えします。",
-    "forwardHk": "ご要望をハウスキーピングチームにお伝えします。",
-    "forwardFacility": "修理のご要望を施設チームにお伝えします。",
-    "forwardFront": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。",
-    "infoNotFound": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。",
-    "cancelSuccess": "リクエストは正常にキャンセルされました。",
-    "cancelPending": "すでに処理が進行中のため、担当部署にキャンセルをリクエストしました。確認次第お知らせいたします。"
+    "forwardFb": "かしこまりました！F&B（ルームサービス）チームにご注文内容を迅速にお伝えいたします。🍽️",
+    "forwardHk": "かしこまりました！ハウスキーピングチームにご要望内容を迅速にお伝えいたします。🧹",
+    "forwardFacility": "ご不便をおかけして大変申し訳ございません。🥲 施設管理チームにお伝えし、できる限り迅速に対応させていただきます！🛠️",
+    "forwardConcierge": "かしこまりました！コンシェルジュチームにご要望をお伝えいたします。🛎️",
+    "forwardFront": "ご不便をおかけして大変申し訳ございません。🥲 ただいまフロントデスクに直接お繋ぎし、サポートさせていただきます。",
+    "infoNotFound": "申し訳ありません、そちらについてはお答えいたしかねます。🥲 フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。🙏",
+    "cancelSuccess": "リクエストは正常にキャンセルされました。😌 他にご要望がございましたら、いつでもお申し付けください。",
+    "cancelPending": "すでに処理が進行中のため、担当部署にキャンセルをリクエストしました。🏃‍♂️ 確認次第お知らせいたします！",
+    "piiGuard": "お客様の大切な個人情報を保護するため、チャットでの機密情報の入力はお断りしております。🔒 詳細な確認が必要な場合は、客室内の電話からフロントデスク（内線0番）までご連絡いただければ、安全に対応させていただきます。😊"
   }
 }

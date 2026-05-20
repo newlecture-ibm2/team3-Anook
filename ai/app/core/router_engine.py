@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # ── 상수 ──
 VALID_DOMAINS = {"HK", "FB", "FACILITY", "CONCIERGE", "FRONT", "COMMON", "EMERGENCY"}
-VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK", "VOC", "SPENDING_INQUIRY"}
+VALID_ROUTE_TYPES = {"DEPARTMENT", "CLARIFICATION", "FRONT_ESCALATION", "SOFT_FALLBACK", "NON_ACTIONABLE", "INFO", "CANCEL", "STATUS_CHECK", "VOC", "BILLING_INQUIRY"}
 
 def route(user_message: str, chat_history: List[dict] = None, images: List[str] = None, system_language: str = "ko", active_requests: List[dict] = None) -> List[RouterOutputSchema]:
     """
@@ -120,7 +120,7 @@ def route(user_message: str, chat_history: List[dict] = None, images: List[str] 
                 result.domain = None
 
         # ── 5) 티켓 미생성 유형의 domain 무효화 (보호 처리) ──
-        if result.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", "STATUS_CHECK", "VOC", "SPENDING_INQUIRY"):
+        if result.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE", "CLARIFICATION", "STATUS_CHECK", "VOC", "BILLING_INQUIRY"):
             result.domain = None
             result.create_ticket = False
 

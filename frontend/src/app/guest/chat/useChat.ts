@@ -88,12 +88,15 @@ export function useChat() {
   const translateContent = (content: string) => {
     if (!content) return content;
     const currentT = tRef.current;
-    if (content.includes('[FORWARD_FB]')) return currentT.aiReplies?.forwardFb || content;
-    if (content.includes('[FORWARD_HK]')) return currentT.aiReplies?.forwardHk || content;
-    if (content.includes('[FORWARD_FACILITY]')) return currentT.aiReplies?.forwardFacility || content;
-    if (content.includes('[FORWARD_FRONT]')) return currentT.aiReplies?.forwardFront || content;
-    if (content.includes('[INFO_NOT_FOUND]')) return currentT.aiReplies?.infoNotFound || content;
-    return content;
+    let newContent = content;
+    if (newContent.includes('[FORWARD_FB]')) newContent = newContent.replace('[FORWARD_FB]', currentT.aiReplies?.forwardFb || '');
+    if (newContent.includes('[FORWARD_HK]')) newContent = newContent.replace('[FORWARD_HK]', currentT.aiReplies?.forwardHk || '');
+    if (newContent.includes('[FORWARD_FACILITY]')) newContent = newContent.replace('[FORWARD_FACILITY]', currentT.aiReplies?.forwardFacility || '');
+    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', (currentT.aiReplies as any)?.forwardConcierge || '');
+    if (newContent.includes('[FORWARD_FRONT]')) newContent = newContent.replace('[FORWARD_FRONT]', currentT.aiReplies?.forwardFront || '');
+    if (newContent.includes('[INFO_NOT_FOUND]')) newContent = newContent.replace('[INFO_NOT_FOUND]', currentT.aiReplies?.infoNotFound || '');
+    if (newContent.includes('[PII_GUARD]')) newContent = newContent.replace('[PII_GUARD]', currentT.aiReplies?.piiGuard || '');
+    return newContent;
   };
 
   // 1. 대화 내역 + 요청 카드 복원 + 상태바 복원
@@ -250,6 +253,8 @@ export function useChat() {
               setIsTyping(false);
 
               if (payload.type === 'AI_SKIPPED') {
+                // AI_PROGRESS 메시지 제거
+                setMessages(prev => prev.filter(m => m.type !== 'AI_PROGRESS'));
                 return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
               }
 
@@ -279,6 +284,13 @@ export function useChat() {
             } else if (payload.type === 'STAFF_MESSAGE') {
               // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 AI 채팅 버블 스타일로 실시간 표시
               setIsStaffTyping(false);
+              
+              // [AN-337] 시스템 마커 메시지 필터링 (화면에 표시하지 않음)
+              const contentStr = payload.content as string;
+              if (contentStr && contentStr.startsWith('[SYSTEM]')) {
+                return;
+              }
+
               const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
               setMessages(prev => {
                 // 중복 방지
@@ -468,7 +480,7 @@ export function useChat() {
                     let content = '';
                     if (hasStaffSuccess) {
                       // 직원/관리자가 강제 취소한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
+                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프론트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
                       // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
                       content = '요청하신 취소가 정상 처리되었습니다.';
@@ -533,7 +545,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'TEXT',
-                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프런트로 연락 부탁드립니다.',
+                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프론트로 연락 부탁드립니다.',
                     }];
                   });
                 }, 800);
@@ -570,14 +582,20 @@ export function useChat() {
     const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
     const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
     const hasChinese = /[\u4E00-\u9FFF]/.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
     
-    let detectedChatLang = 'en';
+    const currentLanguage = useUiStore.getState().language;
+    let detectedChatLang = currentLanguage; // Default to CURRENT language
+    
     if (hasKorean) detectedChatLang = 'ko';
     else if (hasJapanese) detectedChatLang = 'ja';
     else if (hasChinese) detectedChatLang = 'zh';
+    else if (hasEnglish) detectedChatLang = 'en';
 
-    setLanguage(detectedChatLang as any);
-    setChatLanguage(detectedChatLang);
+    if (detectedChatLang !== currentLanguage) {
+      setLanguage(detectedChatLang as any);
+      setChatLanguage(detectedChatLang);
+    }
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -612,24 +630,7 @@ export function useChat() {
       return [...filtered, newUserMsg];
     });
 
-    // 상담사 연결 중이면 AI Progress 표시 안 함 (상담사 typingDots만 표시)
-    const isStaffConnected = activeRequests.some(r => r.domainCode === 'FRONT' && r.status !== 'COMPLETED' && r.status !== 'CANCELLED');
-
-    if (!isStaffConnected) {
-      setIsTyping(true);
-
-      // 즉시 AI Progress 표시 (백엔드 응답 전에 애니메이션 먼저 보여줌)
-      setMessages(prev => {
-        const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
-        return [...filtered, {
-          id: 'ai-progress',
-          variant: 'received',
-          type: 'AI_PROGRESS',
-          content: '',
-          meta: { domains: [] }
-        }];
-      });
-    }
+    setIsTyping(true);
 
     abortControllerRef.current = new AbortController();
 

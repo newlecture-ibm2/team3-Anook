@@ -20,16 +20,27 @@
   width: 44px;
   height: 44px;
   margin-left: -6px;
-  overflow: hidden;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: hue-rotate(-30deg) saturate(2.2) brightness(0.95);
+  position: relative;
+  overflow: visible !important;
 }
 
+
+
 .lottieAvatar>* {
+  position: relative;
+  z-index: 1;
   transform: scale(2.6) translateY(-2%);
+  overflow: visible !important;
+}
+
+/* 내부 SVG, canvas 및 컨테이너가 드롭 섀도우 글로우를 잘라내지(clipping) 않도록 강제 노출 설정 */
+.lottieAvatar svg,
+.lottieAvatar canvas,
+.lottieAvatar div {
+  overflow: visible !important;
 }
 
 .description {

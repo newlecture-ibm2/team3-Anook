@@ -10,12 +10,7 @@ import useFrontdeskRequests from '../useFrontdeskRequests';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 
-const mapPriority = (p: string): 'NORMAL' | 'URGENT' => {
-  if (p === 'HIGH' || p === 'URGENT') {
-    return 'URGENT';
-  }
-  return 'NORMAL';
-};
+const mapPriority = (p: string): 'NORMAL' => 'NORMAL';
 
 const mapStatus = (s: string): 'TODO' | 'IN_PROGRESS' | 'DONE' => {
   if (s === 'COMPLETED' || s === 'CANCELLED') return 'DONE';

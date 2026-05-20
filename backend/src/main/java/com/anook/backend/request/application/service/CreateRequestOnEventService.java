@@ -221,8 +221,21 @@ public class CreateRequestOnEventService {
         boolean isUrgent = savedRequest.getPriority() == Priority.EMERGENCY;
         boolean isFrontEscalation = savedRequest.getDomainCode() == DomainCode.FRONT;
         boolean skipGrace = isUrgent || isFrontEscalation;
+
+        // [AN-344] FB/CONCIERGE는 AI가 이미 확인 질문을 했으므로 Grace Period 타이머 대신
+        // 고객의 명시적 확인(진행 버튼)을 기다림 → graceRemaining = -1 (무한 대기)
+        boolean requiresExplicitConfirm = savedRequest.getDomainCode() == DomainCode.FB
+                || savedRequest.getDomainCode() == DomainCode.CONCIERGE;
+
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
-        int graceRemaining = skipGrace ? 0 : GracePeriodScheduler.GRACE_SECONDS;
+        int graceRemaining;
+        if (skipGrace) {
+            graceRemaining = 0;
+        } else if (requiresExplicitConfirm) {
+            graceRemaining = -1; // 고객 확인 대기 (타이머 없음)
+        } else {
+            graceRemaining = GracePeriodScheduler.GRACE_SECONDS;
+        }
 
         // [AN-252] Generative UI: entities 포함 WebSocket payload 생성
         RequestSsePayload payload = RequestSsePayload.newRequest(
@@ -246,8 +259,11 @@ public class CreateRequestOnEventService {
                 dispatchPort.dispatchToDepartment(deptCode, payload);
             }
             dispatchPort.dispatchToFrontdesk(payload);
+        } else if (requiresExplicitConfirm) {
+            // FB/CONCIERGE: 고객 확인 대기 — 타이머 없이 "진행" 버튼 클릭 시 confirmEarly로 발송
+            log.info("[GracePeriod] 고객 확인 대기 (domain={}) — id: {}", deptCode, savedRequest.getId());
         } else {
-            // 일반: Grace Period 적용 — 10초 후 직원 알림
+            // 일반(HK, FACILITY 등): Grace Period 적용 — 10초 후 직원 알림
             log.info("[GracePeriod] 일반 요청 → {}초 후 직원 알림 예정 — id: {}", graceRemaining, savedRequest.getId());
             gracePeriodScheduler.scheduleGraceExpiry(
                     savedRequest.getId(),
