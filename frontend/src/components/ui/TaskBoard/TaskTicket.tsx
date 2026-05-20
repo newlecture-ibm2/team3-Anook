@@ -47,71 +47,99 @@ export default function TaskTicket({
 }: TaskTicketProps) {
   const isOnline = useNetworkStore((state) => state.isOnline);
   const { t, language } = useTranslation();
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
-  const displaySummary = translatedSummary || title;
-
   let displayDept = department;
   let deptKey = 'front';
-
   let deptUpper = department ? department.toUpperCase() : '';
 
   if (department) {
     if (deptUpper.includes('HK') || deptUpper.includes('하우스키핑')) {
       deptKey = 'hk';
-      displayDept = t.ticketUI.department.HK;
     } else if (deptUpper.includes('FACILITY') || deptUpper.includes('시설')) {
       deptKey = 'facility';
-      displayDept = t.ticketUI.department.FACILITY;
     } else if (deptUpper.includes('FB') || deptUpper.includes('식음료')) {
       deptKey = 'fb';
-      displayDept = t.ticketUI.department.FB;
     } else if (deptUpper.includes('CONCIERGE') || deptUpper.includes('컨시어지')) {
       deptKey = 'concierge';
-      displayDept = t.ticketUI.department.CONCIERGE;
-    } else {
-      deptKey = 'front';
-      displayDept = t.ticketUI.department.FRONT;
     }
   }
 
-  // 긴급 부서(EMERGENCY)로 배정된 경우 뱃지 덮어쓰기
   if (deptUpper && (deptUpper.includes('EMERGENCY') || deptUpper.includes('긴급대응팀'))) {
     deptKey = 'emergency';
-    displayDept = t.ticketUI.department.EMERGENCY;
+  }
+
+  const rawDynamicTitle = React.useMemo(() => {
+    const intent = entities?.intent as string | undefined;
+    if (deptKey === 'fb') {
+      if (intent === 'DINING') return '룸서비스 음식 주문';
+      if (intent === 'AMENITY') return '객실 어메니티 요청';
+      const menuItems = entities?.menu_items as any[] | undefined;
+      if (menuItems && menuItems.length > 0) {
+        const first = menuItems[0];
+        const opt = first.selected_option ? `(${first.selected_option})` : '';
+        const qty = first.quantity ? ` ${first.quantity}개` : '';
+        const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
+        return `${first.name}${opt}${qty}${rest} 주문`;
+      }
+    } else if (deptKey === 'concierge') {
+      if (!intent || !entities) return null;
+      switch (intent) {
+        case 'TAXI':
+          return '택시 호출 예약';
+        case 'LUGGAGE_STORAGE': {
+          const count = entities.count;
+          const action = entities.action === 'store' ? '보관' : '찾기';
+          return count ? `짐 ${count}개 ${action} 요청` : `수하물 ${action} 요청`;
+        }
+        case 'RESTAURANT': return '식당 예약';
+        case 'WAKE_UP_CALL': {
+          const time = entities.time as string | undefined;
+          return time ? `${time} 모닝콜 예약` : '모닝콜 예약';
+        }
+        case 'POSTAL_SERVICE': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 발송 대행` : '우편물 발송 대행';
+        }
+        case 'DELIVERY': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 배달 요청` : '배달 요청';
+        }
+        case 'RESERVATION': {
+          const target = entities.target as string | undefined;
+          const time = entities.time as string | undefined;
+          if (target && time) return `${time} ${target} 예약`;
+          if (target) return `${target} 예약`;
+          return '예약 요청';
+        }
+      }
+    }
+    return null;
+  }, [deptKey, entities]);
+
+  const sourceTitle = rawDynamicTitle || title;
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(sourceTitle, language);
+  const displaySummary = translatedSummary || sourceTitle;
+
+  if (department) {
+    if (deptKey === 'hk') displayDept = t.ticketUI.department.HK;
+    else if (deptKey === 'facility') displayDept = t.ticketUI.department.FACILITY;
+    else if (deptKey === 'fb') displayDept = t.ticketUI.department.FB;
+    else if (deptKey === 'concierge') displayDept = t.ticketUI.department.CONCIERGE;
+    else if (deptKey === 'emergency') displayDept = t.ticketUI.department.EMERGENCY;
+    else displayDept = t.ticketUI.department.FRONT;
   }
 
   const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
-  
-  const buildMenuTitle = () => {
-    const menuItems = entities?.menu_items as any[] | undefined;
-    if (!menuItems || menuItems.length === 0) return null;
-    const first = menuItems[0];
-    const opt = first.selected_option ? `(${first.selected_option})` : '';
-    const qty = first.quantity ? ` ${first.quantity}개` : '';
-    const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
-    return `${first.name}${opt}${qty}${rest} 주문`;
-  };
 
   const getFixedTitle = () => {
     if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
       return displaySummary;
     }
-    const intent = entities?.intent as string | undefined;
+    
+    if (rawDynamicTitle) {
+      return displaySummary;
+    }
+    
     switch (deptKey) {
-      case 'fb': {
-        if (intent === 'DINING') return '룸서비스 음식 주문';
-        if (intent === 'AMENITY') return '객실 어메니티 요청';
-        const menuTitle = buildMenuTitle();
-        if (menuTitle) return menuTitle;
-        return displaySummary;
-      }
-      case 'concierge':
-        if (intent === 'TAXI') return '택시 호출 예약';
-        if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
-        if (intent === 'RESTAURANT') return '식당 예약';
-        if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
-        if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
-        return displaySummary;
       case 'facility':
       case 'hk':
         return displaySummary;
