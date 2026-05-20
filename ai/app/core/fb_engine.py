@@ -47,7 +47,7 @@ def _fetch_menu_context(system_language: str = "ko") -> str:
                     
                 price_usd = m.get("priceUsd")
                 if price_usd is None:
-                    price_usd = price / 1400.0
+                    price_usd = 0.0
 
                 if system_language == "ko":
                     price_str = f"{int(price):,}원 (${round(price_usd)})"
