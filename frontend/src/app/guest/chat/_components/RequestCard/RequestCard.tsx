@@ -7,6 +7,35 @@ import { useTranslationApi } from '@/app/useTranslationApi';
 import { useUiStore } from '@/stores/useUiStore';
 import { useTranslation } from '@/app/useTranslation';
 
+function TypingText({ text, speed = 12 }: { text: string; speed?: number }) {
+  const [displayed, setDisplayed] = useState('');
+
+  useEffect(() => {
+    setDisplayed('');
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < text.length) {
+        setDisplayed((prev) => prev + text.charAt(index));
+        index++;
+      } else {
+        clearInterval(interval);
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return (
+    <>
+      {displayed.split('\n').map((line, i, arr) => (
+        <React.Fragment key={i}>
+          {line}
+          {i < arr.length - 1 && <br />}
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
 export interface RequestCardProps {
   requestId: number;
   domainCode: string;
@@ -68,7 +97,15 @@ export default function RequestCard({
     setTargetLang(chatLanguage);
   }, [chatLanguage]);
 
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  const isTranslationRequired = targetLang !== 'ko';
+
+  const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
+    isTranslationRequired ? summary : null,
+    targetLang
+  );
+
+  const isTranslating = isTranslationRequired && isTranslatingRaw;
+  const translatedSummary = isTranslationRequired ? translatedSummaryRaw : summary;
   const { t } = useTranslation();
   const DomainIcon = DOMAIN_ICONS[domainCode] || DOMAIN_ICONS['UNKNOWN'];
   const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
@@ -216,10 +253,13 @@ export default function RequestCard({
   };
 
   const rawDetails = renderDetails();
-  const { translatedText: translatedDetails, isLoading: isTranslatingDetails } = useTranslationApi(
-    rawDetails || undefined,
+  const { translatedText: translatedDetailsRaw, isLoading: isTranslatingDetailsRaw } = useTranslationApi(
+    isTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
+
+  const isTranslatingDetails = isTranslationRequired && isTranslatingDetailsRaw;
+  const translatedDetails = isTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -257,14 +297,24 @@ export default function RequestCard({
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.summary}>{finalTitle}</div>
+              <div className={styles.summary}>
+                {isTranslating ? (
+                  t.cardUI?.message?.translating || 'Translating...'
+                ) : (
+                  <TypingText text={finalTitle} />
+                )}
+              </div>
               <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
           </div>
 
           {rawDetails && (
             <div className={styles.detailsText}>
-              {isTranslatingDetails ? (t.cardUI?.message?.translating || 'Translating...') : (translatedDetails || rawDetails)}
+              {isTranslatingDetails ? (
+                t.cardUI?.message?.translating || 'Translating...'
+              ) : (
+                <TypingText text={translatedDetails || rawDetails} />
+              )}
             </div>
           )}
 

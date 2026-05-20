@@ -47,7 +47,15 @@ export default function RequestStatusBar({
   }, [chatLanguage]);
 
   // Translation for summary
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  const isTranslationRequired = targetLang !== 'ko';
+
+  const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
+    isTranslationRequired ? summary : null,
+    targetLang
+  );
+
+  const isTranslating = isTranslationRequired && isTranslatingRaw;
+  const translatedSummary = isTranslationRequired ? translatedSummaryRaw : summary;
   
   const baseSummary = translatedSummary || summary;
   
@@ -152,10 +160,12 @@ export default function RequestStatusBar({
   };
 
   const rawDetails = renderDetails();
-  const { translatedText: translatedDetails } = useTranslationApi(
-    rawDetails || undefined,
+  const { translatedText: translatedDetailsRaw } = useTranslationApi(
+    isTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
+
+  const translatedDetails = isTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const detailsText = translatedDetails || rawDetails;
   
