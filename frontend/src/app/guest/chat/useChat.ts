@@ -640,16 +640,24 @@ export function useChat() {
     const isPositive = positiveWords.has(cleanText);
 
     if (isPositive) {
-      // 현재 채팅에서 graceRemaining=-1인 PENDING 카드(FB/CONCIERGE 확인 대기)를 찾음
-      const pendingConfirmCard = messages.findLast(
-        (m: ChatMessage) => m.type === 'REQUEST_CARD'
+      // 현재 채팅에서 graceRemaining=-1인 PENDING 카드(FB/CONCIERGE 확인 대기)를 역순으로 찾음
+      let pendingRequestId: number | null = null;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        if (
+          m.type === 'REQUEST_CARD'
           && m.meta?.status === 'PENDING'
           && m.meta?.graceRemaining === -1
           && (m.meta?.domainCode === 'FB' || m.meta?.domainCode === 'CONCIERGE')
-      );
-      if (pendingConfirmCard?.meta?.requestId) {
+          && m.meta?.requestId
+        ) {
+          pendingRequestId = m.meta.requestId as number;
+          break;
+        }
+      }
+      if (pendingRequestId) {
         // AI를 거치지 않고 바로 백엔드 confirm API 호출
-        confirmRequest(pendingConfirmCard.meta.requestId as number);
+        confirmRequest(pendingRequestId);
         setIsTyping(false);
         return;
       }

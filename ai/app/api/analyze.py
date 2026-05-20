@@ -778,18 +778,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
+                    # CONFIRM인 경우: 기존 PENDING 건이 이미 있으므로 중복 생성 방지 → domain_code=None
+                    agent_action_type = agent_result.get("action_type", "ADD")
+                    if agent_action_type == "CONFIRM":
+                        effective_domain_code = None
+                    else:
+                        effective_domain_code = None if agent_result.get("missing_fields") else agent_result.get("domain_code", None)
+
                     response = {
                         "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
                         "summary": agent_result.get("summary", primary.summary or "추가 확인 필요"),
-                        "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
+                        "domain_code": effective_domain_code,
                         "priority": agent_result.get("priority", "NORMAL"),
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
                         "missing_fields": agent_result.get("missing_fields", []),
                         "clarification_options": agent_result.get("clarification_options", []),
-                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
+                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음')),
+                        "action_type": agent_action_type,
                     }
-                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
+                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문, action_type={agent_action_type})")
                     print(f"[Analyze] 응답: {response}\n")
                     final_responses.append(response)
                     continue
