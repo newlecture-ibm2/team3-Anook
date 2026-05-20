@@ -47,7 +47,7 @@ export default function RequestStatusBar({
   }, [chatLanguage]);
 
   // Translation for summary
-  const isTranslationRequired = targetLang !== 'ko';
+  const isTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(summary || ''));
 
   const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
     isTranslationRequired ? summary : null,
@@ -160,12 +160,14 @@ export default function RequestStatusBar({
   };
 
   const rawDetails = renderDetails();
+  const isDetailsTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(rawDetails || ''));
+
   const { translatedText: translatedDetailsRaw } = useTranslationApi(
-    isTranslationRequired ? (rawDetails || undefined) : undefined,
+    isDetailsTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
 
-  const translatedDetails = isTranslationRequired ? translatedDetailsRaw : rawDetails;
+  const translatedDetails = isDetailsTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const detailsText = translatedDetails || rawDetails;
   
@@ -203,7 +205,7 @@ export default function RequestStatusBar({
       {!isMini && (
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.title}>{finalTitle}</div>
+            <div className={`${styles.title} ${isTranslating ? styles.translatingText : ''}`}>{finalTitle}</div>
             
             {/* Subtitle: strictly menu/items list line-by-line */}
             {detailItems.length > 0 && (

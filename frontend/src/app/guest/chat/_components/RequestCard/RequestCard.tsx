@@ -97,7 +97,7 @@ export default function RequestCard({
     setTargetLang(chatLanguage);
   }, [chatLanguage]);
 
-  const isTranslationRequired = targetLang !== 'ko';
+  const isTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(summary || ''));
 
   const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
     isTranslationRequired ? summary : null,
@@ -253,13 +253,15 @@ export default function RequestCard({
   };
 
   const rawDetails = renderDetails();
+  const isDetailsTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(rawDetails || ''));
+
   const { translatedText: translatedDetailsRaw, isLoading: isTranslatingDetailsRaw } = useTranslationApi(
-    isTranslationRequired ? (rawDetails || undefined) : undefined,
+    isDetailsTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
 
-  const isTranslatingDetails = isTranslationRequired && isTranslatingDetailsRaw;
-  const translatedDetails = isTranslationRequired ? translatedDetailsRaw : rawDetails;
+  const isTranslatingDetails = isDetailsTranslationRequired && isTranslatingDetailsRaw;
+  const translatedDetails = isDetailsTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -299,9 +301,11 @@ export default function RequestCard({
             <div className={styles.summaryRow}>
               <div className={styles.summary}>
                 {isTranslating ? (
-                  t.cardUI?.message?.translating || 'Translating...'
-                ) : (
+                  <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
+                ) : isTranslationRequired ? (
                   <TypingText text={finalTitle} />
+                ) : (
+                  finalTitle
                 )}
               </div>
               <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
@@ -311,9 +315,11 @@ export default function RequestCard({
           {rawDetails && (
             <div className={styles.detailsText}>
               {isTranslatingDetails ? (
-                t.cardUI?.message?.translating || 'Translating...'
-              ) : (
+                <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
+              ) : isDetailsTranslationRequired ? (
                 <TypingText text={translatedDetails || rawDetails} />
+              ) : (
+                translatedDetails || rawDetails
               )}
             </div>
           )}
