@@ -201,6 +201,11 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         # 최종 확정 (고객이 "네" 응답 후) → 기존 흐름 유지
         domain_code = "FB"
 
+    action_type = result.entities.get("action_type", "ADD")
+    if not result.needs_clarification:
+        # 최종 확정 상태인 경우 백엔드가 중복 생성하지 않고 기존 PENDING 건을 승인하도록 CONFIRM으로 마킹
+        action_type = "CONFIRM"
+
     return {
         "guest_reply": guest_reply,
         "summary": result.summary,
@@ -211,7 +216,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "missing_fields": missing,
         "clarification_options": clarification_options,
         "reasoning": result.reasoning,
-        "action_type": result.entities.get("action_type", "ADD"),
+        "action_type": action_type,
     }
 
 
