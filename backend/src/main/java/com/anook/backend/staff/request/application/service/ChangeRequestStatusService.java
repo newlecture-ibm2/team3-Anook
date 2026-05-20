@@ -20,6 +20,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
 
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
+    private final com.anook.backend.room.application.service.RoomInventoryService roomInventoryService;
+    private final com.anook.backend.room.application.service.InventoryPolicyProperties inventoryPolicyProperties;
 
     @Override
     @Transactional
@@ -64,6 +66,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         request.changeStatus(RequestStatus.COMPLETED);
         requestRepositoryPort.save(request);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
+
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestSsePayload payload = RequestSsePayload.statusChanged(

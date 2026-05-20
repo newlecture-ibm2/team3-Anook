@@ -3,7 +3,7 @@ from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
+async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None, room_inventory: dict = None) -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     
@@ -35,6 +35,11 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     # 3. RAG 지식 삽입 + 현재 메시지
     if rag_context:
         prompt += f"[Room Amenity Info]\n{rag_context}\n\n"
+    if room_inventory:
+        import json
+        prompt += f"[Stateful Room Inventory (Daily Allowed Limits)]\n"
+        prompt += f"This is the actual, current usage data for the room from the backend database. You MUST strictly adhere to this:\n"
+        prompt += f"{json.dumps(room_inventory, ensure_ascii=False)}\n\n"
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini One-pass 호출

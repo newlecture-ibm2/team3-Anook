@@ -63,6 +63,10 @@ Classify the input into one of the following categories:
    - Asking about ETA (e.g., "언제 와요?", "얼마나 걸려요?").
    - Action: Set route_type to "STATUS_CHECK".
 
+10. **SPENDING_INQUIRY** (Spending/Billing Inquiry):
+   - 이용 금액, 결제 내역, 총 요금 등을 묻는 질문 (e.g., "얼마 썼어?", "지금까지 총 요금이 얼마야?", "How much did I spend?", "이용 금액 알려줘", "결제할 금액 보여줘", "주문 내역 얼마 나왔어?").
+   - Action: Set route_type to "SPENDING_INQUIRY". Set create_ticket=False.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ■ STEP 2: Assign a Domain
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -117,7 +121,7 @@ When route_type is "CANCEL" or action_type is "REPLACE", extract the **specific 
 You must output a JSON Array of objects.
 [
   {
-    "route_type": "DEPARTMENT | CLARIFICATION | FRONT_ESCALATION | VOC | SOFT_FALLBACK | NON_ACTIONABLE | INFO | CANCEL | STATUS_CHECK",
+    "route_type": "DEPARTMENT | CLARIFICATION | FRONT_ESCALATION | VOC | SOFT_FALLBACK | NON_ACTIONABLE | INFO | CANCEL | STATUS_CHECK | SPENDING_INQUIRY",
     "domain": "HK | FB | FACILITY | CONCIERGE | FRONT | COMMON | EMERGENCY | null",
     "confidence": 0.0 ~ 1.0,
     "reasoning": "{system_language} reasoning",

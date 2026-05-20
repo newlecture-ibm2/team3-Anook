@@ -41,6 +41,7 @@ class AnalyzeRequest(BaseModel):
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
     active_requests: Optional[List[dict]] = []
+    room_inventory: Optional[Dict[str, int]] = {}
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -610,7 +611,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
-                    active_requests=getattr(request, 'active_requests', [])
+                    active_requests=getattr(request, 'active_requests', []),
+                    room_inventory=getattr(request, 'room_inventory', {})
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -1222,6 +1224,26 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
 
+
+        # STEP 3-h: SPENDING_INQUIRY → 통합 이용 금액 조회 (실시간 Redis + DB 영수증)
+        if primary.route_type == "SPENDING_INQUIRY":
+            guest_reply = _handle_unified_spending_inquiry(request.room_no, request.text, request.room_inventory)
+            response = {
+                "guest_reply": guest_reply,
+                "summary": "통합 이용 금액 조회",
+                "domain_code": None,
+                "priority": "NORMAL",
+                "entities": {"action": "SPENDING_INQUIRY"},
+                "confidence": primary.confidence,
+                "action": "SPENDING_INQUIRY",
+                "reasoning": getattr(primary, 'reasoning', '이용 금액 및 청구 내역 조회 감지')
+            }
+            print(f"[Analyze] 💰 SPENDING_INQUIRY 응답")
+            print(f"[Analyze] 응답: {response}\n")
+            final_responses.append(response)
+            continue
+
+
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
     # ──────────────────────────────────────────────
@@ -1333,4 +1355,105 @@ async def translate_text(request: TranslateRequest) -> dict:
         system_instruction="You are a professional translator for a hotel dashboard UI. Provide exact, concise translations without formatting or conversational filler."
     )
     return {"translated_text": translated_text}
+
+
+def _handle_unified_spending_inquiry(room_no: str, user_message: str, room_inventory: dict = None) -> str:
+    """통합 영수증 API를 호출하고 현재 Redis 미청구 HK 초과 사용량까지 결합하여 통합 요금 안내를 생성"""
+    import httpx
+    import os
+    
+    # 1. 고객 언어 감지
+    is_english = any(c.isascii() and c.isalpha() for c in user_message) and not any('\uac00' <= c <= '\ud7a3' for c in user_message)
+    
+    try:
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
+        with httpx.Client(timeout=3.0) as client:
+            # 1. DB에 이미 생성된 영수증 가져오기 (FB 룸서비스 + COMPLETED된 HK 초과요금 등)
+            resp = client.get(f"{base_url}/pms/receipts?roomNo={room_no}")
+            
+        receipts = []
+        if resp.status_code == 200:
+            receipts = resp.json()
+        else:
+            print(f"[Analyze] 통합 영수증 조회 API 실패: HTTP {resp.status_code}")
+            
+        # 2. 항목별 매핑 및 합산
+        billed_items = {}
+        total_amount = 0
+        
+        for r in receipts:
+            name = r.get("menuName", "기타 서비스")
+            qty = r.get("quantity", 0)
+            price = r.get("totalPrice", 0)
+            
+            # 항목명 기준 집계
+            if name in billed_items:
+                billed_items[name]["quantity"] += qty
+                billed_items[name]["totalPrice"] += price
+            else:
+                billed_items[name] = {"quantity": qty, "totalPrice": price}
+                
+            total_amount += price
+            
+        # ── 3. 아직 DB 영수증화 되지 않은 실시간 PENDING 상태의 HK 초과 요금 계산 및 추가 ──
+        realtime_hk_lines = []
+        if room_inventory:
+            policy_codes = set()
+            for key in room_inventory.keys():
+                if key.startswith("free_") and key.endswith("_allowance"):
+                    code = key.replace("free_", "").replace("_allowance", "").upper()
+                    policy_codes.add(code)
+            
+            for code in policy_codes:
+                allowance = room_inventory.get(f"free_{code.lower()}_allowance", 0)
+                used = room_inventory.get(f"free_{code.lower()}_used", 0)
+                extra_charge = room_inventory.get(f"free_{code.lower()}_extra_charge", 0)
+                
+                overage = max(0, used - allowance)
+                if overage > 0:
+                    korean_name = "생수" if code == "WATER" else "수건" if code == "TOWEL" else code
+                    
+                    db_qty = 0
+                    for name, item_data in billed_items.items():
+                        if korean_name in name:
+                            db_qty += item_data["quantity"]
+                            
+                    pending_qty = max(0, overage - db_qty)
+                    if pending_qty > 0:
+                        pending_price = pending_qty * extra_charge
+                        item_display_name = f"{korean_name} 추가"
+                        if item_display_name in billed_items:
+                            billed_items[item_display_name]["quantity"] += pending_qty
+                            billed_items[item_display_name]["totalPrice"] += pending_price
+                        else:
+                            billed_items[item_display_name] = {"quantity": pending_qty, "totalPrice": pending_price}
+                        total_amount += pending_price
+
+        if not billed_items:
+            if is_english:
+                return "You have no usage charges or room service orders for this stay yet."
+            else:
+                return "현재까지 이용하신 유료 서비스 내역이 없습니다."
+                
+        # 4. 문자열 조립
+        detail_lines = []
+        for name, data in billed_items.items():
+            qty = data["quantity"]
+            price = data["totalPrice"]
+            detail_lines.append(f"- {name} {qty}개: {price:,}원")
+            
+        detail = "\n".join(detail_lines)
+        
+        if is_english:
+            return f"Here is your total spending summary for this stay so far:\n{detail}\n\nTotal Spending: {total_amount:,} KRW"
+        else:
+            return f"현재까지 이용하신 유료 서비스 총액입니다:\n{detail}\n\n총 결제 예정 금액: {total_amount:,}원"
+            
+    except Exception as e:
+        print(f"[Analyze] 통합 영수증 조회 중 오류 발생: {e}")
+        if is_english:
+            return "An error occurred while fetching your billing details. Please contact the front desk."
+        else:
+            return "이용 금액 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+
 
