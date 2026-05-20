@@ -1437,7 +1437,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if action_type is None:
                 action_type = getattr(primary, 'action_type', None)
             
-            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
+            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE", "CONFIRM"]) and not is_escalation:
                 final_domain_code = None
             
             # 🛡️ [컨시어지 확인 질문 방어] 로직 삭제됨 (AN-344: 확인 질문과 동시에 정적 카드를 띄우기 위해 차단 해제)
