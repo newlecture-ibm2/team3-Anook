@@ -199,6 +199,11 @@
   white-space: pre-wrap;
 }
 
+.translatingText {
+  color: var(--color-gray-500);
+  font-weight: normal;
+}
+
 .cancelledCard {
   opacity: 0.7;
   background: rgba(255, 255, 255, 0.5) !important;

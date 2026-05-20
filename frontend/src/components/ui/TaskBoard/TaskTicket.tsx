@@ -82,16 +82,29 @@ export default function TaskTicket({
 
   const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
   
+  const buildMenuTitle = () => {
+    const menuItems = entities?.menu_items as any[] | undefined;
+    if (!menuItems || menuItems.length === 0) return null;
+    const first = menuItems[0];
+    const opt = first.selected_option ? `(${first.selected_option})` : '';
+    const qty = first.quantity ? ` ${first.quantity}개` : '';
+    const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
+    return `${first.name}${opt}${qty}${rest} 주문`;
+  };
+
   const getFixedTitle = () => {
     if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
       return displaySummary;
     }
     const intent = entities?.intent as string | undefined;
-    switch (department?.toLowerCase()) {
-      case 'fb':
+    switch (deptKey) {
+      case 'fb': {
         if (intent === 'DINING') return '룸서비스 음식 주문';
         if (intent === 'AMENITY') return '객실 어메니티 요청';
+        const menuTitle = buildMenuTitle();
+        if (menuTitle) return menuTitle;
         return displaySummary;
+      }
       case 'concierge':
         if (intent === 'TAXI') return '택시 호출 예약';
         if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
@@ -166,7 +179,8 @@ export default function TaskTicket({
     } else {
       if (Array.isArray(entities.menu_items)) {
         entities.menu_items.forEach((it: any) => {
-          parts.push(`- ${it.name} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
+          const opt = it.selected_option ? `(${it.selected_option})` : '';
+          parts.push(`- ${it.name}${opt} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
         });
       } else if (Array.isArray(entities.items)) {
         entities.items.forEach((it: any) => {

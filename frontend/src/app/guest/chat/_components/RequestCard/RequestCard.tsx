@@ -7,6 +7,35 @@ import { useTranslationApi } from '@/app/useTranslationApi';
 import { useUiStore } from '@/stores/useUiStore';
 import { useTranslation } from '@/app/useTranslation';
 
+function TypingText({ text, speed = 12 }: { text: string; speed?: number }) {
+  const [displayed, setDisplayed] = useState('');
+
+  useEffect(() => {
+    setDisplayed('');
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < text.length) {
+        setDisplayed(text.substring(0, index + 1));
+        index++;
+      } else {
+        clearInterval(interval);
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return (
+    <>
+      {displayed.split('\n').map((line, i, arr) => (
+        <React.Fragment key={i}>
+          {line}
+          {i < arr.length - 1 && <br />}
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
 export interface RequestCardProps {
   requestId: number;
   domainCode: string;
@@ -68,7 +97,15 @@ export default function RequestCard({
     setTargetLang(chatLanguage);
   }, [chatLanguage]);
 
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  const isTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(summary || ''));
+
+  const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
+    isTranslationRequired ? summary : null,
+    targetLang
+  );
+
+  const isTranslating = isTranslationRequired && isTranslatingRaw;
+  const translatedSummary = isTranslationRequired ? translatedSummaryRaw : summary;
   const { t } = useTranslation();
   const DomainIcon = DOMAIN_ICONS[domainCode] || DOMAIN_ICONS['UNKNOWN'];
   const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
@@ -187,7 +224,8 @@ export default function RequestCard({
     } else {
       if (Array.isArray(entities.menu_items)) {
         entities.menu_items.forEach((it: any) => {
-          parts.push(`- ${it.name} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
+          const opt = it.selected_option ? `(${it.selected_option})` : '';
+          parts.push(`- ${it.name}${opt} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
         });
       } else if (Array.isArray(entities.items)) {
         entities.items.forEach((it: any) => {
@@ -216,10 +254,15 @@ export default function RequestCard({
   };
 
   const rawDetails = renderDetails();
-  const { translatedText: translatedDetails, isLoading: isTranslatingDetails } = useTranslationApi(
-    rawDetails || undefined,
+  const isDetailsTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(rawDetails || ''));
+
+  const { translatedText: translatedDetailsRaw, isLoading: isTranslatingDetailsRaw } = useTranslationApi(
+    isDetailsTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
+
+  const isTranslatingDetails = isDetailsTranslationRequired && isTranslatingDetailsRaw;
+  const translatedDetails = isDetailsTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -257,14 +300,24 @@ export default function RequestCard({
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.summary}>{finalTitle}</div>
+              <div className={styles.summary}>
+                {isTranslating ? (
+                  <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
+                ) : (
+                  finalTitle
+                )}
+              </div>
               <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
           </div>
 
           {rawDetails && (
             <div className={styles.detailsText}>
-              {isTranslatingDetails ? (t.cardUI?.message?.translating || 'Translating...') : (translatedDetails || rawDetails)}
+              {isTranslatingDetails ? (
+                <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
+              ) : (
+                translatedDetails || rawDetails
+              )}
             </div>
           )}
 

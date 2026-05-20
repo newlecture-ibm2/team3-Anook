@@ -11,43 +11,14 @@ export interface ChatBubbleProps {
   animate?: boolean;
 }
 
-export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl, children, animate = false }: ChatBubbleProps) {
+export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl, children }: ChatBubbleProps) {
   const styleClass = bubbleStyle || variant;
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [displayedText, setDisplayedText] = useState<string>('');
-  const [isTypingComplete, setIsTypingComplete] = useState(false);
-
-  const textToType = typeof children === 'string' ? children : '';
-
-  useEffect(() => {
-    if (!animate || !textToType) {
-      setDisplayedText(textToType);
-      setIsTypingComplete(true);
-      return;
-    }
-
-    setDisplayedText('');
-    setIsTypingComplete(false);
-    let index = 0;
-    
-    // Smooth, rapid typing speed (approx 15ms per character)
-    const interval = setInterval(() => {
-      if (index < textToType.length) {
-        setDisplayedText((prev) => prev + textToType.charAt(index));
-        index++;
-      } else {
-        clearInterval(interval);
-        setIsTypingComplete(true);
-      }
-    }, 15);
-
-    return () => clearInterval(interval);
-  }, [textToType, animate]);
 
   const renderContent = () => {
     if (typeof children !== 'string') return children;
     
-    let text = animate ? displayedText : children;
+    let text = children;
     if (variant === 'received') {
       // Add line breaks after Korean sentence endings (., ?, !)
       text = text.replace(/([가-힣][.?!])\s+/g, '$1\n');
