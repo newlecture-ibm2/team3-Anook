@@ -5,37 +5,7 @@
   max-height: 600px;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-16) var(--space-24);
-  border-bottom: 1px solid var(--color-gray-100);
-  flex-shrink: 0;
-}
 
-.headerTitle {
-  font-size: var(--font-size-body);
-  font-weight: 600;
-  color: var(--color-gray-900);
-  margin: 0;
-}
-
-.closeBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.15s ease;
-}
-
-.closeBtn:hover {
-  background-color: var(--color-gray-100);
-}
 
 .messageList {
   flex: 1;

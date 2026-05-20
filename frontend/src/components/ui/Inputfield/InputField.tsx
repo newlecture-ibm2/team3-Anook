@@ -15,6 +15,10 @@ export interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElem
   variant?: 'default' | 'search';
   /** X 아이콘을 누를 때 추가로 호출할 콜백 */
   onClear?: () => void;
+  /** textarea 렌더링 여부 */
+  as?: 'input' | 'textarea';
+  /** textarea 줄 수 */
+  rows?: number;
 }
 
 export default function InputField({
@@ -25,6 +29,8 @@ export default function InputField({
   disabled,
   className = '',
   onClear,
+  as = 'input',
+  rows,
   ...props
 }: InputFieldProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -123,12 +129,21 @@ export default function InputField({
           </div>
         )}
         
-        <div className={containerClasses}>
-          <input 
-            className={styles.inputElement}
-            disabled={disabled}
-            {...props} 
-          />
+        <div className={`${containerClasses} ${as === 'textarea' ? styles.textareaContainer : ''}`}>
+          {as === 'textarea' ? (
+            <textarea 
+              className={`${styles.inputElement} ${styles.textareaElement}`}
+              disabled={disabled}
+              rows={rows}
+              {...(props as any)}
+            />
+          ) : (
+            <input 
+              className={styles.inputElement}
+              disabled={disabled}
+              {...props} 
+            />
+          )}
         </div>
       </div>
       

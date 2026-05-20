@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './AssignModal.module.css';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
-import { CancelIcon } from '@/components/icons';
+import InputField from '@/components/ui/Inputfield/InputField';
 
 import useAssignRequest from './useAssignRequest';
 
@@ -26,14 +26,28 @@ export default function AssignModal({
   roomNo,
   onSuccess,
 }: AssignModalProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const { staffList, assignRequest, loading } = useAssignRequest();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleAssign = async () => {
     if (selectedStaffId === null) return;
     const success = await assignRequest(requestId, selectedStaffId);
     if (success) {
       setSelectedStaffId(null);
+      setSearchQuery('');
       onClose();
       if (onSuccess) onSuccess();
     }
@@ -41,18 +55,18 @@ export default function AssignModal({
 
   const handleClose = () => {
     setSelectedStaffId(null);
+    setSearchQuery('');
     onClose();
   };
 
+  const filteredStaff = staffList.filter(staff =>
+    staff.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    staff.departmentId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
-      <ModalCard size="sm">
-        <div className={styles.header}>
-          <h2 className={styles.title}>수동 배정</h2>
-          <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
-            <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
-          </button>
-        </div>
+      <ModalCard size="sm" overflowVisible={true} onClose={handleClose} title="수동 배정">
 
         <div className={styles.info}>
           <div className={styles.infoRow}>
@@ -65,21 +79,43 @@ export default function AssignModal({
           </div>
         </div>
 
-        <div className={styles.selectWrapper}>
-          <label className={styles.selectLabel} htmlFor="staff-select">담당 직원 선택</label>
-          <select
-            id="staff-select"
-            className={styles.select}
-            value={selectedStaffId ?? ''}
-            onChange={(e) => setSelectedStaffId(Number(e.target.value))}
-          >
-            <option value="" disabled>직원을 선택하세요</option>
-            {staffList.map(staff => (
-              <option key={staff.id} value={staff.id}>
-                {staff.name} ({staff.departmentId})
-              </option>
-            ))}
-          </select>
+        <div className={styles.selectWrapper} ref={containerRef}>
+          <div className={styles.comboboxContainer}>
+            <InputField
+              label="담당 직원 검색"
+              placeholder="직원 이름 또는 부서를 입력하세요..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSelectedStaffId(null);
+                setIsDropdownOpen(true);
+              }}
+              onFocus={() => setIsDropdownOpen(true)}
+            />
+            {isDropdownOpen && (
+              <div className={styles.popoverMenu}>
+                {filteredStaff.length > 0 ? (
+                  filteredStaff.map((staff) => (
+                    <button
+                      key={staff.id}
+                      type="button"
+                      className={`${styles.popoverItem} ${selectedStaffId === staff.id ? styles.selectedItem : ''}`}
+                      onClick={() => {
+                        setSelectedStaffId(staff.id);
+                        setSearchQuery(`${staff.name} (${staff.departmentId})`);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className={styles.staffName}>{staff.name}</span>
+                      <span className={styles.staffDept}>{staff.departmentId}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.noResults}>검색 결과가 없습니다</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.buttonGroup}>

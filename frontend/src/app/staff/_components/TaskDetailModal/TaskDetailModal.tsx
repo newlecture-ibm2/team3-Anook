@@ -3,7 +3,9 @@ import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import Button from '@/components/ui/Button/Button';
-import { CancelIcon, ArrowBackIcon } from '@/components/icons';
+import { ArrowBackIcon } from '@/components/icons';
+import Dropdown from '@/components/ui/Dropdown/Dropdown';
+import InputField from '@/components/ui/Inputfield/InputField';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import styles from './TaskDetailModal.module.css';
 import { StaffTask } from '../../useTasks';
@@ -277,7 +279,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
-      <ModalCard size="md" padding="0">
+      <ModalCard size="md" overflowVisible={true} onClose={handleClose}>
 
         {/* ── 대화 내역 뷰 ── */}
         {view === 'chatHistory' ? (
@@ -287,9 +289,6 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                 <ArrowBackIcon width={18} height={18} color="currentColor" />
               </button>
               <span className={styles.chatHistoryTitle}>{task.roomNumber}호 대화 내역</span>
-              <button className={styles.closeIcon} onClick={handleClose} aria-label="닫기" style={{ position: 'static' }}>
-                <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
-              </button>
             </div>
             <div className={styles.chatHistoryMessages} ref={chatListRef}>
               {chatLoading && <div className={styles.chatEmptyState}>불러오는 중...</div>}
@@ -312,14 +311,6 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
         ) : (
 
         <div className={styles.container} ref={containerRef}>
-          {/* X 닫기 버튼 (오른쪽 상단) */}
-          <button
-            className={styles.closeIcon}
-            onClick={handleClose}
-            aria-label="닫기"
-          >
-            <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
-          </button>
           <div className={styles.header}>
             <div className={styles.headerTop}>
               <span className={styles.roomBadge}>
@@ -374,7 +365,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
                     대화 내역 보기
                   </Button>
                 </div>
-                <div className={styles.descriptionBox} style={{ backgroundColor: '#f0f4ff' }}>
+                <div className={styles.descriptionBox}>
                   {task.summary && (
                     <div style={{ marginBottom: '12px' }}>
                       <strong>요약:</strong> {task.summary}
@@ -415,25 +406,25 @@ export default function TaskDetailModal({ isOpen, onClose, task, onAccept, onCom
               <div className={styles.transferForm}>
                 <h3 className={styles.descriptionTitle}>업무 전달</h3>
                 <div className={styles.transferFormGroup}>
-                  <label className={styles.transferLabel}>전달 대상 부서</label>
-                  <select 
-                    className={styles.transferSelect}
-                    value={toDepartmentId} 
-                    onChange={e => setToDepartmentId(e.target.value)}
-                  >
-                    <option value="">부서 선택</option>
-                    {DEPARTMENTS.filter(d => d.id !== task.departmentId).map(dept => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
-                    ))}
-                  </select>
+                  <Dropdown
+                    label="전달 대상 부서"
+                    placeholder="부서 선택"
+                    options={DEPARTMENTS.filter(d => d.id !== task.departmentId).map(dept => ({
+                      value: dept.id,
+                      label: dept.name
+                    }))}
+                    value={toDepartmentId}
+                    onChange={(val) => setToDepartmentId(val)}
+                  />
                 </div>
                 <div className={styles.transferFormGroup}>
-                  <label className={styles.transferLabel}>전달 사유</label>
-                  <textarea 
-                    className={styles.transferTextarea}
+                  <InputField
+                    as="textarea"
+                    label="전달 사유"
                     placeholder="전달 사유를 입력해주세요 (예: 해당 건은 시설관리팀 소관입니다)"
                     value={transferReason}
-                    onChange={e => setTransferReason(e.target.value)}
+                    onChange={(e: any) => setTransferReason(e.target.value)}
+                    rows={3}
                   />
                 </div>
                 <div className={styles.transferActions}>

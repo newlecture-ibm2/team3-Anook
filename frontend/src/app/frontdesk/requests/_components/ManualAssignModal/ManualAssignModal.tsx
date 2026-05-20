@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
-import { CancelIcon } from '@/components/icons';
 import Button from '@/components/ui/Button/Button';
 import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import TaskTicket from '@/components/ui/TaskBoard/TaskTicket';
+import InputField from '@/components/ui/Inputfield/InputField';
 import styles from './ManualAssignModal.module.css';
 
 interface Department {
@@ -53,13 +53,7 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="md" overflowVisible={true}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>수동 배정</h2>
-          <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
-            <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
-          </button>
-        </div>
+      <ModalCard size="md" overflowVisible={true} onClose={onClose} title="수동 배정">
 
         <div className={styles.content}>
           {/* 미리보기 카드 — 실시간 반영 */}
@@ -81,10 +75,18 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
           {/* 편집 폼 */}
           <div className={styles.formSection}>
             <div className={styles.editField}>
-              <label className={styles.label}>제목</label>
-              <input
-                type="text"
-                className={styles.inputField}
+              <Dropdown
+                label="배정 부서"
+                placeholder="부서를 선택하세요"
+                options={departments.filter(d => d.id !== 'FRONT').map(d => ({ value: d.id, label: d.name }))}
+                value={editDeptId}
+                onChange={(val) => setEditDeptId(val)}
+              />
+            </div>
+
+            <div className={styles.editField}>
+              <InputField
+                label="제목"
                 value={editSummary}
                 onChange={(e) => setEditSummary(e.target.value)}
                 placeholder="배정할 업무 내용을 입력하세요"
@@ -92,23 +94,13 @@ export default function ManualAssignModal({ isOpen, onClose, detail, departments
             </div>
 
             <div className={styles.editField}>
-              <label className={styles.label}>설명 / 이관 사유</label>
-              <textarea
-                className={styles.textareaField}
+              <InputField
+                as="textarea"
+                label="상세 설명"
                 value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="필요시 설명 또는 이관 사유를 입력하세요"
+                onChange={(e: any) => setEditDescription(e.target.value)}
+                placeholder="상세한 업무 내용을 입력하세요 (선택)"
                 rows={3}
-              />
-            </div>
-
-            <div className={styles.editField}>
-              <Dropdown
-                label="배정 부서"
-                placeholder="부서를 선택하세요"
-                options={departments.filter(d => d.id !== 'FRONT').map(d => ({ value: d.id, label: d.name }))}
-                value={editDeptId}
-                onChange={(val) => setEditDeptId(val)}
               />
             </div>
 

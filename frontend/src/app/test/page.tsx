@@ -181,7 +181,10 @@ export default function ComponentShowcasePage() {
     'StaffFormModal',
     'RoleFormModal',
     'TaskDetailModal',
-    'ChatHistoryModal'
+    'ChatHistoryModal',
+    'KnowledgeModal',
+    'KnowledgeEditModal',
+    'LogDataModal'
   ];
 
   return (
@@ -846,32 +849,40 @@ export default function ComponentShowcasePage() {
       {/* 6. REAL PAGE FOOTER */}
 
 
-      {selectedKnowledge && !isEditModalOpen && (
+      {(selectedKnowledge || activeModal === 'KnowledgeModal') && !isEditModalOpen && (
         <KnowledgeModal
-          isOpen={!!selectedKnowledge}
-          onClose={() => setSelectedKnowledge(null)}
-          domainCode={selectedKnowledge.domainCode}
-          question={selectedKnowledge.question}
-          answer={selectedKnowledge.answer}
-          updatedAt={selectedKnowledge.updatedAt}
-          onEdit={() => setIsEditModalOpen(true)}
+          isOpen={!!selectedKnowledge || activeModal === 'KnowledgeModal'}
+          onClose={() => {
+            setSelectedKnowledge(null);
+            closeModal();
+          }}
+          domainCode={selectedKnowledge?.domainCode || 'HK'}
+          question={selectedKnowledge?.question || '체크아웃 시간 연장(Late Checkout)'}
+          answer={selectedKnowledge?.answer || '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다.'}
+          updatedAt={selectedKnowledge?.updatedAt || '2026-05-20'}
+          onEdit={() => {
+            setIsEditModalOpen(true);
+            setActiveModal('KnowledgeEditModal');
+          }}
         />
       )}
 
-      {selectedKnowledge && isEditModalOpen && (
+      {((selectedKnowledge && isEditModalOpen) || activeModal === 'KnowledgeEditModal') && (
         <KnowledgeEditModal
-          isOpen={isEditModalOpen}
+          isOpen={isEditModalOpen || activeModal === 'KnowledgeEditModal'}
           onClose={() => {
             setIsEditModalOpen(false);
-            if (selectedKnowledge.isNew) {
+            closeModal();
+            if (selectedKnowledge?.isNew) {
               setSelectedKnowledge(null);
             }
           }}
-          initialDomainCode={selectedKnowledge.domainCode}
-          initialQuestion={selectedKnowledge.question}
-          initialAnswer={selectedKnowledge.answer}
+          initialDomainCode={selectedKnowledge?.domainCode || 'HK'}
+          initialQuestion={selectedKnowledge?.question || '체크아웃 시간 연장(Late Checkout)'}
+          initialAnswer={selectedKnowledge?.answer || '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다.'}
           onSave={(data) => {
             setIsEditModalOpen(false);
+            closeModal();
             setSelectedKnowledge(null);
           }}
         />

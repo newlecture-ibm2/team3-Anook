@@ -25,13 +25,11 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const ALL_OPTIONS = [
-    { value: 'HK', label: t.frontdeskPage.rag.tabs.HK },
-    { value: 'FB', label: t.frontdeskPage.rag.tabs.FB },
-    { value: 'FACILITY', label: t.frontdeskPage.rag.tabs.FACILITY },
-    { value: 'CONCIERGE', label: t.frontdeskPage.rag.tabs.CONCIERGE },
     { value: 'FRONT', label: t.frontdeskPage.rag.tabs.FRONT },
-    { value: 'EMERGENCY', label: t.frontdeskPage.rag.tabs.EMERGENCY },
-    { value: 'COMMON', label: t.frontdeskPage.rag.tabs.COMMON }
+    { value: 'HK', label: t.frontdeskPage.rag.tabs.HK },
+    { value: 'FACILITY', label: t.frontdeskPage.rag.tabs.FACILITY },
+    { value: 'FB', label: t.frontdeskPage.rag.tabs.FB },
+    { value: 'CONCIERGE', label: t.frontdeskPage.rag.tabs.CONCIERGE }
   ];
 
   // 현재 탭의 특성에 따라 domainOptions 생성 (지식 추가 시 사용)
