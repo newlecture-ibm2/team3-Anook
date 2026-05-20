@@ -137,28 +137,12 @@ export default function RequestCard({
       : baseSummary;
   }
   
-  const buildMenuTitle = () => {
-    const menuItems = entities?.menu_items as any[] | undefined;
-    if (!menuItems || menuItems.length === 0) return null;
-    const first = menuItems[0];
-    const opt = first.selected_option ? `(${first.selected_option})` : '';
-    const qty = first.quantity ? ` ${first.quantity}개` : '';
-    const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
-    return `${first.name}${opt}${qty}${rest} 주문`;
-  };
-
   const getFixedTitle = () => {
     if (isTranslating || isEscalatedChat || baseSummary.includes('프론트 연결')) {
       return displaySummary;
     }
-    
-    // FB/CONCIERGE에서 menu_items가 있으면 직접 제목 구성
-    if (domainCode === 'FB' || domainCode === 'CONCIERGE') {
-      const menuTitle = buildMenuTitle();
-      if (menuTitle) return menuTitle;
-    }
-
     const intent = entities?.intent as string | undefined;
+    
     if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
       if ((t.intents as any)?.[intent]) {
         return (t.intents as any)[intent];
