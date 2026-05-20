@@ -48,7 +48,7 @@ public class GetPmsMenuService implements GetPmsMenuUseCase {
     private GetPmsMenuResult toResult(PmsMenu menu) {
         Double usd = menu.priceUsd();
         if (usd == null) {
-            double rate = exchangeRate.getExchangeRate("USD");
+            double rate = exchangeRate.getUsdToKrwRate();
             usd = Math.round((menu.price() / rate) * 100.0) / 100.0;
         }
         return new GetPmsMenuResult(
