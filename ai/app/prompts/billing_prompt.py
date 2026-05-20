@@ -36,7 +36,7 @@ def build_billing_prompt(billing_data: dict, language: str) -> str:
             f"부가세 (10%): {int(tax):,}원\n"
             f"봉사료 (10%): {int(service_charge):,}원\n"
             f"최종 결제 예정 금액: {int(total):,}원\n\n"
-            f"위 금액은 체크아웃 시 일괄 정산됩니다. 추가 문의사항은 프런트 데스크로 연락 주세요."
+            f"위 금액은 체크아웃 시 일괄 정산됩니다. 추가 문의사항은 프론트 데스크로 연락 주세요."
         )
     else:
         items_text = "\n".join(

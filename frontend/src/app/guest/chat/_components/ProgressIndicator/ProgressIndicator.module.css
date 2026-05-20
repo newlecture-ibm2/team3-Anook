@@ -23,33 +23,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: hue-rotate(-30deg) saturate(2.2) brightness(0.95);
   position: relative;
+  overflow: visible !important;
 }
 
-.lottieAvatar::before {
-  content: '';
+.lottieAvatar::after {
+  content: "";
   position: absolute;
-  width: 64px;
-  height: 64px;
   top: 50%;
   left: 50%;
+  width: 250%;
+  height: 250%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 40%, rgba(255, 255, 255, 0) 70%);
   transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 48%,
-    rgba(255, 255, 255, 0.75) 0%,
-    rgba(255, 255, 255, 0.35) 40%,
-    rgba(255, 255, 255, 0) 70%
-  );
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
 }
 
 .lottieAvatar>* {
   position: relative;
   z-index: 1;
   transform: scale(2.6) translateY(-2%);
+  overflow: visible !important;
+}
+
+/* 내부 SVG, canvas 및 컨테이너가 드롭 섀도우 글로우를 잘라내지(clipping) 않도록 강제 노출 설정 */
+.lottieAvatar svg,
+.lottieAvatar canvas,
+.lottieAvatar div {
+  overflow: visible !important;
 }
 
 .description {

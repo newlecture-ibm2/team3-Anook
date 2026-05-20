@@ -123,6 +123,7 @@
 
 .labelActive {
   color: var(--color-primary);
+  font-weight: 600;
 }
 
 .headerLeft {
@@ -133,13 +134,34 @@
   gap: 2px;
 }
 
-.details {
-  margin-top: -4px;
+.menuList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-6);
+  width: 100%;
 }
 
-.detailText {
+.menuItem {
   font: var(--text-caption-regular);
-  color: var(--color-gray-600);
+  color: var(--color-gray-500);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  line-height: 1.4;
+}
+
+.bullet {
+  color: var(--color-primary);
+  font: var(--text-caption-regular);
+  font-weight: bold;
+}
+
+.statusMessage {
+  font: var(--text-caption-regular);
+  color: var(--color-gray-500);
+  margin-top: var(--space-4);
 }
 
 .cursor {

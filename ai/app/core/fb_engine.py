@@ -143,7 +143,22 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     missing = getattr(result, "missing_fields", [])
     intent = result.entities.get("intent", "")
     is_order_intent = intent in ("ROOM_SERVICE", "ORDER_MODIFY")
-    is_ready_for_confirm = result.needs_clarification and not missing and is_order_intent
+    
+    # [AN-344] 룸서비스 주문 목록 존재 여부 검증 (유효한 수량의 아이템이 1개 이상 필요)
+    menu_items = result.entities.get("menu_items", [])
+    has_items = False
+    if isinstance(menu_items, list) and len(menu_items) > 0:
+        has_items = any(
+            isinstance(item, dict) and item.get("quantity", 0) > 0 
+            for item in menu_items
+        )
+        
+    is_ready_for_confirm = (
+        result.needs_clarification 
+        and not missing 
+        and is_order_intent 
+        and has_items
+    )
 
     if is_ready_for_confirm:
         # 확인 질문 + 정적 카드를 동시에 표시 (더블체크 제거)

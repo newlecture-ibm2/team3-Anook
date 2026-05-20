@@ -98,7 +98,7 @@ export default function FeedbackCard({
             </div>
 
             <div className={styles.subtitle}>
-              {systemSubtitle || '(※ 고객에게 노출되지 않는 프런트 운영용 메시지입니다)'}
+              {systemSubtitle || '(※ 고객에게 노출되지 않는 프론트 운영용 메시지입니다)'}
             </div>
           </div>
         </div>

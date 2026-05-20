@@ -92,7 +92,7 @@ export function useChat() {
     if (newContent.includes('[FORWARD_FB]')) newContent = newContent.replace('[FORWARD_FB]', currentT.aiReplies?.forwardFb || '');
     if (newContent.includes('[FORWARD_HK]')) newContent = newContent.replace('[FORWARD_HK]', currentT.aiReplies?.forwardHk || '');
     if (newContent.includes('[FORWARD_FACILITY]')) newContent = newContent.replace('[FORWARD_FACILITY]', currentT.aiReplies?.forwardFacility || '');
-    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', currentT.aiReplies?.forwardConcierge || '');
+    if (newContent.includes('[FORWARD_CONCIERGE]')) newContent = newContent.replace('[FORWARD_CONCIERGE]', (currentT.aiReplies as any)?.forwardConcierge || '');
     if (newContent.includes('[FORWARD_FRONT]')) newContent = newContent.replace('[FORWARD_FRONT]', currentT.aiReplies?.forwardFront || '');
     if (newContent.includes('[INFO_NOT_FOUND]')) newContent = newContent.replace('[INFO_NOT_FOUND]', currentT.aiReplies?.infoNotFound || '');
     if (newContent.includes('[PII_GUARD]')) newContent = newContent.replace('[PII_GUARD]', currentT.aiReplies?.piiGuard || '');
@@ -480,7 +480,7 @@ export function useChat() {
                     let content = '';
                     if (hasStaffSuccess) {
                       // 직원/관리자가 강제 취소한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프런트로 연락 부탁드립니다.';
+                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프론트로 연락 부탁드립니다.';
                     } else if (hasGuestApproved) {
                       // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
                       content = '요청하신 취소가 정상 처리되었습니다.';
@@ -545,7 +545,7 @@ export function useChat() {
                       id: msgId,
                       variant: 'received',
                       type: 'TEXT',
-                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프런트로 연락 부탁드립니다.',
+                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프론트로 연락 부탁드립니다.',
                     }];
                   });
                 }, 800);
@@ -582,14 +582,20 @@ export function useChat() {
     const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
     const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
     const hasChinese = /[\u4E00-\u9FFF]/.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
     
-    let detectedChatLang = 'en';
+    const currentLanguage = useUiStore.getState().language;
+    let detectedChatLang = currentLanguage; // Default to CURRENT language
+    
     if (hasKorean) detectedChatLang = 'ko';
     else if (hasJapanese) detectedChatLang = 'ja';
     else if (hasChinese) detectedChatLang = 'zh';
+    else if (hasEnglish) detectedChatLang = 'en';
 
-    setLanguage(detectedChatLang as any);
-    setChatLanguage(detectedChatLang);
+    if (detectedChatLang !== currentLanguage) {
+      setLanguage(detectedChatLang as any);
+      setChatLanguage(detectedChatLang);
+    }
 
     // 오프라인 상태일 경우 전송 시도 자체를 차단 (버퍼링 금지)
     if (typeof navigator !== 'undefined' && !navigator.onLine) {

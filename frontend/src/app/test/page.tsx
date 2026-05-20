@@ -105,7 +105,7 @@ export default function ComponentShowcasePage() {
       id: 1,
       domainCode: 'FRONT',
       question: '체크아웃 시간 연장(Late Checkout)',
-      answer: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프런트에 문의 바랍니다.',
+      answer: '오후 2시까지 연장 가능하며, 시간당 2,500엔의 추가 비용이 발생합니다. 멤버십 등급에 따라 무료 연장이 가능할 수 있으니 프론트에 문의 바랍니다.',
       updatedAt: '2024-04-15'
     },
     {
@@ -462,12 +462,12 @@ export default function ComponentShowcasePage() {
                       
                       {/* 색상 테스트용 카드들 (타이머 종료 상태) */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-16)', marginTop: 'var(--space-24)' }}>
-                        <GuestRequestCard requestId={2} domainCode="HK" summary="하우스키핑 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
-                        <GuestRequestCard requestId={3} domainCode="FB" summary="식음료 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
-                        <GuestRequestCard requestId={4} domainCode="FACILITY" summary="시설관리 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
-                        <GuestRequestCard requestId={5} domainCode="CONCIERGE" summary="컨시어지 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
-                        <GuestRequestCard requestId={6} domainCode="FRONT" summary="프론트 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="NORMAL" />
-                        <GuestRequestCard requestId={7} domainCode="EMERGENCY" summary="긴급 컬러" status="IN_PROGRESS" progress={50} graceRemaining={0} priority="URGENT" />
+                        <GuestRequestCard requestId={2} domainCode="HK" summary="하우스키핑 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
+                        <GuestRequestCard requestId={3} domainCode="FB" summary="식음료 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
+                        <GuestRequestCard requestId={4} domainCode="FACILITY" summary="시설관리 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
+                        <GuestRequestCard requestId={5} domainCode="CONCIERGE" summary="컨시어지 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
+                        <GuestRequestCard requestId={6} domainCode="FRONT" summary="프론트 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
+                        <GuestRequestCard requestId={7} domainCode="EMERGENCY" summary="긴급 컬러" status="PENDING" progress={0} graceRemaining={-1} priority="NORMAL" />
                       </div>
                     </div>
                   </div>

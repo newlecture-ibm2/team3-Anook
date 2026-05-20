@@ -105,24 +105,17 @@ export default function RequestCard({
       return displaySummary;
     }
     const intent = entities?.intent as string | undefined;
-    switch (domainCode) {
-      case 'FB':
-        if (intent === 'DINING') return '룸서비스 음식 주문';
-        if (intent === 'AMENITY') return '객실 어메니티 요청';
-        return displaySummary;
-      case 'CONCIERGE':
-        if (intent === 'TAXI') return '택시 호출 예약';
-        if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
-        if (intent === 'RESTAURANT') return '식당 예약';
-        if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
-        if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
-        return displaySummary;
-      case 'FACILITY':
-      case 'HK':
-        return displaySummary;
-      default:
-        return displaySummary.split('(')[0].trim();
+    
+    if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
+      if ((t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
+      }
     }
+    
+    if (!domainCode) {
+      return displaySummary.split('(')[0].trim();
+    }
+    return displaySummary;
   };
 
   let finalTitle = getFixedTitle();
@@ -222,7 +215,11 @@ export default function RequestCard({
     return parts.length > 0 ? parts.join('\n') : null;
   };
 
-  const detailsText = renderDetails();
+  const rawDetails = renderDetails();
+  const { translatedText: translatedDetails, isLoading: isTranslatingDetails } = useTranslationApi(
+    rawDetails || undefined,
+    targetLang
+  );
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -265,9 +262,9 @@ export default function RequestCard({
             </div>
           </div>
 
-          {detailsText && (
+          {rawDetails && (
             <div className={styles.detailsText}>
-              {detailsText}
+              {isTranslatingDetails ? (t.cardUI?.message?.translating || 'Translating...') : (translatedDetails || rawDetails)}
             </div>
           )}
 

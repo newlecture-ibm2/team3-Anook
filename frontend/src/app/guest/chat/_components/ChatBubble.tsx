@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './ChatBubble.module.css';
 import { CancelIcon } from '@/components/icons';
 
@@ -8,16 +8,46 @@ export interface ChatBubbleProps {
   isFallback?: boolean;
   imageUrl?: string;
   children: React.ReactNode;
+  animate?: boolean;
 }
 
-export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl, children }: ChatBubbleProps) {
+export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl, children, animate = false }: ChatBubbleProps) {
   const styleClass = bubbleStyle || variant;
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [displayedText, setDisplayedText] = useState<string>('');
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
+
+  const textToType = typeof children === 'string' ? children : '';
+
+  useEffect(() => {
+    if (!animate || !textToType) {
+      setDisplayedText(textToType);
+      setIsTypingComplete(true);
+      return;
+    }
+
+    setDisplayedText('');
+    setIsTypingComplete(false);
+    let index = 0;
+    
+    // Smooth, rapid typing speed (approx 15ms per character)
+    const interval = setInterval(() => {
+      if (index < textToType.length) {
+        setDisplayedText((prev) => prev + textToType.charAt(index));
+        index++;
+      } else {
+        clearInterval(interval);
+        setIsTypingComplete(true);
+      }
+    }, 15);
+
+    return () => clearInterval(interval);
+  }, [textToType, animate]);
 
   const renderContent = () => {
     if (typeof children !== 'string') return children;
     
-    let text = children;
+    let text = animate ? displayedText : children;
     if (variant === 'received') {
       // Add line breaks after Korean sentence endings (., ?, !)
       text = text.replace(/([가-힣][.?!])\s+/g, '$1\n');
@@ -82,7 +112,7 @@ export default function ChatBubble({ variant, bubbleStyle, isFallback, imageUrl,
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <img src={imageUrl} alt="첨부 이미지 확대" className={styles.lightboxImage} />
             <button className={styles.lightboxClose} onClick={() => setIsLightboxOpen(false)} aria-label="닫기">
-              <CancelIcon width={24} height={24} color="#fff" />
+              <CancelIcon width={20} height={20} color="currentColor" />
             </button>
           </div>
         </div>
