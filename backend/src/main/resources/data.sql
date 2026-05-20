@@ -139,27 +139,7 @@ ON CONFLICT (room_no) DO UPDATE SET
 -- 시퀀스 동기화
 SELECT setval('pms_guest_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pms_guest));
 
--- ============================================================
--- PMS 영수증 테스트 데이터 (비용 조회 기능 검증용)
--- ============================================================
--- 707호 (김철수): F&B + HK 혼합 내역
-INSERT INTO pms_receipt (room_no, menu_id, quantity, total_price, status, created_at) VALUES
-    ('707', (SELECT id FROM pms_menu WHERE name = '클래식 치즈버거'),      2, 30000, 'UNPAID', NOW() - INTERVAL '5 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '트러플 머쉬룸 리조또'), 1, 28000, 'UNPAID', NOW() - INTERVAL '5 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '콜라'),                 2,  8000, 'UNPAID', NOW() - INTERVAL '5 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '뉴욕 치즈케이크'),      1, 12000, 'UNPAID', NOW() - INTERVAL '3 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '아메리카노'),           1,  5000, 'UNPAID', NOW() - INTERVAL '3 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '추가 수건'),            2,  2000, 'UNPAID', NOW() - INTERVAL '4 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '미니바 맥주'),          2, 16000, 'UNPAID', NOW() - INTERVAL '2 hours'),
-    ('707', (SELECT id FROM pms_menu WHERE name = '일반 세탁'),            1,  7000, 'UNPAID', NOW() - INTERVAL '1 hour')
-ON CONFLICT DO NOTHING;
 
--- 101호 (테스트): F&B 내역
-INSERT INTO pms_receipt (room_no, menu_id, quantity, total_price, status, created_at) VALUES
-    ('101', (SELECT id FROM pms_menu WHERE name = '해산물 파스타'),  1, 25000, 'UNPAID', NOW() - INTERVAL '2 hours'),
-    ('101', (SELECT id FROM pms_menu WHERE name = '감자튀김'),       1,  8000, 'UNPAID', NOW() - INTERVAL '2 hours'),
-    ('101', (SELECT id FROM pms_menu WHERE name = '아메리카노'),     2, 10000, 'UNPAID', NOW() - INTERVAL '1 hour')
-ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- AI 대화 메시지 시드 데이터 (격리 테스트용)
