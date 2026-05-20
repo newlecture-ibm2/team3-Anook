@@ -185,6 +185,26 @@ export default function TaskTicket({
   );
   const entityDetails = language !== 'ko' && translatedDetails ? translatedDetails : rawEntityDetails;
 
+  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
+
+  const fallbackDescriptionRaw = React.useMemo(() => {
+    let desc = description;
+    if (isManuallyReassigned && desc) {
+      const lines = desc.split('\n').filter(l => l.trim());
+      desc = lines[lines.length - 1] || '';
+    } else if (desc && desc.includes('[주문 상세]')) {
+      desc = desc.split('[주문 상세]')[0].trim();
+    }
+    return desc;
+  }, [description, isManuallyReassigned]);
+
+  const { translatedText: translatedFallbackDesc } = useTranslationApi(
+    language !== 'ko' && fallbackDescriptionRaw ? fallbackDescriptionRaw : undefined,
+    language
+  );
+  
+  const fallbackDescription = language !== 'ko' && translatedFallbackDesc ? translatedFallbackDesc : fallbackDescriptionRaw;
+
   if (department) {
     if (deptKey === 'hk') displayDept = t.ticketUI.department.HK;
     else if (deptKey === 'facility') displayDept = t.ticketUI.department.FACILITY;
@@ -193,8 +213,6 @@ export default function TaskTicket({
     else if (deptKey === 'emergency') displayDept = t.ticketUI.department.EMERGENCY;
     else displayDept = t.ticketUI.department.FRONT;
   }
-
-  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
 
   const getFixedTitle = () => {
     if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
@@ -238,16 +256,10 @@ export default function TaskTicket({
 
 
 
-  let displayDescription = description;
-  if (isManuallyReassigned && displayDescription) {
-    // 수동 배정: rawText 원본에서 마지막 줄(frontdesk 이관 사유)만 추출
-    const lines = displayDescription.split('\n').filter(l => l.trim());
-    displayDescription = lines[lines.length - 1] || '';
-  } else if (status !== 'IN_PROGRESS' && entityDetails) {
+  let displayDescription = fallbackDescription;
+  if (status !== 'IN_PROGRESS' && entityDetails) {
     // Override rawText with entity details for TODO/DONE
     displayDescription = entityDetails;
-  } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
-    displayDescription = displayDescription.split('[주문 상세]')[0].trim();
   }
   
   if (language === 'en') {
