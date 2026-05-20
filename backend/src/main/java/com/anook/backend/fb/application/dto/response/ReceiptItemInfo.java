@@ -7,5 +7,7 @@ public record ReceiptItemInfo(
     String menuName,
     int quantity,
     int unitPrice,
-    int totalPrice
+    int totalPrice,
+    Double unitPriceUsd,
+    Double totalPriceUsd
 ) {}

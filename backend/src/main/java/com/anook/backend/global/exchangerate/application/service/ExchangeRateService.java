@@ -50,4 +50,13 @@ public class ExchangeRateService implements GetExchangeRateUseCase, RefreshExcha
         }
         return current.krwToUsd();
     }
+
+    @Override
+    public double getUsdToKrwRate() {
+        ExchangeRate current = cache.get();
+        if (current == null) {
+            return FALLBACK_USD_TO_KRW;
+        }
+        return current.usdToKrw();
+    }
 }

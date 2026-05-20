@@ -8,4 +8,5 @@ package com.anook.backend.global.exchangerate.application.port.in;
  */
 public interface GetExchangeRateUseCase {
     double getKrwToUsdRate();
+    double getUsdToKrwRate();
 }

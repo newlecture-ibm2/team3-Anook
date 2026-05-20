@@ -1,5 +1,6 @@
 package com.anook.backend.staff.request.application.service;
 
+import com.anook.backend.pms.application.port.in.GenerateReceiptUseCase;
 import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.staff.request.application.port.in.ChangeRequestStatusUseCase;
 import com.anook.backend.request.application.port.out.DispatchPort;
@@ -20,6 +21,7 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
 
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
+    private final GenerateReceiptUseCase generateReceiptUseCase;
 
     @Override
     @Transactional
@@ -64,6 +66,15 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         request.changeStatus(RequestStatus.COMPLETED);
         requestRepositoryPort.save(request);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
+
+        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성
+        if (request.getDomainCode() != null) {
+            generateReceiptUseCase.generate(
+                    request.getRoomNo(),
+                    request.getDomainCode().name(),
+                    request.getEntities()
+            );
+        }
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestSsePayload payload = RequestSsePayload.statusChanged(

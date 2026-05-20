@@ -23,6 +23,7 @@ public class ReceiptQueryAdapter implements ReceiptQueryPort {
             SELECT m.name AS menu_name,
                    r.quantity,
                    m.price AS unit_price,
+                   m.price_usd AS unit_price_usd,
                    r.total_price
             FROM pms_receipt r
             JOIN pms_menu m ON r.menu_id = m.id
@@ -31,11 +32,18 @@ public class ReceiptQueryAdapter implements ReceiptQueryPort {
             ORDER BY r.created_at DESC
             """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new ReceiptItemInfo(
-                rs.getString("menu_name"),
-                rs.getInt("quantity"),
-                rs.getInt("unit_price"),
-                rs.getInt("total_price")
-        ), roomNo);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            double priceUsd = rs.getDouble("unit_price_usd");
+            Double unitPriceUsd = rs.wasNull() ? null : priceUsd;
+            Double totalPriceUsd = unitPriceUsd == null ? null : unitPriceUsd * rs.getInt("quantity");
+            return new ReceiptItemInfo(
+                    rs.getString("menu_name"),
+                    rs.getInt("quantity"),
+                    rs.getInt("unit_price"),
+                    rs.getInt("total_price"),
+                    unitPriceUsd,
+                    totalPriceUsd
+            );
+        }, roomNo);
     }
 }

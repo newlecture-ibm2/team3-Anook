@@ -8,5 +8,6 @@ import java.util.List;
 public record ReceiptSummaryResult(
     String roomNo,
     List<ReceiptItemInfo> items,
-    int totalAmount
+    int totalAmount,
+    double totalAmountUsd
 ) {}

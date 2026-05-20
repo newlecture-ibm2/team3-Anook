@@ -48,6 +48,7 @@ public class GetPmsMenuService implements GetPmsMenuUseCase {
                 menu.id(),
                 menu.name(),
                 menu.price(),
+                menu.priceUsd(),
                 menu.category(),
                 menu.allergens(),
                 menu.options(),

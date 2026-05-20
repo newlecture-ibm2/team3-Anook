@@ -1333,7 +1333,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-f2: BILLING_INQUIRY → 가상 PMS 비용 조회
         if primary.route_type == "BILLING_INQUIRY":
             from app.domains.billing.service import fetch_billing_summary
-            from app.prompts.billing_prompt import build_billing_prompt
+            from app.prompts.billing_prompt import build_billing_prompt, BILLING_SYSTEM_PROMPT
 
             entities = getattr(primary, 'entities', {}) or {}
             target_category = entities.get("category") if isinstance(entities, dict) else None
@@ -1349,9 +1349,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     guest_reply = guest_reply_ko if request.language == "ko" else guest_reply_en
                 else:
                     prompt_text = build_billing_prompt(billing_data, request.language)
+                    sys_inst = BILLING_SYSTEM_PROMPT + '\n반드시 {"reply": "응답 내용"} 형식의 JSON으로만 출력하세요.'
                     raw = await call_gemini_async(
                         prompt=prompt_text,
-                        system_instruction='당신은 호텔 AI 컨시어지입니다. 아래 비용 내역을 자연스러운 문장으로 고객에게 안내하세요. 반드시 {"reply": "응답 내용"} 형식의 JSON으로만 출력하세요.'
+                        system_instruction=sys_inst
                     )
                     if isinstance(raw, dict):
                         guest_reply = raw.get("reply") or raw.get("text") or prompt_text

@@ -45,10 +45,14 @@ def _fetch_menu_context(system_language: str = "ko") -> str:
                         opt_list.append(f"{req_label} {opt.get('groupName')}:{items}")
                     option_str = " " + " / ".join(opt_list)
                     
+                price_usd = m.get("priceUsd")
+                if price_usd is None:
+                    price_usd = price / 1400.0
+
                 if system_language == "ko":
-                    price_str = f"{int(price):,}원"
+                    price_str = f"{int(price):,}원 (${round(price_usd)})"
                 else:
-                    price_str = f"${(price / 1300):.2f}"
+                    price_str = f"${round(price_usd)} ({int(price):,}원)"
                     
                 menu_lines.append(f"- [{category}] {name}: {price_str}{allergy_str}{option_str}")
             return "\n".join(menu_lines)
@@ -189,36 +193,64 @@ def _handle_spending_inquiry(room_no: str, user_message: str, system_language: s
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")
         with httpx.Client(timeout=3.0) as client:
-            resp = client.get(f"{base_url}/fb/receipts/room/{room_no}/summary")
+            resp = client.get(f"{base_url}/pms/billing/summary?roomNo={room_no}&category=ALL")
 
         if resp.status_code == 200:
             data = resp.json()
             items = data.get("items", [])
-            total = data.get("totalAmount", 0)
 
             if not items:
-                return "현재까지 룸서비스 이용 내역이 없습니다."
+                if system_language == "ko":
+                    return "현재까지 룸서비스 이용 내역이 없습니다."
+                else:
+                    return "There are no room service charges recorded for your room at this time."
 
-            # 항목별 내역 구성
+            # F&B 이외의 다른 부서(HK 등) 유료 서비스 내역이 존재하는지 검사
+            fb_categories = {"MAIN", "SIDE", "DRINK", "DESSERT"}
+            has_other_dept_charges = False
+            for item in items:
+                item_cat = item.get("category", "").upper()
+                if item_cat not in fb_categories:
+                    has_other_dept_charges = True
+                    break
+
+            # F&B 외의 유료 내역이 존재하면 반려(Reject)
+            if has_other_dept_charges:
+                if system_language == "ko":
+                    return "현재 룸서비스 외에 하우스키핑 등 다른 부서의 유료 서비스 이용 내역이 존재합니다. 정확한 확인을 위해 전체 요금 조회를 요청해 주시기 바랍니다."
+                else:
+                    return "You have charges from other departments (such as Housekeeping) besides Room Service. Please request a full billing summary for complete details."
+
+            # F&B 내역만 존재하는 경우 항목별 내역 구성
             lines = []
             for item in items:
                 name = item.get("menuName", "")
                 qty = item.get("quantity", 0)
-                price = item.get("totalPrice", 0)
+                price_krw = item.get("totalPriceKrw", 0)
+                price_usd = item.get("totalPriceUsd", 0)
+
                 if system_language == "ko":
-                    lines.append(f"- {name} {qty}개: {int(price):,}원")
+                    lines.append(f"- {name} {qty}개: {int(price_krw):,}원 (${price_usd:.2f})")
                 else:
-                    lines.append(f"- {name} x{qty}: ${(price / 1300):.2f}")
+                    lines.append(f"- {name} x{qty}: ${price_usd:.2f} ({int(price_krw):,}원)")
 
             detail = "\n".join(lines)
+            total_krw = data.get("totalAmountKrw", 0)
+            total_usd = data.get("totalAmountUsd", 0)
 
             if system_language == "ko":
-                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: {int(total):,}원"
+                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n결제 예정 금액 : {int(total_krw):,}원 (${total_usd:.2f})"
             else:
-                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${(total / 1300):.2f}"
+                return f"Here is your room service usage so far:\n{detail}\n\nTotal Price : ${total_usd:.2f}({int(total_krw):,}원)"
         else:
             print(f"[FB Agent] 영수증 조회 API 실패: HTTP {resp.status_code}")
-            return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+            if system_language == "ko":
+                return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+            else:
+                return "We encountered an error retrieving your billing information. Please contact the front desk."
     except Exception as e:
         print(f"[FB Agent] 영수증 조회 API 호출 중 오류 발생: {e}")
-        return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+        if system_language == "ko":
+            return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."
+        else:
+            return "We encountered an error retrieving your billing information. Please contact the front desk."
