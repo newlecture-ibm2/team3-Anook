@@ -119,6 +119,29 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
 
     result = HotelRequestSchema(**raw)
 
+    # 긍정 응답 보정 로직 (LLM 오작동 방지 및 "네" 입력 시 무조건 즉시 접수 처리)
+    clean_msg = user_message.strip().replace("!", "").replace(".", "").replace("?", "").replace(",", "").lower()
+    positive_words = {
+        "네", "응", "어", "오케이", "ok", "yes", "y", "확인", "진행", "주문해줘", "주문", 
+        "그래", "그렇게 해줘", "진행해줘", "주문진행", "주문 진행", "접수해줘", "접수",
+        "please", "sure", "confirm", "do it", "좋아", "좋아요", "오냐", "하렴", "하자"
+    }
+    is_positive = any(clean_msg.startswith(w) or clean_msg == w for w in positive_words)
+    
+    missing = getattr(result, "missing_fields", [])
+    menu_items = result.entities.get("menu_items", [])
+    has_items = False
+    if isinstance(menu_items, list) and len(menu_items) > 0:
+        has_items = any(
+            isinstance(item, dict) and item.get("quantity", 0) > 0 
+            for item in menu_items
+        )
+
+    # 필수 조건들이 다 차 있고 긍정 반응을 보였다면 즉시 접수로 강제 전환
+    if result.needs_clarification and not missing and has_items and is_positive:
+        result.needs_clarification = False
+        result.final_reply = "[FORWARD_FB]"
+
     # 6. SPENDING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
     if result.entities.get("intent") == "SPENDING_INQUIRY":
         guest_reply = await asyncio.to_thread(_handle_spending_inquiry, room_no, user_message, system_language)
