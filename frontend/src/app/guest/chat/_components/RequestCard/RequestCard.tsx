@@ -15,7 +15,7 @@ function TypingText({ text, speed = 12 }: { text: string; speed?: number }) {
     let index = 0;
     const interval = setInterval(() => {
       if (index < text.length) {
-        setDisplayed((prev) => prev + text.charAt(index));
+        setDisplayed(text.substring(0, index + 1));
         index++;
       } else {
         clearInterval(interval);
