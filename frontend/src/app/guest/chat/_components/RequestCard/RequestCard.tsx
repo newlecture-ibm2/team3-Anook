@@ -302,8 +302,6 @@ export default function RequestCard({
               <div className={styles.summary}>
                 {isTranslating ? (
                   <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
-                ) : isTranslationRequired ? (
-                  <TypingText text={finalTitle} />
                 ) : (
                   finalTitle
                 )}
@@ -316,8 +314,6 @@ export default function RequestCard({
             <div className={styles.detailsText}>
               {isTranslatingDetails ? (
                 <span className={styles.translatingText}>{t.cardUI?.message?.translating || 'Translating...'}</span>
-              ) : isDetailsTranslationRequired ? (
-                <TypingText text={translatedDetails || rawDetails} />
               ) : (
                 translatedDetails || rawDetails
               )}
