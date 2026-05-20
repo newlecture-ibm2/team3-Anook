@@ -630,6 +630,31 @@ export function useChat() {
       return [...filtered, newUserMsg];
     });
 
+    // [AN-344] 긍정 반응 인터셉트: "네" 같은 확인 답변 시 AI 파이프라인을 거치지 않고
+    // 기존 PENDING 카드(graceRemaining=-1)를 직접 승인하여 중복 카드 생성 방지
+    const positiveWords = new Set([
+      '네', '응', '어', '오케이', 'ok', 'yes', 'y', '확인', '진행', '주문해줘', '주문',
+      '그래', '진행해줘', '접수해줘', '접수', 'sure', 'confirm', '좋아', '좋아요', '하자'
+    ]);
+    const cleanText = text.trim().replace(/[!.?,]/g, '').toLowerCase();
+    const isPositive = positiveWords.has(cleanText);
+
+    if (isPositive) {
+      // 현재 채팅에서 graceRemaining=-1인 PENDING 카드(FB/CONCIERGE 확인 대기)를 찾음
+      const pendingConfirmCard = messages.findLast(
+        (m: ChatMessage) => m.type === 'REQUEST_CARD'
+          && m.meta?.status === 'PENDING'
+          && m.meta?.graceRemaining === -1
+          && (m.meta?.domainCode === 'FB' || m.meta?.domainCode === 'CONCIERGE')
+      );
+      if (pendingConfirmCard?.meta?.requestId) {
+        // AI를 거치지 않고 바로 백엔드 confirm API 호출
+        confirmRequest(pendingConfirmCard.meta.requestId as number);
+        setIsTyping(false);
+        return;
+      }
+    }
+
     setIsTyping(true);
 
     abortControllerRef.current = new AbortController();
