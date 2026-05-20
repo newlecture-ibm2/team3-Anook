@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import InputField from '@/components/ui/Inputfield/InputField';
 import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import ChartCard from '@/components/ui/Card/ChartCard';
 import SummaryCard from '@/components/ui/Card/SummaryCard';
@@ -100,7 +99,6 @@ function DonutChart({ data, colors }: { data: { label: string; value: number; pc
 }
 
 export default function DashboardPage() {
-  const [searchValue, setSearchValue] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('7d');
   const { stats, loading, error } = useFrontdeskStats();
   const { t } = useTranslation();
@@ -133,12 +131,6 @@ export default function DashboardPage() {
           <h1 className={styles.title}>{t.frontdeskPage.dashboard.title}</h1>
         </div>
         <div className={styles.headerActions}>
-          <InputField 
-            variant="search" 
-            placeholder={t.frontdeskPage.dashboard.searchPlaceholder} 
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
           <FilterButton 
             filterOptions={[
               { label: t.frontdeskPage.dashboard.filters.today, value: '1d' }, 
@@ -151,24 +143,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main Content Section (Charts) */}
-      <div className={styles.chartsGrid}>
-        <ChartCard title={t.frontdeskPage.dashboard.charts.avgResTime} subtitle="AVERAGE RESOLUTION TIME (MINUTES)">
-           <div className={styles.chartPlaceholder}>
-              {loading ? t.common.loading : error ? error : <BarChart data={deptData} />}
-           </div>
-        </ChartCard>
-        
-        <ChartCard title={t.frontdeskPage.dashboard.charts.frequentReqs} subtitle="MOST FREQUENT REQUESTS (%)">
-           <div className={styles.chartPlaceholder}>
-              {loading ? t.common.loading : error ? error : (
-                <DonutChart data={frequentRequestsData} colors={DONUT_COLORS} />
-              )}
-           </div>
-        </ChartCard>
-      </div>
-
-      {/* Bottom Content Section (Summaries) */}
+      {/* Top Content Section (Summaries) */}
       <div className={styles.summaryGrid}>
         <SummaryCard 
           title={t.frontdeskPage.dashboard.summaries.totalToday} 
@@ -198,6 +173,23 @@ export default function DashboardPage() {
           changeType={(stats?.customerSatisfactionChange?.startsWith('-') || stats?.customerSatisfactionChange === '+0.0') ? 'negative' : 'positive'} 
           size="md" 
         />
+      </div>
+
+      {/* Main Content Section (Charts) */}
+      <div className={styles.chartsGrid}>
+        <ChartCard title={t.frontdeskPage.dashboard.charts.avgResTime} subtitle="AVERAGE RESOLUTION TIME (MINUTES)">
+           <div className={styles.chartPlaceholder}>
+              {loading ? t.common.loading : error ? error : <BarChart data={deptData} />}
+           </div>
+        </ChartCard>
+        
+        <ChartCard title={t.frontdeskPage.dashboard.charts.frequentReqs} subtitle="MOST FREQUENT REQUESTS (%)">
+           <div className={styles.chartPlaceholder}>
+              {loading ? t.common.loading : error ? error : (
+                <DonutChart data={frequentRequestsData} colors={DONUT_COLORS} />
+              )}
+           </div>
+        </ChartCard>
       </div>
     </div>
   );
