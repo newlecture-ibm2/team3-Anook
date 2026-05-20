@@ -164,11 +164,18 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         and has_items
     )
 
-    if result.needs_clarification:
-        # 아직 정보가 부족하거나, 확인 질문 단계 ("네" 버튼 누르기 전) → 티켓 생성 방지
+    clarification_options = getattr(result, "clarification_options", [])
+
+    if is_ready_for_confirm:
+        # 확인 질문 + 정적 카드를 동시에 표시 (더블체크 적용)
+        domain_code = "FB"
+        # 네 / 아니오 퀵리플라이 버튼은 표시하지 않음
+        clarification_options = []
+    elif result.needs_clarification:
+        # 아직 정보가 부족하거나, 정보 문의 → 티켓 생성 방지
         domain_code = None
     else:
-        # 최종 확정 (고객이 "네" 응답 후) → 드디어 티켓 생성!
+        # 최종 확정 (고객이 "네" 응답 후) → 기존 흐름 유지
         domain_code = "FB"
 
     return {
@@ -179,7 +186,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "entities": result.entities,
         "confidence": result.confidence,
         "missing_fields": missing,
-        "clarification_options": getattr(result, "clarification_options", []),
+        "clarification_options": clarification_options,
         "reasoning": result.reasoning,
         "action_type": result.entities.get("action_type", "ADD"),
     }
