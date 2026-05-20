@@ -97,7 +97,7 @@ export default function TaskTicket({
       return displaySummary;
     }
     const intent = entities?.intent as string | undefined;
-    switch (department?.toLowerCase()) {
+    switch (deptKey) {
       case 'fb': {
         if (intent === 'DINING') return '룸서비스 음식 주문';
         if (intent === 'AMENITY') return '객실 어메니티 요청';
