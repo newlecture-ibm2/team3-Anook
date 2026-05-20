@@ -10,6 +10,12 @@ export function useTranslationApi(text: string | null | undefined, targetLanguag
       return;
     }
 
+    // Skip translation if target language is English and text contains no Korean characters (already in English)
+    if (targetLanguage === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(text)) {
+      setTranslatedText(text);
+      return;
+    }
+
     const cacheKey = `trans_${targetLanguage}_${text}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {

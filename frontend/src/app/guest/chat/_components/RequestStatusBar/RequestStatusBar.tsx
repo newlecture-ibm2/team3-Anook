@@ -47,7 +47,63 @@ export default function RequestStatusBar({
   }, [chatLanguage]);
 
   // Translation for summary
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  const rawDynamicTitle = React.useMemo(() => {
+    const intent = entities?.intent as string | undefined;
+    if (domainCode === 'FB') {
+      const menuItems = entities?.menu_items as any[] | undefined;
+      if (menuItems && menuItems.length > 0) {
+        const first = menuItems[0];
+        const opt = first.selected_option ? `(${first.selected_option})` : '';
+        const qty = first.quantity ? ` ${first.quantity}개` : '';
+        const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
+        return `${first.name}${opt}${qty}${rest} 주문`;
+      }
+    } else if (domainCode === 'CONCIERGE') {
+      if (!intent || !entities) return null;
+      switch (intent) {
+        case 'TAXI':
+          return '택시 호출 예약';
+        case 'LUGGAGE_STORAGE': {
+          const count = entities.count;
+          const action = entities.action === 'store' ? '보관' : '찾기';
+          return count ? `짐 ${count}개 ${action} 요청` : `수하물 ${action} 요청`;
+        }
+        case 'RESTAURANT': return '식당 예약';
+        case 'WAKE_UP_CALL': {
+          const time = entities.time as string | undefined;
+          return time ? `${time} 모닝콜 예약` : '모닝콜 예약';
+        }
+        case 'POSTAL_SERVICE': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 발송 대행` : '우편물 발송 대행';
+        }
+        case 'DELIVERY': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 배달 요청` : '배달 요청';
+        }
+        case 'RESERVATION': {
+          const target = entities.target as string | undefined;
+          const time = entities.time as string | undefined;
+          if (target && time) return `${time} ${target} 예약`;
+          if (target) return `${target} 예약`;
+          return '예약 요청';
+        }
+      }
+    }
+    return null;
+  }, [domainCode, entities]);
+
+  const sourceTextForTranslation = rawDynamicTitle || summary;
+
+  const isTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(sourceTextForTranslation || ''));
+
+  const { translatedText: translatedSummaryRaw, isLoading: isTranslatingRaw } = useTranslationApi(
+    isTranslationRequired ? sourceTextForTranslation : null,
+    targetLang
+  );
+
+  const isTranslating = isTranslationRequired && isTranslatingRaw;
+  const translatedSummary = isTranslationRequired ? translatedSummaryRaw : sourceTextForTranslation;
   
   const baseSummary = translatedSummary || summary;
   
@@ -64,12 +120,16 @@ export default function RequestStatusBar({
     if (isTranslating || isEscalatedChat || baseSummary.includes('프론트 연결')) {
       return displaySummary;
     }
+    
+    if (rawDynamicTitle) {
+      return displaySummary;
+    }
+
     const intent = entities?.intent as string | undefined;
     
-    if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
-      if ((t.intents as any)?.[intent]) {
-        return (t.intents as any)[intent];
-      }
+    // Fallback: intent 기반 번역 매핑
+    if (intent && (t.intents as any)?.[intent]) {
+      return (t.intents as any)[intent];
     }
     
     if (!domainCode) {
@@ -152,10 +212,14 @@ export default function RequestStatusBar({
   };
 
   const rawDetails = renderDetails();
-  const { translatedText: translatedDetails } = useTranslationApi(
-    rawDetails || undefined,
+  const isDetailsTranslationRequired = targetLang !== 'ko' && !(targetLang === 'en' && !/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(rawDetails || ''));
+
+  const { translatedText: translatedDetailsRaw } = useTranslationApi(
+    isDetailsTranslationRequired ? (rawDetails || undefined) : undefined,
     targetLang
   );
+
+  const translatedDetails = isDetailsTranslationRequired ? translatedDetailsRaw : rawDetails;
 
   const detailsText = translatedDetails || rawDetails;
   
@@ -193,7 +257,7 @@ export default function RequestStatusBar({
       {!isMini && (
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.title}>{finalTitle}</div>
+            <div className={`${styles.title} ${isTranslating ? styles.translatingText : ''}`}>{finalTitle}</div>
             
             {/* Subtitle: strictly menu/items list line-by-line */}
             {detailItems.length > 0 && (

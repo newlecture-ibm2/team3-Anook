@@ -210,5 +210,5 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "clarification_options": getattr(result, "clarification_options", []),
         "missing_fields": getattr(result, "missing_fields", []),
         "reasoning": result.reasoning,
-        "action_type": "ADD",
+        "action_type": result.entities.get("action_type", "ADD"),
     }
