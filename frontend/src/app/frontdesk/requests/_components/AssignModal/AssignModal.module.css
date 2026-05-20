@@ -42,7 +42,7 @@
 }
 
 .infoLabel {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-500);
   min-width: 40px;
 }
@@ -59,7 +59,7 @@
 }
 
 .selectLabel {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-700);
 }
 

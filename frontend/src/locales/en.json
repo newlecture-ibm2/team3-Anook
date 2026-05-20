@@ -182,6 +182,8 @@
     "chatHistory": {
       "title": "Chat History",
       "emptyMessage": "No messages",
+      "systemCompleted": "The previous consultation and processing have been completed.",
+      "systemMessageNote": "(※ This is a system-only message for front desk operations, not visible to guests)",
       "roomConversation": "Room {{room}} Conversation",
       "roomChatRecord": "Room {{room}} Chat Record",
       "selectRoomPrompt": "Please select a room to view the conversation",
@@ -286,7 +288,7 @@
       "forwardingSuffix": " team...",
       "domains": {
         "HK": "Housekeeping",
-        "FB": "Room Service",
+        "FB": "F&B",
         "FACILITY": "Facility",
         "CONCIERGE": "Concierge",
         "FRONT": "Front Desk",
@@ -305,7 +307,8 @@
     "LATE_CHECKOUT": "Late Checkout",
     "AMENITY": "Amenity Request",
     "BEDDING": "Bedding Request",
-    "ROOM_SERVICE": "Room Service",
+    "ROOM_SERVICE": "Room Service Food Order",
+    "DINING": "Room Service Food Order",
     "MENU_INQUIRY": "Menu Inquiry",
     "ALLERGY_CHECK": "Allergy Check",
     "ORDER_MODIFY": "Order Modification",
@@ -368,16 +371,25 @@
       "templateWithDetailsCompleted": "The {team} team has completed {details}.",
       "templateNoDetailsPending": "The {team} team is checking your request.",
       "templateNoDetailsInProgress": "The {team} team is processing your request.",
-      "templateNoDetailsCompleted": "The {team} team has completed your request."
+      "templateNoDetailsCompleted": "The {team} team has completed your request.",
+      "emergencyPending": "The front desk is checking your emergency request.",
+      "emergencyInProgress": "The front desk is handling your emergency request.",
+      "emergencyCompleted": "Your emergency request has been resolved."
     },
     "message": {
       "cancelPending": "🔄 Cancel request received, staff is checking",
-      "escalated": "💬 Front desk staff will respond shortly.",
-      "forwarded": "✅ Forwarded to staff",
+      "escalated": "Staff will respond shortly",
+      "forwarded": "Forwarded to the {team} team",
       "cancelledCard": "Request Cancelled",
-      "autoAcceptGuide": "Automatically submitted shortly.",
+      "autoAcceptGuide": "Please check your request. Auto-forwarding shortly.",
+      "confirmGuide": "Please press the proceed button to confirm.",
+      "cancelPendingShort": "Checking cancel request",
       "translating": "Translating...",
-      "escalationRequest": "Front desk staff connection request"
+      "escalationRequest": "Front desk staff connection request",
+      "cancelRequest": "Cancel Request",
+      "proceed": "Proceed",
+      "urgentPrefix": "[Urgent] ",
+      "cancelSuffix": " Cancelled"
     },
     "button": {
       "accept": "Submit Now",
@@ -399,7 +411,7 @@
       "FB": "F&B",
       "CONCIERGE": "Concierge",
       "FRONT": "Front Desk",
-      "EMERGENCY": "Emergency 🚨"
+      "EMERGENCY": "Emergency"
     },
     "badge": {
       "cancelled": "Cancelled",
@@ -418,6 +430,25 @@
       "hoursAgo": "hrs ago",
       "minsAgo": "mins ago",
       "justNow": "Just now"
+    },
+    "entityLabels": {
+      "time": "Time",
+      "dest": "Dest.",
+      "pax": "Pax",
+      "paxUnit": "",
+      "count": "Qty",
+      "countUnit": "",
+      "rest": "Restaurant",
+      "target": "Target",
+      "req": "Request",
+      "store": "Store",
+      "pickup": "Pickup",
+      "item": "Item",
+      "vendor": "Vendor",
+      "type": "Type",
+      "symptom": "Symptom",
+      "area": "Area",
+      "content": "Details"
     }
   },
   "menu": {
@@ -436,13 +467,14 @@
     "speechUnsupported": "Speech recognition is not supported in this browser."
   },
   "aiReplies": {
-    "forwardFb": "I will forward your order to the F&B team.",
-    "forwardHk": "I will forward your request to the Housekeeping team.",
-    "forwardFacility": "I will forward your repair request to the Facility team.",
-    "forwardFront": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
-    "infoNotFound": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
-    "cancelSuccess": "Your request has been successfully cancelled.",
-    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. We will notify you once confirmed.",
-    "piiGuard": "To protect your valuable personal information, we do not accept sensitive information via chat. For detailed inquiries, please contact the front desk (extension 0) using the phone in your room for safe assistance."
+    "forwardFb": "Sure! I will forward your order to the F&B team right away! 🍽️",
+    "forwardHk": "Got it! I will forward your request to the Housekeeping team right away. 🧹",
+    "forwardFacility": "We sincerely apologize for the inconvenience. 🥲 We will forward this to the Facility team to handle it as quickly as possible! 🛠️",
+    "forwardConcierge": "Got it! I will forward your request to the Concierge team right away. 🛎️",
+    "forwardFront": "We sincerely apologize for the inconvenience. 🥲 We will connect you directly to the front desk right now to assist you further.",
+    "infoNotFound": "I'm not quite sure about that one! 🥲 I have forwarded your question to the front desk staff. They will check and reply to you here shortly. 🙏",
+    "cancelSuccess": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
+    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",
+    "piiGuard": "To protect your valuable personal information, we do not accept sensitive details via chat. 🔒 For detailed inquiries, please contact the front desk (extension 0) using your in-room phone for safe assistance. 😊"
   }
 }

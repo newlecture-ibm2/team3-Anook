@@ -98,7 +98,7 @@
 }
 
 .label {
-  font: var(--text-label-medium);
+  font: var(--text-caption-medium);
   color: var(--color-gray-500);
 }
 
@@ -122,11 +122,9 @@
 .rawText {
   font: var(--text-body-medium);
   color: var(--color-gray-700);
-  background: var(--color-gray-50);
-  padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-md);
   margin: 0;
   white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 .orderDetail {
@@ -155,16 +153,6 @@
   gap: var(--space-8);
 }
 
-.confidenceBadge {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: var(--space-4) var(--space-12);
-  background: var(--color-gray-100);
-  border-radius: var(--radius-sm);
-  font: var(--text-label-medium);
-  color: var(--color-gray-700);
-}
-
 .jsonBlock {
   background: var(--color-gray-900);
   color: #a5d6ff;
@@ -180,11 +168,8 @@
 .entityList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
-  background: var(--color-gray-50);
-  padding: var(--space-16);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-gray-200);
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
 }
 
 .editRow {

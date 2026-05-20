@@ -26,13 +26,11 @@
 }
 
 .count {
-  font: var(--text-caption-regular);
-  color: var(--header-color);
-  background-color: var(--color-surface);
-  border: 1px solid var(--header-color);
-  padding: 0 8px;
-  border-radius: 12px;
-  margin: 2px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  margin-left: 4px;
 }
 
 .todo {

@@ -168,7 +168,7 @@
 .buttonGroup {
   display: flex;
   gap: var(--space-8);
-  margin-top: var(--space-12);
+  margin-top: var(--space-24);
   max-height: 100px;
   opacity: 1;
   overflow: hidden;
@@ -188,6 +188,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+.detailsText {
+  font: var(--text-body-medium);
+  color: var(--color-gray-500);
+  line-height: 1.4;
+  margin-bottom: var(--space-4);
+  word-break: keep-all;
+  white-space: pre-wrap;
 }
 
 .cancelledCard {

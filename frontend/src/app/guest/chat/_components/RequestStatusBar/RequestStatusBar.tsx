@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styles from './RequestStatusBar.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useTranslationApi } from '@/app/useTranslationApi';
+import { useUiStore } from '@/stores/useUiStore';
 
 export interface RequestStatusBarProps {
   requestId: number;
@@ -33,44 +34,130 @@ export default function RequestStatusBar({
   isMini = false
 }: RequestStatusBarProps) {
   const [visible, setVisible] = useState(true);
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   
-  // Translation for summary
-  const { translatedText } = useTranslationApi(summary, language);
-  const displaySummary = translatedText || summary;
+  const isCancelled = status === 'CANCELLED';
+  const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
 
-  const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
-  // @ts-ignore
-  const domainLabel = domainInfo.key !== 'UNKNOWN' ? (t.ticketUI.department[domainInfo.key] || domainInfo.key) : (t.ticketUI.department.FRONT || '기타');
+  const { chatLanguage } = useUiStore();
+  const [targetLang, setTargetLang] = useState<string>(chatLanguage);
+
+  useEffect(() => {
+    setTargetLang(chatLanguage);
+  }, [chatLanguage]);
+
+  // Translation for summary
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
+  
+  const baseSummary = translatedSummary || summary;
+  
+  let displaySummary = '';
+  if (isTranslating) {
+    displaySummary = t.cardUI?.message?.translating || 'Translating...';
+  } else {
+    displaySummary = baseSummary.includes('[직원 인수인계]') || baseSummary.includes('[프론트 연결]') || baseSummary.includes('미학습 정보') || isEscalatedChat
+      ? (t.cardUI?.message?.escalationRequest || 'Front desk staff connection request')
+      : baseSummary;
+  }
+
+  const getFixedTitle = () => {
+    if (isTranslating || isEscalatedChat || baseSummary.includes('프론트 연결')) {
+      return displaySummary;
+    }
+    const intent = entities?.intent as string | undefined;
+    
+    if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
+      if ((t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
+      }
+    }
+    
+    if (!domainCode) {
+      return displaySummary.split('(')[0].trim();
+    }
+    return displaySummary;
+  };
+
+  let finalTitle = getFixedTitle();
+  if (isCancelled) {
+    finalTitle += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
+  }
+
+  const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
   
   // Render entities description
   const renderDetails = () => {
     if (!entities) return null;
     
-    const parts: string[] = [];
-    if (Array.isArray(entities.items)) {
-      entities.items.forEach((it: any) => {
-        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
-      });
-    } else if (entities.item) {
-      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
-    }
+    // 심플한 요청(HK, FACILITY, EMERGENCY, FRONT)은 메인 타이틀(summary)만 보여주고 디테일은 생략
+    if (domainCode === 'HK' || domainCode === 'FACILITY' || domainCode === 'EMERGENCY' || domainCode === 'FRONT') return null;
 
-    if (Array.isArray(entities.tasks)) {
-      entities.tasks.forEach((t: string) => parts.push(t));
-    }
+    const l = t.ticketUI?.entityLabels || {};
+    const parts: string[] = [];
     
-    if (parts.length === 0) {
-      if (entities.menu) {
-        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+    if (entities.intent === 'TAXI') {
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '목적지'}: ${entities.destination}`);
+      if (entities.passenger_count) parts.push(`${l.pax || '인원'}: ${entities.passenger_count}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'RESTAURANT' || entities.intent === 'RESERVATION') {
+      if (entities.restaurant_name) parts.push(`${l.rest || '식당'}: ${entities.restaurant_name}`);
+      if (entities.target) parts.push(`${l.target || '대상'}: ${entities.target}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.party_size) parts.push(`${l.pax || '인원'}: ${entities.party_size}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'LUGGAGE_STORAGE') {
+      if (entities.action) parts.push(`${l.req || '요청'}: ${entities.action === 'store' ? (l.store || '보관') : (l.pickup || '찾기')}`);
+      if (entities.count) parts.push(`${l.count || '수량'}: ${entities.count}${l.countUnit || ''}`);
+    } else if (entities.intent === 'DELIVERY' || entities.intent === 'POSTAL_SERVICE') {
+      if (entities.item) parts.push(`${l.item || '물품'}: ${entities.item}`);
+      if (entities.store_name) parts.push(`${l.vendor || '업체'}: ${entities.store_name}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '도착지'}: ${entities.destination}`);
+    } else if (entities.intent === 'WAKE_UP_CALL') {
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+    } else if (entities.intent === 'MEDICAL_INFO') {
+      if (entities.type) parts.push(`${l.type || '분류'}: ${entities.type}`);
+      if (entities.symptom) parts.push(`${l.symptom || '증상'}: ${entities.symptom}`);
+    } else if (entities.intent === 'TOUR_INFO') {
+      if (entities.category) parts.push(`${l.type || '분류'}: ${entities.category}`);
+      if (entities.area) parts.push(`${l.area || '지역'}: ${entities.area}`);
+    } else {
+      if (Array.isArray(entities.menu_items)) {
+        entities.menu_items.forEach((it: any) => {
+          parts.push(`${it.name} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
+        });
+      } else if (Array.isArray(entities.items)) {
+        entities.items.forEach((it: any) => {
+          parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
+        });
+      } else if (entities.item) {
+        parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
       }
-      if (entities.symptom) parts.push(`${entities.symptom}`);
+  
+      if (Array.isArray(entities.tasks)) {
+        entities.tasks.forEach((t: string) => parts.push(t));
+      }
+      
+      if (parts.length === 0) {
+        if (entities.menu) {
+          parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+        }
+      }
+ 
+      if (entities.symptom) {
+        parts.push(`${l.content || '내용'}: ${entities.symptom}`);
+      }
     }
     
     return parts.length > 0 ? parts.join(', ') : null;
   };
 
-  const detailsText = renderDetails();
+  const rawDetails = renderDetails();
+  const { translatedText: translatedDetails } = useTranslationApi(
+    rawDetails || undefined,
+    targetLang
+  );
+
+  const detailsText = translatedDetails || rawDetails;
   
   let computedProgress = 0;
   if (status === 'PENDING' || status === 'CANCEL_PENDING' || status === 'ESCALATED') {
@@ -96,6 +183,8 @@ export default function RequestStatusBar({
 
   if (!visible) return null;
 
+  const detailItems = detailsText ? detailsText.split(', ') : [];
+
   return (
     <div 
       className={styles.statusBarContainer}
@@ -104,23 +193,35 @@ export default function RequestStatusBar({
       {!isMini && (
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <div className={styles.title}>{displaySummary}</div>
-            <div className={styles.details}>
-              <span className={styles.detailText}>
-                {detailsText ? (
-                  <>
-                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateWithDetailsPending?.replace('{team}', domainLabel).replace('{details}', detailsText)}
-                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateWithDetailsInProgress?.replace('{team}', domainLabel).replace('{details}', detailsText)}
-                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateWithDetailsCompleted?.replace('{team}', domainLabel).replace('{details}', detailsText)}
-                  </>
-                ) : (
-                  <>
-                    {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateNoDetailsPending?.replace('{team}', domainLabel)}
-                    {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateNoDetailsInProgress?.replace('{team}', domainLabel)}
-                    {status === 'COMPLETED' && t.cardUI.statusBar?.templateNoDetailsCompleted?.replace('{team}', domainLabel)}
-                  </>
-                )}
-              </span>
+            <div className={styles.title}>{finalTitle}</div>
+            
+            {/* Subtitle: strictly menu/items list line-by-line */}
+            {detailItems.length > 0 && (
+              <div className={styles.menuList}>
+                {detailItems.map((item, idx) => (
+                  <div key={idx} className={styles.menuItem}>
+                    <span className={styles.bullet}>{"- "}</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Order Status Message below */}
+            <div className={styles.statusMessage}>
+              {domainCode === 'EMERGENCY' ? (
+                <>
+                  {(status === 'PENDING' || status === 'CANCEL_PENDING') && (t.cardUI.statusBar?.emergencyPending || '프론트 데스크에서 긴급 요청건을 확인하고 있습니다.')}
+                  {status === 'IN_PROGRESS' && (t.cardUI.statusBar?.emergencyInProgress || '프론트 데스크에서 긴급 요청건을 처리 중입니다.')}
+                  {status === 'COMPLETED' && (t.cardUI.statusBar?.emergencyCompleted || '긴급 요청건이 처리 완료되었습니다.')}
+                </>
+              ) : (
+                <>
+                  {(status === 'PENDING' || status === 'CANCEL_PENDING') && t.cardUI.statusBar?.templateNoDetailsPending?.replace('{team}', domainLabel)}
+                  {status === 'IN_PROGRESS' && t.cardUI.statusBar?.templateNoDetailsInProgress?.replace('{team}', domainLabel)}
+                  {status === 'COMPLETED' && t.cardUI.statusBar?.templateNoDetailsCompleted?.replace('{team}', domainLabel)}
+                </>
+              )}
             </div>
           </div>
         </div>

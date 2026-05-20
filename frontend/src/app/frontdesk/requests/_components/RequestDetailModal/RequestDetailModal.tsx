@@ -379,8 +379,9 @@ export default function RequestDetailModal({
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>{t.frontdeskPage.requestDetailModal.aiAnalysis}</h3>
             <div className={styles.aiInfo}>
-              <div className={styles.confidenceBadge}>
-                {t.frontdeskPage.requestDetailModal.confidence}: {Math.round(detail.confidence * 100)}%
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <span className={styles.label}>{t.frontdeskPage.requestDetailModal.confidence}</span>
+                <span className={styles.value}>{Math.round(detail.confidence * 100)}%</span>
               </div>
               {(() => {
                 if (!detail.entities) return null;

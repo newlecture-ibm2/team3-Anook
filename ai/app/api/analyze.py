@@ -67,82 +67,106 @@ _background_tasks = set()
 
 STATIC_REPLIES = {
     "ESCALATION": {
-        "ko": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
-        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment!",
-        "ja": "すぐに対応できるよう、フロントデスクにお繋ぎいたします。少々お待ちくださいませ。",
-        "zh": "我会立刻为您连接到前台以便进一步协助您。请稍等片刻！"
+        "ko": "제가 바로 답변드리기 어려운 부분이라, 프론트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+        "en": "I'll connect you to the front desk right away to assist you further. Please hold on a moment! 😊",
+        "ja": "すぐに対応できるよう、フロントデスクにお繋ぎいたします。少々お待ちくださいませ。😊",
+        "zh": "我会立刻为您连接到前台以便进一步协助您。请稍等片刻！😊"
     },
     "ESCALATION_INFO": {
-        "ko": "더 자세한 정보를 위해 프런트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
-        "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment.",
-        "ja": "より詳細な情報については、フロントデスクにお繋ぎいたします！少々お待ちください。",
-        "zh": "为了提供更详细的信息，我会为您连接到前台！请稍等片刻。"
+        "ko": "더 자세한 정보를 위해 프론트 데스크 직원에게 연결해 드릴게요! 잠시만 기다려 주세요.",
+        "en": "I'll connect you to the front desk for more detailed information! Please hold on a moment. 😊",
+        "ja": "より詳細な情報については、フロントデスクにお繋ぎいたします！少々お待ちください。😊",
+        "zh": "为了提供更详细的信息，我会为您连接到前台！请稍等片刻。😊"
     },
     "CLARIFICATION": {
         "ko": "어떤 말씀이신지 조금만 더 자세히 알려주시겠어요? 말씀해주시면 바로 도와드릴게요!",
-        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away!",
-        "ja": "どのようなご用件か、もう少し詳しく教えていただけますか？すぐにお手伝いさせていただきます！",
-        "zh": "您能详细告诉我您的需求吗？我很乐意立刻帮助您！"
+        "en": "Could you tell me a bit more about what you need? I'd be happy to help you right away! 😊",
+        "ja": "どのようなご用件か、もう少し詳しく教えていただけますか？すぐにお手伝いさせていただきます！😊",
+        "zh": "您能详细告诉我您的需求吗？我很乐意立刻帮助您！😊"
+    },
+    "CANCEL_REJECTED": {
+        "ko": "안타깝게도 해당 요청은 취소가 어렵습니다. 🥲 이미 처리가 시작되었거나 부서 확인이 필요한 상태이니 양해 부탁드립니다. 🙏",
+        "en": "Unfortunately, this request cannot be cancelled. It is already in progress or requires department confirmation. 🥲🙏",
+        "ja": "申し訳ありませんが、キャンセルリクエストは却下されました。すでに処理が開始されているか、部門の確認が必要です。🥲🙏",
+        "zh": "抱歉，取消请求被拒绝。该请求已在处理中或需要部门批准。🥲🙏"
+    },
+    "CANCEL_SUCCESS": {
+        "ko": "네, 요청하신 건이 정상적으로 즉시 취소 처리되었습니다. 😌 다른 필요하신 사항이 있다면 언제든 말씀해 주세요!",
+        "en": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
+        "ja": "リクエストは正常にキャンセルされました。😌 他にご要望がございましたら、いつでもお申し付けください。",
+        "zh": "您的请求已成功取消。😌 如果您还有其他需要，请随时告诉我！"
+    },
+    "CANCEL_PENDING": {
+        "ko": "해당 건은 이미 처리가 진행 중이어서 담당 부서로 취소 가능 여부를 확인 중입니다. 🏃‍♂️ 확인 후 바로 안내해 드릴게요!",
+        "en": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",
+        "ja": "すでに処理が進行中のため、担当部署にキャンセルをリクエストしました. 🏃‍♂️ 確認次第お知らせいたします。",
+        "zh": "您的请求正在处理中，因此我们已向相关部门发送了取消请求. 🏃‍♂️ 确认后我们将通知您。"
+    },
+    "CANCEL_IN_PROGRESS": {
+        "ko": "네, 요청하신 건에 대해 취소를 접수해 드릴게요! 😌 아직 대기 중이라면 바로 취소되며, 이미 처리 중이라면 부서 확인 후 안내해 드리겠습니다.",
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation. 😌",
+        "ja": "ご指定のリクエストのキャンセル手続きを行います. 待機中のものは即座にキャンセルされ, 対応中のものは部門の確認が必要となります. 😌",
+        "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。😌"
     },
     "CANCEL": {
         "ko": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 경우 담당 부서 확인 후 취소됩니다.",
-        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation.",
-        "ja": "待機中のリクエストは即座にキャンセルされます。すでにスタッフが対応を開始している場合は、担当部門の確認後にキャンセルされます。",
-        "zh": "待处理的请求将立即取消。如果工作人员已经开始处理，将在相关部门确认后取消。"
+        "en": "Pending requests will be canceled immediately. If staff have already begun processing, it will be canceled after department confirmation. 😌",
+        "ja": "待機中のリクエストは即座にキャンセルされます。すでにスタッフが対応を開始している場合は、担当部門の確認後にキャンセルされます。😌",
+        "zh": "待处理的请求将立即取消。如果工作人员已经开始处理，将在相关部门确认后取消。😌"
     },
     "STATUS_CHECK": {
         "ko": "현재 고객님의 최근 요청 진행 상태를 확인해 드리겠습니다.",
-        "en": "I will check the status of your most recent request right now.",
-        "ja": "お客様の最新のリクエストの状況をただいま確認いたします。",
-        "zh": "我将立刻为您查询最近请求的处理状态。"
+        "en": "I will check the status of your most recent request right now. 🔍",
+        "ja": "お客様の最新のリクエストの状況をただいま確認いたします。🔍",
+        "zh": "我将立刻为您查询最近请求的处理状态。🔍"
     },
     "TARGETED_CANCEL": {
         "ko": "지목하신 요청의 취소를 진행합니다. 대기 중인 건은 즉시 취소되며, 처리 중인 건은 부서 확인 후 취소됩니다.",
-        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation.",
-        "ja": "ご指定のリクエストのキャンセル手続きを行います。待機中のものは即座にキャンセルされ、対応中のものは部門の確認が必要となります。",
-        "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。"
+        "en": "We will process the cancellation for the specific request. Pending ones are canceled immediately, while in-progress ones require department confirmation. 😌",
+        "ja": "ご指定のリクエストのキャンセル手続きを行います. 待機中のものは即座にキャンセルされ, 対応中のものは部門の確認が必要となります. 😌",
+        "zh": "我们将为您处理指定请求的取消操作。待处理的将立即取消，处理中的需要相关部门确认。😌"
     },
     "TASK_WAIT": {
-        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 드릴게요. 조금만 기다려 주세요.",
-        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment.",
-        "ja": "かしこまりました！すぐに担当部門にお伝えいたします。少々お待ちくださいませ。",
-        "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。"
+        "ko": "네, 알겠습니다! 담당 부서로 빠르게 전달해 두었습니다. 🚀 조금만 기다려 주시면 금방 조치해 드릴게요. 😊",
+        "en": "Got it! I'll pass this on to the right department right away. Please give us just a moment. 🚀😊",
+        "ja": "かしこまりました！すぐに担当部門にお伝えいたします。少々お待ちくださいませ。🚀😊",
+        "zh": "明白！我会立刻将此转交给相关部门。请稍等片刻。🚀😊"
     },
     "INFO_NOT_FOUND": {
-        "ko": "앗, 그 부분은 제가 바로 답변드리기 어려워 프런트 데스크 직원에게 즉시 전달해 두었습니다! 직원이 확인 후 바로 채팅으로 답변 드릴 예정이니 잠시만 기다려 주세요.",
-        "en": "Oh, I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly.",
-        "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます。",
-        "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。"
+        "ko": "그 부분은 제가 바로 답변드리기 어려워 프론트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
+        "en": "I'm not quite sure about that one! I have forwarded your question to the front desk staff. They will check and reply to you here shortly. 🥲🙏",
+        "ja": "申し訳ありません、そちらについてはお答えいたしかねます。フロントデスクのスタッフに質問を転送いたしましたので、確認後すぐにこちらでご返答させていただきます. 🥲🙏",
+        "zh": "抱歉，关于这个问题我不太确定！我已经将您的问题转交给了前台员工。他们会核实后尽快在这里回复您。🥲🙏"
     },
     "ERROR": {
-        "ko": "잠시 시스템에 통신 지연이 생겼나 봐요. 조금만 이따가 다시 말씀해 주시겠어요?",
-        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment?",
-        "ja": "システムに一時的な問題が発生しているようです。少し経ってからもう一度お試しいただけますか？",
-        "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？"
+        "ko": "잠시 통신이 원활하지 않았나 봐요. 🥲 번거로우시겠지만 조금만 이따가 다시 한 번 말씀해 주시겠어요? 🙏",
+        "en": "It looks like we're having a tiny system hiccup. Could you try asking again in just a moment? 🥲🙏",
+        "ja": "システムに一時的な問題が発生しているようです. 少し経ってからもう一度お試しいただけますか？ 🥲🙏",
+        "zh": "系统似乎出现了暂时的故障。您能稍后再试一次吗？ 🥲🙏"
     },
     "COMPLAINT": {
-        "ko": "불편을 드려 대단히 죄송합니다. 지금 바로 프런트와 직접 연결해 드리겠습니다.",
-        "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now.",
-        "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。",
-        "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。"
+        "ko": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프론트 직원과 직접 연결하여 도움을 드리겠습니다.",
+        "en": "We sincerely apologize for the inconvenience. We will connect you directly to the front desk right now. 🥲",
+        "ja": "ご不便をおかけして大変申し訳ございません。ただいまフロントデスクに直接お繋ぎいたします。🥲",
+        "zh": "给您带来不便，我们深表歉意。现在立刻为您直接连接到前台。🥲"
     },
     "FALLBACK_FAILURE": {
-        "ko": "말씀하신 내용을 파악하기 어렵습니다. 프론트 연결이 필요하시면 '프론트 연결'이라고 말씀해 주세요.",
-        "en": "I'm having trouble understanding your request. If you need assistance from the front desk, please type 'connect to front desk'.",
-        "ja": "リクエストを理解できませんでした。フロントデスクのサポートが必要な場合は、「フロントデスクに接続」と入力してください。",
-        "zh": "我无法理解您的请求。如果您需要前台的帮助，请回复“连接前台”。"
+        "ko": "제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 제가 연결해드릴까요?",
+        "en": "I'm having trouble understanding your request. If you need assistance, shall I connect you to the front desk? 🥲",
+        "ja": "リクエストを理解できませんでした. フロントデスクのサポートが必要な場合は, フロントデスクにお繋ぎいたしましょうか？ 🥲",
+        "zh": "我无法理解您的请求. 如果您需要前台的帮助, 需要我为您连接前台吗？ 🥲"
     },
     "NEED_MORE_INFO": {
-        "ko": "자세한 정보가 필요하시면 프런트로 연결해 드릴까요?",
-        "en": "Would you like me to connect you to the front desk for more detailed information?",
-        "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？",
-        "zh": "您需要我将您连接到前台以获取更详细的信息吗？"
+        "ko": "조금 더 상세한 안내가 필요하시다면 프론트 데스크로 바로 연결해 드릴까요?",
+        "en": "Would you like me to connect you to the front desk for more detailed information? 😊",
+        "ja": "より詳細な情報をご希望の場合は、フロントデスクにお繋ぎいたしましょうか？ 😊",
+        "zh": "您需要我将您连接到前台以获取更详细的信息吗？ 😊"
     },
     "EMERGENCY_REPLY": {
-        "ko": "응급 상황을 인지하였습니다. 즉시 119 및 호텔 보안팀을 호출하고 가장 가까운 직원을 파견하겠습니다. 안전한 곳에 머물러 주십시오.",
-        "en": "We have recognized an emergency. We are immediately dispatching hotel security and calling 911. Please stay safe.",
-        "ja": "緊急事態を認識しました。直ちに119番とホテルのセキュリティチームを呼び、最も近いスタッフを派遣します。安全な場所にとどまってください。",
-        "zh": "我们已经确认了紧急情况。将立即呼叫119和酒店安保团队，并派遣最近的员工。请待在安全的地方。"
+        "ko": "🚨 응급 상황을 인지하였습니다. 즉시 호텔 보안팀을 호출하고 직원을 파견하겠습니다. 부디 안전한 곳에 머물러 주십시오.",
+        "en": "🚨 We have recognized an emergency. We are immediately dispatching hotel security. Please stay safe.",
+        "ja": "🚨 緊急事態を認識しました. 直ちにホテルのセキュリティチームを呼び, スタッフを派遣します. 安全な場所にとどまってください.",
+        "zh": "🚨 我们已经确认了紧急情况. 将立即呼叫酒店安保团队, 并派遣员工. 请待在安全的地方."
     },
     "OPTION_YES": {
         "ko": "네",
@@ -347,7 +371,7 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                     recent_chat = "\n".join([f"{m.get('role', 'user')}: {m.get('content', '')}" for m in request.chat_history[-4:]])
                     escalation_prompt = (
                         f"고객과의 대화에서 AI가 여러 번 질문을 던졌지만, 고객이 명확한 답을 주지 않고 계속 겉도는 상황입니다.\n"
-                        f"정중하게 '요청하신 내용을 정확히 파악하기 어렵습니다. 원하시는 서비스를 다시 말씀해 주시거나, 프론트 연결을 원하시면 말씀해 주세요.' 라는 뉘앙스로 자연스럽게 안내하고 대화를 종료하세요.\n"
+                        f"정중하게 '제가 정확한 의미를 파악하기 조금 어렵네요. 🥲 직원분의 도움이 필요하시다면 제가 연결해드릴까요?' 라는 뉘앙스로 자연스럽게 안내하세요.\n"
                         f"반드시 고객의 언어(주 언어: {request.language})로 작성하세요.\n\n"
                         f"[최근 대화]\n{recent_chat}"
                     )
@@ -367,7 +391,10 @@ async def analyze_message(request: AnalyzeRequest) -> List[Dict[str, Any]]:
                 response["entities"] = {}
                 response["confidence"] = 0.0
                 response["missing_fields"] = []
-                response["clarification_options"] = []
+                response["clarification_options"] = [
+                    _get_static_reply("OPTION_YES", request.language),
+                    _get_static_reply("OPTION_NO", request.language)
+                ]
         
         # ── [비동기 로깅 메타데이터 주입] ──
         # STEP 4에서 이미 에이전트별 메타가 세팅되었으면 스킵 (이중 주입 방지)
@@ -412,12 +439,12 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 last_ai = msg.get("content", "")
                 break
         
-        if last_ai and "프런트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요" in last_ai:
+        if last_ai and "프론트 데스크의 직접적인 조치나 확인이 필요하신 상황일까요" in last_ai:
             text_lower = request.text.lower().replace(" ", "")
             if any(w in text_lower for w in ["네", "응", "조치해", "필요해", "부탁해", "해주", "yes", "요청"]):
                 print(f"[Analyze] ⚡ 역질문 단답형 '네' 감지 → FRONT_ESCALATION 강제 라우팅")
                 return [{
-                    "guest_reply": "제가 바로 답변드리기 어려운 부분이라, 프런트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
+                    "guest_reply": "제가 바로 답변드리기 어려운 부분이라, 프론트 데스크 직원에게 바로 연결해 드릴게요. 잠시만 기다려 주세요!",
                     "summary": "프론트 연결 요청 (고객 확인)",
                     "domain_code": "FRONT",
                     "priority": "URGENT",
@@ -562,7 +589,21 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         r.confidence = 1.0
 
     # ──────────────────────────────────────────────
-    # STEP 2-5: [Progress Indicator] 라우터 결과 기반 진행 상태 전송
+    # STEP 2-2: [전체 취소 + EMERGENCY 오분류 보정]
+    # "모든 요청 취소" 시 대부분의 route가 CANCEL인데 EMERGENCY만 FRONT_ESCALATION으로
+    # 분류되는 경우, EMERGENCY도 CANCEL로 강제 오버라이드 (새 긴급 티켓 생성 방지)
+    # ──────────────────────────────────────────────
+    text_lower_check = request.text.lower()
+    is_cancel_intent = any(word in text_lower_check for word in ["전부", "모두", "모든", "다 취소", "전체", "all", "everything", "취소"])
+    cancel_routes = [r for r in router_results if r.route_type == "CANCEL"]
+    emergency_escalation_routes = [r for r in router_results if r.route_type == "FRONT_ESCALATION" and r.domain == "EMERGENCY"]
+
+    if is_cancel_intent and emergency_escalation_routes:
+        print(f"[Analyze] 🛡️ 전체 취소 + EMERGENCY 오분류 보정 — FRONT_ESCALATION → CANCEL 오버라이드")
+        for r in emergency_escalation_routes:
+            r.route_type = "CANCEL"
+            r.confidence = 1.0
+
     # ──────────────────────────────────────────────
     # ⚠️ 에이전트 실행 전에 반드시 전송 완료되어야 하므로 await로 직접 호출합니다.
     #    (create_task 사용 시, 응답이 먼저 도착하여 Progress UI가 표시되지 않는 레이스 컨디션 발생)
@@ -625,6 +666,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
+                    system_language=request.language,
                     active_requests=getattr(request, 'active_requests', [])
                 )
                 agent_tasks.append((domain, primary, coro))
@@ -652,6 +694,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-b: SOFT_FALLBACK / NON_ACTIONABLE → 티켓 생성 없이 답변만
         if primary.route_type in ("SOFT_FALLBACK", "NON_ACTIONABLE"):
             guest_reply = primary.reply or _get_static_reply("FALLBACK_FAILURE", request.language)
+            fallback_msg = _get_static_reply("FALLBACK_FAILURE", request.language)
             response = {
                 "guest_reply": guest_reply,
                 "summary": "안내 및 거절",
@@ -661,6 +704,11 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 "confidence": primary.confidence,
                 "reasoning": getattr(primary, 'reasoning', '알 수 없음')
             }
+            if guest_reply == fallback_msg:
+                response["clarification_options"] = [
+                    _get_static_reply("OPTION_YES", request.language),
+                    _get_static_reply("OPTION_NO", request.language)
+                ]
             print(f"[Analyze] 💬 {primary.route_type} 응답")
             print(f"[Analyze] 응답: {response}\n")
             final_responses.append(response)
@@ -727,7 +775,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language,
+                        system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -755,7 +803,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     room_no=request.room_no,
                     chat_history=request.chat_history,
                     images=request.images,
-                    system_language=request.system_language,
+                    system_language=request.language,
                     active_requests=getattr(request, 'active_requests', [])
                 )
                 # FRONT 에이전트가 ESCALATION(직원 연결)을 결정한 경우 domain_code를 살려서 티켓 생성
@@ -804,7 +852,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         room_no=request.room_no,
                         chat_history=request.chat_history,
                         images=request.images,
-                        system_language=request.system_language,
+                        system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
                     response = {
@@ -1022,7 +1070,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                             room_no=request.room_no,
                             chat_history=request.chat_history,
                             images=request.images,
-                            system_language=request.system_language
+                            system_language=request.language
                         )
                         # 에이전트 결과를 통째로 response 객체로 만듦
                         response = {
@@ -1056,16 +1104,21 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if guest_reply == info_not_found_msg:
                 # [수정] 컨시어지인 경우 INFO_NOT_FOUND 상태에서도 에이전트에게 한 번 더 기회를 줌 (이미 위에서 처리되지 않은 경우)
                 if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
-                     # 이미 위에서 에이전트 폴백을 거쳤음에도 여기까지 왔다면, 최종적으로 프론트 연결
                      pass
                 
+                # [수정] 정보가 없을 때 강제 이관(ESCALATION) 대신 Soft Fallback을 통해 고객에게 연결 의사 묻기
                 response = {
-                    "guest_reply": _get_static_reply("ESCALATION", request.language),
-                    "summary": "AI 미학습 정보 (직원 연결)",
-                    "domain_code": "FRONT",
+                    "guest_reply": "제가 바로 확인해 드리기 어려운 내용이네요. 프론트 데스크 직원을 바로 연결해 드릴까요?" if request.language == "ko" else "Oh, that's a bit tricky for me to answer right away. Shall I connect you to the front desk?",
+                    "summary": "추가 정보 필요 (프론트 연결 제안)",
+                    "domain_code": None,
                     "priority": "NORMAL",
-                    "entities": {"intent": "ESCALATION"},
+                    "entities": {},
                     "confidence": 0.0,
+                    "missing_fields": [],
+                    "clarification_options": [
+                        _get_static_reply("OPTION_YES", request.language),
+                        _get_static_reply("OPTION_NO", request.language)
+                    ],
                     "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             elif need_more_info_msg in guest_reply:
@@ -1123,37 +1176,94 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 print(f"[Analyze] 응답: {response}\n")
                 final_responses.append(response)
                 continue
-            elif is_all:
-                response = {
-                    "guest_reply": "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다.",
-                    "summary": "전체 요청 취소",
-                    "domain_code": None,
-                    "priority": "NORMAL",
-                    "entities": {},
-                    "confidence": primary.confidence,
-                    "action": "CANCEL_ALL_REQUESTS",
-                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
-                }
             else:
-                reply_key = "TARGETED_CANCEL" if primary.domain else "CANCEL"
-                response = {
-                    "guest_reply": _get_static_reply(reply_key, request.language),
-                    "summary": "요청 취소",
-                    "domain_code": primary.domain if primary.domain else None,
-                    "priority": "NORMAL",
-                    "entities": {"intent": "CANCEL"},
-                    "confidence": primary.confidence,
-                    "action": "CANCEL_REQUEST",
-                    "reasoning": getattr(primary, 'reasoning', '알 수 없음')
-                }
-                if hasattr(primary, 'action_type'):
-                    response["action_type"] = primary.action_type
-                # [Keyword Targeting] 취소 대상 키워드 전달
-                if hasattr(primary, 'target_keyword') and primary.target_keyword:
-                    response["target_keyword"] = primary.target_keyword
-                # [ID Targeting] 취소 대상 ID 전달
-                if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
-                    response["target_request_id"] = primary.target_request_id
+                # active_requests에서 실제 취소할 대상 찾기
+                targets = []
+                active_reqs = getattr(request, 'active_requests', []) or []
+                
+                if is_all:
+                    targets = active_reqs
+                else:
+                    # 핀포인트 매칭 (ID, 키워드, 도메인 순)
+                    target_id = getattr(primary, 'target_request_id', None)
+                    target_kw = getattr(primary, 'target_keyword', None)
+                    target_dm = primary.domain
+                    
+                    if target_id is not None:
+                        targets = [r for r in active_reqs if r.get("id") == target_id]
+                    elif target_kw:
+                        kw_lower = target_kw.lower()
+                        targets = [r for r in active_reqs if r.get("summary") and kw_lower in r.get("summary", "").lower()]
+                    elif target_dm:
+                        dept_map = {"HK": "HK", "FACILITY": "FACILITY", "COFFEE": "FB", "FB": "FB", "CONCIERGE": "CONCIERGE"}
+                        target_dept_id = dept_map.get(target_dm)
+                        if target_dept_id:
+                            targets = [r for r in active_reqs if r.get("department_id") == target_dept_id]
+                    
+                    # 매칭된 대상이 전혀 없다면, 기본 폴백으로 가장 최신(첫 번째) active_request를 취소 대상으로 간주
+                    if not targets and active_reqs:
+                        targets = [active_reqs[0]]
+
+                # 타겟들의 상태 분석
+                has_pending = False
+                has_in_progress = False
+                for r in targets:
+                    status = r.get("status")
+                    if status in ("PENDING", "ESCALATED"):
+                        has_pending = True
+                    elif status in ("IN_PROGRESS", "ASSIGNED", "ACCEPTED"):
+                        has_in_progress = True
+
+                # 멘트 결정
+                if is_all:
+                    if has_pending and not has_in_progress:
+                        reply_text = _get_static_reply("CANCEL_SUCCESS", request.language)
+                    elif has_in_progress and not has_pending:
+                        reply_text = _get_static_reply("CANCEL_PENDING", request.language)
+                    else:
+                        # 믹스 혹은 기본값
+                        reply_text = "대기 중인 요청은 즉시 취소 처리됩니다. 단, 이미 직원이 처리를 시작한 요청의 경우 담당 부서에 취소 가능 여부를 확인해 달라고 전달해 두겠습니다."
+                        if request.language != "ko":
+                            reply_text = _get_static_reply("CANCEL_IN_PROGRESS", request.language)
+                    
+                    response = {
+                        "guest_reply": reply_text,
+                        "summary": "전체 요청 취소",
+                        "domain_code": None,
+                        "priority": "NORMAL",
+                        "entities": {},
+                        "confidence": primary.confidence,
+                        "action": "CANCEL_ALL_REQUESTS",
+                        "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                    }
+                else:
+                    if has_pending and not has_in_progress:
+                        reply_text = _get_static_reply("CANCEL_SUCCESS", request.language)
+                    elif has_in_progress and not has_pending:
+                        reply_text = _get_static_reply("CANCEL_PENDING", request.language)
+                    else:
+                        # 대기/처리중 믹스이거나 대상이 없는 경우
+                        reply_key = "TARGETED_CANCEL" if primary.domain else "CANCEL"
+                        reply_text = _get_static_reply(reply_key, request.language)
+                        
+                    response = {
+                        "guest_reply": reply_text,
+                        "summary": "요청 취소",
+                        "domain_code": primary.domain if primary.domain else None,
+                        "priority": "NORMAL",
+                        "entities": {"intent": "CANCEL"},
+                        "confidence": primary.confidence,
+                        "action": "CANCEL_REQUEST",
+                        "reasoning": getattr(primary, 'reasoning', '알 수 없음')
+                    }
+                    if hasattr(primary, 'action_type'):
+                        response["action_type"] = primary.action_type
+                    # [Keyword Targeting] 취소 대상 키워드 전달
+                    if hasattr(primary, 'target_keyword') and primary.target_keyword:
+                        response["target_keyword"] = primary.target_keyword
+                    # [ID Targeting] 취소 대상 ID 전달
+                    if hasattr(primary, 'target_request_id') and primary.target_request_id is not None:
+                        response["target_request_id"] = primary.target_request_id
             
             print(f"[Analyze] 🛑 CANCEL 응답")
             print(f"[Analyze] 응답: {response}\n")
@@ -1260,7 +1370,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 }
             except Exception as e:
                 print(f"[Analyze] ⚠️ BILLING_INQUIRY 처리 실패: {e}")
-                err_ko = "비용 조회에 일시적 오류가 발생했습니다. 프런트 데스크에 문의해 주세요."
+                err_ko = "비용 조회에 일시적 오류가 발생했습니다. 프론트 데스크에 문의해 주세요."
                 err_en = "We encountered a temporary error retrieving your billing information. Please contact the front desk."
                 response = {
                     "guest_reply": err_ko if request.language == "ko" else err_en,
@@ -1329,12 +1439,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
                 final_domain_code = None
             
-            # 🛡️ [컨시어지 확인 질문 방어] AI가 "~드릴까요?" 등 확인 질문을 던지는 단계에서는
-            # action_type과 무관하게 티켓 생성을 차단 (컨시어지 도메인에만 적용)
-            if domain == "CONCIERGE" and final_domain_code:
-                confirmation_patterns = ["까요?", "할까요?", "드릴까요?", "하시겠습니까?", "인가요?"]
-                if any(p in final_guest_reply for p in confirmation_patterns):
-                    final_domain_code = None
+            # 🛡️ [컨시어지 확인 질문 방어] 로직 삭제됨 (AN-344: 확인 질문과 동시에 정적 카드를 띄우기 위해 차단 해제)
             
             # 이중 방어: FRONT 에이전트이고 에스컬레이션인데 여전히 domain_code가 없다면 강제 복구
             if domain == "FRONT" and is_escalation and not final_domain_code:
@@ -1398,7 +1503,7 @@ class TranslateRequest(BaseModel):
     text: str
     target_language: str
 
-@router.post("/translate")
+@router.post("/translate-summary")
 async def translate_text(request: TranslateRequest) -> dict:
     prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
     translated_text = await call_gemini_async(

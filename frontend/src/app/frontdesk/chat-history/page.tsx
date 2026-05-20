@@ -8,9 +8,11 @@ import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import InputField from '@/components/ui/Inputfield/InputField';
+import PopoverMenu from '@/components/ui/PopoverMenu/PopoverMenu';
+import { MoreIcon } from '@/components/icons';
 
 export default function ChatHistoryPage() {
-  const [searchValue, setSearchValue] = useState('');
+  const [roomSearchValue, setRoomSearchValue] = useState('');
   const { rooms, selectedRoom, loadingRooms, error, selectRoom, fetchRooms, deleteRoom } = useChatHistory();
   const { t } = useTranslation();
 
@@ -20,6 +22,7 @@ export default function ChatHistoryPage() {
   });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   // targetDate가 변경될 때마다 방 목록 새로고침
   React.useEffect(() => {
@@ -33,17 +36,48 @@ export default function ChatHistoryPage() {
     }
   };
 
-  // Search bar component to inject into ChatPanel header
-  const searchBar = (
-    <div style={{ minWidth: '240px' }}>
-      <InputField
-        variant="search"
-        placeholder="대화 내용 검색..."
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-      />
+  // Search bar and More Menu component to inject into ChatPanel header
+  const headerRight = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--color-gray-600)'
+          }}
+        >
+          <MoreIcon />
+        </button>
+        {isPopoverOpen && (
+          <PopoverMenu
+            items={[{ value: 'delete', label: '대화 내역 삭제' }]}
+            onSelect={(value) => {
+              if (value === 'delete') {
+                setIsDeleteModalOpen(true);
+              }
+              setIsPopoverOpen(false);
+            }}
+            onClose={() => setIsPopoverOpen(false)}
+            width={160}
+            style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 100 }}
+          />
+        )}
+      </div>
     </div>
   );
+
+  const filteredRooms = roomSearchValue
+    ? rooms.filter(room => room.roomNo.toLowerCase().includes(roomSearchValue.toLowerCase()))
+    : rooms;
 
   return (
     <div className={styles.container}>
@@ -51,6 +85,15 @@ export default function ChatHistoryPage() {
       <div className={styles.splitLayout}>
         {/* Left Pane: Room List */}
         <div className={styles.leftPane}>
+          {/* Room Search Bar */}
+          <div style={{ marginBottom: 'var(--space-8)' }}>
+            <InputField
+              variant="search"
+              placeholder="객실 번호 검색..."
+              value={roomSearchValue}
+              onChange={(e) => setRoomSearchValue(e.target.value)}
+            />
+          </div>
           {/* Date picker */}
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <input
@@ -72,11 +115,11 @@ export default function ChatHistoryPage() {
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
-          ) : rooms.length === 0 ? (
+          ) : filteredRooms.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>채팅 내역이 없습니다</div>
           ) : (
             <div className={styles.cardGrid}>
-              {rooms.map(room => (
+              {filteredRooms.map(room => (
                 <RequestCard
                   key={room.roomNo}
                   roomNumber={room.roomNo}
@@ -86,7 +129,7 @@ export default function ChatHistoryPage() {
                   isSelected={selectedRoom === room.roomNo}
                   onCardClick={() => {
                     selectRoom(room.roomNo);
-                    setSearchValue('');
+                    setRoomSearchValue('');
                   }}
                 />
               ))}
@@ -102,8 +145,8 @@ export default function ChatHistoryPage() {
               status="COMPLETED"
               summary={t.frontdeskPage.chatHistory?.roomChatRecord?.replace('{{room}}', selectedRoom) || `${selectedRoom}호 채팅 기록`}
               onClose={() => {}}
-              headerRightContent={searchBar}
-              searchTerm={searchValue}
+              headerRightContent={headerRight}
+              showSearch={true}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>

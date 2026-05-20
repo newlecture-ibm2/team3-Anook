@@ -85,6 +85,23 @@ export default function ChatInput({ onSend, isTyping, onStop, onUserTyping, isSt
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error', event.error);
           setIsRecording(false);
+          
+          if (event.error === 'not-allowed') {
+            showToast(
+              language === 'ko' ? '마이크 권한을 허용해 주세요. 🎙️' : 'Please allow microphone access. 🎙️',
+              'error'
+            );
+          } else if (event.error === 'no-speech') {
+            showToast(
+              language === 'ko' ? '음성이 감지되지 않았습니다. 🥲' : 'No speech detected. 🥲',
+              'error'
+            );
+          } else if (event.error !== 'aborted') {
+            showToast(
+              language === 'ko' ? '음성 인식 중 오류가 발생했습니다.' : 'Speech recognition error occurred.',
+              'error'
+            );
+          }
         };
 
         recognitionRef.current.onend = () => {

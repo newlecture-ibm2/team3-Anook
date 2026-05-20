@@ -80,6 +80,50 @@ def embed_text(text: str) -> List[float]:
     """
     return generate_embedding(text)
 
+
+def upsert_knowledge_entry(cur, domain_code: str, question: str, answer: str) -> str:
+    """
+    질문 단위로 knowledge_entry를 INSERT/UPDATE/SKIP 분기 처리합니다.
+
+    - 신규 질문: 임베딩 생성 후 INSERT
+    - 기존 질문 & answer 변경됨: 임베딩 재생성 후 UPDATE
+    - 기존 질문 & answer 동일: 재임베딩 없이 SKIP
+
+    반환값: "inserted" | "updated" | "skipped"
+    """
+    cur.execute(
+        "SELECT answer FROM knowledge_entry WHERE domain_code = %s AND question = %s",
+        (domain_code, question),
+    )
+    row = cur.fetchone()
+
+    if row is None:
+        embedding_vector = embed_text(f"질문: {question}\n답변: {answer}")
+        cur.execute(
+            """
+            INSERT INTO knowledge_entry (question, answer, domain_code, status, embedding)
+            VALUES (%s, %s, %s, 'APPROVED', %s::vector)
+            """,
+            (question, answer, domain_code, embedding_vector),
+        )
+        return "inserted"
+
+    if row[0] != answer:
+        embedding_vector = embed_text(f"질문: {question}\n답변: {answer}")
+        cur.execute(
+            """
+            UPDATE knowledge_entry
+               SET answer = %s,
+                   embedding = %s::vector,
+                   updated_at = NOW()
+             WHERE domain_code = %s AND question = %s
+            """,
+            (answer, embedding_vector, domain_code, question),
+        )
+        return "updated"
+
+    return "skipped"
+
 def search_similar(query: str, domain_code: str, top_k: int = 3, threshold: float = 0.7) -> List[Dict[str, Any]]:
     """
     쿼리와 유사한 지식 엔트리를 데이터베이스에서 검색합니다.

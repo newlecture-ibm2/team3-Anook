@@ -25,14 +25,14 @@ export interface RequestCardProps {
   onAccept?: () => void;
 }
 
-const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
-  HK: { icon: Home, label: '하우스키핑' },
-  FB: { icon: Utensils, label: '식음료' },
-  FACILITY: { icon: Wrench, label: '시설관리' },
-  CONCIERGE: { icon: ConciergeBell, label: '컨시어지' },
-  FRONT: { icon: Monitor, label: '프론트' },
-  EMERGENCY: { icon: AlertTriangle, label: '긴급' },
-  UNKNOWN: { icon: FileText, label: '기타 요청' },
+const DOMAIN_ICONS: Record<string, React.ElementType> = {
+  HK: Home,
+  FB: Utensils,
+  FACILITY: Wrench,
+  CONCIERGE: ConciergeBell,
+  FRONT: Monitor,
+  EMERGENCY: AlertTriangle,
+  UNKNOWN: FileText,
 };
 
 export default function RequestCard({
@@ -53,6 +53,7 @@ export default function RequestCard({
   onAccept,
 }: RequestCardProps) {
 
+  const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
   const isCancelPending = cancelPending === true;
   const isEscalatedChat = domainCode === 'FRONT' && entities?.intent === 'ESCALATION';
@@ -69,7 +70,8 @@ export default function RequestCard({
 
   const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(summary, targetLang);
   const { t } = useTranslation();
-  const domainInfo = DOMAIN_MAP[domainCode] || DOMAIN_MAP['UNKNOWN'];
+  const DomainIcon = DOMAIN_ICONS[domainCode] || DOMAIN_ICONS['UNKNOWN'];
+  const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
   const cardBgClass = styles[`cardBg${domainCode}`] || styles.cardBgUNKNOWN;
 
@@ -98,13 +100,31 @@ export default function RequestCard({
       : baseSummary;
   }
   
+  const getFixedTitle = () => {
+    if (isTranslating || isEscalatedChat || baseSummary.includes('프론트 연결')) {
+      return displaySummary;
+    }
+    const intent = entities?.intent as string | undefined;
+    
+    if (intent && (domainCode === 'FB' || domainCode === 'CONCIERGE')) {
+      if ((t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
+      }
+    }
+    
+    if (!domainCode) {
+      return displaySummary.split('(')[0].trim();
+    }
+    return displaySummary;
+  };
 
-
+  let finalTitle = getFixedTitle();
   if (isCancelled) {
-    displaySummary += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
+    finalTitle += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
   }
 
   useEffect(() => {
+    // graceRemaining === -1: 고객 확인 대기 모드 (FB/CONCIERGE) → 타이머 없이 버튼 정적 표시
     if (graceRemaining <= 0 || isCancelled) {
       setTimeLeft(0);
       return;
@@ -124,37 +144,82 @@ export default function RequestCard({
     return () => clearInterval(interval);
   }, [graceRemaining, isCancelled]);
 
-  // Determine if we should show buttons
-  const showButtons = !isCancelled && timeLeft > 0;
+  // graceRemaining === -1: 정적 버튼 (타이머 없이 항시 표시)
+  // graceRemaining > 0: 타이머 카운트다운 중 버튼 표시
+  const isStaticConfirm = graceRemaining === -1 && !isUrgent && !isCancelled;
+  const showButtons = isStaticConfirm || (!isUrgent && !isCancelled && timeLeft > 0);
 
   // Render entities description
   const renderDetails = () => {
     if (!entities) return null;
     
-    const parts: string[] = [];
-    if (Array.isArray(entities.items)) {
-      entities.items.forEach((it: any) => {
-        parts.push(`${it.item} ${it.count ? `×${it.count}` : ''}`);
-      });
-    } else if (entities.item) {
-      parts.push(`${entities.item} ${entities.count ? `×${entities.count}` : ''}`);
-    }
+    // 심플한 요청(HK, FACILITY, EMERGENCY, FRONT)은 메인 타이틀(summary)만 보여주고 디테일은 생략
+    if (domainCode === 'HK' || domainCode === 'FACILITY' || domainCode === 'EMERGENCY' || domainCode === 'FRONT') return null;
 
-    if (Array.isArray(entities.tasks)) {
-      entities.tasks.forEach((t: string) => parts.push(t));
-    }
+    const l = t.ticketUI?.entityLabels || {};
+    const parts: string[] = [];
     
-    if (parts.length === 0) {
-      if (entities.menu) {
-        parts.push(`${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+    if (entities.intent === 'TAXI') {
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '목적지'}: ${entities.destination}`);
+      if (entities.passenger_count) parts.push(`${l.pax || '인원'}: ${entities.passenger_count}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'RESTAURANT' || entities.intent === 'RESERVATION') {
+      if (entities.restaurant_name) parts.push(`${l.rest || '식당'}: ${entities.restaurant_name}`);
+      if (entities.target) parts.push(`${l.target || '대상'}: ${entities.target}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.party_size) parts.push(`${l.pax || '인원'}: ${entities.party_size}${l.paxUnit || ''}`);
+    } else if (entities.intent === 'LUGGAGE_STORAGE') {
+      if (entities.action) parts.push(`${l.req || '요청'}: ${entities.action === 'store' ? (l.store || '보관') : (l.pickup || '찾기')}`);
+      if (entities.count) parts.push(`${l.count || '수량'}: ${entities.count}${l.countUnit || ''}`);
+    } else if (entities.intent === 'DELIVERY' || entities.intent === 'POSTAL_SERVICE') {
+      if (entities.item) parts.push(`${l.item || '물품'}: ${entities.item}`);
+      if (entities.store_name) parts.push(`${l.vendor || '업체'}: ${entities.store_name}`);
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+      if (entities.destination) parts.push(`${l.dest || '도착지'}: ${entities.destination}`);
+    } else if (entities.intent === 'WAKE_UP_CALL') {
+      if (entities.time) parts.push(`${l.time || '시간'}: ${entities.time}`);
+    } else if (entities.intent === 'MEDICAL_INFO') {
+      if (entities.type) parts.push(`${l.type || '분류'}: ${entities.type}`);
+      if (entities.symptom) parts.push(`${l.symptom || '증상'}: ${entities.symptom}`);
+    } else if (entities.intent === 'TOUR_INFO') {
+      if (entities.category) parts.push(`${l.type || '분류'}: ${entities.category}`);
+      if (entities.area) parts.push(`${l.area || '지역'}: ${entities.area}`);
+    } else {
+      if (Array.isArray(entities.menu_items)) {
+        entities.menu_items.forEach((it: any) => {
+          parts.push(`- ${it.name} ${it.quantity ? `×${it.quantity}` : ''}`.trim());
+        });
+      } else if (Array.isArray(entities.items)) {
+        entities.items.forEach((it: any) => {
+          parts.push(`- ${it.item} ${it.count ? `×${it.count}` : ''}`.trim());
+        });
+      } else if (entities.item) {
+        parts.push(`- ${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
       }
-      if (entities.symptom) parts.push(`${entities.symptom}`);
+  
+      if (Array.isArray(entities.tasks)) {
+        entities.tasks.forEach((t: string) => parts.push(`- ${t}`));
+      }
+      
+      if (parts.length === 0) {
+        if (entities.menu) {
+          parts.push(`- ${entities.menu} ${entities.count ? `×${entities.count}` : ''}`.trim());
+        }
+      }
+
+      if (entities.symptom) {
+        parts.push(`${l.content || '내용'}: ${entities.symptom}`);
+      }
     }
     
-    return parts.length > 0 ? parts.join(', ') : null;
+    return parts.length > 0 ? parts.join('\n') : null;
   };
 
-  const detailsText = renderDetails();
+  const rawDetails = renderDetails();
+  const { translatedText: translatedDetails, isLoading: isTranslatingDetails } = useTranslationApi(
+    rawDetails || undefined,
+    targetLang
+  );
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -169,7 +234,7 @@ export default function RequestCard({
       <div className={styles.cardLayout}>
         {/* Left Column: Icon or Timer */}
         <div className={styles.leftColumn}>
-          {showButtons ? (
+          {showButtons && !isStaticConfirm ? (
             <div className={`${styles.timerContainer} ${bgClass}`} style={{ '--timer-color': timerColor } as React.CSSProperties}>
               <svg viewBox="0 0 36 36" className={styles.circularSvg}>
                 <path
@@ -183,7 +248,7 @@ export default function RequestCard({
             </div>
           ) : (
             <div className={`${styles.iconContainer} ${bgClass}`}>
-              <domainInfo.icon size={20} />
+              <DomainIcon size={20} />
             </div>
           )}
         </div>
@@ -192,22 +257,30 @@ export default function RequestCard({
         <div className={styles.rightColumn}>
           <div className={styles.content}>
             <div className={styles.summaryRow}>
-              <div className={styles.summary}>{displaySummary}</div>
+              <div className={styles.summary}>{finalTitle}</div>
               <div className={styles.timeLabel}>{formatTime(isCancelled && cancelledAt ? cancelledAt : createdAt)}</div>
             </div>
           </div>
 
+          {rawDetails && (
+            <div className={styles.detailsText}>
+              {isTranslatingDetails ? (t.cardUI?.message?.translating || 'Translating...') : (translatedDetails || rawDetails)}
+            </div>
+          )}
+
           <div className={`${styles.completionMessage} ${isCancelled ? styles.cancelledText : ''}`}>
             {isCancelled ? (
               <>{t.cardUI?.message?.cancelledCard || '요청이 취소되었습니다'}</>
+            ) : showButtons && isStaticConfirm ? (
+              <>{t.cardUI?.message?.confirmGuide || '확인 후 진행 버튼을 눌러주세요.'}</>
             ) : showButtons ? (
-              <>{t.cardUI?.message?.autoAcceptGuide || '잠시 후 자동으로 접수됩니다.'}</>
+              <>{t.cardUI?.message?.autoAcceptGuide || '요청 내용을 확인해 주세요. 잠시 후 자동 전달됩니다.'}</>
             ) : isCancelPending ? (
-              <>{t.cardUI?.status?.cancelPending || '취소 대기 중'}</>
+              <>{t.cardUI?.message?.cancelPendingShort || '취소 요청 확인 중'}</>
             ) : isEscalatedChat ? (
-              <>{t.cardUI?.status?.escalated || '상담 대기 중'}</>
+              <>{t.cardUI?.message?.escalated || '직원이 응대할 예정입니다'}</>
             ) : (
-              <>{t.cardUI?.message?.forwarded || '직원에게 전달되었습니다'}</>
+              <>{(t.cardUI?.message?.forwarded || '{team} 팀에 전달되었습니다').replace('{team}', domainLabel)}</>
             )}
           </div>
         </div>

@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './ChatPanel.module.css';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
-import { CancelIcon } from '@/components/icons';
+import { CancelIcon, ArrowUpIcon, ArrowDownIcon } from '@/components/icons';
+import InputField from '@/components/ui/Inputfield/InputField';
 import { useSSE } from '@/app/useSSE';
 import { useTranslation } from '@/app/useTranslation';
 import Button from '@/components/ui/Button/Button';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
+import FeedbackCard from '@/app/guest/chat/_components/FeedbackCard';
 export interface ChatMessage {
   id: number | string;
   variant: 'sent' | 'received';
@@ -30,7 +32,7 @@ export interface ChatPanelProps {
   onRagRegister?: () => void;
   isEmergency?: boolean;
   headerRightContent?: React.ReactNode;
-  searchTerm?: string;
+  showSearch?: boolean;
   onRagFlowChange?: (active: boolean) => void;
 }
 
@@ -42,7 +44,34 @@ const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'gr
   CANCELLED: { text: '취소됨', variant: 'gray' },
 };
 
-export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, searchTerm, onRagFlowChange }: ChatPanelProps) {
+const renderHighlightedText = (text: string, search: string, isActiveMatch: boolean) => {
+  if (!search) return text;
+  const parts = text.split(new RegExp(`(${search.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === search.toLowerCase() ? (
+          <span 
+            key={i} 
+            style={{ 
+              backgroundColor: isActiveMatch ? '#ffd54f' : 'rgba(255, 230, 0, 0.3)', 
+              fontWeight: isActiveMatch ? 'bold' : 'normal',
+              borderRadius: '2px',
+              padding: '0 2px',
+              color: 'var(--color-gray-900)'
+            }}
+          >
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
+export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, showSearch, onRagFlowChange }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -51,6 +80,41 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
 
   // RAG 등록 플로우 상태
   const [isRagConfirmOpen, setIsRagConfirmOpen] = useState(false);
+
+  // 내부 검색 상태
+  const [internalSearch, setInternalSearch] = useState('');
+  const [matchIndices, setMatchIndices] = useState<number[]>([]);
+  const [currentMatch, setCurrentMatch] = useState(0);
+
+  useEffect(() => {
+    if (!internalSearch) {
+      setMatchIndices([]);
+      setCurrentMatch(0);
+      return;
+    }
+    const indices: number[] = [];
+    messages.forEach((m, i) => {
+      if (m.content.toLowerCase().includes(internalSearch.toLowerCase())) {
+        indices.push(i);
+      }
+    });
+    setMatchIndices(indices);
+    if (currentMatch >= indices.length) {
+      setCurrentMatch(Math.max(0, indices.length - 1));
+    }
+  }, [internalSearch, messages]);
+
+  useEffect(() => {
+    if (internalSearch && matchIndices.length > 0) {
+      const targetMsg = messages[matchIndices[currentMatch]];
+      if (targetMsg) {
+        const el = document.getElementById(`chat-msg-${targetMsg.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, [currentMatch, matchIndices, internalSearch, messages]);
 
   // AI 특수 코드 매핑 함수 (다국어 언어팩 연동)
   const translateContent = (content: string) => {
@@ -283,7 +347,45 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
             <span className={styles.roomBadge}>{roomNumber}호</span>
             <h3 className={styles.title}>{(summary || '상담').replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '')}</h3>
           </div>
-          <div className={styles.headerRight}>
+          <div className={styles.headerRight} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {showSearch && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '240px' }}>
+                  <InputField
+                    variant="search"
+                    placeholder="대화 내용 검색..."
+                    value={internalSearch}
+                    onChange={(e) => setInternalSearch(e.target.value)}
+                  />
+                </div>
+                {internalSearch && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'var(--color-gray-600)', whiteSpace: 'nowrap' }}>
+                    {matchIndices.length > 0 ? (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <button 
+                            onClick={() => setCurrentMatch(p => Math.max(0, p - 1))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                          >
+                            <ArrowUpIcon width={16} height={16} color="var(--color-gray-600)" />
+                          </button>
+                          <button 
+                            onClick={() => setCurrentMatch(p => Math.min(matchIndices.length - 1, p + 1))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                          >
+                            <ArrowDownIcon width={16} height={16} color="var(--color-gray-600)" />
+                          </button>
+                        </div>
+                        <span>{currentMatch + 1} / {matchIndices.length}</span>
+                      </>
+                    ) : (
+                      <span>0 / 0</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            
             {headerRightContent ? headerRightContent : (
               (status === 'IN_PROGRESS' || status === 'ASSIGNED') && (
                 <Button size="medium" variant="primary" onClick={handleCompleteConsultation}>
@@ -299,39 +401,59 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
             <div className={styles.emptyState}>대화 내역을 불러오는 중...</div>
           ) : messages.length === 0 ? (
             <div className={styles.emptyState}>이 객실의 대화 내역이 없습니다.</div>
-          ) : (() => {
-            const filtered = searchTerm
-              ? messages.filter(m => m.content.toLowerCase().includes(searchTerm.toLowerCase()))
-              : messages;
-            return filtered.length === 0 ? (
-              <div className={styles.emptyState}>검색 결과가 없습니다.</div>
-            ) : (
-              filtered.map((msg) => {
-                const isAutoMsg = msg.content.includes('프론트 데스크 직원이 메시지를 확인했습니다') || 
-                                  msg.content.includes('긴급 대응팀이 배정되었습니다');
-                
-                // 관리자 패널 기준:
-                // - GUEST → 왼쪽(received) + surface color 스타일(sent)
-                // - AI → 오른쪽(sent) + AI 텍스트 스타일(received)
-                // - STAFF → 오른쪽(sent) + fallback 스타일
-                const isManualStaffMsg = msg.senderType === 'STAFF' && !isAutoMsg;
-
-                // 위치(variant)와 버블 스타일(bubbleStyle)을 독립적으로 지정
-                const bubbleStyle = msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const;
-
+          ) : (
+            messages.map((msg, idx) => {
+              const isSystemMsg = msg.senderType === 'SYSTEM' || msg.content.includes('[SYSTEM]');
+              
+              if (isSystemMsg) {
+                let cleanContent = msg.content.replace(/^\[SYSTEM\]\s*/, '');
+                if (cleanContent === '이전 상담 및 처리가 모두 완료되었습니다.') {
+                  cleanContent = t.frontdeskPage?.chatHistory?.systemCompleted || cleanContent;
+                }
                 return (
-                  <ChatBubble 
-                    key={msg.id} 
-                    variant={msg.variant}
-                    bubbleStyle={bubbleStyle}
-                    isFallback={isManualStaffMsg}
-                  >
-                    {msg.content}
-                  </ChatBubble>
+                  <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%' }}>
+                    <FeedbackCard 
+                      isSystemMessage
+                      systemContent={cleanContent}
+                      systemSubtitle={t.frontdeskPage?.chatHistory?.systemMessageNote}
+                    />
+                  </div>
                 );
-              })
-            );
-          })()}
+              }
+
+              const isAutoMsg = msg.content.includes('프론트 데스크 직원이 메시지를 확인했습니다') || 
+                                msg.content.includes('긴급 대응팀이 배정되었습니다');
+              
+              // 관리자 패널 기준:
+              // - GUEST → 왼쪽(received) + surface color 스타일(sent)
+              // - AI → 오른쪽(sent) + AI 텍스트 스타일(received)
+              // - STAFF → 오른쪽(sent) + fallback 스타일
+              const isManualStaffMsg = msg.senderType === 'STAFF' && !isAutoMsg;
+
+              // 위치(variant)와 버블 스타일(bubbleStyle)을 독립적으로 지정
+              const bubbleStyle = msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const;
+              
+              const isTargetMatch = !!(internalSearch && matchIndices.length > 0 && matchIndices[currentMatch] === idx);
+
+              return (
+                <div key={msg.id} id={`chat-msg-${msg.id}`} style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ 
+                    transition: 'all 0.3s', 
+                    padding: '4px', 
+                    borderRadius: '16px', 
+                  }}>
+                    <ChatBubble 
+                      variant={msg.variant}
+                      bubbleStyle={bubbleStyle}
+                      isFallback={isManualStaffMsg}
+                    >
+                      {renderHighlightedText(msg.content, internalSearch, isTargetMatch)}
+                    </ChatBubble>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {!isReadOnly && status === 'PENDING' && (
