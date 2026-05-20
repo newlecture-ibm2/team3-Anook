@@ -19,6 +19,11 @@
   color: var(--color-gray-900);
 }
 
+.translatingText {
+  color: var(--color-gray-500) !important;
+  font-weight: normal !important;
+}
+
 .statusLabel {
   font: var(--text-body-medium);
   color: var(--color-gray-500);
