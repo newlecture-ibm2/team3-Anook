@@ -180,7 +180,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "missing_fields": missing,
         "clarification_options": getattr(result, "clarification_options", []),
         "reasoning": result.reasoning,
-        "action_type": "ADD",  # 명시적으로 ADD를 설정하여 analyze.py의 카드 생성 방지 로직을 우회
+        "action_type": result.entities.get("action_type", "ADD"),
     }
 
 
