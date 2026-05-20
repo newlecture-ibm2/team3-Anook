@@ -5,6 +5,9 @@ from app.infrastructure.gemini.client import call_gemini
 
 router = APIRouter()
 
+# Simple in-memory translation cache to avoid duplicate LLM calls
+TRANSLATION_CACHE: Dict[str, str] = {}
+
 class TranslateRequest(BaseModel):
     text: str
     target_language: str
@@ -14,6 +17,12 @@ async def translate_message(request: TranslateRequest) -> Dict[str, Any]:
     """
     직원의 메시지를 투숙객의 언어로 번역합니다.
     """
+    cache_key = f"{request.target_language}:{request.text}"
+    if cache_key in TRANSLATION_CACHE:
+        cached_result = TRANSLATION_CACHE[cache_key]
+        print(f"[Translate] ⚡ 캐시 히트! (성능 최적화) - Text: '{request.text}' -> '{cached_result}'")
+        return {"translated_text": cached_result}
+
     print(f"\n[Translate] 📩 번역 요청 - Text: '{request.text}', Target: {request.target_language}")
 
     # 언어 코드 → 정식 언어명 매핑 (Gemini가 "ko"를 제대로 인식 못하는 문제 방지)
@@ -44,6 +53,7 @@ async def translate_message(request: TranslateRequest) -> Dict[str, Any]:
             )
         )
         translated = raw.get("translated_text", request.text)
+        TRANSLATION_CACHE[cache_key] = translated
         print(f"[Translate] ✅ 번역 완료: {translated}\n")
         return {"translated_text": translated}
     except Exception as e:

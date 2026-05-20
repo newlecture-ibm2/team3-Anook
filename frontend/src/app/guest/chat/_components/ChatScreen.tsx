@@ -162,7 +162,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
           if (msg.type === 'FALLBACK') {
             return (
-              <ChatBubble key={msg.id} variant="received" bubbleStyle="sent" isFallback>
+              <ChatBubble key={msg.id} variant="received" bubbleStyle="sent" isFallback animate={index === messages.length - 1}>
                 {msg.content}
               </ChatBubble>
             );
@@ -170,7 +170,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           if (msg.type === 'STATUS_CARD') {
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                {msg.content && <ChatBubble variant="received">{msg.content}</ChatBubble>}
+                {msg.content && <ChatBubble variant="received" animate={index === messages.length - 1}>{msg.content}</ChatBubble>}
               </div>
             );
           }
@@ -247,7 +247,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
                     </div>
                   </div>
                 ) : (
-                  msg.content ? <ChatBubble variant="received">{msg.content}</ChatBubble> : null
+                  msg.content ? <ChatBubble variant="received" animate={index === messages.length - 1}>{msg.content}</ChatBubble> : null
                 )}
                 {!msg.meta?.selectedOption && (
                   <div style={{
@@ -307,7 +307,7 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
 
           return (
-            <ChatBubble key={msg.id} variant={msg.variant} imageUrl={msg.imageUrl}>
+            <ChatBubble key={msg.id} variant={msg.variant} imageUrl={msg.imageUrl} animate={index === messages.length - 1 && msg.variant === 'received'}>
               {msg.content}
             </ChatBubble>
           );
