@@ -5,7 +5,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 import KnowledgeEditModal from '@/components/ui/Knowledge/KnowledgeEditModal';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import Button from '@/components/ui/Button/Button';
-import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
+import KnowledgeItem from '@/components/ui/Knowledge/KnowledgeItem';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
 import { useKnowledge, KnowledgeEntry } from '../../useKnowledge';
 import styles from './KnowledgeReviewTab.module.css';
@@ -15,9 +15,11 @@ import { handleResponse } from '@/lib/api';
 interface KnowledgeReviewTabProps {
   domainCode: string; // 'ALL' 또는 도메인 코드
   searchValue: string;
+  onMatchesChange?: (matches: number[]) => void;
+  activeMatchId?: number | null;
 }
 
-export default function KnowledgeReviewTab({ domainCode, searchValue }: KnowledgeReviewTabProps) {
+export default function KnowledgeReviewTab({ domainCode, searchValue, onMatchesChange, activeMatchId }: KnowledgeReviewTabProps) {
   const { t } = useTranslation();
   const { data, loading, error, deleteEntry, refresh } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -35,6 +37,25 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
     return q.toLowerCase().includes(search.toLowerCase()) ||
            a.toLowerCase().includes(search.toLowerCase());
   });
+
+  const matches = filteredItems.map(item => item.id);
+
+  // matches 변경 시 부모 컴포넌트에 알림
+  React.useEffect(() => {
+    onMatchesChange?.(matches);
+  }, [JSON.stringify(matches)]);
+
+  // activeMatchId 변경 시 해당 카드로 스크롤
+  React.useEffect(() => {
+    if (activeMatchId) {
+      setTimeout(() => {
+        const el = document.getElementById(`candidate-${activeMatchId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 50);
+    }
+  }, [activeMatchId]);
 
   // RAG 등록 (APPROVED로 전환) — register-from-answer API 재사용
   const handleApprove = async (formData: { domainCode: string; question: string; answer: string }) => {
@@ -90,17 +111,31 @@ export default function KnowledgeReviewTab({ domainCode, searchValue }: Knowledg
           <div className={styles.emptyState}>{t.frontdeskPage?.aiTraining?.empty || '검토 대기 중인 항목이 없습니다.'}</div>
         ) : (
           filteredItems.map(item => (
-            <RagCandidateCard
+            <KnowledgeItem
               key={item.id}
-              department={getDomainLabel(item.domainCode)}
+              id={item.id}
+              domainCode={item.domainCode}
               question={item.question}
               answer={item.answer}
-              timestamp={new Date(item.updatedAt).toLocaleDateString()}
-              onAddRag={() => {
+              updatedAt={(() => {
+                const d = new Date(item.updatedAt);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+              })()}
+              onClick={() => {
                 setSelectedItem(item);
                 setIsEditModalOpen(true);
               }}
-              onReject={() => setDeleteTargetId(item.id)}
+              onEdit={(e) => {
+                e.stopPropagation();
+                setSelectedItem(item);
+                setIsEditModalOpen(true);
+              }}
+              onDelete={(e) => {
+                e.stopPropagation();
+                setDeleteTargetId(item.id);
+              }}
+              isActiveMatch={activeMatchId === item.id}
+              highlightQuery={searchValue}
             />
           ))
         )}

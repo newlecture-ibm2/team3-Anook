@@ -14,9 +14,11 @@ interface KnowledgeLibraryTabProps {
   domainCode: string; // 'ALL' 또는 도메인 코드
   searchValue: string;
   filterValue: string;
+  onMatchesChange?: (matches: number[]) => void;
+  activeMatchId?: number | null;
 }
 
-export default function KnowledgeLibraryTab({ domainCode, searchValue, filterValue }: KnowledgeLibraryTabProps) {
+export default function KnowledgeLibraryTab({ domainCode, searchValue, filterValue, onMatchesChange, activeMatchId }: KnowledgeLibraryTabProps) {
   const { t } = useTranslation();
   const { data, loading, error, createEntry, updateEntry, deleteEntry } = useKnowledge(domainCode === 'ALL' ? undefined : domainCode);
   const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeEntry | null>(null);
@@ -52,6 +54,25 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
     // 기본적으로 id 등 다른 기준으로 정렬할 수 있으나 생략
   }
 
+  const matches = filteredData.map(item => item.id);
+
+  // matches 변경 시 부모 컴포넌트에 알림
+  React.useEffect(() => {
+    onMatchesChange?.(matches);
+  }, [JSON.stringify(matches)]);
+
+  // activeMatchId 변경 시 해당 카드로 스크롤
+  React.useEffect(() => {
+    if (activeMatchId) {
+      setTimeout(() => {
+        const el = document.getElementById(`knowledge-${activeMatchId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 50);
+    }
+  }, [activeMatchId]);
+
   return (
     <div className={styles.container}>
       {/* Content Section */}
@@ -84,7 +105,10 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
                   domainCode={item.domainCode}
                   question={item.question}
                   answer={item.answer}
-                  updatedAt={new Date(item.updatedAt).toLocaleDateString()}
+                  updatedAt={(() => {
+                    const d = new Date(item.updatedAt);
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                  })()}
                   onClick={() => setSelectedKnowledge(item)}
                   onEdit={() => {
                     setSelectedKnowledge(item);
@@ -93,6 +117,8 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
                   onDelete={() => {
                     setDeleteTargetId(item.id);
                   }}
+                  isActiveMatch={activeMatchId === item.id}
+                  highlightQuery={searchValue}
                 />
               ))
             )}
@@ -108,7 +134,10 @@ export default function KnowledgeLibraryTab({ domainCode, searchValue, filterVal
           domainCode={selectedKnowledge.domainCode}
           question={selectedKnowledge.question}
           answer={selectedKnowledge.answer}
-          updatedAt={new Date(selectedKnowledge.updatedAt).toLocaleDateString()}
+          updatedAt={(() => {
+            const d = new Date(selectedKnowledge.updatedAt);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          })()}
           onEdit={() => setIsEditModalOpen(true)}
           onDelete={() => {
             setDeleteTargetId(selectedKnowledge.id);

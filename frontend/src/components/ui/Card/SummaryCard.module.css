@@ -41,7 +41,7 @@
 .md .value {
   font: var(--text-h1-bold);
   color: var(--color-gray-900);
-  line-height: 1;
+  line-height: 1.35;
 }
 
 .sm {
@@ -63,7 +63,7 @@
 .sm .value {
   font: var(--text-h3-regular);
   color: var(--color-gray-900);
-  line-height: 1;
+  line-height: 1.35;
 }
 
 .change {

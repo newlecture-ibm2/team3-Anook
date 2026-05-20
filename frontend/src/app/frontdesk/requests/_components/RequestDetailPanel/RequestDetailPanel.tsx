@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import styles from './RequestDetailPanel.module.css';
 import Button from '@/components/ui/Button/Button';
 import Dropdown from '@/components/ui/Dropdown/Dropdown';
@@ -45,6 +46,7 @@ interface RequestDetailPanelProps {
   requestId: number;
   onUpdate: () => void;
   onClose?: () => void;
+  onMobileBack?: () => void;
 }
 
 
@@ -159,6 +161,7 @@ export default function RequestDetailPanel({
   requestId,
   onUpdate,
   onClose,
+  onMobileBack,
 }: RequestDetailPanelProps) {
   const { approveEscalation } = useApproveEscalation();
   const { detail, fetchDetail, changePriority, changeDepartment, cancelRequest, loading } = useRequestDetail();
@@ -257,8 +260,14 @@ export default function RequestDetailPanel({
 
 
   const formatDateTime = (dt: string) => {
+    if (!dt) return '';
     const d = new Date(dt);
-    return d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
 
   return (
@@ -266,6 +275,11 @@ export default function RequestDetailPanel({
       {/* 헤더 */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
+          {onMobileBack && (
+            <button className={styles.mobileBackBtn} onClick={onMobileBack} aria-label="채팅으로 가기">
+              <ChevronLeft size={22} />
+            </button>
+          )}
           <h2 className={styles.title}>요청 상세</h2>
         </div>
         <div className={styles.headerRight}>
@@ -273,8 +287,9 @@ export default function RequestDetailPanel({
         </div>
       </div>
 
-      {/* 기본 정보 */}
-      <div className={styles.section}>
+      <div className={styles.detailContent}>
+        {/* 기본 정보 */}
+        <div className={styles.section}>
         <h3 className={styles.sectionTitle}>기본 정보</h3>
         <div className={styles.grid}>
           <div className={styles.gridItem}>
@@ -482,6 +497,7 @@ export default function RequestDetailPanel({
           saving={saving}
         />
       )}
+      </div>
     </div>
   );
 }

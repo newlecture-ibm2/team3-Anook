@@ -21,21 +21,34 @@ export const TableHeader = ({ children }: { children: React.ReactNode }) => {
   return <div className={styles.tableHeader}>{children}</div>;
 };
 
-export const TableRow = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-  return <div className={`${styles.tableRow} ${className || ''}`}>{children}</div>;
+export const TableRow = ({ 
+  children, 
+  className,
+  ...props 
+}: { 
+  children: React.ReactNode; 
+  className?: string; 
+  [key: string]: any;
+}) => {
+  return <div className={`${styles.tableRow} ${className || ''}`} {...props}>{children}</div>;
 };
 
 export const TableCell = ({
   children,
   header = false,
   className,
+  label,
 }: {
   children?: React.ReactNode;
   header?: boolean;
   className?: string;
+  label?: string;
 }) => {
   return (
-    <div className={`${header ? styles.headerItem : styles.rowItem} ${className || ''}`}>
+    <div
+      className={`${header ? styles.headerItem : styles.rowItem} ${className || ''}`}
+      data-label={label ? `${label}:` : undefined}
+    >
       {children}
     </div>
   );

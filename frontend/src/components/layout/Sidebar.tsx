@@ -64,7 +64,7 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
       className={`${styles.item} ${itemStyle} ${isCollapsed ? styles.itemCollapsed : ''}`}
       onClick={(e) => onClick && onClick(e, href)}
       onMouseEnter={(e) => {
-        if (isCollapsed) {
+        if (isCollapsed && typeof window !== 'undefined' && window.innerWidth > 768) {
           const rect = e.currentTarget.getBoundingClientRect();
           // window.dispatchEvent to notify Sidebar of hover
           window.dispatchEvent(new CustomEvent('sidebar-hover', { detail: { label, top: rect.top + rect.height / 2, left: rect.right + 8 } }));
@@ -77,7 +77,7 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
       }}
     >
       <Icon className={styles.icon} />
-      {!isCollapsed && <span className={styles.label}>{label}</span>}
+      <span className={styles.label}>{label}</span>
     </Link>
   );
 }
@@ -165,11 +165,9 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
     >
       {/* Logo + Collapse Toggle */}
       <div className={styles.logoRow}>
-        {!isSidebarCollapsed && (
-          <Link href="/" className={styles.logoLink}>
-            <Logo color="var(--color-primary)" />
-          </Link>
-        )}
+        <Link href="/" className={`${styles.logoLink} ${isSidebarCollapsed ? styles.logoCollapsed : ''}`}>
+          <Logo color="var(--color-primary)" />
+        </Link>
         <button
           className={styles.collapseBtn}
           onClick={toggleCollapse}
@@ -182,20 +180,13 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-8)' }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
-            {group.category && !isSidebarCollapsed && (
-              <h4 style={{ 
-                padding: 'var(--space-8) var(--space-24)', 
-                fontSize: '0.75rem', 
-                fontWeight: 600, 
-                color: 'var(--color-gray-500)',
-                marginTop: 'var(--space-8)',
-                marginBottom: 'var(--space-4)'
-              }}>
+            {group.category && (
+              <h4 className={`${styles.categoryHeader} ${isSidebarCollapsed ? styles.categoryCollapsed : ''}`}>
                 {group.category}
               </h4>
             )}
-            {group.category && isSidebarCollapsed && (
-              <div className={styles.collapsedDivider} />
+            {group.category && (
+              <div className={`${styles.collapsedDivider} ${isSidebarCollapsed ? '' : styles.dividerHidden}`} />
             )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {group.items.map((menu) => {
@@ -226,7 +217,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
           className={`${styles.item} ${styles.danger} ${isSidebarCollapsed ? styles.itemCollapsed : ''}`}
           style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
           onMouseEnter={(e) => {
-            if (isSidebarCollapsed) {
+            if (isSidebarCollapsed && typeof window !== 'undefined' && window.innerWidth > 768) {
               const rect = e.currentTarget.getBoundingClientRect();
               setTooltip({ label: t.common.logout, top: rect.top + rect.height / 2, left: rect.right + 8 });
             }
@@ -236,7 +227,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
           }}
         >
           <LogOut className={styles.icon} />
-          {!isSidebarCollapsed && <span className={styles.label}>{t.common.logout}</span>}
+          <span className={styles.label}>{t.common.logout}</span>
         </button>
       </div>
 

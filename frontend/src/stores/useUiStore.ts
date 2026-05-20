@@ -34,7 +34,7 @@ export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       isSidebarOpen: false,
-      isSidebarCollapsed: false,
+      isSidebarCollapsed: true,
       activeModal: null,
       activeTab: 'all',
 

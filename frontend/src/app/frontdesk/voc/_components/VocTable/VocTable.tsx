@@ -1,8 +1,8 @@
 import React from 'react';
 import styles from './VocTable.module.css';
 import { VocItem } from '../../useVocList';
-
 import { useTranslation } from '@/app/useTranslation';
+import { Table, TableHeader, TableRow, TableCell } from '@/components/ui/Table/Table';
 
 interface VocTableProps {
   vocs: VocItem[];
@@ -26,37 +26,27 @@ export default function VocTable({ vocs, loading }: VocTableProps) {
   };
 
   return (
-    <div className={styles.tableContainer}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th className={styles.dateCol}>{t.frontdeskPage.voc.columns.date}</th>
-            <th className={styles.roomCol}>{t.frontdeskPage.voc.columns.room}</th>
-            <th className={styles.sentimentCol}>{t.frontdeskPage.voc.columns.sentiment}</th>
-            <th className={styles.contentCol}>{t.frontdeskPage.voc.columns.content}</th>
-            <th className={styles.replyCol}>{t.frontdeskPage.voc.columns.reply}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vocs.map((voc) => (
-            <tr key={voc.id}>
-              <td className={styles.centerAlign}>{formatDate(voc.createdAt)}</td>
-              <td className={styles.centerAlign}>{voc.roomNo}</td>
-              <td className={styles.centerAlign}>
-                <span className={`${styles.badge} ${voc.sentiment === 'POSITIVE' ? styles.positive : styles.negative}`}>
-                  {voc.sentiment === 'POSITIVE' ? t.frontdeskPage.voc.sentiments.positive : t.frontdeskPage.voc.sentiments.negative}
-                </span>
-              </td>
-              <td>
-                <div className={styles.contentBox}>{voc.content}</div>
-              </td>
-              <td>
-                <div className={styles.replyBox}>{voc.aiReply}</div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table columns="160px 80px 140px 1fr">
+      <TableHeader>
+        <TableCell>{t.frontdeskPage.voc.columns.date}</TableCell>
+        <TableCell>{t.frontdeskPage.voc.columns.room}</TableCell>
+        <TableCell>{t.frontdeskPage.voc.columns.sentiment}</TableCell>
+        <TableCell className={styles.leftAlign}>{t.frontdeskPage.voc.columns.content}</TableCell>
+      </TableHeader>
+      {vocs.map((voc) => (
+        <TableRow key={voc.id}>
+          <TableCell label={t.frontdeskPage.voc.columns.date}>{formatDate(voc.createdAt)}</TableCell>
+          <TableCell label={t.frontdeskPage.voc.columns.room}>{voc.roomNo}</TableCell>
+          <TableCell label={t.frontdeskPage.voc.columns.sentiment}>
+            <span className={`${styles.badge} ${voc.sentiment === 'POSITIVE' ? styles.positive : styles.negative}`}>
+              {voc.sentiment === 'POSITIVE' ? t.frontdeskPage.voc.sentiments.positive : t.frontdeskPage.voc.sentiments.negative}
+            </span>
+          </TableCell>
+          <TableCell label={t.frontdeskPage.voc.columns.content} className={styles.leftAlign}>
+            <div className={styles.plainContent}>{voc.content}</div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </Table>
   );
 }

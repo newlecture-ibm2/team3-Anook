@@ -35,7 +35,7 @@
       },
       "menus": {
         "dashboard": "Dashboard",
-        "frontDesk": "Front Desk",
+        "frontDesk": "Staff Consultations",
         "housekeeping": "Housekeeping",
         "fb": "F&B",
         "facility": "Facility",
@@ -45,9 +45,9 @@
         "chatHistory": "Chat History",
         "voc": "Customer Feedback",
         "aiTraining": "Add New Knowledge",
-        "rag": "AI Knowledge",
+        "rag": "AI Knowledge Management",
         "aiRouting": "AI Routing Logs",
-        "handover": "Handover",
+        "handover": "Handover Document",
         "staffManagement": "Staff Management"
       }
     },
@@ -96,9 +96,9 @@
         "emergency": "Emergency Response",
         "allRequests": "All Requests",
         "aiTraining": "Add New Knowledge",
-        "rag": "Learned Knowledge",
+        "rag": "AI Knowledge Management",
         "aiRouting": "AI Routing Logs",
-        "handover": "Handover"
+        "handover": "Handover Document"
       }
     },
     "voc": {
@@ -152,7 +152,7 @@
       "rejectConfirm": "Exclude"
     },
     "frontDesk": {
-      "title": "Front Desk",
+      "title": "Staff Consultations",
       "createRequest": "+ Create Request",
       "tabs": {
         "unhandled": "Pending",

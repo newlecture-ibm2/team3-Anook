@@ -35,7 +35,7 @@
       },
       "menus": {
         "dashboard": "仪表盘",
-        "frontDesk": "前台",
+        "frontDesk": "员工咨询列表",
         "housekeeping": "客房服务",
         "fb": "餐饮",
         "facility": "设施",
@@ -45,9 +45,9 @@
         "chatHistory": "聊天记录",
         "voc": "客户反馈",
         "aiTraining": "添加新知识",
-        "rag": "AI知识库",
+        "rag": "AI知识管理",
         "aiRouting": "AI路由日志",
-        "handover": "交接班",
+        "handover": "交接班文档",
         "staffManagement": "员工管理"
       }
     },
@@ -95,9 +95,9 @@
         "emergency": "紧急响应",
         "allRequests": "所有请求",
         "aiTraining": "添加新知识",
-        "rag": "已学习知识",
+        "rag": "AI知识管理",
         "aiRouting": "AI路由日志",
-        "handover": "交接班"
+        "handover": "交接班文档"
       }
     },
     "voc": {
@@ -151,7 +151,7 @@
       "rejectConfirm": "排除"
     },
     "frontDesk": {
-      "title": "前台",
+      "title": "员工咨询列表",
       "createRequest": "+ 创建请求",
       "tabs": {
         "unhandled": "待处理",

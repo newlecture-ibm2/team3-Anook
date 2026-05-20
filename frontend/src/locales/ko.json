@@ -35,7 +35,7 @@
       },
       "menus": {
         "dashboard": "대시보드",
-        "frontDesk": "프론트 데스크",
+        "frontDesk": "직원 상담 목록",
         "housekeeping": "하우스키핑",
         "fb": "식음료",
         "facility": "시설",
@@ -47,7 +47,7 @@
         "aiTraining": "새로운 지식 추가",
         "rag": "AI 지식 관리",
         "aiRouting": "AI 라우팅 로그",
-        "handover": "인수인계",
+        "handover": "인수인계 문서",
         "staffManagement": "직원 관리"
       }
     },
@@ -98,7 +98,7 @@
         "aiTraining": "새로운 지식 추가",
         "rag": "AI가 배운 지식",
         "aiRouting": "AI 라우팅 로그",
-        "handover": "인수인계"
+        "handover": "인수인계 문서"
       }
     },
     "voc": {
@@ -152,7 +152,7 @@
       "rejectConfirm": "제외"
     },
     "frontDesk": {
-      "title": "프론트 데스크",
+      "title": "직원 상담 목록",
       "createRequest": "+ 요청 생성",
       "tabs": {
         "unhandled": "미처리 대기",

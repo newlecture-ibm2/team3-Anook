@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import InputField from '@/components/ui/Inputfield/InputField';
-import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import { HandoverRecord } from '@/components/ui/HandoverRecord';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
@@ -75,7 +74,15 @@ export default function HandoverPage() {
           pendingCount: data.pendingCount,
           escalatedCount: 0,
           summary: '자동 생성된 인수인계 브리핑입니다.',
-          createdAt: new Date().toLocaleString()
+          createdAt: (() => {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+          })()
         });
 
         const mappedItems = data.tasks.map((task: any, index: number) => ({
@@ -93,39 +100,43 @@ export default function HandoverPage() {
       });
   }, [targetDate, shiftType]);
 
+  const filteredItems = itemsData.filter(item => {
+    const search = searchValue.toLowerCase();
+    if (!search) return true;
+    return item.roomNumber.toLowerCase().includes(search) || 
+           item.guestName.toLowerCase().includes(search) || 
+           item.requestDetails.toLowerCase().includes(search);
+  });
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>{t.frontdeskPage.taskBoard.titles.handover}</h1>
-        <div className={styles.headerActions}>
-          <input 
-            type="date" 
-            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.target.value)}
-          />
-          <select 
-            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            value={shiftType}
-            onChange={(e) => setShiftType(e.target.value)}
-          >
-            <option value="DAY">주간 (07:00 - 15:00)</option>
-            <option value="EVENING">야간 (15:00 - 23:00)</option>
-            <option value="NIGHT">심야 (23:00 - 07:00)</option>
-          </select>
+        <div className={styles.headerTop}>
+          <h1 className={styles.title}>{t.frontdeskPage.taskBoard.titles.handover}</h1>
+          <div className={styles.pickerActions}>
+            <input 
+              type="date" 
+              className={styles.datePicker}
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+            <select 
+              className={styles.shiftSelect}
+              value={shiftType}
+              onChange={(e) => setShiftType(e.target.value)}
+            >
+              <option value="DAY">주간 (07:00 - 15:00)</option>
+              <option value="EVENING">야간 (15:00 - 23:00)</option>
+              <option value="NIGHT">심야 (23:00 - 07:00)</option>
+            </select>
+          </div>
+        </div>
+        <div className={styles.searchBarRow}>
           <InputField 
             variant="search" 
             placeholder={t.frontdeskPage.taskBoard.searchPlaceholder} 
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-          />
-          <FilterButton
-            filterOptions={[
-              { label: t.frontdeskPage.taskBoard.filterAll, value: 'all' }, 
-              { label: t.frontdeskPage.taskBoard.filterLatest, value: 'latest' }
-            ]}
-            selectedFilter="all"
-            onFilterSelect={() => { }}
           />
         </div>
       </div>
@@ -138,7 +149,7 @@ export default function HandoverPage() {
         <HandoverRecord
           managerName={managerName}
           briefing={briefingData}
-          items={itemsData}
+          items={filteredItems}
         />
       )}
     </div>

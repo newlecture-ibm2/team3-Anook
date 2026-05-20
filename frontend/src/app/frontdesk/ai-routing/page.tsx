@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import InputField from '@/components/ui/Inputfield/InputField';
-import FilterButton from '@/components/ui/FilterButton/FilterButton';
 import SummaryCard from '@/components/ui/Card/SummaryCard';
 import { Table, TableHeader, TableRow, TableCell } from '@/components/ui/Table/Table';
 import Button from '@/components/ui/Button/Button';
 import LogDataModal from '@/components/ui/Modal/LogDataModal';
+import ArrowUpIcon from '@/components/icons/ArrowUpIcon';
+import ArrowDownIcon from '@/components/icons/ArrowDownIcon';
 import styles from './page.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import useAiLogs, { AiLogDetail } from './useAiLogs';
@@ -17,8 +18,99 @@ export default function AiRoutingPage() {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AiLogDetail | null>(null);
   const [isRatingExpanded, setIsRatingExpanded] = useState(false);
+
+  // 검색 내비게이션 상태
+  const [matches, setMatches] = useState<number[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
   
   const { summary, logs, ratingsData, loading, error } = useAiLogs();
+
+  // 검색 변경 핸들러
+  const handleSearchChange = (val: string) => {
+    setSearchValue(val);
+    const search = val.toLowerCase();
+    if (!search) {
+      setMatches([]);
+      setCurrentMatchIndex(0);
+      setActiveMatchId(null);
+      return;
+    }
+
+    const matchedLogIds = logs
+      .filter(log => {
+        const date = formatDate(log.createdAt).toLowerCase();
+        const summaryText = extractSummaryFromResponse(log.rawResponse).toLowerCase();
+        const tokens = log.totalTokens.toString();
+        const latency = log.latencyMs.toString();
+        return date.includes(search) || summaryText.includes(search) || tokens.includes(search) || latency.includes(search);
+      })
+      .map(log => log.id);
+
+    setMatches(matchedLogIds);
+    if (matchedLogIds.length === 0) {
+      setCurrentMatchIndex(0);
+      setActiveMatchId(null);
+    } else {
+      setCurrentMatchIndex(0);
+      setActiveMatchId(matchedLogIds[0]);
+    }
+  };
+
+  // logs 목록이 비동기로 로드되었을 때 기존 검색어 기반으로 재매칭
+  React.useEffect(() => {
+    if (searchValue) {
+      handleSearchChange(searchValue);
+    }
+  }, [logs]);
+
+  // activeMatchId 변경 시 해당 로그 로우로 스크롤
+  React.useEffect(() => {
+    if (activeMatchId) {
+      const el = document.getElementById(`log-${activeMatchId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeMatchId]);
+
+  // 텍스트 하이라이트 헬퍼 함수
+  const renderHighlightedText = (text: string, search: string, isActive: boolean) => {
+    if (!search) return text;
+    const parts = text.split(new RegExp(`(${search.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) => 
+          part.toLowerCase() === search.toLowerCase() ? (
+            <span 
+              key={i} 
+              style={{ 
+                backgroundColor: isActive ? '#ffd54f' : 'rgba(255, 230, 0, 0.3)', 
+                fontWeight: isActive ? 'bold' : 'normal',
+                borderRadius: '2px',
+                padding: '0 2px',
+                color: 'var(--color-gray-900)'
+              }}
+            >
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
+  const filteredLogs = logs.filter(log => {
+    const search = searchValue.toLowerCase();
+    if (!search) return true;
+    const date = formatDate(log.createdAt).toLowerCase();
+    const summaryText = extractSummaryFromResponse(log.rawResponse).toLowerCase();
+    const tokens = log.totalTokens.toString();
+    const latency = log.latencyMs.toString();
+    return date.includes(search) || summaryText.includes(search) || tokens.includes(search) || latency.includes(search);
+  });
 
   const handleOpenModal = (log: AiLogDetail) => {
     setSelectedLog(log);
@@ -30,43 +122,33 @@ export default function AiRoutingPage() {
     setIsLogModalOpen(false);
   };
 
-  const extractUserInput = (rawPrompt: string) => {
-    if (!rawPrompt) return '';
-    const delimiter = 'User Input:\n';
-    const parts = rawPrompt.split(delimiter);
-    return parts.length > 1 ? parts[parts.length - 1].trim() : rawPrompt;
-  };
-
-  const truncateText = (text: string, length: number) => {
-    if (!text) return '';
-    return text.length > length ? text.substring(0, length) + '...' : text;
+  const extractSummaryFromResponse = (rawResponse: string) => {
+    if (!rawResponse) return '요청 내용 없음';
+    try {
+      const data = JSON.parse(rawResponse);
+      if (Array.isArray(data) && data.length > 0) {
+        return data[0].summary || '요청 내용 없음';
+      } else if (data && typeof data === 'object') {
+        return data.summary || '요청 내용 없음';
+      }
+    } catch (e) {
+      const match = rawResponse.match(/"summary"\s*:\s*"([^"]+)"/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return '요청 내용 없음';
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  const PromptPreview = ({ rawPrompt }: { rawPrompt: string }) => {
-    const input = extractUserInput(rawPrompt);
-    const truncated = truncateText(input, 150);
-    const lines = truncated.split('\n').filter(line => line.trim() !== '');
-
-    return (
-      <div className={styles.previewContainer}>
-        {lines.map((line, idx) => {
-          if (line.startsWith('AI:')) {
-            return <div key={idx}><span className={styles.previewAi}>AI:</span> {line.replace('AI:', '').trim()}</div>;
-          } else if (line.startsWith('고객:')) {
-            return <div key={idx}><span className={styles.previewCustomer}>고객:</span> {line.replace('고객:', '').trim()}</div>;
-          } else if (line.startsWith('[')) {
-            return <div key={idx} className={`${styles.previewMeta} ${idx > 0 ? styles.previewMetaTop : ''}`}>{line}</div>;
-          }
-          return <div key={idx}>{line}</div>;
-        })}
-      </div>
-    );
+    const d = new Date(dateString);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
 
   const StarDisplay = ({ rating }: { rating: number }) => (
@@ -83,20 +165,61 @@ export default function AiRoutingPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>{t.frontdeskPage.taskBoard.titles.aiRouting}</h1>
         <div className={styles.headerActions}>
-          <InputField 
-            variant="search" 
-            placeholder={t.frontdeskPage.taskBoard.searchPlaceholder} 
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-          <FilterButton 
-            filterOptions={[
-              { label: t.frontdeskPage.taskBoard.filterAll, value: 'all' }, 
-              { label: t.frontdeskPage.taskBoard.filterLatest, value: 'latest' }
-            ]}
-            selectedFilter="all"
-            onFilterSelect={() => {}}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+            <div style={{ flex: 1 }}>
+              <InputField 
+                variant="search" 
+                placeholder={t.frontdeskPage.taskBoard.searchPlaceholder} 
+                value={searchValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (matches.length > 0) {
+                      const nextIndex = (currentMatchIndex + 1) % matches.length;
+                      setCurrentMatchIndex(nextIndex);
+                      setActiveMatchId(matches[nextIndex]);
+                    }
+                  }
+                }}
+              />
+            </div>
+            {searchValue && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-gray-600)', whiteSpace: 'nowrap', background: 'var(--color-gray-50)', padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-gray-200)' }}>
+                {matches.length > 0 ? (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <button 
+                        onClick={() => {
+                          const newIndex = (currentMatchIndex - 1 + matches.length) % matches.length;
+                          setCurrentMatchIndex(newIndex);
+                          setActiveMatchId(matches[newIndex]);
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                        aria-label="Previous match"
+                      >
+                        <ArrowUpIcon width={16} height={16} color="var(--color-gray-600)" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const newIndex = (currentMatchIndex + 1) % matches.length;
+                          setCurrentMatchIndex(newIndex);
+                          setActiveMatchId(matches[newIndex]);
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+                        aria-label="Next match"
+                      >
+                        <ArrowDownIcon width={16} height={16} color="var(--color-gray-600)" />
+                      </button>
+                    </div>
+                    <span>{currentMatchIndex + 1} / {matches.length}</span>
+                  </>
+                ) : (
+                  <span>0 / 0</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -162,7 +285,6 @@ export default function AiRoutingPage() {
       <div className={styles.tableSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>세부 접속 로그</h2>
-          <span className={styles.sortText}>최신순 정렬</span>
         </div>
         
         {loading ? (
@@ -179,17 +301,35 @@ export default function AiRoutingPage() {
               <TableCell></TableCell>
             </TableHeader>
             
-            {logs.map(log => (
-              <TableRow key={log.id} className={styles.autoHeightRow}>
-                <TableCell>{formatDate(log.createdAt)}</TableCell>
-                <TableCell className={styles.autoWrapCell}><PromptPreview rawPrompt={log.rawPrompt} /></TableCell>
-                <TableCell><b>{log.totalTokens.toLocaleString()}</b></TableCell>
-                <TableCell>
+            {filteredLogs.map(log => (
+              <TableRow 
+                key={log.id} 
+                id={`log-${log.id}`}
+                className={styles.autoHeightRow}
+                style={activeMatchId === log.id ? { 
+                  boxShadow: '0 0 0 2px var(--color-primary)', 
+                  backgroundColor: 'var(--color-tag-background-violet)', 
+                  transition: 'all 0.3s ease' 
+                } : { 
+                  transition: 'all 0.3s ease' 
+                }}
+              >
+                <TableCell label="시간">
+                  {renderHighlightedText(formatDate(log.createdAt), searchValue, activeMatchId === log.id)}
+                </TableCell>
+                <TableCell label="요청 미리보기" className={styles.autoWrapCell}>
+                  {renderHighlightedText(extractSummaryFromResponse(log.rawResponse), searchValue, activeMatchId === log.id)}
+                </TableCell>
+                <TableCell label="총 토큰">
+                  <b>{renderHighlightedText(log.totalTokens.toLocaleString(), searchValue, activeMatchId === log.id)}</b>
+                </TableCell>
+                <TableCell label="지연시간">
                   {log.latencyMs >= 3000 ? (
-                    <>
-                      <b style={{ color: 'var(--color-tag-text-red)' }}>{log.latencyMs}ms</b>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <b style={{ color: 'var(--color-tag-text-red)' }}>
+                        {renderHighlightedText(`${log.latencyMs}ms`, searchValue, activeMatchId === log.id)}
+                      </b>
                       <span style={{ 
-                        marginLeft: 'var(--space-8)', 
                         background: 'var(--color-tag-bg-red)', 
                         color: 'var(--color-tag-text-red)', 
                         padding: '2px 6px', 
@@ -197,9 +337,11 @@ export default function AiRoutingPage() {
                         fontSize: '12px',
                         fontWeight: 'bold' 
                       }}>SLOW</span>
-                    </>
+                    </div>
                   ) : (
-                    <b>{log.latencyMs}ms</b>
+                    <b>
+                      {renderHighlightedText(`${log.latencyMs}ms`, searchValue, activeMatchId === log.id)}
+                    </b>
                   )}
                 </TableCell>
                 <TableCell>
@@ -208,7 +350,7 @@ export default function AiRoutingPage() {
               </TableRow>
             ))}
             
-            {logs.length === 0 && (
+            {filteredLogs.length === 0 && (
               <TableRow>
                 <TableCell>No logs found.</TableCell>
               </TableRow>

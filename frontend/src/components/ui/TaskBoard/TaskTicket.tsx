@@ -27,7 +27,36 @@ export interface TaskTicketProps {
     tasks?: string[];
     [key: string]: any;
   };
+  highlightSearch?: string;
+  isActiveMatch?: boolean;
 }
+
+const renderHighlightedText = (text: string, search: string, isActiveMatch: boolean) => {
+  if (!search) return text;
+  const parts = text.split(new RegExp(`(${search.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === search.toLowerCase() ? (
+          <span 
+            key={i} 
+            style={{ 
+              backgroundColor: isActiveMatch ? '#ffd54f' : 'rgba(255, 230, 0, 0.3)', 
+              fontWeight: isActiveMatch ? 'bold' : 'normal',
+              borderRadius: '2px',
+              padding: '0 2px',
+              color: 'var(--color-gray-900)'
+            }}
+          >
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
 
 export default function TaskTicket({
   ticketId,
@@ -43,12 +72,14 @@ export default function TaskTicket({
   onAccept,
   onComplete,
   isCancelled = false,
-  entities
+  entities,
+  highlightSearch,
+  isActiveMatch = false
 }: TaskTicketProps) {
   const isOnline = useNetworkStore((state) => state.isOnline);
   const { t, language } = useTranslation();
   const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
-  const displaySummary = translatedSummary || title;
+  const displaySummary = (translatedSummary || title) as string;
 
   let displayDept = department;
   let deptKey = 'front';
@@ -211,7 +242,14 @@ export default function TaskTicket({
   }
 
   return (
-    <div className={`${styles.taskTicket} ${styles[deptKey]} ${isCancelled ? styles.isCancelled : ''}`}>
+    <div 
+      id={ticketId ? `ticket-${ticketId}` : undefined}
+      className={`${styles.taskTicket} ${styles[deptKey]} ${isCancelled ? styles.isCancelled : ''}`}
+      style={{
+        boxShadow: isActiveMatch ? '0 0 0 2px var(--color-primary-400), 0 4px 16px rgba(0, 0, 0, 0.12)' : undefined,
+        transition: 'all 0.2s ease-in-out'
+      }}
+    >
       <div className={styles.topColorBar} />
       <div className={styles.header}>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -261,8 +299,14 @@ export default function TaskTicket({
       )}
 
       <div className={styles.content}>
-        <h3 className={styles.title}>{isTranslating ? t.common.loading || 'Loading...' : (displayTitle as string)}</h3>
-        <p className={styles.description}>{displayDescription}</p>
+        <h3 className={styles.title}>
+          {isTranslating ? t.common.loading || 'Loading...' : (
+            highlightSearch ? renderHighlightedText(displayTitle as string, highlightSearch, isActiveMatch) : displayTitle
+          )}
+        </h3>
+        <p className={styles.description}>
+          {highlightSearch ? renderHighlightedText(displayDescription || '', highlightSearch, isActiveMatch) : displayDescription}
+        </p>
       </div>
 
       <div className={styles.divider} />

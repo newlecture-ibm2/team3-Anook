@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, MoreVertical } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
@@ -34,6 +35,8 @@ export interface ChatPanelProps {
   headerRightContent?: React.ReactNode;
   showSearch?: boolean;
   onRagFlowChange?: (active: boolean) => void;
+  onMobileBack?: () => void;
+  onMobileMore?: () => void;
 }
 
 const STATUS_MAP: Record<string, { text: string; variant: 'red' | 'purple' | 'green' | 'gray' }> = {
@@ -71,7 +74,7 @@ const renderHighlightedText = (text: string, search: string, isActiveMatch: bool
   );
 };
 
-export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, showSearch, onRagFlowChange }: ChatPanelProps) {
+export default function ChatPanel({ roomNumber = '1204', requestIds, representativeId, status, onStatusChange, autoComplete, onClose, initialMessage, summary, showRagButton, onRagRegister, isEmergency = false, headerRightContent, showSearch, onRagFlowChange, onMobileBack, onMobileMore }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -344,12 +347,17 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
       <div className={styles.chatPanelContainer}>
         <div className={styles.header}>
           <div className={styles.headerInfo}>
+            {onMobileBack && (
+              <button className={styles.mobileBackBtn} onClick={onMobileBack} aria-label="목록으로 가기">
+                <ChevronLeft size={22} />
+              </button>
+            )}
             <span className={styles.roomBadge}>{roomNumber}호</span>
             <h3 className={styles.title}>{(summary || '상담').replace(/^\[(?:프론트 연결|직원 인수인계)\]\s*/, '')}</h3>
           </div>
           <div className={styles.headerRight} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {showSearch && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className={styles.chatSearchContainer} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ width: '240px' }}>
                   <InputField
                     variant="search"
@@ -392,6 +400,12 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
                   상담 완료
                 </Button>
               )
+            )}
+
+            {onMobileMore && (
+              <button className={styles.mobileMoreBtn} onClick={onMobileMore} aria-label="요청 상세 보기">
+                <MoreVertical size={22} />
+              </button>
             )}
           </div>
         </div>

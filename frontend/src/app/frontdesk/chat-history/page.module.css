@@ -20,7 +20,7 @@
 }
 
 .title {
-  font: var(--text-h1-bold);
+  font: var(--text-h2-bold);
   color: var(--color-gray-900);
   margin: 0;
 }
@@ -95,5 +95,40 @@
 
 .popoverItem:hover {
   background-color: var(--color-tag-bg-red);
+}
+
+.mobileHidden {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .mobileHidden {
+    display: none !important;
+  }
+
+  .container {
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  .splitLayout {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .leftPane,
+  .rightPane {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    padding: var(--space-16) !important;
+  }
+
+  .cardGrid {
+    margin: 0 calc(var(--space-16) * -1);
+  }
 }
 

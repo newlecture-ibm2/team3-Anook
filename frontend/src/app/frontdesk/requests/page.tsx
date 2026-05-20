@@ -23,6 +23,7 @@ import InputField from '@/components/ui/Inputfield/InputField';
 
 export default function FrontDeskPage() {
   const [activeTab, setActiveTab] = useState('active');
+  const [mobileView, setMobileView] = useState<'list' | 'chat' | 'detail'>('list');
   const [roomSearchValue, setRoomSearchValue] = useState('');
   const [chatSearchValue, setChatSearchValue] = useState('');
   const { requests, loading, error, refetch } = useFrontdeskRequests('FRONT');
@@ -343,8 +344,14 @@ export default function FrontDeskPage() {
       {/* Content Section (Split Layout) */}
       <div className={styles.splitLayout}>
         {/* Left Pane: Request List */}
-        <div className={styles.leftPane}>
-          {/* Room Search Bar */}
+        <div className={`${styles.leftPane} ${mobileView !== 'list' ? styles.mobileHidden : ''}`}>
+          <div className={styles.header}>
+            <div className={styles.headerLeft}>
+              <h1 className={styles.title}>{t.frontdeskPage.sidebar.menus.frontDesk}</h1>
+            </div>
+          </div>
+          <div className={styles.leftPaneContent}>
+            {/* Room Search Bar */}
           <div style={{ marginBottom: 'var(--space-16)' }}>
             <InputField
               variant="search"
@@ -406,6 +413,7 @@ export default function FrontDeskPage() {
                 onCardClick={() => {
                   setActiveChatRoom({ roomNumber: room.roomNo, requestIds: room.allIds, representativeId: room.representativeId, status: room.repStatus, summary: room.summaryText, initialMessage: room.rawText || room.summaryText });
                   setDetailTarget(null);
+                  setMobileView('chat');
                   // 레드닷 해제
                   setNewMessageRoomNos(prev => {
                     const next = new Set(prev);
@@ -423,10 +431,11 @@ export default function FrontDeskPage() {
             ))}
           </div>
         )}
+          </div>
         </div>
 
         {/* Right Pane: Chat Window */}
-        <div className={styles.rightPane}>
+        <div className={`${styles.rightPane} ${mobileView !== 'chat' ? styles.mobileHidden : ''}`}>
           {activeChatRoom ? (() => {
             const activeReq = [...pending, ...inProgress, ...completed].find(r => r.id === activeChatRoom.representativeId);
             return (
@@ -439,15 +448,17 @@ export default function FrontDeskPage() {
                 initialMessage={activeChatRoom.initialMessage}
                 onStatusChange={handleStatusChange}
                 autoComplete={false}
-              onClose={() => { setIsRagFlowActive(false); setActiveChatRoom(null); }}
-              showRagButton={activeTab === 'completed' && !registeredRagIds.has(activeChatRoom.representativeId)}
-              onRagRegister={() => {
-                const req = [...pending, ...inProgress, ...completed].find((r: any) => r.id === activeChatRoom.representativeId);
-                if (req) setTrainingTarget(req);
-              }}
-              isEmergency={activeReq?.priority === 'EMERGENCY'}
-              onRagFlowChange={setIsRagFlowActive}
-              showSearch={true}
+                onClose={() => { setIsRagFlowActive(false); setActiveChatRoom(null); }}
+                showRagButton={activeTab === 'completed' && !registeredRagIds.has(activeChatRoom.representativeId)}
+                onRagRegister={() => {
+                  const req = [...pending, ...inProgress, ...completed].find((r: any) => r.id === activeChatRoom.representativeId);
+                  if (req) setTrainingTarget(req);
+                }}
+                isEmergency={activeReq?.priority === 'EMERGENCY'}
+                onRagFlowChange={setIsRagFlowActive}
+                showSearch={true}
+                onMobileBack={() => setMobileView('list')}
+                onMobileMore={() => setMobileView('detail')}
               />
             );
           })() : (
@@ -459,7 +470,7 @@ export default function FrontDeskPage() {
 
         {/* Third Pane: Request Detail (요청 상세) */}
         {(activeChatRoom || detailTarget !== null) && (
-          <div className={styles.detailPane}>
+          <div className={`${styles.detailPane} ${mobileView !== 'detail' ? styles.mobileHidden : ''}`}>
             <RequestDetailPanel
               requestId={(activeChatRoom ? activeChatRoom.representativeId : detailTarget)!}
               onUpdate={() => refetch && refetch()}
@@ -467,6 +478,7 @@ export default function FrontDeskPage() {
                 setActiveChatRoom(null);
                 setDetailTarget(null);
               }}
+              onMobileBack={() => setMobileView('chat')}
             />
           </div>
         )}

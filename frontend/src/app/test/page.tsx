@@ -14,7 +14,6 @@ import Pagination from '@/components/ui/Pagenation/Pagination';
 import RequestCard from '@/components/ui/Card/RequestCard';
 import GuestRequestCard from '@/app/guest/chat/_components/RequestCard/RequestCard';
 import RequestStatusBar from '@/app/guest/chat/_components/RequestStatusBar/RequestStatusBar';
-import RagCandidateCard from '@/components/ui/Card/RagCandidateCard';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import ChatInput from '@/app/guest/chat/_components/ChatInput';
 
@@ -638,54 +637,6 @@ export default function ComponentShowcasePage() {
                           Graph Placeholder
                         </div>
                       </ChartCard>
-                      <ChartCard title="최다 요청 항목" subtitle="MOST FREQUENT REQUESTS (%)">
-                        <div style={{ height: '200px', width: '100%', backgroundColor: 'var(--color-gray-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)' }}>
-                          Chart Placeholder
-                        </div>
-                      </ChartCard>
-                    </div>
-                  </div>
-
-                  {/* RAG Candidate Card 추가 */}
-                  <div>
-                    <h5 style={{ font: 'var(--text-caption-bold)', color: 'var(--color-gray-500)', marginBottom: 'var(--space-8)' }}>RAG Candidate Card (신규 지식 후보 검토)</h5>
-                    <ComponentLabel path="components/ui/Card/RagCandidateCard.tsx" />
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' }}>
-                      <RagCandidateCard
-                        department="하우스키핑"
-                        question="혹시 아기용 침대 가드 설치가 가능한가요?"
-                        answer="네, 고객님. 12개월 미만 유아용 침대 가드는 재고 확인 후 무상으로 설치해 드리고 있습니다. 바로 준비해드리겠습니다."
-                        timestamp="2026.10.26 15:30"
-                        onAddRag={() => {
-                          setSelectedKnowledge({
-                            category: "수동 상담 (하우스키핑)",
-                            title: "",
-                            description: "네, 고객님. 12개월 미만 유아용 침대 가드는 재고 확인 후 무상으로 설치해 드리고 있습니다. 바로 준비해드리겠습니다.",
-                            updatedAt: "방금 전",
-                            isNew: true
-                          });
-                          setIsEditModalOpen(true);
-                        }}
-                        onReject={() => alert('이 상담 내용은 무시합니다.')}
-                      />
-                      
-                      <RagCandidateCard
-                        department="프론트"
-                        question="저기요, 아까 예약했던 거 혹시 취소되나요?"
-                        answer="고객님, 혹시 예약하신 패키지가 어떤 상품이신지 말씀해 주실 수 있을까요? 취소 규정이 상품마다 달라서요."
-                        timestamp="2026.10.26 16:15"
-                        onAddRag={() => {
-                          setSelectedKnowledge({
-                            category: "의도 불명 (프론트)",
-                            title: "",
-                            description: "고객님, 혹시 예약하신 패키지가 어떤 상품이신지 말씀해 주실 수 있을까요? 취소 규정이 상품마다 달라서요.",
-                            updatedAt: "방금 전",
-                            isNew: true
-                          });
-                          setIsEditModalOpen(true);
-                        }}
-                        onReject={() => alert('이 상담 내용은 무시합니다.')}
-                      />
                     </div>
                   </div>
 

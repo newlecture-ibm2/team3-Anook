@@ -35,7 +35,7 @@
       },
       "menus": {
         "dashboard": "ダッシュボード",
-        "frontDesk": "フロントデスク",
+        "frontDesk": "スタッフ相談リスト",
         "housekeeping": "ハウスキーピング",
         "fb": "料飲",
         "facility": "施設",
@@ -45,9 +45,9 @@
         "chatHistory": "チャット履歴",
         "voc": "お客様の声",
         "aiTraining": "新規知識の追加",
-        "rag": "AIナレッジ",
+        "rag": "AIナレッジ管理",
         "aiRouting": "AIルーティングログ",
-        "handover": "引き継ぎ",
+        "handover": "引き継ぎ文書",
         "staffManagement": "スタッフ管理"
       }
     },
@@ -95,9 +95,9 @@
         "emergency": "緊急対応",
         "allRequests": "全てのリクエスト",
         "aiTraining": "新規知識の追加",
-        "rag": "学習済み知識",
+        "rag": "AIナレッジ管理",
         "aiRouting": "AIルーティングログ",
-        "handover": "引き継ぎ"
+        "handover": "引き継ぎ文書"
       }
     },
     "voc": {
@@ -151,7 +151,7 @@
       "rejectConfirm": "除外"
     },
     "frontDesk": {
-      "title": "フロントデスク",
+      "title": "スタッフ相談リスト",
       "createRequest": "+ リクエスト作成",
       "tabs": {
         "unhandled": "保留中",

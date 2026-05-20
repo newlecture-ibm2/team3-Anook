@@ -13,6 +13,7 @@ import { MoreIcon } from '@/components/icons';
 
 export default function ChatHistoryPage() {
   const [roomSearchValue, setRoomSearchValue] = useState('');
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const { rooms, selectedRoom, loadingRooms, error, selectRoom, fetchRooms, deleteRoom } = useChatHistory();
   const { t } = useTranslation();
 
@@ -33,6 +34,7 @@ export default function ChatHistoryPage() {
     if (selectedRoom) {
       await deleteRoom(selectedRoom);
       setIsDeleteModalOpen(false);
+      setMobileView('list');
     }
   };
 
@@ -84,7 +86,7 @@ export default function ChatHistoryPage() {
       {/* Content Section (Split Layout) */}
       <div className={styles.splitLayout}>
         {/* Left Pane: Room List */}
-        <div className={styles.leftPane}>
+        <div className={`${styles.leftPane} ${mobileView !== 'list' ? styles.mobileHidden : ''}`}>
           {/* Room Search Bar */}
           <div style={{ marginBottom: 'var(--space-8)' }}>
             <InputField
@@ -130,6 +132,7 @@ export default function ChatHistoryPage() {
                   onCardClick={() => {
                     selectRoom(room.roomNo);
                     setRoomSearchValue('');
+                    setMobileView('chat');
                   }}
                 />
               ))}
@@ -138,7 +141,7 @@ export default function ChatHistoryPage() {
         </div>
 
         {/* Right Pane: Chat Panel */}
-        <div className={styles.rightPane}>
+        <div className={`${styles.rightPane} ${mobileView !== 'chat' ? styles.mobileHidden : ''}`}>
           {selectedRoom ? (
             <ChatPanel
               roomNumber={selectedRoom}
@@ -147,6 +150,7 @@ export default function ChatHistoryPage() {
               onClose={() => {}}
               headerRightContent={headerRight}
               showSearch={true}
+              onMobileBack={() => setMobileView('list')}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-gray-400)' }}>
