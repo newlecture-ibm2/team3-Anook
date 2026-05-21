@@ -207,6 +207,31 @@ public class SendMessageService implements SendMessageUseCase {
                 }
             }
 
+            // [Contextual Pill Fix] Extract meta context for option pills (e.g. contextual cancellation/modification)
+            String metaDomainCode = null;
+            String metaSummary = null;
+            String metaTargetKeyword = null;
+            for (MessageAiResult analysis : analyses) {
+                if (analysis.domainCode() != null && !analysis.domainCode().isBlank()) {
+                    metaDomainCode = analysis.domainCode();
+                }
+                if (analysis.summary() != null && !analysis.summary().isBlank()) {
+                    metaSummary = analysis.summary();
+                }
+                if (analysis.targetKeyword() != null && !analysis.targetKeyword().isBlank()) {
+                    metaTargetKeyword = analysis.targetKeyword();
+                }
+            }
+
+            if (!payload.containsKey("meta") && (metaDomainCode != null || metaSummary != null || metaTargetKeyword != null)) {
+                java.util.Map<String, Object> meta = new java.util.HashMap<>();
+                if (metaDomainCode != null) meta.put("domainCode", metaDomainCode);
+                if (metaSummary != null) meta.put("summary", metaSummary);
+                if (metaTargetKeyword != null) meta.put("targetKeyword", metaTargetKeyword);
+                payload.put("meta", meta);
+                log.info("[Message] Option context meta added to AI_RESPONSE payload: domainCode={}, summary={}, targetKeyword={}", metaDomainCode, metaSummary, metaTargetKeyword);
+            }
+
             java.util.List<String> options = analyses.stream()
                     .map(MessageAiResult::clarificationOptions)
                     .filter(java.util.Objects::nonNull)
