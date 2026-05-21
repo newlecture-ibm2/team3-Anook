@@ -263,6 +263,14 @@ ALTER TABLE department ADD COLUMN IF NOT EXISTS is_frontdesk BOOLEAN NOT NULL DE
 ALTER TABLE department DROP COLUMN IF EXISTS is_admin;
 
 -- [2026-05-20] RAG 동시성 보장을 위한 복합 UNIQUE 인덱스 추가 (AN-351)
+-- UNIQUE 제약을 걸기 전에 기존 중복 데이터를 먼저 제거 (가장 큰 id 1건만 유지).
+-- 이 DELETE 가 없으면 이미 중복이 있는 환경에서 인덱스 생성 시 PSQLException 발생 → 백엔드 부팅 실패.
+DELETE FROM knowledge_entry a
+USING knowledge_entry b
+WHERE a.id < b.id
+  AND a.domain_code = b.domain_code
+  AND a.question = b.question;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_entry_unique_domain_question
 ON knowledge_entry(domain_code, question);
 
