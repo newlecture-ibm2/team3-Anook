@@ -142,9 +142,18 @@ function DashboardContent() {
   const boardData = useMemo(() => {
     const sortByCancelRequested = (taskList: typeof filteredTasks) => {
       return [...taskList].sort((a, b) => {
+        // 1. 취소 요청(cancelRequested) 건이 무조건 최상위
         if (a.cancelRequested && !b.cancelRequested) return -1;
         if (!a.cancelRequested && b.cancelRequested) return 1;
-        return 0;
+        
+        // 2. 둘 다 취소 요청이거나 둘 다 아닌 경우, 긴급(URGENT)이 다음 순위
+        const aUrgent = a.priority === 'URGENT';
+        const bUrgent = b.priority === 'URGENT';
+        if (aUrgent && !bUrgent) return -1;
+        if (!aUrgent && bUrgent) return 1;
+        
+        // 3. 우선순위도 같으면 최신 생성일 순 정렬
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
     };
 
