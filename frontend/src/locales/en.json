@@ -104,9 +104,9 @@
       "title": "Customer Feedback (VOC)",
       "subtitle": "Page to collect and manage customer feedback such as compliments and complaints.",
       "filterAll": "View All",
-      "filterPositive": "\ud83d\udc4d Compliment",
-      "filterNegative": "\ud83d\udc4e Complaint/Feedback",
-      "filterRating": "\u2b50 Ratings",
+      "filterPositive": "👍 Compliment",
+      "filterNegative": "👎 Complaint/Feedback",
+      "filterRating": "⭐ Ratings",
       "empty": "No feedback found.",
       "columns": {
         "date": "Received Date",
@@ -182,7 +182,7 @@
       "title": "Chat History",
       "emptyMessage": "No messages",
       "systemCompleted": "The previous consultation and processing have been completed.",
-      "systemMessageNote": "(\u203b This is a system-only message for front desk operations, not visible to guests)",
+      "systemMessageNote": "(※ This is a system-only message for front desk operations, not visible to guests)",
       "roomConversation": "Room {{room}} Conversation",
       "roomChatRecord": "Room {{room}} Chat Record",
       "selectRoomPrompt": "Please select a room to view the conversation",
@@ -376,7 +376,7 @@
       "emergencyCompleted": "Your emergency request has been resolved."
     },
     "message": {
-      "cancelPending": "\ud83d\udd04 Cancel request received, staff is checking",
+      "cancelPending": "🔄 Cancel request received, staff is checking",
       "escalated": "Staff will respond shortly",
       "forwarded": "Forwarded to the {team} team",
       "cancelledCard": "Request Cancelled",
@@ -452,11 +452,11 @@
     }
   },
   "menu": {
-    "\uc544\uba54\ub9ac\uce74\ub178": "Americano",
-    "\ud55c\uc6b0 \ubd88\uace0\uae30 \ub36e\ubc25": "Hanwoo Bulgogi Bowl",
-    "\uc81c\ub85c\ucf5c\ub77c": "Zero Coke",
-    "\ucf5c\ub77c": "Coke",
-    "\ud074\ub798\uc2dd \uce58\uc988\ubc84\uac70": "Classic Cheeseburger"
+    "아메리카노": "Americano",
+    "한우 불고기 덮밥": "Hanwoo Bulgogi Bowl",
+    "제로콜라": "Zero Coke",
+    "콜라": "Coke",
+    "클래식 치즈버거": "Classic Cheeseburger"
   },
   "chatInput": {
     "placeholder": "Ask me anything...",
@@ -467,19 +467,19 @@
     "speechUnsupported": "Speech recognition is not supported in this browser."
   },
   "aiReplies": {
-    "forwardFb": "Sure! I will forward your order to the F&B team right away! \ud83c\udf7d\ufe0f",
-    "forwardHk": "Got it! I will forward your request to the Housekeeping team right away. \ud83e\uddf9",
-    "forwardFacility": "We sincerely apologize for the inconvenience. \ud83e\udd72 We will forward this to the Facility team to handle it as quickly as possible! \ud83d\udee0\ufe0f",
-    "forwardConcierge": "Got it! I will forward your request to the Concierge team right away. \ud83d\udece\ufe0f",
+    "forwardFb": "Sure! I will forward your order to the F&B team right away! 🍽️",
+    "forwardHk": "Got it! I will forward your request to the Housekeeping team right away. 🧹",
+    "forwardFacility": "We sincerely apologize for the inconvenience. 🥲 We will forward this to the Facility team to handle it as quickly as possible! 🛠️",
+    "forwardConcierge": "Got it! I will forward your request to the Concierge team right away. 🛎️",
     "forwardFront": "We will connect you directly to the front desk right now to assist you further.",
-    "infoNotFound": "I'm not quite sure about that one! \ud83e\udd72 I have forwarded your question to the front desk staff. They will check and reply to you here shortly. \ud83d\ude4f",
-    "cancelSuccess": "Your request has been successfully cancelled. \ud83d\ude0c Please let me know if you need anything else!",
-    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. \ud83c\udfc3\u200d\u2642\ufe0f We will notify you once confirmed!",
-    "piiGuard": "To protect your valuable personal information, we do not accept sensitive details via chat. \ud83d\udd12 For detailed inquiries, please contact the front desk (extension 0) using your in-room phone for safe assistance. \ud83d\ude0a"
+    "infoNotFound": "I'm not quite sure about that one! 🥲 I have forwarded your question to the front desk staff. They will check and reply to you here shortly. 🙏",
+    "cancelSuccess": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
+    "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",
+    "piiGuard": "To protect your valuable personal information, we do not accept sensitive details via chat. 🔒 For detailed inquiries, please contact the front desk (extension 0) using your in-room phone for safe assistance. 😊"
   },
   "feedbackCard": {
     "systemCompletedTitle": "Previous consultation and processing have been fully completed.",
-    "systemCompletedSubtitle": "(\u203b This is an internal front desk message not visible to guests)",
+    "systemCompletedSubtitle": "(※ This is an internal front desk message not visible to guests)",
     "requestCompleted": "Request Completed",
     "consultationCompleted": "Consultation completed",
     "satisfactionQuestion": "Were you satisfied with our service?",
