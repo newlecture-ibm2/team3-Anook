@@ -65,8 +65,8 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-    # ports:
-    #   - "127.0.0.1:8080:8080"  # 컨테이너화된 Nginx를 사용하므로 직접 포트 개방 제외
+    ports:
+      - "127.0.0.1:8080:8080"  # 호스트 Nginx만 접근 가능 (외부 차단)
     depends_on:
       db:
         condition: service_healthy   # DB가 실제로 준비된 후에만 시작
@@ -110,8 +110,8 @@ services:
     build:
       context: ./frontend # 향후 프론트엔드 폴더(Dockerfile 위치)를 지정하세요
       dockerfile: Dockerfile
-    # ports:
-    #   - "${FRONTEND_PORT}:3000"  # 컨테이너화된 Nginx를 사용하므로 직접 포트 개방 제외
+    ports:
+      - "${FRONTEND_PORT}:3000"
     environment:
       - BACKEND_URL=http://backend:8080
       - AI_SERVER_URL=http://ai:8000

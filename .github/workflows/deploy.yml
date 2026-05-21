@@ -61,12 +61,12 @@ jobs:
           ENVEOF
           sed -i 's/^[[:space:]]*//' .env
 
-      # 4. Docker Compose 로 빌드 & 배포
+      # 4. Docker Compose 로 빌드 & 배포 (nginx 컨테이너 배제)
       - name: Build and Deploy
         run: |
           cd ~/workspace/team3-Anook
           docker compose down
-          docker compose up -d --build
+          docker compose up -d --build --scale nginx=0
 
       # 5. Health Check (배포 정상 확인)
       - name: Health Check
