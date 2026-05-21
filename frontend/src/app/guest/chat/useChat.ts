@@ -635,8 +635,17 @@ export function useChat() {
       imageUrl: base64Image
     };
     setMessages(prev => {
-      const filtered = prev.filter(m => m.type !== 'WELCOME');
-      return [...filtered, newUserMsg];
+      // WELCOME 및 이전에 잔류한 AI_PROGRESS를 모두 제거 후 새로 삽입 (중복 방지)
+      const filtered = prev.filter(m => m.type !== 'WELCOME' && m.type !== 'AI_PROGRESS');
+      // 유저 버블과 동시에 ProgressIndicator를 즉시 표시 (체감 대기 시간 0초)
+      // 백엔드 AI_PROGRESS SSE가 오면 같은 id('ai-progress')이므로 meta만 업데이트되어 전환이 보이지 않음
+      return [...filtered, newUserMsg, {
+        id: 'ai-progress',
+        variant: 'received' as const,
+        type: 'AI_PROGRESS' as const,
+        content: '',
+        meta: { domains: [] }
+      }];
     });
 
     setIsTyping(true);
@@ -670,7 +679,8 @@ export function useChat() {
           variant: 'received',
           content: errorData.error || '메시지 전송에 실패했습니다. 다시 시도해 주세요.',
         };
-        setMessages(prev => [...prev, errorMsg]);
+        // HTTP 에러 시 프론트 로컬 ProgressIndicator 제거
+        setMessages(prev => [...prev.filter(m => m.type !== 'AI_PROGRESS'), errorMsg]);
         return;
       }
 
@@ -685,6 +695,8 @@ export function useChat() {
       } else {
         console.error('Error sending message:', error);
       }
+      // 네트워크/Abort 에러 시 프론트 로컬 ProgressIndicator 제거
+      setMessages(prev => prev.filter(m => m.type !== 'AI_PROGRESS'));
       setIsTyping(false);
     }
   };
