@@ -10,5 +10,14 @@ public record GetBillingSummaryResult(
         double tax,
         double serviceCharge,
         double totalAmount,
-        String currency
+        String currency,
+        double subtotalKrw,
+        double subtotalUsd,
+        double taxKrw,
+        double taxUsd,
+        double serviceChargeKrw,
+        double serviceChargeUsd,
+        double totalAmountKrw,
+        double totalAmountUsd,
+        double exchangeRate
 ) {}

@@ -76,7 +76,6 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
                 request.getEntities()
         );
 
-
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestSsePayload payload = RequestSsePayload.statusChanged(
                 request.getId(),

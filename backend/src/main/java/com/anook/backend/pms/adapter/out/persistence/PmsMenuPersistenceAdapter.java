@@ -37,10 +37,13 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
                     // JSON parsing error -> return empty list safely
                 }
             }
+            double priceUsd = rs.getDouble("price_usd");
+            Double priceUsdObj = rs.wasNull() ? null : priceUsd;
             return new PmsMenu(
                     rs.getLong("id"),
                     rs.getString("name"),
                     rs.getInt("price"),
+                    priceUsdObj,
                     rs.getString("category"),
                     rs.getString("allergens"),
                     optionsList,
@@ -52,7 +55,7 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
     @Override
     public List<PmsMenu> findAllAvailable() {
         return jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, options, available FROM pms_menu WHERE available = TRUE ORDER BY category, name",
+                "SELECT id, name, price, price_usd, category, allergens, options, available FROM pms_menu WHERE available = TRUE ORDER BY category, name",
                 getRowMapper()
         );
     }
@@ -60,7 +63,7 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
     @Override
     public List<PmsMenu> findAll() {
         return jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, options, available FROM pms_menu ORDER BY category, name",
+                "SELECT id, name, price, price_usd, category, allergens, options, available FROM pms_menu ORDER BY category, name",
                 getRowMapper()
         );
     }
@@ -68,7 +71,7 @@ public class PmsMenuPersistenceAdapter implements PmsMenuRepositoryPort {
     @Override
     public Optional<PmsMenu> findById(Long id) {
         List<PmsMenu> results = jdbcTemplate.query(
-                "SELECT id, name, price, category, allergens, options, available FROM pms_menu WHERE id = ?",
+                "SELECT id, name, price, price_usd, category, allergens, options, available FROM pms_menu WHERE id = ?",
                 getRowMapper(),
                 id
         );
