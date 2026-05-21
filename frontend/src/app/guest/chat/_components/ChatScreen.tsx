@@ -176,23 +176,29 @@ export default function ChatScreen({ messages, isTyping, isStaffTyping, activeRe
           }
           if (msg.type === 'REQUEST_CARD') {
             return (
-              <RequestCard
-                key={msg.id}
-                requestId={Number(msg.meta?.requestId)}
-                domainCode={String(msg.meta?.domainCode)}
-                summary={String(msg.meta?.summary)}
-                entities={msg.meta?.entities as Record<string, unknown>}
-                status={String(msg.meta?.status)}
-                progress={Number(msg.meta?.progress) || 0}
-                graceRemaining={Number(msg.meta?.graceRemaining) || 0}
-                priority={String(msg.meta?.priority || 'NORMAL')}
-                createdAt={msg.meta?.createdAt as string}
-                cancelledAt={msg.meta?.cancelledAt as string}
-                cancelPending={Boolean(msg.meta?.cancelPending)}
-                cancelReason={msg.meta?.cancelReason as string}
-                onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
-                onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
-              />
+              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                {msg.content && msg.content.trim() !== '' && (
+                  <ChatBubble variant="received" animate={index === messages.length - 1}>
+                    {msg.content}
+                  </ChatBubble>
+                )}
+                <RequestCard
+                  requestId={Number(msg.meta?.requestId)}
+                  domainCode={String(msg.meta?.domainCode)}
+                  summary={String(msg.meta?.summary)}
+                  entities={msg.meta?.entities as Record<string, unknown>}
+                  status={String(msg.meta?.status)}
+                  progress={Number(msg.meta?.progress) || 0}
+                  graceRemaining={Number(msg.meta?.graceRemaining) || 0}
+                  priority={String(msg.meta?.priority || 'NORMAL')}
+                  createdAt={msg.meta?.createdAt as string}
+                  cancelledAt={msg.meta?.cancelledAt as string}
+                  cancelPending={Boolean(msg.meta?.cancelPending)}
+                  cancelReason={msg.meta?.cancelReason as string}
+                  onCancel={() => onCancelRequest?.(Number(msg.meta?.requestId))}
+                  onAccept={() => onConfirmRequest?.(Number(msg.meta?.requestId))}
+                />
+              </div>
             );
           }
           if (msg.type === 'QUICK_REPLY' || msg.type === 'WELCOME') {

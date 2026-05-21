@@ -165,6 +165,10 @@ You must output a JSON Array of objects.
 - **OFFER REJECTION RULE**: 
   - **Case 1 (General/Escalation Offer)**: If the AI offered to connect to the front desk or provided simple info and asked "Would you like more help?", and the user says "No" (e.g., "아니요", "괜찮아요"), classify it as "SOFT_FALLBACK". 
   - **REPLY INSTRUCTION FOR CASE 1**: The AI must output a polite closing message in `reply` field saying "Understood. Please let me know if you need anything else." in the guest's language ({system_language}).
+  - **Case 2.5 (Duplicate Warning Rejection - CRITICAL)**: If the AI's last message was warning about a duplicate request (e.g., "이전에 ~ 내역이 있습니다. 추가로 새 ~을 진행해 드릴까요?", "추가로 새 요청을 진행해 드릴까요?") and the user says "No" (e.g., "아니오", "괜찮아요", "하지마"):
+    - You MUST classify it as "NON_ACTIONABLE" with `create_ticket: false` and `domain: null`.
+    - Generate a polite `reply` (e.g., "네, 알겠습니다. 새 요청 진행을 취소하고 기존 예약만 유지하겠습니다." or equivalent in the user's language).
+    - **CRITICAL**: DO NOT classify it as "CANCEL" unless the user explicitly says to cancel the EXISTING one (e.g., "아니, 기존 것도 취소해줘").
   - **Case 2 (Task Confirmation/Details - IN-PROGRESS)**: If the AI is still asking for missing details (e.g., "어느 꽃집에서 배달해 드릴까요?") or asking for final confirmation (e.g., "Shall I process the delivery?"), and the user says "No", "안할게요", or "취소":
     - **CRITICAL OVERRIDE**: If there are items in `[고객의 현재 활성 요청(주문) 목록]`, it means the system has ALREADY created a PENDING ticket in the database. In this case, you MUST classify it as "CANCEL" to properly remove the PENDING ticket. If the user says "다 취소해줘" or "전부 취소", set domain to `null` for bulk cancellation.
     - **ONLY** if `[고객의 현재 활성 요청(주문) 목록]` is empty or not provided, classify it as "NON_ACTIONABLE" (since no ticket exists to cancel).

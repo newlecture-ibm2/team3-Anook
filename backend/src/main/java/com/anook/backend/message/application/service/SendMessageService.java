@@ -171,13 +171,49 @@ public class SendMessageService implements SendMessageUseCase {
                     "content", combinedReply
             ));
 
+            // [AN-344] 중복 예약/주문 방지 및 이전 예약 카드 노출
+            // AI가 targetRequestId를 반환하였고, 이것이 취소(CANCEL) 흐름이 아닌 경우
+            Long conflictRequestId = null;
+            boolean isAddDuplicate = false;
+            for (MessageAiResult analysis : analyses) {
+                if (analysis.targetRequestId() != null) {
+                    conflictRequestId = analysis.targetRequestId();
+                }
+                if ("ADD_DUPLICATE".equals(analysis.actionType())) {
+                    isAddDuplicate = true;
+                }
+            }
+
+            if (conflictRequestId != null && !isAddDuplicate) {
+                java.util.Map<String, Object> existingReq = activeRequestPort.findRequestById(conflictRequestId);
+                if (existingReq != null) {
+                    payload.put("uiType", "REQUEST_CARD");
+                    
+                    java.util.Map<String, Object> meta = new java.util.HashMap<>();
+                    meta.put("requestId", existingReq.get("id"));
+                    meta.put("domainCode", existingReq.get("departmentId"));
+                    meta.put("summary", existingReq.get("summary"));
+                    meta.put("status", existingReq.get("status"));
+                    meta.put("priority", existingReq.get("priority"));
+                    meta.put("entities", existingReq.get("entities"));
+                    meta.put("graceRemaining", 0); // 수락/취소 버튼 제거
+                    
+                    payload.put("meta", meta);
+                    log.info("[Message] 중복 요청 감지 — 기존 요청 ID: {}, uiType: REQUEST_CARD 지정", conflictRequestId);
+                }
+            }
+
             java.util.List<String> options = analyses.stream()
                     .map(MessageAiResult::clarificationOptions)
                     .filter(java.util.Objects::nonNull)
                     .flatMap(java.util.List::stream)
+                    .filter(opt -> {
+                        String s = opt.trim().toLowerCase();
+                        return !s.equals("네") && !s.equals("아니오") && !s.equals("아니요") && !s.equals("yes") && !s.equals("no");
+                    })
                     .toList();
 
-            if (!options.isEmpty()) {
+            if (!options.isEmpty() && conflictRequestId == null) {
                 payload.put("options", options);
             }
 
@@ -194,26 +230,34 @@ public class SendMessageService implements SendMessageUseCase {
                             this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId()));
                     log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}, targetRequestId: {}", roomNo, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId());
                 } else if (analysis.domainCode() != null) {
+                    // 중복 요청 경고 시점(targetRequestId가 존재하고 취소가 아닌 경우)에는 신규 요청 생성을 스킵합니다.
+                    // 단, 고객이 중복 추가를 확정한 경우(ADD_DUPLICATE)는 스킵하지 않고 진행합니다.
+                    if (analysis.targetRequestId() != null 
+                            && !"CANCEL_REQUEST".equals(analysis.action()) 
+                            && !"CANCEL_ALL_REQUESTS".equals(analysis.action())
+                            && !"ADD_DUPLICATE".equals(analysis.actionType())) {
+                        log.info("[Message] 중복 요청 발생으로 신규 생성 스킵 — targetRequestId: {}", analysis.targetRequestId());
+                        continue;
+                    }
+
                     // 수락 대기 중인 기존 요청이 있는 상황에서 AI가 주문을 확정(Finalize)한 경우,
                     // 새로운 요청을 추가로 발행하는 대신 기존 요청을 수락(Confirm) 처리합니다.
-                    if ("FB".equals(analysis.domainCode()) || "CONCIERGE".equals(analysis.domainCode())) {
-                        boolean isFinalized = analysis.guestReply() != null && (
-                                analysis.guestReply().contains("[FORWARD_FB]") || 
-                                analysis.guestReply().contains("[FORWARD_CONCIERGE]")
-                        );
+                    String domain = analysis.domainCode();
+                    boolean isFinalized = analysis.guestReply() != null &&
+                            analysis.guestReply().contains("[FORWARD_" + domain + "]");
 
-                        if (isFinalized) {
-                            java.util.Map<String, Object> pendingRequest = activeRequests.stream()
-                                    .filter(req -> "PENDING".equals(req.get("status")) && analysis.domainCode().equals(req.get("department_id")))
-                                    .findFirst()
-                                    .orElse(null);
+                    // If the user explicitly confirmed a NEW duplicate request, we skip auto-confirm
+                    if (isFinalized && !"ADD_DUPLICATE".equals(analysis.actionType())) {
+                        java.util.Map<String, Object> pendingRequest = activeRequests.stream()
+                                .filter(req -> "PENDING".equals(req.get("status")) && domain.equals(req.get("department_id")))
+                                .findFirst()
+                                .orElse(null);
 
-                            if (pendingRequest != null) {
-                                Long pendingRequestId = ((Number) pendingRequest.get("id")).longValue();
-                                log.info("[Message] 기존 수락 대기 중인 요청 발견, 자동 수락 처리 진행 — ID: {}, room: {}", pendingRequestId, roomNo);
-                                confirmRequestUseCase.confirmRequest(pendingRequestId, roomNo);
-                                continue; // 새 요청 중복 생성 방지
-                            }
+                        if (pendingRequest != null) {
+                            Long pendingRequestId = ((Number) pendingRequest.get("id")).longValue();
+                            log.info("[Message] 기존 수락 대기 중인 요청 발견, 자동 수락 처리 진행 — ID: {}, room: {}", pendingRequestId, roomNo);
+                            confirmRequestUseCase.confirmRequest(pendingRequestId, roomNo);
+                            continue; // 새 요청 중복 생성 방지
                         }
                     }
 

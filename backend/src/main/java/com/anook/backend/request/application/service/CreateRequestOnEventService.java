@@ -179,12 +179,15 @@ public class CreateRequestOnEventService {
         // [AN-252] URGENT 판별: EMERGENCY이거나 FRONT(에스컬레이션) 도메인은 Grace Period 생략
         boolean isUrgent = savedRequest.getPriority() == Priority.EMERGENCY;
         boolean isFrontEscalation = savedRequest.getDomainCode() == DomainCode.FRONT;
-        boolean skipGrace = isUrgent || isFrontEscalation;
+        boolean isAddDuplicate = "ADD_DUPLICATE".equals(event.getActionType());
+        boolean skipGrace = isUrgent || isFrontEscalation || isAddDuplicate;
 
         // [AN-344] FB/CONCIERGE는 AI가 이미 확인 질문을 했으므로 Grace Period 타이머 대신
         // 고객의 명시적 확인(진행 버튼)을 기다림 → graceRemaining = -1 (무한 대기)
-        boolean requiresExplicitConfirm = savedRequest.getDomainCode() == DomainCode.FB
-                || savedRequest.getDomainCode() == DomainCode.CONCIERGE;
+        // 단, ADD_DUPLICATE로 이미 확인된 경우는 제외
+        boolean requiresExplicitConfirm = (savedRequest.getDomainCode() == DomainCode.FB
+                || savedRequest.getDomainCode() == DomainCode.CONCIERGE) 
+                && !isAddDuplicate;
 
         String deptCode = savedRequest.getDomainCode() != null ? savedRequest.getDomainCode().name() : "UNKNOWN";
         int graceRemaining;

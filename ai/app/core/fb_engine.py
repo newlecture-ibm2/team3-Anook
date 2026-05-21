@@ -139,7 +139,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
 
     action_type = result.entities.get("action_type") or raw.get("action_type") or "ADD"
     target_keyword = result.entities.get("target_keyword") or raw.get("target_keyword")
-    target_request_id = result.entities.get("target_request_id") or raw.get("target_request_id")
+    target_request_id = result.target_request_id or result.entities.get("target_request_id") or raw.get("target_request_id")
 
     return {
         "guest_reply": guest_reply,

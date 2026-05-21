@@ -92,4 +92,7 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
         "missing_fields": result.missing_fields,
         "clarification_options": getattr(result, "clarification_options", []),
         "reasoning": result.reasoning,
+        "action_type": result.entities.get("action_type") if result.entities.get("action_type") else raw.get("action_type"),
+        "target_keyword": result.entities.get("target_keyword") if result.entities.get("target_keyword") else raw.get("target_keyword"),
+        "target_request_id": result.target_request_id if result.target_request_id else (result.entities.get("target_request_id") if result.entities else raw.get("target_request_id")),
     }

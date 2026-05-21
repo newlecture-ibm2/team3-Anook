@@ -197,8 +197,10 @@ export default function RequestCard({
     const intent = entities?.intent as string | undefined;
     
     // Fallback: intent 기반 번역 매핑
-    if (intent && (t.intents as any)?.[intent]) {
-      return (t.intents as any)[intent];
+    if (domainCode !== 'HK' && domainCode !== 'FACILITY') {
+      if (intent && (t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
+      }
     }
     
     if (!domainCode) {
