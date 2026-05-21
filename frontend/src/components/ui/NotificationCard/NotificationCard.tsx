@@ -63,58 +63,47 @@ export default function NotificationCard({
 
   return (
     <div
-      className={`${styles.card} ${styles[variant]}`}
+      className={`${styles.card} ${onClick ? styles.clickable : ''}`}
       onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : undefined}
     >
-      {/* 상단 컬러 액센트 바 */}
-      <div className={styles.accentBar} />
+      {/* 객실 동그라미 박스 (Left) */}
+      <div className={styles.roomBox}>
+        <span className={styles.roomNumber}>{roomNumber}</span>
+      </div>
 
-      {/* 태그 + 객실 + 시간 */}
-      <div className={styles.topRow}>
-        <div className={styles.tags}>
+      {/* 컨텐츠 섹션 (Middle) */}
+      <div className={styles.contentSection}>
+        <div className={styles.tagsRow}>
           <span className={`${styles.tag} ${styles[config.className]}`}>{config.label}</span>
           {isUrgent && <span className={styles.tagUrgent}>긴급</span>}
+          {departmentName && <span className={styles.department}>{departmentName}</span>}
         </div>
-        <div className={styles.meta}>
-          {createdAt && <span className={styles.time}>{formatTime(createdAt)}</span>}
+
+        <h3 className={styles.title}>{title}</h3>
+
+        {description && <p className={styles.description}>{description}</p>}
+
+        <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="secondary"
+            className={styles.actionButton}
+            onClick={onSecondaryClick}
+          >
+            {secondaryLabel}
+          </Button>
+          <Button
+            variant="primary"
+            className={styles.actionButton}
+            onClick={onPrimaryClick}
+          >
+            {primaryLabel}
+          </Button>
         </div>
       </div>
 
-      {/* 제목 + 객실 번호 */}
-      <div className={styles.titleRow}>
-        <h4 className={styles.title}>{title}</h4>
-        <span className={styles.roomBadge}>{roomNumber}호</span>
-      </div>
-
-      {/* 부서명 */}
-      {departmentName && (
-        <span className={styles.department}>{departmentName}</span>
-      )}
-
-      {/* 상세 설명 */}
-      {description && (
-        <p className={styles.description}>{description}</p>
-      )}
-
-      {/* 액션 버튼 */}
-      <div className={styles.actions}>
-        <Button
-          variant="primary"
-          size="medium"
-          fullWidth
-          onClick={(e) => { e.stopPropagation(); onPrimaryClick(); }}
-        >
-          {primaryLabel}
-        </Button>
-        <Button
-          variant="secondary"
-          size="medium"
-          fullWidth
-          onClick={(e) => { e.stopPropagation(); onSecondaryClick(); }}
-        >
-          {secondaryLabel}
-        </Button>
+      {/* 오른쪽 섹션 (Right - 시간 표시) */}
+      <div className={styles.rightSection}>
+        {createdAt && <span className={styles.timeText}>{formatTime(createdAt)}</span>}
       </div>
     </div>
   );
