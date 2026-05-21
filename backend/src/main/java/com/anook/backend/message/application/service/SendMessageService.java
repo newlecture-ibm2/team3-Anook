@@ -70,6 +70,9 @@ public class SendMessageService implements SendMessageUseCase {
     /** 디바운스 간격 (밀리초) — 같은 객실에서 1초 내 연타 방지 */
     private static final long DEBOUNCE_MS = 1000;
 
+    /** 객실별 고객 언어 추적 (roomNo → 감지된 언어 코드, 예: "en", "ko") */
+    private final ConcurrentHashMap<String, String> guestLanguageMap = new ConcurrentHashMap<>();
+
     @Override
     @Transactional
     public SendMessageResult send(SendMessageCommand cmd) {
@@ -95,6 +98,14 @@ public class SendMessageService implements SendMessageUseCase {
         dispatchPort.sendToRoom(cmd.roomNo(), guestPayload);
         dispatchPort.sendToFrontdesk(guestPayload);
 
+        // 2-2. 고객 언어 추적: 프론트에서 감지한 언어를 메모리에 저장 (직원 답장 시 번역 대상 언어로 사용)
+        String guestLang = cmd.guestLanguage() != null && !cmd.guestLanguage().isBlank() ? cmd.guestLanguage() : "ko";
+        guestLanguageMap.put(cmd.roomNo(), guestLang);
+        log.info("[Message] 고객 언어 갱신 — room: {}, lang: {}", cmd.roomNo(), guestLang);
+
+        // 2-3. 고객 메시지를 직원 언어로 번역하여 DB 및 WebSocket으로 전달 (비동기)
+        self.translateGuestMessageForStaff(guestMsg.getId(), cmd.roomNo(), maskedContent, guestLang);
+
         // 3. AI 처리 — 직원이 실시간 상담 중인 방이면 AI 개입 스킵
         if (roomStatusPort.isStaffHandlingRoom(cmd.roomNo())) {
             log.info("[Message] 직원 상담 중 — AI 호출 스킵 (room: {})", cmd.roomNo());
@@ -102,7 +113,7 @@ public class SendMessageService implements SendMessageUseCase {
             dispatchPort.sendToRoom(cmd.roomNo(), Map.of("type", "AI_SKIPPED"));
         } else {
             // AI 처리는 비동기로 위임 (마스킹된 텍스트를 전송하여 외부 LLM 정보 유출 방지)
-            self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, cmd.guestLanguage(), piiDetected, cmd.images());
+            self.processAiAsync(guestMsg.getId(), cmd.roomNo(), cmd.guestId(), maskedContent, guestLang, piiDetected, cmd.images());
         }
 
         return new SendMessageResult(guestMsg.getId());
@@ -368,43 +379,94 @@ public class SendMessageService implements SendMessageUseCase {
     @Override
     @Transactional
     public void sendStaffMessage(com.anook.backend.message.application.dto.request.SendStaffMessageCommand command) {
-        String targetLang = command.targetLanguage();
-        if (targetLang == null || targetLang.isBlank()) {
-            targetLang = "ko"; // 기본값 (추후 팀원이 다국어 지원 시 수정 예정)
+        // ★ 고객의 실제 언어를 메모리에서 조회 (감지 이력 기반), 없으면 최근 고객 메시지로 감지
+        String guestLang = guestLanguageMap.get(command.roomNo());
+        if (guestLang == null) {
+            guestLang = messagePort.findRecentByRoomNoAndGuestId(command.roomNo(), command.guestId(), 10)
+                    .stream()
+                    .filter(com.anook.backend.message.domain.model.Message::isFromGuest)
+                    .findFirst()
+                    .map(m -> detectLanguage(m.getContent()))
+                    .orElse("ko");
+            guestLanguageMap.put(command.roomNo(), guestLang);
         }
+        log.info("[Message] 직원 메시지 전송 — room: {}, 고객 언어: {}", command.roomNo(), guestLang);
 
         // 0. 즉시 STAFF_TYPING 이벤트 전송 (번역 전 게스트에게 타이핑 인디케이터 표시)
         dispatchPort.sendToRoom(command.roomNo(), Map.of(
                 "type", "STAFF_TYPING"));
 
-        // 1. 번역 수행 (원문 언어와 대상 언어가 같으면 스킵 — Gemini가 같은 언어끼리 번역 시 요약/의역하는 버그 방지)
-        String translatedContent;
-        String detectedLang = detectLanguage(command.content());
-        if (detectedLang.equals(targetLang)) {
-            log.info("[Message] 원문 언어({})와 대상 언어({})가 동일 — 번역 스킵", detectedLang, targetLang);
-            translatedContent = command.content();
+        // 1. 번역 수행: 직원 메시지의 언어와 고객 언어가 다르면 고객 언어로 번역
+        String translatedForGuest;
+        String staffLang = detectLanguage(command.content());
+        if (staffLang.equals(guestLang)) {
+            log.info("[Message] 직원 언어({})와 고객 언어({})가 동일 — 번역 스킵", staffLang, guestLang);
+            translatedForGuest = command.content();
         } else {
-            translatedContent = aiPort.translate(command.content(), targetLang);
+            translatedForGuest = aiPort.translate(command.content(), guestLang);
+            log.info("[Message] 직원→고객 번역 완료: {} → {}", command.content(), translatedForGuest);
         }
 
         // 2. 메시지 도메인 생성 및 저장
         Message staffMsg = Message.createStaffMessage(command.roomNo(), command.guestId(), command.content());
-        staffMsg.setTranslation(translatedContent);
+        staffMsg.setTranslation(translatedForGuest);
 
         staffMsg = messagePort.save(staffMsg);
         log.info("[Message] Staff 메시지 저장 완료 — id: {}, room: {}", staffMsg.getId(), command.roomNo());
 
-        // 3. WebSocket Push (투숙객에게 번역본 전달)
+        // 3. WebSocket Push (투숙객에게 번역본 전달, 직원에게 원문 전달)
         dispatchPort.sendToRoom(command.roomNo(), Map.of(
                 "type", "STAFF_MESSAGE",
                 "messageId", staffMsg.getId(),
-                "content", translatedContent,
+                "content", translatedForGuest,
                 "originalContent", command.content()));
+    }
+
+    /**
+     * 고객 메시지를 직원 언어(시스템 기본: 한국어)로 번역하여 DB에 저장하고 WebSocket으로 Push.
+     * 직원 ChatPanel에서 고객 메시지를 직원 언어로 표시하기 위한 비동기 처리.
+     */
+    @Async("aiTaskExecutor")
+    @Transactional
+    public void translateGuestMessageForStaff(Long messageId, String roomNo, String content, String guestLang) {
+        // 시스템 기본 직원 언어는 한국어 (향후 직원별 언어 설정 지원 시 변경 가능)
+        String staffLang = "ko";
+
+        if (guestLang.equals(staffLang)) {
+            // 고객도 한국어 → 번역 불필요
+            return;
+        }
+
+        try {
+            String translatedForStaff = aiPort.translate(content, staffLang);
+            log.info("[Message] 고객→직원 번역 완료 — msgId: {}, {} → {}", messageId, content, translatedForStaff);
+
+            // DB에 translated_content 저장
+            messagePort.findById(messageId).ifPresent(msg -> {
+                msg.setTranslation(translatedForStaff);
+                messagePort.save(msg);
+            });
+
+            // WebSocket Push: 직원 ChatPanel에 번역본 전달
+            dispatchPort.sendToRoom(roomNo, Map.of(
+                    "type", "GUEST_MESSAGE_TRANSLATED",
+                    "messageId", messageId,
+                    "translatedContent", translatedForStaff));
+            dispatchPort.sendToFrontdesk(Map.of(
+                    "type", "GUEST_MESSAGE_TRANSLATED",
+                    "roomNo", roomNo,
+                    "messageId", messageId,
+                    "translatedContent", translatedForStaff));
+        } catch (Exception e) {
+            log.error("[Message] 고객→직원 번역 실패 — msgId: {}, error: {}", messageId, e.getMessage());
+        }
     }
 
     /**
      * 텍스트의 주요 언어를 휴리스틱으로 감지합니다.
      * - 한글(AC00-D7A3) 문자가 하나라도 있으면 "ko"
+     * - 일본어(히라가나/가타카나) 문자가 있으면 "ja"
+     * - 중국어(CJK 통합 한자) 문자가 있으면 "zh"
      * - 영문 알파벳이 과반수이면 "en"
      * - 그 외 기본값 "ko"
      */
@@ -412,6 +474,12 @@ public class SendMessageService implements SendMessageUseCase {
         if (text == null || text.isBlank()) return "ko";
         for (char c : text.toCharArray()) {
             if (c >= '\uAC00' && c <= '\uD7A3') return "ko";
+        }
+        for (char c : text.toCharArray()) {
+            if ((c >= '\u3040' && c <= '\u309F') || (c >= '\u30A0' && c <= '\u30FF')) return "ja";
+        }
+        for (char c : text.toCharArray()) {
+            if (c >= '\u4E00' && c <= '\u9FFF') return "zh";
         }
         long alphaCount = text.chars().filter(c -> (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')).count();
         if (alphaCount > text.length() / 2) return "en";

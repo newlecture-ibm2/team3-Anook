@@ -141,12 +141,21 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        const mapped: ChatMessage[] = data.map((msg: any) => ({
-          id: String(msg.id),
-          variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
-          senderType: msg.senderType,
-          content: msg.senderType === 'AI' ? translateContent(msg.content) : msg.content,
-        }));
+        const mapped: ChatMessage[] = data.map((msg: any) => {
+          let displayContent = msg.content;
+          if (msg.senderType === 'AI') {
+            displayContent = translateContent(msg.content);
+          } else if (msg.senderType === 'GUEST' && msg.translatedContent) {
+            // 고객 메시지가 외국어인 경우, 직원 언어로 번역된 내용 표시
+            displayContent = msg.translatedContent;
+          }
+          return {
+            id: String(msg.id),
+            variant: msg.senderType === 'GUEST' ? 'received' as const : 'sent' as const,
+            senderType: msg.senderType,
+            content: displayContent,
+          };
+        });
 
         // 데이터가 없으면 데모용 더미 데이터 삽입
         if (mapped.length === 0 && initialMessage) {
@@ -216,6 +225,17 @@ export default function ChatPanel({ roomNumber = '1204', requestIds, representat
             content,
           }];
         });
+      } else if (type === 'GUEST_MESSAGE_TRANSLATED') {
+        // 고객 메시지 번역 완료 → 기존 메시지의 content를 번역본으로 교체
+        const translatedContent = payload.translatedContent as string;
+        const targetMsgId = payload.messageId as number;
+        if (translatedContent && targetMsgId) {
+          setMessages(prev => prev.map(m =>
+            m.id === String(targetMsgId) && m.senderType === 'GUEST'
+              ? { ...m, content: translatedContent }
+              : m
+          ));
+        }
       }
     });
 

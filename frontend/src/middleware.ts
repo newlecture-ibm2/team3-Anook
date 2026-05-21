@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/login") {
     if (session.isLoggedIn) {
       let redirectUrl = "/staff";
-      if (session.role === "FRONTDESK") redirectUrl = "/frontdesk/dashboard";
+      if (session.role === "FRONTDESK") redirectUrl = "/frontdesk/requests";
       if (session.role === "GUEST") redirectUrl = "/guest/chat";
 
       return NextResponse.redirect(new URL(redirectUrl, request.url));
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
           return response;
         }
       }
-    } catch (e) {
+    } catch {
       // 백엔드 연결 실패 시에는 서비스 가용성을 위해 통과시킴
     }
   }

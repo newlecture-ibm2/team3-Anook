@@ -77,7 +77,6 @@
         "FRONT": "Emergency"
       }
     },
-
     "taskBoard": {
       "searchPlaceholder": "Enter search term...",
       "filterAll": "All",
@@ -477,5 +476,20 @@
     "cancelSuccess": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
     "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",
     "piiGuard": "To protect your valuable personal information, we do not accept sensitive details via chat. 🔒 For detailed inquiries, please contact the front desk (extension 0) using your in-room phone for safe assistance. 😊"
+  },
+  "feedbackCard": {
+    "systemCompletedTitle": "Previous consultation and processing have been fully completed.",
+    "systemCompletedSubtitle": "(※ This is an internal front desk message not visible to guests)",
+    "requestCompleted": "Request Completed",
+    "consultationCompleted": "Consultation completed",
+    "satisfactionQuestion": "Were you satisfied with our service?",
+    "thankYou": "Thank you!",
+    "ratings": {
+      "1": "Terrible",
+      "2": "Poor",
+      "3": "Average",
+      "4": "Good",
+      "5": "Excellent!"
+    }
   }
 }

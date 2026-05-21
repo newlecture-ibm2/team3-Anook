@@ -137,8 +137,8 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
     {
       category: '',
       items: [
-        { label: '내 작업 (My Tasks)', href: '/staff?view=my', icon: User },
-        { label: '부서 전체 작업 (Dept Tasks)', href: '/staff', icon: Users }
+        { label: '내 작업', href: '/staff?view=my', icon: User },
+        { label: '부서 전체 작업', href: '/staff', icon: Users }
       ]
     }
   ];
