@@ -47,7 +47,7 @@ inventory:
         - "워터"
         - "water"
       allowance: 2
-      extra-charge: 1000
+      extra-charge: 2000
     - code: TOWEL
       aliases:
         - "수건"
