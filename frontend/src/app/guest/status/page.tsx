@@ -40,6 +40,7 @@ export default function GuestStatusPage() {
                 status={req.status}
                 createdAt={req.createdAt}
                 updatedAt={req.updatedAt}
+                entities={req.entities}
               />
             ))}
           </div>
