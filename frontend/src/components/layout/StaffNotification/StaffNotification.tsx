@@ -97,7 +97,7 @@ export default function StaffNotification() {
 
   // 4. 취소 대기 중인 항목만 필터링
   const pendingCancellations = tasks.filter(
-    task => task.cancelRequested && task.status !== 'CANCELLED' && task.status !== 'COMPLETED'
+    task => task.cancelRequested && task.status === 'IN_PROGRESS'
   );
 
   const totalNotifications = pendingCancellations.length;
