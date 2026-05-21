@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.anook.backend.request.application.port.in.ConfirmRequestUseCase;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,6 +57,7 @@ public class SendMessageService implements SendMessageUseCase {
     private final AsyncAiLoggingService asyncAiLoggingService;
     private final MessageRoomStatusPort roomStatusPort;
     private final MessageActiveRequestPort activeRequestPort;
+    private final ConfirmRequestUseCase confirmRequestUseCase;
 
     @Autowired
     @Lazy
@@ -192,6 +194,29 @@ public class SendMessageService implements SendMessageUseCase {
                             this, roomNo, guestId, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId()));
                     log.info("[Message] RequestCancelledByGuestEvent 발행 — room: {}, domain: {}, targetKeyword: {}, targetRequestId: {}", roomNo, analysis.domainCode(), analysis.targetKeyword(), analysis.targetRequestId());
                 } else if (analysis.domainCode() != null) {
+                    // 수락 대기 중인 기존 요청이 있는 상황에서 AI가 주문을 확정(Finalize)한 경우,
+                    // 새로운 요청을 추가로 발행하는 대신 기존 요청을 수락(Confirm) 처리합니다.
+                    if ("FB".equals(analysis.domainCode()) || "CONCIERGE".equals(analysis.domainCode())) {
+                        boolean isFinalized = analysis.guestReply() != null && (
+                                analysis.guestReply().contains("[FORWARD_FB]") || 
+                                analysis.guestReply().contains("[FORWARD_CONCIERGE]")
+                        );
+
+                        if (isFinalized) {
+                            java.util.Map<String, Object> pendingRequest = activeRequests.stream()
+                                    .filter(req -> "PENDING".equals(req.get("status")) && analysis.domainCode().equals(req.get("department_id")))
+                                    .findFirst()
+                                    .orElse(null);
+
+                            if (pendingRequest != null) {
+                                Long pendingRequestId = ((Number) pendingRequest.get("id")).longValue();
+                                log.info("[Message] 기존 수락 대기 중인 요청 발견, 자동 수락 처리 진행 — ID: {}, room: {}", pendingRequestId, roomNo);
+                                confirmRequestUseCase.confirmRequest(pendingRequestId, roomNo);
+                                continue; // 새 요청 중복 생성 방지
+                            }
+                        }
+                    }
+
                     boolean escalated = analysis.confidence() < 0.7;
 
                     eventPublisher.publishEvent(new RequestDetectedEvent(

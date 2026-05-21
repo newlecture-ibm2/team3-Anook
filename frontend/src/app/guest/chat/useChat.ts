@@ -218,356 +218,356 @@ export function useChat() {
     if (!roomNo) return;
 
     const unsubscribe = subscribe(`/topic/room/${roomNo}`, (payload: any) => {
-            console.log('[SSE-RECEIVE]', payload);
+      console.log('[SSE-RECEIVE]', payload);
 
-            // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
-            if (payload.type === 'SESSION_EXPIRED') {
-              // BFF 세션 쿠키 파기
-              fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
-              window.location.href = '/login?error=CHECKED_OUT';
-              return;
-            }
+      // 체크아웃에 의한 세션 만료 감지 → 즉시 로그아웃
+      if (payload.type === 'SESSION_EXPIRED') {
+        // BFF 세션 쿠키 파기
+        fetch('/api/auth/session', { method: 'DELETE' }).catch(() => { });
+        window.location.href = '/login?error=CHECKED_OUT';
+        return;
+      }
 
-            if (payload.type === 'AI_PROGRESS') {
-              setMessages(prev => {
-                const existing = prev.find(m => m.id === 'ai-progress');
-                if (existing) {
-                  // 기존 메시지의 meta만 업데이트 (컴포넌트 재마운트 방지 → 애니메이션 끊김 방지)
-                  return prev.map(m => m.id === 'ai-progress'
-                    ? { ...m, meta: { domains: payload.domains } }
-                    : m
-                  );
+      if (payload.type === 'AI_PROGRESS') {
+        setMessages(prev => {
+          const existing = prev.find(m => m.id === 'ai-progress');
+          if (existing) {
+            // 기존 메시지의 meta만 업데이트 (컴포넌트 재마운트 방지 → 애니메이션 끊김 방지)
+            return prev.map(m => m.id === 'ai-progress'
+              ? { ...m, meta: { domains: payload.domains } }
+              : m
+            );
+          }
+          return [...prev, {
+            id: 'ai-progress',
+            variant: 'received',
+            type: 'AI_PROGRESS',
+            content: '',
+            meta: { domains: payload.domains }
+          }];
+        });
+        return;
+      }
+
+      if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR' || payload.type === 'AI_SKIPPED') {
+        setIsTyping(false);
+
+        if (payload.type === 'AI_SKIPPED') {
+          // AI_PROGRESS 메시지 제거
+          setMessages(prev => prev.filter(m => m.type !== 'AI_PROGRESS'));
+          return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
+        }
+
+        // 진행 상태 메시지 제거
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
+
+          // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
+          let content = payload.content;
+
+
+          // AI 특수 코드 매핑 (다국어 언어팩 연동, AI 할루시네이션 대비 includes 사용)
+          content = translateContent(content);
+
+          const newAiMsg: ChatMessage = {
+            id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
+            variant: 'received',
+            content,
+            type: payload.options && payload.options.length > 0 ? 'QUICK_REPLY' : (payload.uiType || 'TEXT'),
+            meta: { ...(payload.meta || {}), options: payload.options },
+          };
+          return [...filtered, newAiMsg];
+        });
+      } else if (payload.type === 'STAFF_TYPING') {
+        // 직원이 메시지 작성 중 → 타이핑 인디케이터 표시
+        setIsStaffTyping(true);
+      } else if (payload.type === 'STAFF_MESSAGE') {
+        // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 AI 채팅 버블 스타일로 실시간 표시
+        setIsStaffTyping(false);
+
+        // [AN-337] 시스템 마커 메시지 필터링 (화면에 표시하지 않음)
+        const contentStr = payload.content as string;
+        if (contentStr && contentStr.startsWith('[SYSTEM]')) {
+          return;
+        }
+
+        const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
+        setMessages(prev => {
+          // 중복 방지
+          if (prev.some(m => m.id === staffMsgId)) return prev;
+
+          // FRONT RequestCard는 유지 (삭제하지 않음)
+          return [...prev, {
+            id: staffMsgId,
+            variant: 'received',
+            content: payload.content,
+            type: 'FALLBACK',
+          }];
+        });
+      } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {
+        const progressMap: Record<string, number> = {
+          'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
+        };
+        const isCancelled = payload.status === 'CANCELLED';
+        const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
+
+        // Set Active Requests for Status Bar
+        setActiveRequests(prev => {
+          const filtered = prev.filter(r => r.requestId !== payload.requestId);
+
+          // CANCELLED → 즉시 제거
+          if (payload.status === 'CANCELLED') return filtered;
+
+          // COMPLETED → 상태바에 유지 (RequestStatusBar 내부 3초 타이머로 fade-out)
+          // 이후 3.5초 뒤에 배열에서도 제거
+          return [...filtered, {
+            requestId: payload.requestId,
+            domainCode: payload.domainCode || 'UNKNOWN',
+            summary: payload.summary,
+            status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
+            entities: payload.entities,
+            progress: progressMap[payload.status] || 0
+          }];
+        });
+
+        // COMPLETED 3.5초 후 activeRequests에서 완전 제거 (RequestStatusBar 3초 fade-out 보장)
+        if (payload.status === 'COMPLETED') {
+          setTimeout(() => {
+            setActiveRequests(prev => prev.filter(r => r.requestId !== payload.requestId));
+          }, 3500);
+        }
+
+        // Add/Update Request Card in Chat Stream
+        const requestMsg: ChatMessage = {
+          id: `request-${payload.requestId}`,
+          variant: 'received',
+          type: 'REQUEST_CARD',
+          content: '', // No text content needed, UI is rendered via RequestCard
+          meta: {
+            requestId: payload.requestId,
+            domainCode: payload.domainCode || 'UNKNOWN',
+            summary: payload.summary,
+            status: payload.status,
+            entities: payload.entities,
+            progress: progressMap[payload.status] || 0,
+            graceRemaining: payload.graceRemaining || 0,
+            priority: payload.priority || 'NORMAL',
+            cancelPending: isCancelPending,
+            cancelReason: payload.cancelReason,
+            cancelledAt: payload.status === 'CANCELLED' ? new Date().toISOString() : undefined,
+            createdAt: payload.createdAt || new Date().toISOString()
+          }
+        };
+
+        // COMPLETED는 ChatEndCard(FEEDBACK)로 처리
+        if (payload.status !== 'COMPLETED') {
+          // FRONT/EMERGENCY 도메인 카드는 제자리에서 상태만 업데이트 (제거/재생성 방지)
+          const isInPlaceDomain = payload.domainCode === 'FRONT' || payload.domainCode === 'EMERGENCY';
+
+          setMessages(prev => {
+            const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
+            const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
+            const existingGrace = existingMeta.graceRemaining || 0;
+
+            if (isInPlaceDomain && existingIdx >= 0) {
+              // FRONT/EMERGENCY: 제자리에서 상태만 업데이트 (카드 위치/보더 유지)
+              const updated = [...prev];
+              updated[existingIdx] = {
+                ...updated[existingIdx],
+                meta: {
+                  ...updated[existingIdx].meta,
+                  status: payload.status,
+                  graceRemaining: 0,
                 }
-                return [...prev, {
-                  id: 'ai-progress',
-                  variant: 'received',
-                  type: 'AI_PROGRESS',
-                  content: '',
-                  meta: { domains: payload.domains }
-                }];
-              });
-              return;
+              };
+              return updated;
             }
 
-            if (payload.type === 'AI_RESPONSE' || payload.type === 'AI_ERROR' || payload.type === 'AI_SKIPPED') {
-              setIsTyping(false);
+            // 부서가 변경된 경우: 기존 카드는 유지하고 새 카드를 하단에 추가
+            const existingDomain = existingMeta.domainCode;
+            const isDeptChanged = existingIdx >= 0 && existingDomain && existingDomain !== payload.domainCode;
 
-              if (payload.type === 'AI_SKIPPED') {
-                // AI_PROGRESS 메시지 제거
-                setMessages(prev => prev.filter(m => m.type !== 'AI_PROGRESS'));
-                return; // 직원이 채팅 중인 상태이므로 AI 응답 카드를 그리지 않음 (직원이 메시지를 보냄)
+            if (isDeptChanged) {
+              // 기존 FRONT 카드는 그대로 두고, 새 부서 카드를 하단에 추가
+              return [...prev, {
+                ...requestMsg,
+                id: `request-${payload.requestId}-${Date.now()}`,
+                meta: {
+                  ...requestMsg.meta,
+                  createdAt: new Date().toISOString(),
+                  graceRemaining: 0
+                }
+              }];
+            }
+
+            // 같은 도메인 내 상태 변경: 기존 카드 교체
+            const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
+
+            return [...filtered, {
+              ...requestMsg,
+              id: `request-${payload.requestId}-${Date.now()}`,
+              meta: {
+                ...requestMsg.meta,
+                entities: payload.entities || existingMeta.entities,
+                priority: payload.priority || existingMeta.priority,
+                cancelReason: payload.cancelReason || existingMeta.cancelReason,
+                cancelledAt: payload.status === 'CANCELLED' ? (existingMeta.cancelledAt || new Date().toISOString()) : undefined,
+                createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
+                graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
               }
+            }];
+          });
+        } else {
+          // COMPLETED: 도메인별 분기
+          const isFrontConsultation = payload.domainCode === 'FRONT';
+          setMessages(prev => {
+            const cardId = `system-feedback-${payload.requestId}`;
+            if (prev.some(m => m.id === cardId)) return prev;
 
-              // 진행 상태 메시지 제거
-              setMessages(prev => {
-                const filtered = prev.filter(m => m.type !== 'AI_PROGRESS');
-
-                // 취소 관련 AI 응답은 backend (analyze.py)에서 전송한 content를 그대로 사용합니다.
-                let content = payload.content;
-
-
-                // AI 특수 코드 매핑 (다국어 언어팩 연동, AI 할루시네이션 대비 includes 사용)
-                content = translateContent(content);
-
-                const newAiMsg: ChatMessage = {
-                  id: payload.messageId ? payload.messageId.toString() : Date.now().toString(),
-                  variant: 'received',
-                  content,
-                  type: payload.options && payload.options.length > 0 ? 'QUICK_REPLY' : (payload.uiType || 'TEXT'),
-                  meta: { ...(payload.meta || {}), options: payload.options },
-                };
-                return [...filtered, newAiMsg];
-              });
-            } else if (payload.type === 'STAFF_TYPING') {
-              // 직원이 메시지 작성 중 → 타이핑 인디케이터 표시
-              setIsStaffTyping(true);
-            } else if (payload.type === 'STAFF_MESSAGE') {
-              // 프론트데스크 직원이 보낸 메시지 → 고객 화면에 AI 채팅 버블 스타일로 실시간 표시
-              setIsStaffTyping(false);
-              
-              // [AN-337] 시스템 마커 메시지 필터링 (화면에 표시하지 않음)
-              const contentStr = payload.content as string;
-              if (contentStr && contentStr.startsWith('[SYSTEM]')) {
-                return;
+            return [...prev, {
+              id: cardId,
+              variant: 'received' as const,
+              // FRONT → 상담 완료 (직원 평가), 기타 → 요청 완료 (서비스 평가)
+              type: (isFrontConsultation ? 'CHAT_END' : 'FEEDBACK') as any,
+              content: '',
+              meta: {
+                requestId: payload.requestId,
+                summary: payload.summary || '',
+                domainCode: payload.domainCode || '',
+                completedAt: new Date().toISOString(),
               }
+            }];
+          });
+        }
 
-              const staffMsgId = payload.messageId ? payload.messageId.toString() : Date.now().toString();
-              setMessages(prev => {
-                // 중복 방지
-                if (prev.some(m => m.id === staffMsgId)) return prev;
+        // --- System messages for cancel flow ---
+        let hasCancelEvent = false;
+        if (payload.type === 'CANCEL_APPROVED' && payload.status === 'CANCELLED') {
+          // 고객이 요청한 취소를 관리자가 승인한 경우
+          cancelEventsBatch.current.add('GUEST_CANCEL_APPROVED');
+          hasCancelEvent = true;
+        } else if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
+          if (payload.cancelReason === 'REPLACED') {
+            // System auto-cancel due to replace, do not show system message
+          } else if (payload.initiatedBy === 'STAFF') {
+            // 관리자가 직접 강제 취소한 경우
+            cancelEventsBatch.current.add('STAFF_SUCCESS');
+            hasCancelEvent = true;
+          } else {
+            // 고객이 직접 취소한 경우 (PENDING 상태에서 즉시 취소)
+            cancelEventsBatch.current.add('SUCCESS');
+            hasCancelEvent = true;
+          }
+        }
+        if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
+          cancelEventsBatch.current.add('PENDING');
+          hasCancelEvent = true;
+        }
 
-                // FRONT RequestCard는 유지 (삭제하지 않음)
-                return [...prev, {
-                  id: staffMsgId,
-                  variant: 'received',
-                  content: payload.content,
-                  type: 'FALLBACK',
-                }];
-              });
-            } else if (['NEW_REQUEST', 'STATUS_CHANGED', 'CANCEL_APPROVED', 'CANCEL_REJECTED', 'CANCEL_REQUEST_RECEIVED'].includes(payload.type)) {
-              const progressMap: Record<string, number> = {
-                'PENDING': 10, 'ESCALATED': 10, 'ASSIGNED': 50, 'IN_PROGRESS': 50, 'COMPLETED': 100, 'CANCELLED': 0
-              };
-              const isCancelled = payload.status === 'CANCELLED';
-              const isCancelPending = payload.type === 'CANCEL_REQUEST_RECEIVED';
+        if (hasCancelEvent) {
+          if (cancelBatchTimer.current) clearTimeout(cancelBatchTimer.current);
 
-              // Set Active Requests for Status Bar
-              setActiveRequests(prev => {
-                const filtered = prev.filter(r => r.requestId !== payload.requestId);
+          cancelBatchTimer.current = setTimeout(() => {
+            const hasSuccess = cancelEventsBatch.current.has('SUCCESS');
+            const hasStaffSuccess = cancelEventsBatch.current.has('STAFF_SUCCESS');
+            const hasGuestApproved = cancelEventsBatch.current.has('GUEST_CANCEL_APPROVED');
+            const hasPending = cancelEventsBatch.current.has('PENDING');
+            cancelEventsBatch.current.clear();
 
-                // CANCELLED → 즉시 제거
-                if (payload.status === 'CANCELLED') return filtered;
+            setMessages(prev => {
+              const msgId = `system-cancel-batch-${Date.now()}`;
 
-                // COMPLETED → 상태바에 유지 (RequestStatusBar 내부 3초 타이머로 fade-out)
-                // 이후 3.5초 뒤에 배열에서도 제거
-                return [...filtered, {
-                  requestId: payload.requestId,
-                  domainCode: payload.domainCode || 'UNKNOWN',
-                  summary: payload.summary,
-                  status: isCancelPending ? 'CANCEL_PENDING' : payload.status,
-                  entities: payload.entities,
-                  progress: progressMap[payload.status] || 0
-                }];
-              });
-
-              // COMPLETED 3.5초 후 activeRequests에서 완전 제거 (RequestStatusBar 3초 fade-out 보장)
-              if (payload.status === 'COMPLETED') {
-                setTimeout(() => {
-                  setActiveRequests(prev => prev.filter(r => r.requestId !== payload.requestId));
-                }, 3500);
+              let content = '';
+              if (hasStaffSuccess) {
+                // 직원/관리자가 강제 취소한 경우 (AI_RESPONSE 없음 → 여기서 안내)
+                content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프론트로 연락 부탁드립니다.';
+              } else if (hasGuestApproved) {
+                // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
+                content = '요청하신 취소가 정상 처리되었습니다.';
               }
+              // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
 
-              // Add/Update Request Card in Chat Stream
-              const requestMsg: ChatMessage = {
-                id: `request-${payload.requestId}`,
+              if (!content) return prev;
+
+              return [...prev, {
+                id: msgId,
                 variant: 'received',
-                type: 'REQUEST_CARD',
-                content: '', // No text content needed, UI is rendered via RequestCard
+                type: 'TEXT',
+                content: content,
+              }];
+            });
+          }, 600); // 모든 카드가 도착한 후 렌더링되게 보장
+        }
+
+        if (payload.status === 'COMPLETED') {
+          setTimeout(() => {
+            setMessages(prev => {
+              const msgId = `system-feedback-${payload.requestId}`;
+              if (prev.some(m => m.id === msgId)) return prev;
+              // Remove the original RequestCard for this requestId
+              const filtered = prev.filter(m =>
+                !(m.type === 'REQUEST_CARD' && m.meta?.requestId === payload.requestId)
+              );
+              return [...filtered, {
+                id: msgId,
+                variant: 'received',
+                type: 'FEEDBACK',
+                content: '',
                 meta: {
                   requestId: payload.requestId,
-                  domainCode: payload.domainCode || 'UNKNOWN',
-                  summary: payload.summary,
-                  status: payload.status,
-                  entities: payload.entities,
-                  progress: progressMap[payload.status] || 0,
-                  graceRemaining: payload.graceRemaining || 0,
-                  priority: payload.priority || 'NORMAL',
-                  cancelPending: isCancelPending,
-                  cancelReason: payload.cancelReason,
-                  cancelledAt: payload.status === 'CANCELLED' ? new Date().toISOString() : undefined,
-                  createdAt: payload.createdAt || new Date().toISOString()
+                  summary: payload.summary || '',
+                  domainCode: payload.domainCode || '',
+                  completedAt: new Date().toISOString()
                 }
-              };
+              }];
+            });
+          }, 1000);
+        }
 
-              // COMPLETED는 ChatEndCard(FEEDBACK)로 처리
-              if (payload.status !== 'COMPLETED') {
-                // FRONT/EMERGENCY 도메인 카드는 제자리에서 상태만 업데이트 (제거/재생성 방지)
-                const isInPlaceDomain = payload.domainCode === 'FRONT' || payload.domainCode === 'EMERGENCY';
+        // CANCEL_REJECTED 처리: 제네릭 메시지 대신 관리자가 입력한 반려 사유가
+        // STAFF_MESSAGE로 별도 전송되므로, 여기서는 시스템 메시지를 생략합니다.
+        // (반려 사유가 없는 경우에만 기본 안내 표시)
+        if (payload.type === 'CANCEL_REJECTED') {
+          // 반려 사유(STAFF_MESSAGE)가 0.5초 내로 도착하지 않으면 기본 메시지 표시
+          const rejectFallbackTimer = setTimeout(() => {
+            setMessages(prev => {
+              // 이미 STAFF_MESSAGE로 반려 사유가 도착했는지 확인
+              const hasRejectReason = prev.some(m =>
+                m.type === 'TEXT' && m.content?.includes('[취소 반려]')
+                && prev.indexOf(m) > prev.length - 5 // 최근 5개 메시지 내
+              );
+              if (hasRejectReason) return prev;
 
-                setMessages(prev => {
-                  const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
-                  const existingMeta = existingIdx >= 0 ? (prev[existingIdx].meta || {}) : {};
-                  const existingGrace = existingMeta.graceRemaining || 0;
-
-                  if (isInPlaceDomain && existingIdx >= 0) {
-                    // FRONT/EMERGENCY: 제자리에서 상태만 업데이트 (카드 위치/보더 유지)
-                    const updated = [...prev];
-                    updated[existingIdx] = {
-                      ...updated[existingIdx],
-                      meta: {
-                        ...updated[existingIdx].meta,
-                        status: payload.status,
-                        graceRemaining: 0,
-                      }
-                    };
-                    return updated;
-                  }
-
-                  // 부서가 변경된 경우: 기존 카드는 유지하고 새 카드를 하단에 추가
-                  const existingDomain = existingMeta.domainCode;
-                  const isDeptChanged = existingIdx >= 0 && existingDomain && existingDomain !== payload.domainCode;
-
-                  if (isDeptChanged) {
-                    // 기존 FRONT 카드는 그대로 두고, 새 부서 카드를 하단에 추가
-                    return [...prev, {
-                      ...requestMsg,
-                      id: `request-${payload.requestId}-${Date.now()}`,
-                      meta: {
-                        ...requestMsg.meta,
-                        createdAt: new Date().toISOString(),
-                        graceRemaining: 0
-                      }
-                    }];
-                  }
-
-                  // 같은 도메인 내 상태 변경: 기존 카드 교체
-                  const filtered = prev.filter(m => m.meta?.requestId !== payload.requestId && m.id !== `request-${payload.requestId}`);
-
-                  return [...filtered, {
-                    ...requestMsg,
-                    id: `request-${payload.requestId}-${Date.now()}`,
-                    meta: {
-                      ...requestMsg.meta,
-                      entities: payload.entities || existingMeta.entities,
-                      priority: payload.priority || existingMeta.priority,
-                      cancelReason: payload.cancelReason || existingMeta.cancelReason,
-                      cancelledAt: payload.status === 'CANCELLED' ? (existingMeta.cancelledAt || new Date().toISOString()) : undefined,
-                      createdAt: existingMeta.createdAt || payload.createdAt || new Date().toISOString(),
-                      graceRemaining: payload.type === 'NEW_REQUEST' ? payload.graceRemaining : (payload.status === 'CANCELLED' ? 0 : existingGrace)
-                    }
-                  }];
-                });
-              } else {
-                // COMPLETED: 도메인별 분기
-                const isFrontConsultation = payload.domainCode === 'FRONT';
-                setMessages(prev => {
-                  const cardId = `system-feedback-${payload.requestId}`;
-                  if (prev.some(m => m.id === cardId)) return prev;
-
-                  return [...prev, {
-                    id: cardId,
-                    variant: 'received' as const,
-                    // FRONT → 상담 완료 (직원 평가), 기타 → 요청 완료 (서비스 평가)
-                    type: (isFrontConsultation ? 'CHAT_END' : 'FEEDBACK') as any,
-                    content: '',
-                    meta: {
-                      requestId: payload.requestId,
-                      summary: payload.summary || '',
-                      domainCode: payload.domainCode || '',
-                      completedAt: new Date().toISOString(),
-                    }
-                  }];
-                });
+              // 버그 수정: 타임스탬프를 추가하여 식별자 중복으로 인한 증발 현상 방지
+              const msgId = `system-cancel-reject-${payload.requestId}-${Date.now()}`;
+              if (prev.some(m => m.id === msgId)) return prev;
+              return [...prev, {
+                id: msgId,
+                variant: 'received',
+                type: 'TEXT',
+                content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프론트로 연락 부탁드립니다.',
+              }];
+            });
+          }, 800);
+        }
+      } else if (payload.type === 'GRACE_EXPIRED') {
+        // Hide the buttons on the specific card by forcing graceRemaining to 0
+        setMessages(prev => {
+          const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              meta: {
+                ...updated[existingIdx].meta,
+                graceRemaining: 0
               }
-
-              // --- System messages for cancel flow ---
-              let hasCancelEvent = false;
-              if (payload.type === 'CANCEL_APPROVED' && payload.status === 'CANCELLED') {
-                // 고객이 요청한 취소를 관리자가 승인한 경우
-                cancelEventsBatch.current.add('GUEST_CANCEL_APPROVED');
-                hasCancelEvent = true;
-              } else if (payload.type === 'STATUS_CHANGED' && payload.status === 'CANCELLED') {
-                if (payload.cancelReason === 'REPLACED') {
-                  // System auto-cancel due to replace, do not show system message
-                } else if (payload.initiatedBy === 'STAFF') {
-                  // 관리자가 직접 강제 취소한 경우
-                  cancelEventsBatch.current.add('STAFF_SUCCESS');
-                  hasCancelEvent = true;
-                } else {
-                  // 고객이 직접 취소한 경우 (PENDING 상태에서 즉시 취소)
-                  cancelEventsBatch.current.add('SUCCESS');
-                  hasCancelEvent = true;
-                }
-              }
-              if (payload.type === 'CANCEL_REQUEST_RECEIVED') {
-                cancelEventsBatch.current.add('PENDING');
-                hasCancelEvent = true;
-              }
-
-              if (hasCancelEvent) {
-                if (cancelBatchTimer.current) clearTimeout(cancelBatchTimer.current);
-                
-                cancelBatchTimer.current = setTimeout(() => {
-                  const hasSuccess = cancelEventsBatch.current.has('SUCCESS');
-                  const hasStaffSuccess = cancelEventsBatch.current.has('STAFF_SUCCESS');
-                  const hasGuestApproved = cancelEventsBatch.current.has('GUEST_CANCEL_APPROVED');
-                  const hasPending = cancelEventsBatch.current.has('PENDING');
-                  cancelEventsBatch.current.clear();
-
-                  setMessages(prev => {
-                    const msgId = `system-cancel-batch-${Date.now()}`;
-                    
-                    let content = '';
-                    if (hasStaffSuccess) {
-                      // 직원/관리자가 강제 취소한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '죄송합니다. 현재 해당 서비스 제공이 일시적으로 어려워 요청이 취소되었습니다. 도움이 필요하시면 프론트로 연락 부탁드립니다.';
-                    } else if (hasGuestApproved) {
-                      // 관리자가 고객 취소를 승인한 경우 (AI_RESPONSE 없음 → 여기서 안내)
-                      content = '요청하신 취소가 정상 처리되었습니다.';
-                    }
-                    // SUCCESS / PENDING 은 AI_RESPONSE 핸들러에서 이미 메시지를 표시하므로 생략
-
-                    if (!content) return prev;
-
-                    return [...prev, {
-                      id: msgId,
-                      variant: 'received',
-                      type: 'TEXT',
-                      content: content,
-                    }];
-                  });
-                }, 600); // 모든 카드가 도착한 후 렌더링되게 보장
-              }
-
-              if (payload.status === 'COMPLETED') {
-                setTimeout(() => {
-                  setMessages(prev => {
-                    const msgId = `system-feedback-${payload.requestId}`;
-                    if (prev.some(m => m.id === msgId)) return prev;
-                    // Remove the original RequestCard for this requestId
-                    const filtered = prev.filter(m =>
-                      !(m.type === 'REQUEST_CARD' && m.meta?.requestId === payload.requestId)
-                    );
-                    return [...filtered, {
-                      id: msgId,
-                      variant: 'received',
-                      type: 'FEEDBACK',
-                      content: '',
-                      meta: {
-                        requestId: payload.requestId,
-                        summary: payload.summary || '',
-                        domainCode: payload.domainCode || '',
-                        completedAt: new Date().toISOString()
-                      }
-                    }];
-                  });
-                }, 1000);
-              }
-
-              // CANCEL_REJECTED 처리: 제네릭 메시지 대신 관리자가 입력한 반려 사유가
-              // STAFF_MESSAGE로 별도 전송되므로, 여기서는 시스템 메시지를 생략합니다.
-              // (반려 사유가 없는 경우에만 기본 안내 표시)
-              if (payload.type === 'CANCEL_REJECTED') {
-                // 반려 사유(STAFF_MESSAGE)가 0.5초 내로 도착하지 않으면 기본 메시지 표시
-                const rejectFallbackTimer = setTimeout(() => {
-                  setMessages(prev => {
-                    // 이미 STAFF_MESSAGE로 반려 사유가 도착했는지 확인
-                    const hasRejectReason = prev.some(m =>
-                      m.type === 'TEXT' && m.content?.includes('[취소 반려]')
-                      && prev.indexOf(m) > prev.length - 5 // 최근 5개 메시지 내
-                    );
-                    if (hasRejectReason) return prev;
-
-                    // 버그 수정: 타임스탬프를 추가하여 식별자 중복으로 인한 증발 현상 방지
-                    const msgId = `system-cancel-reject-${payload.requestId}-${Date.now()}`;
-                    if (prev.some(m => m.id === msgId)) return prev;
-                    return [...prev, {
-                      id: msgId,
-                      variant: 'received',
-                      type: 'TEXT',
-                      content: '안내: 요청하신 사항은 이미 진행 중이어서 취소가 어렵습니다. 추가적인 문의사항은 프론트로 연락 부탁드립니다.',
-                    }];
-                  });
-                }, 800);
-              }
-            } else if (payload.type === 'GRACE_EXPIRED') {
-              // Hide the buttons on the specific card by forcing graceRemaining to 0
-              setMessages(prev => {
-                const existingIdx = prev.findIndex(m => m.id === `request-${payload.requestId}` || m.meta?.requestId === payload.requestId);
-                if (existingIdx >= 0) {
-                  const updated = [...prev];
-                  updated[existingIdx] = {
-                    ...updated[existingIdx],
-                    meta: {
-                      ...updated[existingIdx].meta,
-                      graceRemaining: 0
-                    }
-                  };
-                  return updated;
-                }
-                return prev;
-              });
-            }
+            };
+            return updated;
+          }
+          return prev;
+        });
+      }
     });
 
     return () => unsubscribe();
@@ -583,10 +583,10 @@ export function useChat() {
     const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF]/.test(text);
     const hasChinese = /[\u4E00-\u9FFF]/.test(text);
     const hasEnglish = /[a-zA-Z]/.test(text);
-    
+
     const currentLanguage = useUiStore.getState().language;
     let detectedChatLang = currentLanguage; // Default to CURRENT language
-    
+
     if (hasKorean) detectedChatLang = 'ko';
     else if (hasJapanese) detectedChatLang = 'ja';
     else if (hasChinese) detectedChatLang = 'zh';
@@ -619,49 +619,16 @@ export function useChat() {
     }
 
     const tempId = `temp-${Date.now()}`;
-    const newUserMsg: ChatMessage = { 
-      id: tempId, 
-      variant: 'sent', 
+    const newUserMsg: ChatMessage = {
+      id: tempId,
+      variant: 'sent',
       content: text,
-      imageUrl: base64Image 
+      imageUrl: base64Image
     };
     setMessages(prev => {
       const filtered = prev.filter(m => m.type !== 'WELCOME');
       return [...filtered, newUserMsg];
     });
-
-    // [AN-344] 긍정 반응 인터셉트: "네" 같은 확인 답변 시 AI 파이프라인을 거치지 않고
-    // 기존 PENDING 카드(graceRemaining=-1)를 직접 승인하여 중복 카드 생성 방지
-    const positiveWords = new Set([
-      '네', '응', '어', '오케이', 'ok', 'yes', 'y', '확인', '진행', '주문해줘', '주문',
-      '그래', '진행해줘', '접수해줘', '접수', 'sure', 'confirm', '좋아', '좋아요', '하자'
-    ]);
-    const cleanText = text.trim().replace(/[!.?,]/g, '').toLowerCase();
-    const isPositive = positiveWords.has(cleanText);
-
-    if (isPositive) {
-      // 현재 채팅에서 graceRemaining=-1인 PENDING 카드(FB/CONCIERGE 확인 대기)를 역순으로 찾음
-      let pendingRequestId: number | null = null;
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const m = messages[i];
-        if (
-          m.type === 'REQUEST_CARD'
-          && m.meta?.status === 'PENDING'
-          && m.meta?.graceRemaining === -1
-          && (m.meta?.domainCode === 'FB' || m.meta?.domainCode === 'CONCIERGE')
-          && m.meta?.requestId
-        ) {
-          pendingRequestId = m.meta.requestId as number;
-          break;
-        }
-      }
-      if (pendingRequestId) {
-        // AI를 거치지 않고 바로 백엔드 confirm API 호출
-        confirmRequest(pendingRequestId);
-        setIsTyping(false);
-        return;
-      }
-    }
 
     setIsTyping(true);
 
@@ -670,10 +637,10 @@ export function useChat() {
     try {
       const formData = new FormData();
       formData.append('content', text);
-      
+
       // 언어 정보 (감지된 채팅 언어) 전송
       formData.append('language', detectedChatLang);
-      
+
       if (base64Image) {
         formData.append('images', base64Image);
       }
@@ -771,8 +738,8 @@ export function useChat() {
   // 7. Handle Pill Selection
   const handlePillSelect = (msgId: string, option: string) => {
     sendMessage(option);
-    setMessages(prev => prev.map(m => 
-      m.id === msgId 
+    setMessages(prev => prev.map(m =>
+      m.id === msgId
         ? { ...m, meta: { ...m.meta, selectedOption: option, pillDisabled: true } }
         : m
     ));

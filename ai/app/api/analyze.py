@@ -778,26 +778,18 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         system_language=request.language,
                         active_requests=getattr(request, 'active_requests', [])
                     )
-                    # CONFIRM인 경우: 기존 PENDING 건이 이미 있으므로 중복 생성 방지 → domain_code=None
-                    agent_action_type = agent_result.get("action_type", "ADD")
-                    if agent_action_type == "CONFIRM":
-                        effective_domain_code = None
-                    else:
-                        effective_domain_code = None if agent_result.get("missing_fields") else agent_result.get("domain_code", None)
-
                     response = {
                         "guest_reply": agent_result.get("guest_reply", primary.clarification_question or _get_static_reply("CLARIFICATION", request.language)),
                         "summary": agent_result.get("summary", primary.summary or "추가 확인 필요"),
-                        "domain_code": effective_domain_code,
+                        "domain_code": None if agent_result.get("missing_fields") else agent_result.get("domain_code", None),
                         "priority": agent_result.get("priority", "NORMAL"),
                         "entities": agent_result.get("entities", {}),
                         "confidence": agent_result.get("confidence", primary.confidence),
                         "missing_fields": agent_result.get("missing_fields", []),
                         "clarification_options": agent_result.get("clarification_options", []),
-                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음')),
-                        "action_type": agent_action_type,
+                        "reasoning": agent_result.get("reasoning", getattr(primary, 'reasoning', '알 수 없음'))
                     }
-                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문, action_type={agent_action_type})")
+                    print(f"[Analyze] ❓ CLARIFICATION → {last_agent_domain} 에이전트 재위임 (구체적 재질문)")
                     print(f"[Analyze] 응답: {response}\n")
                     final_responses.append(response)
                     continue
@@ -1445,7 +1437,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if action_type is None:
                 action_type = getattr(primary, 'action_type', None)
             
-            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE", "CONFIRM"]) and not is_escalation:
+            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
                 final_domain_code = None
             
             # 🛡️ [컨시어지 확인 질문 방어] 로직 삭제됨 (AN-344: 확인 질문과 동시에 정적 카드를 띄우기 위해 차단 해제)
@@ -1513,6 +1505,14 @@ class TranslateRequest(BaseModel):
     target_language: str
 
 @router.post("/translate-summary")
+async def translate_text(request: TranslateRequest) -> dict:
+    prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
+    translated_text = await call_gemini_async(
+        prompt=prompt,
+        system_instruction="You are a professional translator for a hotel dashboard UI. Provide exact, concise translations without formatting or conversational filler."
+    )
+    return {"translated_text": translated_text}
+
 async def translate_text(request: TranslateRequest) -> dict:
     prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
     translated_text = await call_gemini_async(

@@ -51,25 +51,6 @@ public class CreateRequestOnEventService {
         // DomainCode 파싱 (실패 시 예외 발생)
         DomainCode domainCode = DomainCode.from(event.getDomainCode());
 
-        // [AN-344] 최종 확정("CONFIRM")인 경우 기존에 대기(PENDING) 중인 룸서비스/컨시어지 건이 있다면 승인(Confirm) 처리 후 즉시 종료
-        if ("CONFIRM".equalsIgnoreCase(event.getActionType())) {
-            log.info("[CONFIRM] 최종 확정 요청 수신 — roomNo: {}, domainCode: {}", event.getRoomNo(), domainCode);
-            java.util.List<Request> cancellable = requestRepositoryPort.findAllCancellableByRoomNoAndGuestId(event.getRoomNo(), event.getGuestId());
-            java.util.Optional<Request> pendingRequest = cancellable.stream()
-                    .filter(r -> r.getDomainCode() == domainCode)
-                    .filter(r -> r.getStatus() == RequestStatus.PENDING)
-                    .findFirst();
-
-            if (pendingRequest.isPresent()) {
-                Request existing = pendingRequest.get();
-                log.info("[CONFIRM] 기존 PENDING 요청을 자동 승인(confirmEarly) 처리합니다. id: {}", existing.getId());
-                gracePeriodScheduler.confirmEarly(existing.getId(), existing.getRoomNo());
-                return;
-            } else {
-                log.warn("[CONFIRM] 기존 PENDING 요청을 찾지 못해 신규로 자동 승인 등록을 진행합니다.");
-            }
-        }
-
         boolean forceEscalate = false;
         // [Cancel & Replace] AI가 기존 요청을 '수정(REPLACE)'하는 문맥이라고 판단했을 때만 자동 취소
         // "수건 2장 줘" → "아니 3장 줘" = REPLACE (기존 요청 취소)
