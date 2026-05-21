@@ -78,92 +78,77 @@ export default function TaskTicket({
 }: TaskTicketProps) {
   const isOnline = useNetworkStore((state) => state.isOnline);
   const { t, language } = useTranslation();
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(title, language);
-  const displaySummary = (translatedSummary || title) as string;
 
   let displayDept = department;
   let deptKey = 'front';
-
   let deptUpper = department ? department.toUpperCase() : '';
 
   if (department) {
     if (deptUpper.includes('HK') || deptUpper.includes('하우스키핑')) {
       deptKey = 'hk';
-      displayDept = t.ticketUI.department.HK;
     } else if (deptUpper.includes('FACILITY') || deptUpper.includes('시설')) {
       deptKey = 'facility';
-      displayDept = t.ticketUI.department.FACILITY;
     } else if (deptUpper.includes('FB') || deptUpper.includes('식음료')) {
       deptKey = 'fb';
-      displayDept = t.ticketUI.department.FB;
     } else if (deptUpper.includes('CONCIERGE') || deptUpper.includes('컨시어지')) {
       deptKey = 'concierge';
-      displayDept = t.ticketUI.department.CONCIERGE;
-    } else {
-      deptKey = 'front';
-      displayDept = t.ticketUI.department.FRONT;
     }
   }
 
-  // 긴급 부서(EMERGENCY)로 배정된 경우 뱃지 덮어쓰기
   if (deptUpper && (deptUpper.includes('EMERGENCY') || deptUpper.includes('긴급대응팀'))) {
     deptKey = 'emergency';
-    displayDept = t.ticketUI.department.EMERGENCY;
   }
 
-  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
-  
-  const getFixedTitle = () => {
-    if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
-      return displaySummary;
-    }
+  const rawDynamicTitle = React.useMemo(() => {
     const intent = entities?.intent as string | undefined;
-    switch (department?.toLowerCase()) {
-      case 'fb':
-        if (intent === 'DINING') return '룸서비스 음식 주문';
-        if (intent === 'AMENITY') return '객실 어메니티 요청';
-        return displaySummary;
-      case 'concierge':
-        if (intent === 'TAXI') return '택시 호출 예약';
-        if (intent === 'LUGGAGE_STORAGE') return '수하물 보관/찾기';
-        if (intent === 'RESTAURANT') return '식당 예약';
-        if (intent === 'WAKE_UP_CALL') return '모닝콜 예약';
-        if (intent === 'POSTAL_SERVICE') return '우편물 발송 대행';
-        return displaySummary;
-      case 'facility':
-      case 'hk':
-        return displaySummary;
-      default:
-        return displaySummary.split('(')[0].trim();
+    if (deptKey === 'fb') {
+      if (intent === 'DINING') return '룸서비스 음식 주문';
+      if (intent === 'AMENITY') return '객실 어메니티 요청';
+      const menuItems = entities?.menu_items as any[] | undefined;
+      if (menuItems && menuItems.length > 0) {
+        const first = menuItems[0];
+        const opt = first.selected_option ? `(${first.selected_option})` : '';
+        const qty = first.quantity ? ` ${first.quantity}개` : '';
+        const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
+        return `${first.name}${opt}${qty}${rest} 주문`;
+      }
+    } else if (deptKey === 'concierge') {
+      if (!intent || !entities) return null;
+      switch (intent) {
+        case 'TAXI':
+          return '택시 호출 예약';
+        case 'LUGGAGE_STORAGE': {
+          const count = entities.count;
+          const action = entities.action === 'store' ? '보관' : '찾기';
+          return count ? `짐 ${count}개 ${action} 요청` : `수하물 ${action} 요청`;
+        }
+        case 'RESTAURANT': return '식당 예약';
+        case 'WAKE_UP_CALL': {
+          const time = entities.time as string | undefined;
+          return time ? `${time} 모닝콜 예약` : '모닝콜 예약';
+        }
+        case 'POSTAL_SERVICE': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 발송 대행` : '우편물 발송 대행';
+        }
+        case 'DELIVERY': {
+          const item = entities.item as string | undefined;
+          return item ? `${item} 배달 요청` : '배달 요청';
+        }
+        case 'RESERVATION': {
+          const target = entities.target as string | undefined;
+          const time = entities.time as string | undefined;
+          if (target && time) return `${time} ${target} 예약`;
+          if (target) return `${target} 예약`;
+          return '예약 요청';
+        }
+      }
     }
-  };
+    return null;
+  }, [deptKey, entities]);
 
-  const displayTitle = getFixedTitle();
-
-  let timeDisplay = '';
-  if (status === 'DONE') {
-    let parsedString = createdAt;
-    const date = new Date(parsedString);
-    const hours = date.getHours();
-    const mins = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const hr = hours % 12 || 12;
-    timeDisplay = `${String(hr).padStart(2, '0')}:${mins} ${ampm}`;
-  } else if (status === 'IN_PROGRESS' && updatedAt) {
-    const relTime = getRelativeTime(updatedAt, language, t.ticketUI.time);
-    if (relTime === t.ticketUI.time.justNow) {
-      timeDisplay = t.ticketUI.time.justStarted;
-    } else {
-      timeDisplay = relTime.replace(language === 'ko' ? ' 전' : ' ago', t.ticketUI.time.elapsed);
-    }
-  } else {
-    timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
-  }
-
-  const renderDetails = () => {
+  const rawEntityDetails = React.useMemo(() => {
     if (!entities) return null;
-
-    // 심플한 요청(HK, FACILITY, EMERGENCY, FRONT)은 메인 타이틀(summary)만 보여주고 디테일은 생략
     const lowerDept = department?.toLowerCase();
     if (lowerDept === 'hk' || lowerDept === 'facility' || lowerDept === 'emergency' || lowerDept === 'front') return null;
 
@@ -208,7 +193,7 @@ export default function TaskTicket({
         parts.push(`- ${entities.item} ${entities.count ? `×${entities.count}` : ''}`.trim());
       }
       if (Array.isArray(entities.tasks)) {
-        entities.tasks.forEach((t: string) => parts.push(`- ${t}`));
+        entities.tasks.forEach((tStr: string) => parts.push(`- ${tStr}`));
       }
       if (parts.length === 0) {
         if (entities.menu) {
@@ -220,20 +205,93 @@ export default function TaskTicket({
       }
     }
     return parts.length > 0 ? parts.join('\n') : null;
+  }, [department, entities, t.ticketUI?.entityLabels]);
+
+  const sourceTitle = rawDynamicTitle || title;
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(sourceTitle, language);
+  const displaySummary = translatedSummary || sourceTitle;
+
+  const { translatedText: translatedDetails } = useTranslationApi(
+    language !== 'ko' && rawEntityDetails ? rawEntityDetails : undefined,
+    language
+  );
+  const entityDetails = language !== 'ko' && translatedDetails ? translatedDetails : rawEntityDetails;
+
+  const isManuallyReassigned = entities?.intent === 'ESCALATION' && deptKey !== 'front' && deptKey !== 'emergency';
+
+  const fallbackDescriptionRaw = React.useMemo(() => {
+    let desc = description;
+    if (isManuallyReassigned && desc) {
+      const lines = desc.split('\n').filter(l => l.trim());
+      desc = lines[lines.length - 1] || '';
+    } else if (desc && desc.includes('[주문 상세]')) {
+      desc = desc.split('[주문 상세]')[0].trim();
+    }
+    return desc;
+  }, [description, isManuallyReassigned]);
+
+  const { translatedText: translatedFallbackDesc } = useTranslationApi(
+    language !== 'ko' && fallbackDescriptionRaw ? fallbackDescriptionRaw : undefined,
+    language
+  );
+  
+  const fallbackDescription = language !== 'ko' && translatedFallbackDesc ? translatedFallbackDesc : fallbackDescriptionRaw;
+
+  if (department) {
+    if (deptKey === 'hk') displayDept = t.ticketUI.department.HK;
+    else if (deptKey === 'facility') displayDept = t.ticketUI.department.FACILITY;
+    else if (deptKey === 'fb') displayDept = t.ticketUI.department.FB;
+    else if (deptKey === 'concierge') displayDept = t.ticketUI.department.CONCIERGE;
+    else if (deptKey === 'emergency') displayDept = t.ticketUI.department.EMERGENCY;
+    else displayDept = t.ticketUI.department.FRONT;
+  }
+
+  const getFixedTitle = () => {
+    if (isTranslating || isManuallyReassigned || displaySummary.includes('프론트 연결')) {
+      return displaySummary;
+    }
+    
+    if (rawDynamicTitle) {
+      return displaySummary;
+    }
+    
+    switch (deptKey) {
+      case 'facility':
+      case 'hk':
+        return displaySummary;
+      default:
+        return displaySummary.split('(')[0].trim();
+    }
   };
 
-  const entityDetails = renderDetails();
+  const displayTitle = getFixedTitle();
 
-  let displayDescription = description;
-  if (isManuallyReassigned && displayDescription) {
-    // 수동 배정: rawText 원본에서 마지막 줄(frontdesk 이관 사유)만 추출
-    const lines = displayDescription.split('\n').filter(l => l.trim());
-    displayDescription = lines[lines.length - 1] || '';
-  } else if (status !== 'IN_PROGRESS' && entityDetails) {
+  let timeDisplay = '';
+  if (status === 'DONE') {
+    let parsedString = createdAt;
+    const date = new Date(parsedString);
+    const hours = date.getHours();
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hr = hours % 12 || 12;
+    timeDisplay = `${String(hr).padStart(2, '0')}:${mins} ${ampm}`;
+  } else if (status === 'IN_PROGRESS' && updatedAt) {
+    const relTime = getRelativeTime(updatedAt, language, t.ticketUI.time);
+    if (relTime === t.ticketUI.time.justNow) {
+      timeDisplay = t.ticketUI.time.justStarted;
+    } else {
+      timeDisplay = relTime.replace(language === 'ko' ? ' 전' : ' ago', t.ticketUI.time.elapsed);
+    }
+  } else {
+    timeDisplay = getRelativeTime(updatedAt || createdAt, language, t.ticketUI.time);
+  }
+
+
+
+  let displayDescription = fallbackDescription;
+  if (status !== 'IN_PROGRESS' && entityDetails) {
     // Override rawText with entity details for TODO/DONE
     displayDescription = entityDetails;
-  } else if (displayDescription && displayDescription.includes('[주문 상세]')) {
-    displayDescription = displayDescription.split('[주문 상세]')[0].trim();
   }
   
   if (language === 'en') {
