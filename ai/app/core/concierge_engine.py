@@ -26,7 +26,7 @@ OUTPUT:
 {"intent": "DELIVERY", "item": "개화꽃", "quantity": 10}
 """
 
-async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, active_requests: list = None, system_language: str = "ko") -> dict:
+async def run_concierge_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, active_requests: list = None, system_language: str = "ko", **kwargs) -> dict:
     """
     컨시어지 에이전트 엔진 (Step 0-2)
     ───────────────────────────
@@ -196,6 +196,12 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
     if not final_response:
         final_response = default_reply
         
+    action_type = cleaned_raw.get("action_type")
+    if action_type is None:
+        action_type = result.entities.get("action_type")
+    if action_type is None:
+        action_type = "ADD"
+
     return {
         "request_id": result.request_id if result.request_id else "REQ_TEMP",
         "room_no": room_no,
@@ -210,5 +216,6 @@ async def run_concierge_agent(user_message: str, room_no: str, chat_history: lis
         "clarification_options": getattr(result, "clarification_options", []),
         "missing_fields": getattr(result, "missing_fields", []),
         "reasoning": result.reasoning,
-        "action_type": result.entities.get("action_type", "ADD"),
+        "action_type": action_type,
     }
+
