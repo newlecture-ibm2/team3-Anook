@@ -34,8 +34,8 @@
         "operations": "운영 관리"
       },
       "menus": {
-        "dashboard": "대시보드",
-        "frontDesk": "프론트 데스크",
+        "dashboard": "운영 통계",
+        "frontDesk": "실시간 상담",
         "housekeeping": "하우스키핑",
         "fb": "식음료",
         "facility": "시설",
@@ -47,12 +47,12 @@
         "aiTraining": "새로운 지식 추가",
         "rag": "AI 지식 관리",
         "aiRouting": "AI 라우팅 로그",
-        "handover": "인수인계",
+        "handover": "인수인계 문서",
         "staffManagement": "직원 관리"
       }
     },
     "dashboard": {
-      "title": "대시보드",
+      "title": "운영 통계",
       "searchPlaceholder": "검색어를 입력하세요...",
       "filters": {
         "today": "오늘",
@@ -98,7 +98,7 @@
         "aiTraining": "새로운 지식 추가",
         "rag": "AI가 배운 지식",
         "aiRouting": "AI 라우팅 로그",
-        "handover": "인수인계"
+        "handover": "인수인계 문서"
       }
     },
     "voc": {
@@ -152,7 +152,7 @@
       "rejectConfirm": "제외"
     },
     "frontDesk": {
-      "title": "프론트 데스크",
+      "title": "실시간 상담",
       "createRequest": "+ 요청 생성",
       "tabs": {
         "unhandled": "미처리 대기",
@@ -388,7 +388,8 @@
       "cancelRequest": "요청 취소",
       "proceed": "진행",
       "urgentPrefix": "[긴급] ",
-      "cancelSuffix": " 취소"
+      "cancelSuffix": " 취소",
+      "reserveSuffix": " 예약"
     },
     "button": {
       "accept": "바로등록",
@@ -470,7 +471,7 @@
     "forwardHk": "네, 알겠습니다! 하우스키핑 팀으로 요청 내용을 신속하게 전달해 드릴게요.",
     "forwardFacility": "불편을 드려 죄송합니다. 🥲 시설관리 팀으로 내용을 전달하여 최대한 빠르게 조치해 드릴게요! 🛠️",
     "forwardConcierge": "네, 알겠습니다! 컨시어지 팀으로 요청 내용을 바로 전달해 드릴게요. 🛎️",
-    "forwardFront": "불편을 드려 대단히 죄송합니다. 🥲 지금 바로 프론트 데스크 직원에게 연결하여 도움을 드리겠습니다.",
+    "forwardFront": "지금 바로 프론트 데스크 직원에게 연결하여 도움을 드리겠습니다.",
     "infoNotFound": "그 부분은 제가 바로 답변드리기 어려워 프론트 데스크로 즉시 전달해 두었습니다! 🥲 직원이 확인 후 바로 채팅으로 안내해 드릴 예정이니 잠시만 기다려 주세요. 🙏",
     "cancelSuccess": "해당 요청이 정상적으로 취소되었습니다. 😌 다른 필요하신 사항이 있다면 언제든 말씀해 주세요!",
     "cancelPending": "해당 건은 이미 처리가 진행 중이어서 담당 부서로 취소 가능 여부를 확인 중입니다. 🏃‍♂️ 확인 후 바로 안내해 드릴게요!",

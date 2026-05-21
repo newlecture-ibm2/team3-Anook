@@ -33,7 +33,7 @@ export default function ApproveCancellationModal({
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="sm">
+      <ModalCard size="sm" onClose={onClose}>
         <div className={styles.textWrapper}>
           <h2 className={styles.title}>취소 승인</h2>
           <p className={styles.subtitle}>이 요청의 취소를 승인하시겠습니까? 요청이 즉시 취소 처리됩니다.</p>

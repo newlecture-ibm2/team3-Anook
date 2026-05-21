@@ -98,7 +98,7 @@ export default function RegisterTrainingModal({
   if (step === 'select') {
     return (
       <ModalOverlay isOpen={isOpen} onClose={onClose}>
-        <ModalCard size="md">
+        <ModalCard size="md" onClose={onClose}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>학습할 상담 내용 선택</h2>
             <p style={{ fontSize: '14px', color: 'var(--color-gray-500)' }}>

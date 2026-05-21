@@ -41,6 +41,7 @@ class AnalyzeRequest(BaseModel):
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
     active_requests: Optional[List[dict]] = []
+    room_inventory: Optional[Dict[str, int]] = {}
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -667,7 +668,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     chat_history=request.chat_history,
                     images=request.images,
                     system_language=request.language,
-                    active_requests=getattr(request, 'active_requests', [])
+                    active_requests=getattr(request, 'active_requests', []),
+                    room_inventory=getattr(request, 'room_inventory', {})
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -1333,7 +1335,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
         # STEP 3-f2: BILLING_INQUIRY → 가상 PMS 비용 조회
         if primary.route_type == "BILLING_INQUIRY":
             from app.domains.billing.service import fetch_billing_summary
-            from app.prompts.billing_prompt import build_billing_prompt
+            from app.prompts.billing_prompt import build_billing_prompt, BILLING_SYSTEM_PROMPT
 
             entities = getattr(primary, 'entities', {}) or {}
             target_category = entities.get("category") if isinstance(entities, dict) else None
@@ -1349,9 +1351,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     guest_reply = guest_reply_ko if request.language == "ko" else guest_reply_en
                 else:
                     prompt_text = build_billing_prompt(billing_data, request.language)
+                    sys_inst = BILLING_SYSTEM_PROMPT + '\n반드시 {"reply": "응답 내용"} 형식의 JSON으로만 출력하세요.'
                     raw = await call_gemini_async(
                         prompt=prompt_text,
-                        system_instruction='당신은 호텔 AI 컨시어지입니다. 아래 비용 내역을 자연스러운 문장으로 고객에게 안내하세요. 반드시 {"reply": "응답 내용"} 형식의 JSON으로만 출력하세요.'
+                        system_instruction=sys_inst
                     )
                     if isinstance(raw, dict):
                         guest_reply = raw.get("reply") or raw.get("text") or prompt_text
@@ -1405,6 +1408,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
 
+
+
+
+
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
     # ──────────────────────────────────────────────
@@ -1436,7 +1443,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             if action_type is None:
                 action_type = getattr(primary, 'action_type', None)
             
-            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE"]) and not is_escalation:
+            if (agent_result.get("missing_fields") or action_type not in ["ADD", "REPLACE", "ADD_DUPLICATE"]) and not is_escalation:
                 final_domain_code = None
             
             # 🛡️ [컨시어지 확인 질문 방어] 로직 삭제됨 (AN-344: 확인 질문과 동시에 정적 카드를 띄우기 위해 차단 해제)
@@ -1475,6 +1482,14 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 response["target_keyword"] = agent_result["target_keyword"]
             elif hasattr(primary, 'target_keyword') and primary.target_keyword:
                 response["target_keyword"] = primary.target_keyword
+
+            # [Target Request ID Targeting] 중복 대상 요청 ID 전달
+            if "target_request_id" in agent_result.get("entities", {}):
+                response["target_request_id"] = agent_result["entities"]["target_request_id"]
+            elif "target_request_id" in agent_result:
+                response["target_request_id"] = agent_result["target_request_id"]
+            elif hasattr(primary, 'target_request_id') and getattr(primary, 'target_request_id', None):
+                response["target_request_id"] = getattr(primary, 'target_request_id', None)
                 
             print(f"[Analyze] ✅ {domain} 에이전트 병렬 처리 완료")
             print(f"[Analyze] 응답: {response}\n")
@@ -1504,6 +1519,14 @@ class TranslateRequest(BaseModel):
     target_language: str
 
 @router.post("/translate-summary")
+async def translate_text(request: TranslateRequest) -> dict:
+    prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
+    translated_text = await call_gemini_async(
+        prompt=prompt,
+        system_instruction="You are a professional translator for a hotel dashboard UI. Provide exact, concise translations without formatting or conversational filler."
+    )
+    return {"translated_text": translated_text}
+
 async def translate_text(request: TranslateRequest) -> dict:
     prompt = f"Translate the following hotel dashboard summary into {request.target_language}. Keep it extremely concise, like a short title or noun phrase (e.g., 'Request for 2 towels' instead of 'I would like to request 2 towels'). Respond ONLY with the translated text.\n\nText: {request.text}"
     translated_text = await call_gemini_async(

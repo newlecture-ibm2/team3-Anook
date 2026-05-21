@@ -10,6 +10,7 @@ public record GetPmsMenuResult(
         Long id,
         String name,
         int price,
+        Double priceUsd,
         String category,
         String allergens,
         List<MenuOptionGroup> options,

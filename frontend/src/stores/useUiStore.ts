@@ -7,6 +7,10 @@ interface UiState {
   activeModal: string | null;
   activeTab: string;
 
+  // Notification badge
+  hasNewFrontdeskMessage: boolean;
+  setHasNewFrontdeskMessage: (val: boolean) => void;
+
   // Toast properties
   isToastOpen: boolean;
   toastMessage: string;
@@ -34,9 +38,12 @@ export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       isSidebarOpen: false,
-      isSidebarCollapsed: false,
+      isSidebarCollapsed: true,
       activeModal: null,
       activeTab: 'all',
+
+      hasNewFrontdeskMessage: false,
+      setHasNewFrontdeskMessage: (val) => set({ hasNewFrontdeskMessage: val }),
 
       isToastOpen: false,
       toastMessage: '',

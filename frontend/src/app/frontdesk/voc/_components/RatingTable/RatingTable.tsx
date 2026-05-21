@@ -37,18 +37,6 @@ function formatDate(dateString: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function calcDuration(createdAt: string, updatedAt: string) {
-  const start = new Date(createdAt).getTime();
-  const end = new Date(updatedAt).getTime();
-  const diffMs = end - start;
-  if (diffMs <= 0) return '-';
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return '1분 미만';
-  if (mins < 60) return `${mins}분`;
-  const hours = Math.floor(mins / 60);
-  return `${hours}시간 ${mins % 60}분`;
-}
-
 export default function RatingTable({ ratings, loading, averageRating }: RatingTableProps) {
   if (loading) {
     return <div className={styles.emptyState}>로딩 중...</div>;
@@ -83,22 +71,19 @@ export default function RatingTable({ ratings, loading, averageRating }: RatingT
         ) : (
           ratings.map((item) => (
             <TableRow key={item.requestId}>
-              <TableCell>
+              <TableCell label="객실">
                 <span className={styles.roomBadge}>{item.roomNo}</span>
               </TableCell>
-              <TableCell>
+              <TableCell label="상담 내용">
                 <span className={styles.summaryText}>{item.summary || '-'}</span>
               </TableCell>
-              <TableCell>
+              <TableCell label="상담 직원">
                 <span className={styles.staffName}>{item.staffName}</span>
               </TableCell>
-              <TableCell>
-                <div className={styles.ratingCell}>
-                  <StarDisplay rating={item.rating} />
-                  <span className={styles.durationText}>{calcDuration(item.createdAt, item.updatedAt)}</span>
-                </div>
+              <TableCell label="별점">
+                <span className={styles.ratingText}>{item.rating}/5</span>
               </TableCell>
-              <TableCell>
+              <TableCell label="상담 일시">
                 <span className={styles.dateText}>{formatDate(item.createdAt)}</span>
               </TableCell>
             </TableRow>

@@ -15,17 +15,15 @@ export default function VocPage() {
   const { t } = useTranslation();
   const { vocList, loading, error, refetch } = useVocList();
   const { ratings, loading: ratingsLoading, averageRating } = useRatingList();
-  const [filter, setFilter] = useState<FilterType>('ALL');
+  const [filter, setFilter] = useState<FilterType>('POSITIVE');
 
   const FILTER_OPTIONS = [
-    { value: 'ALL', label: t.frontdeskPage.voc.filterAll },
     { value: 'POSITIVE', label: t.frontdeskPage.voc.filterPositive },
     { value: 'NEGATIVE', label: t.frontdeskPage.voc.filterNegative },
     { value: 'RATING', label: t.frontdeskPage.voc.filterRating },
   ];
 
   const filteredVocs = useMemo(() => {
-    if (filter === 'ALL') return vocList;
     if (filter === 'RATING') return []; // 별점 탭에서는 VOC 목록 안 씀
     return vocList.filter(voc => voc.sentiment === filter);
   }, [vocList, filter]);
@@ -55,7 +53,7 @@ export default function VocPage() {
         <Tabs
           options={FILTER_OPTIONS}
           activeValue={filter}
-          onChange={(val) => setFilter((val || 'ALL') as FilterType)}
+          onChange={(val) => setFilter((val || 'POSITIVE') as FilterType)}
           variant="pill"
         />
       </div>

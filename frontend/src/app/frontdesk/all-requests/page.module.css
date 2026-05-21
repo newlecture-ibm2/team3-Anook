@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-32); /* 컴포넌트 간 간격 */
+  gap: var(--space-16); /* 컴포넌트 간 간격 */
   flex: 1;
   min-height: 0;
   box-sizing: border-box;
@@ -26,7 +26,7 @@
 }
 
 .title {
-  font: var(--text-h1-bold);
+  font: var(--text-h2-bold);
   color: var(--color-gray-900);
   margin: 0;
 }
@@ -49,4 +49,69 @@
   display: flex;
   flex-direction: column;
   min-height: 0; /* 내부 컬럼별 스크롤 허용 */
+}
+
+.mobileTabs {
+  display: none;
+}
+
+.mobileHidden {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: var(--space-16) !important;
+    gap: var(--space-16) !important;
+  }
+
+  .header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-16) !important;
+  }
+
+  .headerActions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .mobileTabs {
+    display: block !important;
+  }
+
+  .mobileHidden {
+    display: none !important;
+  }
+
+  .board {
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  .columnWrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .searchBarWrapper {
+    width: 100% !important;
+  }
+
+  .searchInputContainer {
+    width: 100% !important;
+    flex: 1 !important;
+  }
+}
+
+.searchBarWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: auto;
+}
+
+.searchInputContainer {
+  width: 240px;
 }

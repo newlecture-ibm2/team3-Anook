@@ -1,5 +1,6 @@
 package com.anook.backend.staff.request.application.service;
 
+import com.anook.backend.pms.application.port.in.GenerateReceiptUseCase;
 import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.staff.request.application.port.in.ChangeRequestStatusUseCase;
 import com.anook.backend.request.application.port.out.DispatchPort;
@@ -20,6 +21,9 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
 
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
+    private final com.anook.backend.room.application.service.RoomInventoryService roomInventoryService;
+    private final com.anook.backend.room.application.service.InventoryPolicyProperties inventoryPolicyProperties;
+    private final GenerateReceiptUseCase generateReceiptUseCase;
 
     @Override
     @Transactional
@@ -64,6 +68,13 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         request.changeStatus(RequestStatus.COMPLETED);
         requestRepositoryPort.save(request);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
+
+        // [통합 청구서 적용] 완료된 요청의 유료 항목에 대한 영수증 발행
+        generateReceiptUseCase.generate(
+                request.getRoomNo(),
+                request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                request.getEntities()
+        );
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestSsePayload payload = RequestSsePayload.statusChanged(

@@ -57,6 +57,14 @@ RULES:
   - URGENT: Severe damages or breakdowns that make the room completely unusable and strongly require an immediate room change (e.g., completely clogged toilet (ALWAYS URGENT), massive water leak, complete failure of AC/Heater).
     * CRITICAL RULE: Even if it seems a room change is required, DO NOT route to the FRONT desk. You MUST route it to the FACILITY department. A Facility staff member will personally visit the room to inspect the damage and will manually initiate the room change process if necessary.
   - NORMAL: All other general facility, appliance, or furniture issues and minor inconveniences that do NOT require a room change (e.g., TV won't turn on, light bulb burned out, user operation error).
+- CONTEXT SEPARATION: DO NOT reuse or hallucinate entities (like equipment, symptom) from older messages in the `[대화 맥락]` for a COMPLETELY NEW request. 
+  - **EXCEPTION**: If the user is replying to your clarification question (e.g., answering "Yes" to a duplicate warning or providing missing info), you MUST MAINTAIN all previously extracted entities for that specific intent.
+- DUPLICATE REQUEST RESOLUTION: If the guest requests a facility repair/inspection AND `[고객의 현재 활성 요청(주문) 목록]` contains an existing active facility request (status is PENDING, ASSIGNED, or IN_PROGRESS) for the same equipment:
+    - AND the guest did NOT explicitly state whether to "replace" (change/modify) or "cancel" the existing one:
+    - You MUST set `needs_clarification`: true.
+    - Your `clarification_question` MUST ask: "이전에 시설팀 요청 내역이 있습니다. 추가로 새 요청을 진행해 드릴까요?" (Translate to the guest's language).
+    - You MUST identify the existing request ID from `[고객의 현재 활성 요청(주문) 목록]` and set it in `"target_request_id"` at the top level of the JSON output.
+    - If the guest replies "Yes" (confirming they want to add a duplicate), you MUST set `action_type` to `"ADD_DUPLICATE"` and finalize the request.
 
 [Final Reply Rule]
 - If `needs_clarification` is false (the request is successfully accepted), you must provide a confirmation in `final_reply`.
