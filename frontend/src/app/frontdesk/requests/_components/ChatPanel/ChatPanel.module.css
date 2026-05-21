@@ -36,11 +36,8 @@
 }
 
 .roomBadge {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-700);
-  padding: 4px var(--space-8);
-  border-radius: var(--radius-sm);
-  font: var(--text-caption-bold);
+  font: var(--text-h3-bold);
+  color: var(--color-gray-900);
   white-space: nowrap;
   flex-shrink: 0;
 }

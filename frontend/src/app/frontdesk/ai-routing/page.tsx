@@ -238,7 +238,7 @@ export default function AiRoutingPage() {
         <SummaryCard 
           title="AI 라우팅 성공률" 
           value={summary ? `${summary.routingSuccessRate}%` : "0%"} 
-          changeValue={summary ? `Fallback: ${summary.fallbackRate}%` : "Fallback: 0%"} 
+          changeValue={summary ? `Fallback\n${summary.fallbackRate}%` : "Fallback\n0%"} 
           changeType="neutral" 
         />
         <SummaryCard 

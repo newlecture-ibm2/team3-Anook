@@ -81,7 +81,7 @@ export default function InputField({
     return (
       <div className={`${styles.searchContainer} ${className}`.trim()}>
         <div className={styles.searchIconWrapper}>
-          <SearchIcon />
+          <SearchIcon width={18} height={18} />
         </div>
         <input 
           ref={inputRef}

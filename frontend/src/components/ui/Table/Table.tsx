@@ -3,13 +3,14 @@ import styles from './Table.module.css';
 
 interface TableProps {
   columns: string; // e.g. "1fr 120px 120px 88px 88px"
+  responsiveVariant?: 'inline' | 'stacked';
   children: React.ReactNode;
 }
 
-export const Table = ({ columns, children }: TableProps) => {
+export const Table = ({ columns, responsiveVariant = 'inline', children }: TableProps) => {
   return (
     <div
-      className={styles.tableContainer}
+      className={`${styles.tableContainer} ${styles[responsiveVariant]}`}
       style={{ '--table-columns': columns } as React.CSSProperties}
     >
       {children}

@@ -38,16 +38,28 @@
   margin-left: var(--space-4);
 }
 
-.todo {
-  /* 대기 중 */
+.todo .header {
+  border-bottom-color: var(--color-gray-900);
 }
 
-.inProgress {
-  /* 진행 중 */
+.todo .title {
+  color: var(--color-gray-900);
 }
 
-.done {
-  /* 완료됨 */
+.inProgress .header {
+  border-bottom-color: var(--color-gray-700);
+}
+
+.inProgress .title {
+  color: var(--color-gray-700);
+}
+
+.done .header {
+  border-bottom-color: var(--color-gray-500);
+}
+
+.done .title {
+  color: var(--color-gray-500);
 }
 
 .content {

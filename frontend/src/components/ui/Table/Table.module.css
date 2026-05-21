@@ -67,7 +67,8 @@
     margin-bottom: var(--space-12) !important;
   }
 
-  .rowItem {
+  /* --- INLINE VARIANT (Default) --- */
+  .tableContainer.inline .rowItem {
     display: flex !important;
     align-items: flex-start !important;
     justify-content: space-between !important;
@@ -79,7 +80,7 @@
     text-align: right !important;
   }
 
-  .rowItem::before {
+  .tableContainer.inline .rowItem::before {
     content: attr(data-label);
     font-weight: bold;
     color: var(--color-gray-500);
@@ -89,8 +90,36 @@
     text-align: left !important;
   }
 
-  .rowItem > * {
+  .tableContainer.inline .rowItem > * {
     margin-left: auto !important;
     text-align: right !important;
+  }
+
+  /* --- STACKED VARIANT --- */
+  .tableContainer.stacked .rowItem {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: var(--space-4) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .tableContainer.stacked .rowItem::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    text-align: left !important;
+  }
+
+  .tableContainer.stacked .rowItem > * {
+    margin-left: 0 !important;
+    text-align: left !important;
   }
 }

@@ -87,57 +87,64 @@ export default function ChatHistoryPage() {
       <div className={styles.splitLayout}>
         {/* Left Pane: Room List */}
         <div className={`${styles.leftPane} ${mobileView !== 'list' ? styles.mobileHidden : ''}`}>
-          {/* Room Search Bar */}
-          <div style={{ marginBottom: 'var(--space-8)' }}>
-            <InputField
-              variant="search"
-              placeholder="객실 번호 검색..."
-              value={roomSearchValue}
-              onChange={(e) => setRoomSearchValue(e.target.value)}
-            />
-          </div>
-          {/* Date picker */}
-          <div style={{ marginBottom: 'var(--space-16)' }}>
-            <input
-              type="date"
-              style={{
-                padding: 'var(--space-8) var(--space-12)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--color-gray-200)',
-                font: 'var(--text-body-regular)',
-                color: 'var(--color-gray-700)',
-                width: '100%',
-              }}
-              value={targetDate}
-              onChange={(e) => setTargetDate(e.target.value)}
-            />
-          </div>
-
-          {loadingRooms ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
-          ) : error ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
-          ) : filteredRooms.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>채팅 내역이 없습니다</div>
-          ) : (
-            <div className={styles.cardGrid}>
-              {filteredRooms.map(room => (
-                <RequestCard
-                  key={room.roomNo}
-                  roomNumber={room.roomNo}
-                  title={t.frontdeskPage.chatHistory?.roomConversation?.replace('{{room}}', room.roomNo) || `${room.roomNo}호 대화`}
-                  description={room.lastMessage || t.frontdeskPage.chatHistory?.emptyMessage || '메시지 없음'}
-                  createdAt={room.lastMessageAt || ''}
-                  isSelected={selectedRoom === room.roomNo}
-                  onCardClick={() => {
-                    selectRoom(room.roomNo);
-                    setRoomSearchValue('');
-                    setMobileView('chat');
-                  }}
-                />
-              ))}
+          <div className={styles.leftPaneHeader}>
+            <div className={styles.leftPaneHeaderLeft}>
+              <h1 className={styles.leftPaneTitle}>{t.frontdeskPage.sidebar.menus.chatHistory}</h1>
             </div>
-          )}
+          </div>
+          <div className={styles.leftPaneContent}>
+            {/* Room Search Bar */}
+            <div style={{ marginBottom: 'var(--space-16)' }}>
+              <InputField
+                variant="search"
+                placeholder="객실 번호 검색..."
+                value={roomSearchValue}
+                onChange={(e) => setRoomSearchValue(e.target.value)}
+              />
+            </div>
+            {/* Date picker */}
+            <div style={{ marginBottom: 'var(--space-16)' }}>
+              <input
+                type="date"
+                style={{
+                  padding: 'var(--space-8) var(--space-12)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-gray-200)',
+                  font: 'var(--text-body-regular)',
+                  color: 'var(--color-gray-700)',
+                  width: '100%',
+                }}
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+              />
+            </div>
+
+            {loadingRooms ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.loading}</div>
+            ) : error ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>{t.common.error}: {error}</div>
+            ) : filteredRooms.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-gray-400)' }}>채팅 내역이 없습니다</div>
+            ) : (
+              <div className={styles.cardGrid}>
+                {filteredRooms.map(room => (
+                  <RequestCard
+                    key={room.roomNo}
+                    roomNumber={room.roomNo}
+                    title={t.frontdeskPage.chatHistory?.roomConversation?.replace('{{room}}', room.roomNo) || `${room.roomNo}호 대화`}
+                    description={room.lastMessage || t.frontdeskPage.chatHistory?.emptyMessage || '메시지 없음'}
+                    createdAt={room.lastMessageAt || ''}
+                    isSelected={selectedRoom === room.roomNo}
+                    onCardClick={() => {
+                      selectRoom(room.roomNo);
+                      setRoomSearchValue('');
+                      setMobileView('chat');
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Pane: Chat Panel */}
@@ -146,7 +153,7 @@ export default function ChatHistoryPage() {
             <ChatPanel
               roomNumber={selectedRoom}
               status="COMPLETED"
-              summary={t.frontdeskPage.chatHistory?.roomChatRecord?.replace('{{room}}', selectedRoom) || `${selectedRoom}호 채팅 기록`}
+              summary={t.frontdeskPage.chatHistory?.fullLog || '전체 대화 로그'}
               onClose={() => {}}
               headerRightContent={headerRight}
               showSearch={true}

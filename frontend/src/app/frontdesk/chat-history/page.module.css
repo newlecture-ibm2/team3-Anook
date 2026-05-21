@@ -42,9 +42,45 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--color-gray-200);
+  overflow: hidden;
+  background-color: var(--color-white);
+}
+
+.leftPaneContent {
+  flex: 1;
   overflow-y: auto;
   padding: var(--space-24);
+  display: flex;
+  flex-direction: column;
+}
+
+.leftPaneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  padding: 0 var(--space-24);
+  border-bottom: 1px solid var(--color-gray-200);
   background-color: var(--color-white);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.leftPaneHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  flex: 1;
+  min-width: 0;
+}
+
+.leftPaneTitle {
+  font: var(--text-h2-bold) !important;
+  color: var(--color-gray-900);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rightPane {

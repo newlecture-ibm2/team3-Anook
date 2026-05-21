@@ -1,16 +1,18 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-32); /* 섹션 간격 (카드형 그리드) */
-  padding: var(--space-48) var(--space-32); /* 상하 전체 48px, 좌우 전체 32px */
+  gap: var(--space-32);
   flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--space-24);
   overflow-y: auto;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .subtitle {

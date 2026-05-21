@@ -345,9 +345,9 @@ export default function FrontDeskPage() {
       <div className={styles.splitLayout}>
         {/* Left Pane: Request List */}
         <div className={`${styles.leftPane} ${mobileView !== 'list' ? styles.mobileHidden : ''}`}>
-          <div className={styles.header}>
-            <div className={styles.headerLeft}>
-              <h1 className={styles.title}>{t.frontdeskPage.sidebar.menus.frontDesk}</h1>
+          <div className={styles.leftPaneHeader}>
+            <div className={styles.leftPaneHeaderLeft}>
+              <h1 className={styles.leftPaneTitle}>{t.frontdeskPage.sidebar.menus.frontDesk}</h1>
             </div>
           </div>
           <div className={styles.leftPaneContent}>

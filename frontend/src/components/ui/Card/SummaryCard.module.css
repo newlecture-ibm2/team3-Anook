@@ -69,6 +69,8 @@
 .change {
   font: var(--text-body-bold);
   margin-bottom: 2px;
+  white-space: pre-wrap;
+  text-align: right;
 }
 
 .change.positive {
