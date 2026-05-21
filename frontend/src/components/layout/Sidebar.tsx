@@ -6,8 +6,10 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import styles from './Sidebar.module.css';
 import { useTranslation } from '@/app/useTranslation';
 import { useUiStore } from '@/stores/useUiStore';
+import { useSSE } from '@/app/useSSE';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import Logo from '@/components/ui/Logo';
+import { DashboardIcon } from '@/components/icons';
 
 import {
   LayoutDashboard,
@@ -46,10 +48,11 @@ interface SidebarItemProps {
   isActive?: boolean;
   isDanger?: boolean;
   isCollapsed?: boolean;
+  hasBadge?: boolean;
   onClick?: (e: React.MouseEvent, href: string) => void;
 }
 
-function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = false, isCollapsed = false, onClick }: SidebarItemProps) {
+function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = false, isCollapsed = false, hasBadge = false, onClick }: SidebarItemProps) {
   let itemStyle = styles.default;
   if (isActive) {
     itemStyle = styles.selected;
@@ -64,7 +67,7 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
       className={`${styles.item} ${itemStyle} ${isCollapsed ? styles.itemCollapsed : ''}`}
       onClick={(e) => onClick && onClick(e, href)}
       onMouseEnter={(e) => {
-        if (isCollapsed) {
+        if (isCollapsed && typeof window !== 'undefined' && window.innerWidth > 768) {
           const rect = e.currentTarget.getBoundingClientRect();
           // window.dispatchEvent to notify Sidebar of hover
           window.dispatchEvent(new CustomEvent('sidebar-hover', { detail: { label, top: rect.top + rect.height / 2, left: rect.right + 8 } }));
@@ -76,8 +79,15 @@ function SidebarItem({ icon: Icon, label, href, isActive = false, isDanger = fal
         }
       }}
     >
-      <Icon className={styles.icon} />
-      {!isCollapsed && <span className={styles.label}>{label}</span>}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <Icon className={styles.icon} />
+        {hasBadge && (
+          <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', backgroundColor: 'var(--color-error)', borderRadius: '50%' }} />
+        )}
+      </div>
+      <span className={styles.label}>
+        {label}
+      </span>
     </Link>
   );
 }
@@ -89,14 +99,38 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
   const fullPathname = searchString ? `${actualPathname}?${searchString}` : actualPathname;
   const pathname = fakePathname || fullPathname;
   const { t } = useTranslation();
-  const { isSidebarCollapsed, toggleCollapse } = useUiStore();
+  const { isSidebarCollapsed, toggleCollapse, hasNewFrontdeskMessage, setHasNewFrontdeskMessage } = useUiStore();
   const [tooltip, setTooltip] = React.useState<{ label: string; top: number; left: number } | null>(null);
+  const { subscribe } = useSSE();
+
+  // Clear red dot if on the requests page
+  React.useEffect(() => {
+    if (pathname === '/frontdesk/requests' && hasNewFrontdeskMessage) {
+      setHasNewFrontdeskMessage(false);
+    }
+  }, [pathname, hasNewFrontdeskMessage, setHasNewFrontdeskMessage]);
 
   React.useEffect(() => {
     const handleHover = (e: any) => setTooltip(e.detail);
     window.addEventListener('sidebar-hover', handleHover);
     return () => window.removeEventListener('sidebar-hover', handleHover);
   }, []);
+
+  // Global listener for new messages
+  React.useEffect(() => {
+    if (role !== 'frontdesk') return;
+
+    const unsubscribe = subscribe('/topic/frontdesk', (data: any) => {
+      // If we receive a new guest message and we're not on the requests page
+      if (data?.type === 'GUEST_MESSAGE' || data?.type === 'NEW_REQUEST') {
+        if (pathname !== '/frontdesk/requests') {
+          setHasNewFrontdeskMessage(true);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [subscribe, role, pathname, setHasNewFrontdeskMessage]);
 
   // 부서별 (하우스키핑, 식음료, 시설, 컨시어지) 메뉴 리스트
   const deptMenus = [
@@ -113,7 +147,6 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
     {
       category: '',
       items: [
-        { label: t.frontdeskPage.sidebar.menus.dashboard, href: '/frontdesk/dashboard', icon: LayoutDashboard },
         { label: t.frontdeskPage.sidebar.menus.frontDesk, href: '/frontdesk/requests', icon: Monitor },
         { label: t.frontdeskPage.sidebar.menus.housekeeping, href: '/frontdesk/housekeeping', icon: Home },
         { label: t.frontdeskPage.sidebar.menus.fb, href: '/frontdesk/fb', icon: Utensils },
@@ -139,6 +172,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
     {
       category: t.frontdeskPage.sidebar.categories.operations,
       items: [
+        { label: t.frontdeskPage.sidebar.menus.dashboard, href: '/frontdesk/dashboard', icon: DashboardIcon },
         { label: t.frontdeskPage.sidebar.menus.handover, href: '/frontdesk/handover', icon: FileText },
         { label: t.frontdeskPage.sidebar.menus.staffManagement, href: '/frontdesk/staff-management', icon: Users },
       ]
@@ -165,11 +199,9 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
     >
       {/* Logo + Collapse Toggle */}
       <div className={styles.logoRow}>
-        {!isSidebarCollapsed && (
-          <Link href="/" className={styles.logoLink}>
-            <Logo color="var(--color-primary)" />
-          </Link>
-        )}
+        <Link href="/" className={`${styles.logoLink} ${isSidebarCollapsed ? styles.logoCollapsed : ''}`}>
+          <img src="/icon.png" alt="Anook Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+        </Link>
         <button
           className={styles.collapseBtn}
           onClick={toggleCollapse}
@@ -182,20 +214,13 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, paddingTop: 'var(--space-8)' }}>
         {menus.map((group, groupIdx) => (
           <div key={groupIdx} style={{ marginBottom: group.category ? 'var(--space-8)' : '0' }}>
-            {group.category && !isSidebarCollapsed && (
-              <h4 style={{ 
-                padding: 'var(--space-8) var(--space-24)', 
-                fontSize: '0.75rem', 
-                fontWeight: 600, 
-                color: 'var(--color-gray-500)',
-                marginTop: 'var(--space-8)',
-                marginBottom: 'var(--space-4)'
-              }}>
+            {group.category && (
+              <h4 className={`${styles.categoryHeader} ${isSidebarCollapsed ? styles.categoryCollapsed : ''}`}>
                 {group.category}
               </h4>
             )}
-            {group.category && isSidebarCollapsed && (
-              <div className={styles.collapsedDivider} />
+            {group.category && (
+              <div className={`${styles.collapsedDivider} ${isSidebarCollapsed ? '' : styles.dividerHidden}`} />
             )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {group.items.map((menu) => {
@@ -208,6 +233,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
                     href={menu.href}
                     isActive={isActive}
                     isCollapsed={isSidebarCollapsed}
+                    hasBadge={menu.href === '/frontdesk/requests' ? hasNewFrontdeskMessage : false}
                     onClick={onMenuClick}
                   />
                 );
@@ -226,7 +252,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
           className={`${styles.item} ${styles.danger} ${isSidebarCollapsed ? styles.itemCollapsed : ''}`}
           style={{ width: '100%', border: 'none', cursor: 'pointer', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
           onMouseEnter={(e) => {
-            if (isSidebarCollapsed) {
+            if (isSidebarCollapsed && typeof window !== 'undefined' && window.innerWidth > 768) {
               const rect = e.currentTarget.getBoundingClientRect();
               setTooltip({ label: t.common.logout, top: rect.top + rect.height / 2, left: rect.right + 8 });
             }
@@ -236,7 +262,7 @@ export default function Sidebar({ role = 'frontdesk', className = '', fakePathna
           }}
         >
           <LogOut className={styles.icon} />
-          {!isSidebarCollapsed && <span className={styles.label}>{t.common.logout}</span>}
+          <span className={styles.label}>{t.common.logout}</span>
         </button>
       </div>
 

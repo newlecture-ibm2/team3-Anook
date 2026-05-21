@@ -21,6 +21,8 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
 
     private final RequestRepositoryPort requestRepositoryPort;
     private final DispatchPort dispatchPort;
+    private final com.anook.backend.room.application.service.RoomInventoryService roomInventoryService;
+    private final com.anook.backend.room.application.service.InventoryPolicyProperties inventoryPolicyProperties;
     private final GenerateReceiptUseCase generateReceiptUseCase;
 
     @Override
@@ -67,14 +69,12 @@ public class ChangeRequestStatusService implements ChangeRequestStatusUseCase {
         requestRepositoryPort.save(request);
         log.info("요청 처리 완료: requestId={}, staffId={}", requestId, staffId);
 
-        // COMPLETED 상태로 변경 시 → PMS 모듈의 UseCase를 직접 호출하여 영수증 생성
-        if (request.getDomainCode() != null) {
-            generateReceiptUseCase.generate(
-                    request.getRoomNo(),
-                    request.getDomainCode().name(),
-                    request.getEntities()
-            );
-        }
+        // [통합 청구서 적용] 완료된 요청의 유료 항목에 대한 영수증 발행
+        generateReceiptUseCase.generate(
+                request.getRoomNo(),
+                request.getDomainCode() != null ? request.getDomainCode().name() : null,
+                request.getEntities()
+        );
 
         // [RQ-5] WebSocket 알림 발송 (고객 & 부서)
         RequestSsePayload payload = RequestSsePayload.statusChanged(

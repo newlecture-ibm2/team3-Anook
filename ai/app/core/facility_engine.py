@@ -33,7 +33,7 @@ def _build_guest_reply(result: HotelRequestSchema) -> str:
     return result.clarification_question if result.needs_clarification else getattr(result, "final_reply", "접수되었습니다.")
 
 
-async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
+async def run_facility_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None, **kwargs) -> dict:
     """시설관리 에이전트: 고객 메시지에서 시설/수리 관련 정보를 추출"""
     
     # 1. RAG 검색 → FACILITY 도메인 지식 (수리비, 담당자 등)
@@ -81,6 +81,12 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
     if 'equipment' in result.entities:
         result.entities['equipment'] = _normalize_equipment(result.entities['equipment'])
     
+    action_type = raw.get("action_type")
+    if action_type is None:
+        action_type = result.entities.get("action_type")
+    if action_type is None:
+        action_type = "ADD"
+
     # /analyze 응답 형태로 변환
     return {
         "guest_reply": _build_guest_reply(result),
@@ -92,7 +98,8 @@ async def run_facility_agent(user_message: str, room_no: str, chat_history: list
         "missing_fields": result.missing_fields,
         "clarification_options": getattr(result, "clarification_options", []),
         "reasoning": result.reasoning,
-        "action_type": result.entities.get("action_type") if result.entities.get("action_type") else raw.get("action_type"),
+        "action_type": action_type,
         "target_keyword": result.entities.get("target_keyword") if result.entities.get("target_keyword") else raw.get("target_keyword"),
         "target_request_id": result.target_request_id if result.target_request_id else (result.entities.get("target_request_id") if result.entities else raw.get("target_request_id")),
     }
+

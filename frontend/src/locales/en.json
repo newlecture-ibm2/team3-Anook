@@ -34,8 +34,8 @@
         "operations": "Operations"
       },
       "menus": {
-        "dashboard": "Dashboard",
-        "frontDesk": "Front Desk",
+        "dashboard": "Operations Analytics",
+        "frontDesk": "Live Chat",
         "housekeeping": "Housekeeping",
         "fb": "F&B",
         "facility": "Facility",
@@ -45,14 +45,14 @@
         "chatHistory": "Chat History",
         "voc": "Customer Feedback",
         "aiTraining": "Add New Knowledge",
-        "rag": "AI Knowledge",
+        "rag": "AI Knowledge Management",
         "aiRouting": "AI Routing Logs",
-        "handover": "Handover",
+        "handover": "Handover Document",
         "staffManagement": "Staff Management"
       }
     },
     "dashboard": {
-      "title": "Dashboard",
+      "title": "Operations Analytics",
       "searchPlaceholder": "Enter search term...",
       "filters": {
         "today": "Today",
@@ -96,9 +96,9 @@
         "emergency": "Emergency Response",
         "allRequests": "All Requests",
         "aiTraining": "Add New Knowledge",
-        "rag": "Learned Knowledge",
+        "rag": "AI Knowledge Management",
         "aiRouting": "AI Routing Logs",
-        "handover": "Handover"
+        "handover": "Handover Document"
       }
     },
     "voc": {
@@ -152,7 +152,7 @@
       "rejectConfirm": "Exclude"
     },
     "frontDesk": {
-      "title": "Front Desk",
+      "title": "Live Chat",
       "createRequest": "+ Create Request",
       "tabs": {
         "unhandled": "Pending",
@@ -389,7 +389,8 @@
       "cancelRequest": "Cancel Request",
       "proceed": "Proceed",
       "urgentPrefix": "[Urgent] ",
-      "cancelSuffix": " Cancelled"
+      "cancelSuffix": " Cancelled",
+      "reserveSuffix": " Reservation"
     },
     "button": {
       "accept": "Submit Now",
@@ -471,7 +472,7 @@
     "forwardHk": "Got it! I will forward your request to the Housekeeping team right away. 🧹",
     "forwardFacility": "We sincerely apologize for the inconvenience. 🥲 We will forward this to the Facility team to handle it as quickly as possible! 🛠️",
     "forwardConcierge": "Got it! I will forward your request to the Concierge team right away. 🛎️",
-    "forwardFront": "We sincerely apologize for the inconvenience. 🥲 We will connect you directly to the front desk right now to assist you further.",
+    "forwardFront": "We will connect you directly to the front desk right now to assist you further.",
     "infoNotFound": "I'm not quite sure about that one! 🥲 I have forwarded your question to the front desk staff. They will check and reply to you here shortly. 🙏",
     "cancelSuccess": "Your request has been successfully cancelled. 😌 Please let me know if you need anything else!",
     "cancelPending": "Your request is already being processed, so we have sent a cancellation request to the department. 🏃‍♂️ We will notify you once confirmed!",

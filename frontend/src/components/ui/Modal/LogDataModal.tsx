@@ -3,10 +3,9 @@
 import React from 'react';
 import ModalOverlay from './ModalOverlay';
 import ModalCard from './ModalCard';
-import { CancelIcon, CodeIcon } from '@/components/icons';
+import { CodeIcon } from '@/components/icons';
 import Tag from '@/components/ui/StatusBadge/StatusBadge';
 import SummaryCard from '@/components/ui/Card/SummaryCard';
-import Button from '@/components/ui/Button/Button';
 import styles from './LogDataModal.module.css';
 
 import { AiLogDetail } from '@/app/frontdesk/ai-routing/useAiLogs';
@@ -22,7 +21,7 @@ export default function LogDataModal({ isOpen, onClose, log }: LogDataModalProps
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="lg">
+      <ModalCard size="lg" onClose={onClose}>
         <div className={styles.modalContent}>
           {/* Header */}
           <div className={styles.header}>
@@ -40,9 +39,6 @@ export default function LogDataModal({ isOpen, onClose, log }: LogDataModalProps
                 </p>
               </div>
             </div>
-            <button className={styles.closeButton} onClick={onClose} aria-label="닫기">
-              <CancelIcon />
-            </button>
           </div>
 
           {/* Stats Grid */}
@@ -69,12 +65,6 @@ export default function LogDataModal({ isOpen, onClose, log }: LogDataModalProps
             </div>
           </div>
 
-          {/* Footer */}
-          <div className={styles.footer}>
-            <Button variant="primary" size="large" fullWidth onClick={onClose}>
-              분석 완료 및 닫기
-            </Button>
-          </div>
         </div>
       </ModalCard>
     </ModalOverlay>

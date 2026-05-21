@@ -81,6 +81,7 @@ export default function RequestCard({
   onModify,
   onAccept,
 }: RequestCardProps) {
+  const { t } = useTranslation();
 
   const isUrgent = priority === 'URGENT';
   const isCancelled = status === 'CANCELLED';
@@ -106,22 +107,27 @@ export default function RequestCard({
         const opt = first.selected_option ? `(${first.selected_option})` : '';
         const qty = first.quantity ? ` ${first.quantity}개` : '';
         const rest = menuItems.length > 1 ? ` 외 ${menuItems.length - 1}건` : '';
-        return `${first.name}${opt}${qty}${rest} 주문`;
+        return `${first.name}${opt}${qty}${rest}`; // Removed " 주문"
       }
     } else if (domainCode === 'CONCIERGE') {
       if (!intent || !entities) return null;
       switch (intent) {
         case 'TAXI':
-          return '택시 호출 예약';
+          return `택시 호출${t.cardUI?.message?.reserveSuffix || ' 예약'}`;
         case 'LUGGAGE_STORAGE': {
           const count = entities.count;
           const action = entities.action === 'store' ? '보관' : '찾기';
-          return count ? `짐 ${count}개 ${action} 요청` : `수하물 ${action} 요청`;
+          return count 
+            ? `짐 ${count}개 ${action}` // Removed " 요청"
+            : `수하물 ${action}`; // Removed " 요청"
         }
-        case 'RESTAURANT': return '식당 예약';
+        case 'RESTAURANT': 
+          return `식당${t.cardUI?.message?.reserveSuffix || ' 예약'}`;
         case 'WAKE_UP_CALL': {
           const time = entities.time as string | undefined;
-          return time ? `${time} 모닝콜 예약` : '모닝콜 예약';
+          return time 
+            ? `${time} 모닝콜${t.cardUI?.message?.reserveSuffix || ' 예약'}` 
+            : `모닝콜${t.cardUI?.message?.reserveSuffix || ' 예약'}`;
         }
         case 'POSTAL_SERVICE': {
           const item = entities.item as string | undefined;
@@ -129,19 +135,21 @@ export default function RequestCard({
         }
         case 'DELIVERY': {
           const item = entities.item as string | undefined;
-          return item ? `${item} 배달 요청` : '배달 요청';
+          return item 
+            ? `${item} 배달` // Removed " 요청"
+            : `배달`; // Removed " 요청"
         }
         case 'RESERVATION': {
           const target = entities.target as string | undefined;
           const time = entities.time as string | undefined;
-          if (target && time) return `${time} ${target} 예약`;
-          if (target) return `${target} 예약`;
-          return '예약 요청';
+          if (target && time) return `${time} ${target}${t.cardUI?.message?.reserveSuffix || ' 예약'}`;
+          if (target) return `${target}${t.cardUI?.message?.reserveSuffix || ' 예약'}`;
+          return `예약`; // Changed from '예약 요청'
         }
       }
     }
     return null;
-  }, [domainCode, entities]);
+  }, [domainCode, entities, t]);
 
   const sourceTextForTranslation = rawDynamicTitle || summary;
 
@@ -154,7 +162,6 @@ export default function RequestCard({
 
   const isTranslating = isTranslationRequired && isTranslatingRaw;
   const translatedSummary = isTranslationRequired ? translatedSummaryRaw : sourceTextForTranslation;
-  const { t } = useTranslation();
   const DomainIcon = DOMAIN_ICONS[domainCode] || DOMAIN_ICONS['UNKNOWN'];
   const domainLabel = (t.guestChat?.progress?.domains as Record<string, string>)?.[domainCode] || domainCode;
   const bgClass = styles[`bg${domainCode}`] || styles.bgUNKNOWN;
@@ -210,8 +217,14 @@ export default function RequestCard({
   };
 
   let finalTitle = getFixedTitle();
+  
+  // '요청'과 '주문' 단어가 타이틀 끝에 있는 경우 제거 (예약은 유지)
+  finalTitle = finalTitle
+    .replace(/(?:\s*요청|\s*주문|\s*[Rr]equest|\s*[Oo]rder|\s*リクエスト|\s*依頼|\s*注文|\s*请求|\s*订单)$/, '')
+    .trim();
+
   if (isCancelled) {
-    finalTitle += ` ${t.cardUI?.message?.cancelledCard || '취소됨'}`;
+    finalTitle += t.cardUI?.message?.cancelSuffix || ' 취소';
   }
 
   useEffect(() => {

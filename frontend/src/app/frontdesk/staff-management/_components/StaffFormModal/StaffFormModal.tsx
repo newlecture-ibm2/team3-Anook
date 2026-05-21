@@ -77,10 +77,7 @@ export default function StaffFormModal({
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="md" padding="var(--space-24)">
-        <h3 style={{ font: 'var(--text-h3-bold)', marginBottom: 'var(--space-24)' }}>
-          {initialData ? '직원 정보 수정' : '새 직원 추가'}
-        </h3>
+      <ModalCard size="md" onClose={onClose} title={initialData ? '직원 정보 수정' : '새 직원 추가'}>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-24)', marginBottom: 'var(--space-32)' }}>
           <InputField

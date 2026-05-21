@@ -3,7 +3,7 @@ from app.prompts.hk_prompt import HK_SYSTEM_PROMPT
 from app.schemas.common import HotelRequestSchema
 from app.domains.rag import service as rag_service
 
-async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
+async def run_hk_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None, room_inventory: dict = None, **kwargs) -> dict:
     """
     HK 에이전트: One-pass로 다국어 감지 + Entity 추출 + 되묻기 판단
     
@@ -35,6 +35,11 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
     # 3. RAG 지식 삽입 + 현재 메시지
     if rag_context:
         prompt += f"[Room Amenity Info]\n{rag_context}\n\n"
+    if room_inventory:
+        import json
+        prompt += f"[Stateful Room Inventory (Daily Allowed Limits)]\n"
+        prompt += f"This is the actual, current usage data for the room from the backend database. You MUST strictly adhere to this:\n"
+        prompt += f"{json.dumps(room_inventory, ensure_ascii=False)}\n\n"
     prompt += f"[Current Request]\nGuest: {user_message}"
 
     # 4. Gemini One-pass 호출
@@ -62,6 +67,12 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
 
     # 7. analyze.py 응답 형태로 변환
     # 되묻기(needs_clarification)일 때는 domain_code=None → 백엔드가 request를 생성하지 않음
+    action_type = raw.get("action_type")
+    if action_type is None:
+        action_type = result.entities.get("action_type")
+    if action_type is None:
+        action_type = "ADD"
+
     return {
         "guest_reply": result.clarification_question if result.needs_clarification else result.final_reply,
         "summary": result.summary,
@@ -72,7 +83,8 @@ async def run_hk_agent(user_message: str, room_no: str, chat_history: list = Non
         "missing_fields": result.missing_fields,
         "clarification_options": getattr(result, "clarification_options", []),
         "reasoning": result.reasoning,
-        "action_type": result.entities.get("action_type") if result.entities.get("action_type") else raw.get("action_type"),
+        "action_type": action_type,
         "target_keyword": result.entities.get("target_keyword") if result.entities.get("target_keyword") else raw.get("target_keyword"),
         "target_request_id": result.target_request_id if result.target_request_id else (result.entities.get("target_request_id") if result.entities else raw.get("target_request_id")),
     }
+

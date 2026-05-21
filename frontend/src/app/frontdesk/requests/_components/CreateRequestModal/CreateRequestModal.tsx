@@ -6,7 +6,7 @@ import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import Dropdown from '@/components/ui/Dropdown/Dropdown';
-import { CancelIcon } from '@/components/icons';
+import InputField from '@/components/ui/Inputfield/InputField';
 import useCreateRequest from './useCreateRequest';
 
 interface Department {
@@ -75,22 +75,14 @@ export default function CreateRequestModal({
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={handleClose}>
-      <ModalCard size="md" overflowVisible={true}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>요청 생성</h2>
-          <button className={styles.closeButton} onClick={handleClose} aria-label="닫기">
-            <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
-          </button>
-        </div>
+      <ModalCard size="md" overflowVisible={true} onClose={handleClose} title="요청 생성">
 
         <div className={styles.form}>
           {/* 객실 번호 */}
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="cr-room">객실 번호 <span className={styles.required}>*</span></label>
-            <input
+            <InputField
               id="cr-room"
-              className={styles.input}
-              type="text"
+              label="객실 번호 *"
               placeholder="예: 707"
               value={roomNo}
               onChange={(e) => setRoomNo(e.target.value)}
@@ -99,11 +91,9 @@ export default function CreateRequestModal({
 
           {/* 요약 */}
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="cr-summary">요청 내용 <span className={styles.required}>*</span></label>
-            <input
+            <InputField
               id="cr-summary"
-              className={styles.input}
-              type="text"
+              label="요청 내용 *"
               placeholder="예: 수건 2장 추가 요청"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -112,13 +102,13 @@ export default function CreateRequestModal({
 
           {/* 상세 내용 (선택) */}
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="cr-raw">상세 내용</label>
-            <textarea
+            <InputField
+              as="textarea"
               id="cr-raw"
-              className={styles.textarea}
+              label="상세 내용"
               placeholder="고객 원문 또는 상세 메모 (선택)"
               value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
+              onChange={(e: any) => setRawText(e.target.value)}
               rows={3}
             />
           </div>

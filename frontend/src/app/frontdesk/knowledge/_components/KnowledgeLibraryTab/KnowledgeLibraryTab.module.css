@@ -63,3 +63,12 @@
   color: var(--color-gray-500);
   font: var(--text-body-regular);
 }
+
+@media (max-width: 768px) {
+  .buttonWrapper {
+    justify-content: stretch;
+  }
+  .buttonWrapper > button {
+    width: 100% !important;
+  }
+}

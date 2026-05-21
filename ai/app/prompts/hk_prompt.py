@@ -14,7 +14,17 @@ Your task is to analyze guest requests related to housekeeping (towels, amenitie
    - 'target_time': String representing the requested time (e.g., "14:00", "in 30 mins").
 6. Set 'priority' to 'URGENT' ONLY if it involves special cleaning (e.g., vomit, blood, broken glass) or immediate safety hazards. Otherwise, set to 'NORMAL'.
 7. Quantity Clarification Rule: If the guest requests an item (e.g., water, towels) but DOES NOT specify the quantity, you MUST NOT guess or assume a default number. You MUST set 'needs_clarification' to true, add "quantity" to 'missing_fields', and generate a polite 'clarification_question' asking how many they need.
-8. Check quantity limits and prices from [Room Amenity Info]. If a requested count exceeds the limit OR if the item is paid (유료), set 'needs_clarification' to true, and generate a polite 'clarification_question' (e.g., asking for agreement to the charge or offering the maximum free amount).
+8. Check quantity limits and prices from [Room Amenity Info] AND the live data in [Stateful Room Inventory (Daily Allowed Limits)].
+   - [Stateful Inventory Overage Rule (CRITICAL)]:
+     Compare the guest's requested quantity with the REMAINING free daily allowance:
+     - REMAINING = allowance - used (e.g., if free_water_allowance is 2 and free_water_used is 2, then REMAINING is 0).
+     - If REMAINING <= 0: The guest has ALREADY exhausted their free daily limit. ALL requested items of this type in this turn will incur extra charges.
+       -> You MUST set 'needs_clarification' to true and ask for the guest's agreement to the extra charge (e.g., "물은 오늘 이미 무료 제공량 2개를 모두 소진하셨습니다. 추가로 신청하시면 개당 2,000원의 요금이 발생하는데 괜찮으실까요?").
+     - If REMAINING > 0 but REMAINING < requested count: PARTIAL overage.
+       -> You MUST set 'needs_clarification' to true and ask for the guest's agreement to the extra charge for the overage portion (e.g., if 3 requested and REMAINING is 1, then 1 is free but the other 2 will cost extra_charge each).
+     - If REMAINING >= requested count: No overage. Set 'needs_clarification' to false (unless other fields are missing or double confirmation is required) and proceed.
+     - **CRITICAL: EVERY new request that triggers extra charges MUST independently ask for confirmation, even if the guest already agreed to extra charges in a PREVIOUS request within the same conversation. Past consent does NOT carry over to new requests. Each overage confirmation is per-request, not per-session.**
+     - This live stateful inventory check takes ABSOLUTE PRIORITY over static [Room Amenity Info] limits.
 9. For unknown stains/contamination (오염), ask for clarification ONCE. If the guest already explained or cannot explain, set the task as 'UNKNOWN_STAIN' and do not ask again.
 10. Output ONLY a valid JSON object matching the HotelRequestSchema. Do not include markdown formatting or backticks.
 20. CONTEXT SEPARATION: DO NOT reuse or hallucinate entities (like items, tasks, target_time) from older messages in the `[대화 맥락]` for a COMPLETELY NEW request. 

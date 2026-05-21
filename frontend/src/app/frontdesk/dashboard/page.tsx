@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import FilterButton from '@/components/ui/FilterButton/FilterButton';
+import DateRangeSelector, { DateRange } from '@/components/ui/DateRangeSelector/DateRangeSelector';
 import ChartCard from '@/components/ui/Card/ChartCard';
 import SummaryCard from '@/components/ui/Card/SummaryCard';
 import useFrontdeskStats from './useFrontdeskStats';
@@ -98,9 +98,23 @@ function DonutChart({ data, colors }: { data: { label: string; value: number; pc
   );
 }
 
+// Utility to format date to YYYY-MM-DD
+const formatDate = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export default function DashboardPage() {
-  const [selectedFilter, setSelectedFilter] = useState('7d');
-  const { stats, loading, error } = useFrontdeskStats();
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    return { startDate: formatDate(start), endDate: formatDate(end) };
+  });
+
+  const { stats, loading, error } = useFrontdeskStats(dateRange.startDate, dateRange.endDate);
   const { t } = useTranslation();
 
   const deptData = stats
@@ -131,14 +145,9 @@ export default function DashboardPage() {
           <h1 className={styles.title}>{t.frontdeskPage.dashboard.title}</h1>
         </div>
         <div className={styles.headerActions}>
-          <FilterButton 
-            filterOptions={[
-              { label: t.frontdeskPage.dashboard.filters.today, value: '1d' }, 
-              { label: t.frontdeskPage.dashboard.filters.last7Days, value: '7d' }, 
-              { label: t.frontdeskPage.dashboard.filters.last30Days, value: '30d' }
-            ]}
-            selectedFilter={selectedFilter}
-            onFilterSelect={(val) => setSelectedFilter(val)}
+          <DateRangeSelector 
+            dateRange={dateRange}
+            onChange={(range) => setDateRange(range)}
           />
         </div>
       </div>

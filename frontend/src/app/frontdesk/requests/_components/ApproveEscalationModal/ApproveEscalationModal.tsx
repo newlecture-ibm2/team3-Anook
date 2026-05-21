@@ -56,7 +56,7 @@ export default function ApproveEscalationModal({
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="sm" overflowVisible={true}>
+      <ModalCard size="sm" overflowVisible={true} onClose={onClose}>
         <div className={styles.textWrapper}>
           <h2 className={styles.title}>에스컬레이션 승인</h2>
           <p className={styles.subtitle}>재배정할 부서를 선택해 주세요. 승인 시 우선순위가 긴급으로 변경되며 부서로 요청이 넘어갑니다.</p>
