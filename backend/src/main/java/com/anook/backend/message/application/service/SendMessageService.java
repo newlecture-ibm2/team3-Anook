@@ -264,7 +264,8 @@ public class SendMessageService implements SendMessageUseCase {
                     if (analysis.targetRequestId() != null 
                             && !"CANCEL_REQUEST".equals(analysis.action()) 
                             && !"CANCEL_ALL_REQUESTS".equals(analysis.action())
-                            && !"ADD_DUPLICATE".equals(analysis.actionType())) {
+                            && !"ADD_DUPLICATE".equals(analysis.actionType())
+                            && !"REPLACE".equals(analysis.actionType())) {
                         log.info("[Message] 중복 요청 발생으로 신규 생성 스킵 — targetRequestId: {}", analysis.targetRequestId());
                         continue;
                     }
