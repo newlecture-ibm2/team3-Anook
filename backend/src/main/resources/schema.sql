@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS pms_guest (
 -- PMS 메뉴 (룸서비스 메뉴 마스터)
 CREATE TABLE IF NOT EXISTS pms_menu (
     id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,
+    name        VARCHAR(100) NOT NULL UNIQUE,
     price       INTEGER      NOT NULL,
     price_usd   DOUBLE PRECISION,
     category    VARCHAR(30)  NOT NULL,
@@ -261,6 +261,10 @@ ALTER TABLE request ADD COLUMN IF NOT EXISTS rating SMALLINT;
 -- [2026-05-19] Admin 역할을 Frontdesk로 변경 (안전한 교체 방식)
 ALTER TABLE department ADD COLUMN IF NOT EXISTS is_frontdesk BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE department DROP COLUMN IF EXISTS is_admin;
+
+-- [2026-05-20] RAG 동시성 보장을 위한 복합 UNIQUE 인덱스 추가 (AN-351)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_entry_unique_domain_question
+ON knowledge_entry(domain_code, question);
 
 -- [2026-05-20] 메뉴 테이블에 달러 가격(price_usd) 컬럼 추가
 ALTER TABLE pms_menu ADD COLUMN IF NOT EXISTS price_usd DOUBLE PRECISION;
