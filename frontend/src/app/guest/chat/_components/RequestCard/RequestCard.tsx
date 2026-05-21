@@ -201,13 +201,6 @@ export default function RequestCard({
       return displaySummary;
     }
     
-    const intent = entities?.intent as string | undefined;
-    
-    // Fallback: intent 기반 번역 매핑
-    if (intent && (t.intents as any)?.[intent]) {
-      return (t.intents as any)[intent];
-    }
-    
     if (!domainCode) {
       return displaySummary.split('(')[0].trim();
     }
