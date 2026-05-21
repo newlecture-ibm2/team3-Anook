@@ -63,6 +63,33 @@ DOMAIN_AGENTS: Dict[str, Callable[..., Awaitable[Dict[str, Any]]]] = {
 }
 
 
+import inspect
+
+def invoke_domain_agent(domain: str, **kwargs) -> Awaitable[Dict[str, Any]]:
+    """
+    Dynamically calls the domain agent function with only the arguments it accepts in its signature.
+    """
+    agent_func = DOMAIN_AGENTS.get(domain)
+    if not agent_func:
+        raise ValueError(f"Agent function for domain '{domain}' not found.")
+        
+    sig = inspect.signature(agent_func)
+    has_var_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+    
+    filtered_kwargs = {}
+    for k, v in kwargs.items():
+        param_name = k
+        # Map generic names to specific names if needed
+        if k == "system_language" and "system_language" not in sig.parameters and "language" in sig.parameters:
+            param_name = "language"
+            
+        if has_var_keyword or param_name in sig.parameters:
+            filtered_kwargs[param_name] = v
+            
+    return agent_func(**filtered_kwargs)
+
+
+
 # ── 다국어 정적 멘트 딕셔너리 ──
 _background_tasks = set()
 
@@ -662,7 +689,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 else:
                     user_message_with_ctx = request.text
 
-                coro = DOMAIN_AGENTS[domain](
+                coro = invoke_domain_agent(
+                    domain,
                     user_message=user_message_with_ctx,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
@@ -772,7 +800,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             if last_agent_domain:
                 try:
-                    agent_result = await DOMAIN_AGENTS[last_agent_domain](
+                    agent_result = await invoke_domain_agent(
+                        last_agent_domain,
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
@@ -800,7 +829,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
 
             # last_agent_domain이 없거나 실패한 경우, FRONT 에이전트(기본 라우팅 질문)로 처리
             try:
-                agent_result = await DOMAIN_AGENTS["FRONT"](
+                agent_result = await invoke_domain_agent(
+                    "FRONT",
                     user_message=request.text,
                     room_no=request.room_no,
                     chat_history=request.chat_history,
@@ -849,7 +879,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             # ── FB 도메인 INFO는 에이전트에게 위임 (메뉴 기반 알러지 추천 등) ──
             if domain == "FB" and "FB" in DOMAIN_AGENTS:
                 try:
-                    agent_result = await DOMAIN_AGENTS["FB"](
+                    agent_result = await invoke_domain_agent(
+                        "FB",
                         user_message=request.text,
                         room_no=request.room_no,
                         chat_history=request.chat_history,
@@ -1067,7 +1098,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     # [수정] RAG 결과가 없을 때 에이전트 폴백 실행 시, 에이전트의 전체 결과를 response로 활용함
                     if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
                         print(f"[Analyze] 💡 INFO → RAG 결과 없음. CONCIERGE 에이전트 폴백 실행")
-                        agent_result = await DOMAIN_AGENTS["CONCIERGE"](
+                        agent_result = await invoke_domain_agent(
+                            "CONCIERGE",
                             user_message=request.text,
                             room_no=request.room_no,
                             chat_history=request.chat_history,
