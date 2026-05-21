@@ -9,6 +9,8 @@ import com.anook.backend.ailog.application.port.out.AiLogQueryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class AiLogPersistenceAdapter implements AiLogPort, AiLogQueryPort {
@@ -50,6 +52,11 @@ public class AiLogPersistenceAdapter implements AiLogPort, AiLogQueryPort {
                         .isFallback(entity.getIsFallback())
                         .createdAt(entity.getCreatedAt())
                         .build());
+    }
+
+    @Override
+    public List<Object[]> getStatsByModel() {
+        return aiLogRepository.getStatsByModel();
     }
 
     @Override

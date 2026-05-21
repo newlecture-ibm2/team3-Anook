@@ -10,12 +10,20 @@ import time
 import asyncio
 import contextvars
 import base64
+import random
 from typing import Union, List, Dict, Any, Optional
 from contextvars import ContextVar
 
 from google import genai
 from google.genai import types
 from app.core.config import settings
+
+
+def _pick_model() -> str:
+    """A/B 테스트가 활성화된 경우 두 모델 중 하나를 50/50으로 선택한다."""
+    if settings.GEMINI_AB_MODEL:
+        return random.choice([settings.GEMINI_MODEL_NAME, settings.GEMINI_AB_MODEL])
+    return settings.GEMINI_MODEL_NAME
 
 # 로깅용 메타데이터 전역 컨텍스트 변수 (스레드/비동기 안전)
 ai_log_meta_ctx: ContextVar[dict] = ContextVar("ai_log_meta", default={})
@@ -27,14 +35,17 @@ client = genai.Client(api_key=settings.GEMINI_API_KEY)
 def call_gemini(
     prompt: str,
     system_instruction: str,
-    model_name: str = "gemini-2.5-flash", # 최신 모델명으로 권장
+    model_name: str = None,
     temperature: float = 0.2,
     images: List[str] = None,
 ) -> Union[Dict[str, Any], List[Any]]:
     """
     Gemini에게 프롬프트를 보내고, JSON 딕셔너리 또는 리스트로 파싱하여 반환한다.
+    model_name이 None이면 A/B 설정에 따라 자동 선택된다.
     """
-    
+    if model_name is None:
+        model_name = _pick_model()
+
     # [백엔드 아키텍처 해킹]: 다국어 룰 강제 주입
     global_i18n_rule = """
 [GLOBAL SYSTEM RULE FOR MULTILINGUAL UX]
@@ -60,7 +71,13 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
             )
             
     start_time = time.time()
-    
+
+    # ── Thinking budget 설정 ──
+    # -1: 동적 (모델이 입력 복잡도에 따라 자동 판단)
+    # 0: 완전 끔 (단순 작업 최대 속도)
+    # N: 상한 토큰 수 (상한선 두기)
+    thinking_config = types.ThinkingConfig(thinking_budget=settings.GEMINI_THINKING_BUDGET)
+
     # ── Gemini 호출 (신규 SDK 방식) ──
     response = client.models.generate_content(
         model=model_name,
@@ -69,6 +86,7 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
             system_instruction=final_system_instruction,
             temperature=temperature,
             response_mime_type="application/json", # JSON 출력 강제 (SDK 기능 활용)
+            thinking_config=thinking_config,
         ),
     )
     
@@ -124,12 +142,13 @@ However, you MUST write staff-facing fields (e.g., 'summary', 'details', 'reason
 async def call_gemini_async(
     prompt: str,
     system_instruction: str,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = None,
     temperature: float = 0.2,
     images: List[str] = None,
 ) -> Union[Dict[str, Any], List[Any]]:
     """
     call_gemini의 비동기 버전.
+    model_name이 None이면 A/B 설정에 따라 자동 선택된다.
     """
     ctx = contextvars.copy_context()
     

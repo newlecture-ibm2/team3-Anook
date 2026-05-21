@@ -8,6 +8,10 @@ class Settings(BaseSettings):
 
     # Gemini Configuration
     GEMINI_API_KEY: str
+    GEMINI_MODEL_NAME: str = "gemini-2.5-flash"
+    GEMINI_AB_MODEL: str = ""
+    # Thinking 예산: -1=동적(모델이 판단), 0=완전 끔, N=상한 토큰 수
+    GEMINI_THINKING_BUDGET: int = -1
 
     # Database Configuration
     POSTGRES_USER: str = "anook_user"

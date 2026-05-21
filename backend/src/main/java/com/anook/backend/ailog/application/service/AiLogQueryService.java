@@ -1,7 +1,9 @@
 package com.anook.backend.ailog.application.service;
 
+import com.anook.backend.ailog.application.dto.response.AiLogCompareResult;
 import com.anook.backend.ailog.application.dto.response.AiLogDetailResult;
 import com.anook.backend.ailog.application.dto.response.AiLogSummaryResult;
+import com.anook.backend.ailog.application.port.in.GetAiLogCompareUseCase;
 import com.anook.backend.ailog.application.port.in.GetAiLogListUseCase;
 import com.anook.backend.ailog.application.port.in.GetAiLogSummaryUseCase;
 import com.anook.backend.ailog.application.port.out.AiLogQueryPort;
@@ -10,9 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-public class AiLogQueryService implements GetAiLogSummaryUseCase, GetAiLogListUseCase {
+public class AiLogQueryService implements GetAiLogSummaryUseCase, GetAiLogListUseCase, GetAiLogCompareUseCase {
 
     private final AiLogQueryPort aiLogQueryPort;
 
@@ -37,6 +41,26 @@ public class AiLogQueryService implements GetAiLogSummaryUseCase, GetAiLogListUs
                 .fallbackRate(Math.round(fallbackRate * 10.0) / 10.0)
                 .routingSuccessRate(Math.round(routingSuccessRate * 10.0) / 10.0)
                 .build();
+    }
+
+    @Override
+    public List<AiLogCompareResult> getCompare() {
+        return aiLogQueryPort.getStatsByModel().stream()
+                .map(row -> {
+                    long count = ((Number) row[1]).longValue();
+                    long fallbacks = ((Number) row[4]).longValue();
+                    double fallbackRate = count > 0
+                            ? Math.round(fallbacks * 1000.0 / count) / 10.0
+                            : 0.0;
+                    return AiLogCompareResult.builder()
+                            .modelName((String) row[0])
+                            .requestCount(count)
+                            .avgLatencyMs(row[2] != null ? Math.round(((Number) row[2]).doubleValue() * 10.0) / 10.0 : 0.0)
+                            .totalTokens(row[3] != null ? ((Number) row[3]).longValue() : 0L)
+                            .fallbackRate(fallbackRate)
+                            .build();
+                })
+                .toList();
     }
 
     @Override

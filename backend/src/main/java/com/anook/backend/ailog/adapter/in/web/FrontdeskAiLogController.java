@@ -1,7 +1,9 @@
 package com.anook.backend.ailog.adapter.in.web;
 
+import com.anook.backend.ailog.application.dto.response.AiLogCompareResult;
 import com.anook.backend.ailog.application.dto.response.AiLogDetailResult;
 import com.anook.backend.ailog.application.dto.response.AiLogSummaryResult;
+import com.anook.backend.ailog.application.port.in.GetAiLogCompareUseCase;
 import com.anook.backend.ailog.application.port.in.GetAiLogListUseCase;
 import com.anook.backend.ailog.application.port.in.GetAiLogSummaryUseCase;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +27,17 @@ public class FrontdeskAiLogController {
 
     private final GetAiLogSummaryUseCase getAiLogSummaryUseCase;
     private final GetAiLogListUseCase getAiLogListUseCase;
+    private final GetAiLogCompareUseCase getAiLogCompareUseCase;
     private final JdbcTemplate jdbcTemplate;
 
     @GetMapping("/summary")
     public ResponseEntity<AiLogSummaryResult> getSummary() {
         return ResponseEntity.ok(getAiLogSummaryUseCase.getSummary());
+    }
+
+    @GetMapping("/compare")
+    public ResponseEntity<List<AiLogCompareResult>> getCompare() {
+        return ResponseEntity.ok(getAiLogCompareUseCase.getCompare());
     }
 
     @GetMapping
