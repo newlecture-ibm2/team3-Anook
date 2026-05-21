@@ -14,7 +14,7 @@ import styles from './page.module.css';
 const COLUMN_CONFIG = [
   { id: 'PENDING', title: '대기 중', status: 'TODO' },
   { id: 'IN_PROGRESS', title: '진행 중', status: 'IN_PROGRESS' },
-  { id: 'COMPLETED', title: '완료됨', status: 'DONE' },
+  { id: 'COMPLETED', title: '완료', status: 'DONE' },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -195,7 +195,7 @@ function DashboardContent() {
               options={[
                 { label: '대기 중', value: 'TODO', count: boardData.TODO.length },
                 { label: '진행 중', value: 'IN_PROGRESS', count: boardData.IN_PROGRESS.length },
-                { label: '완료됨', value: 'DONE', count: boardData.DONE.length }
+                { label: '완료', value: 'DONE', count: boardData.DONE.length }
               ]}
               activeValue={activeTab}
               onChange={(val) => val && setActiveTab(val as 'TODO' | 'IN_PROGRESS' | 'DONE')}
