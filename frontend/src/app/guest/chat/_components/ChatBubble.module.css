@@ -115,7 +115,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: hue-rotate(-30deg) saturate(2.2) brightness(0.95);
+  filter: brightness(0) saturate(100%) invert(65%) sepia(85%) saturate(1487%) hue-rotate(15deg) brightness(102%) contrast(101%);
 }
 
 .aiAvatar>img {
