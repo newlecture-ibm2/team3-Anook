@@ -137,30 +137,4 @@
   margin-top: var(--space-4);
 }
 
-.btnApprove, .btnReject {
-  flex: 1;
-  padding: 8px 0;
-  border-radius: 4px;
-  font: var(--text-button-small);
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.2s;
-}
 
-.btnApprove {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.btnApprove:hover {
-  background-color: var(--color-primary-dark);
-}
-
-.btnReject {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-700);
-}
-
-.btnReject:hover {
-  background-color: var(--color-gray-200);
-}

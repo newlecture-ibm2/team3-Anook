@@ -6,6 +6,7 @@ import RejectCancellationModal from '@/app/frontdesk/requests/_components/Reject
 import RejectEscalationModal from '@/app/frontdesk/requests/_components/RejectEscalationModal/RejectEscalationModal';
 import RequestDetailModal from '@/app/frontdesk/requests/_components/RequestDetailModal/RequestDetailModal';
 import { useUiStore } from '@/stores/useUiStore';
+import Button from '@/components/ui/Button/Button';
 import styles from './HeaderNotification.module.css';
 
 export default function HeaderNotification() {
@@ -129,8 +130,8 @@ export default function HeaderNotification() {
                     </div>
                     <p className={styles.summary}>{req.summary}</p>
                     <div className={styles.actions}>
-                      <button className={styles.btnApprove} onClick={(e) => { e.stopPropagation(); handleApproveCancel(req.id); }}>취소 승인</button>
-                      <button className={styles.btnReject} onClick={(e) => { e.stopPropagation(); handleRejectCancel(req.id); }}>반려</button>
+                      <Button variant="primary" size="medium" fullWidth onClick={(e) => { e.stopPropagation(); handleApproveCancel(req.id); }}>취소 승인</Button>
+                      <Button variant="secondary" size="medium" fullWidth onClick={(e) => { e.stopPropagation(); handleRejectCancel(req.id); }}>반려</Button>
                     </div>
                   </div>
                 ))}
@@ -143,8 +144,8 @@ export default function HeaderNotification() {
                     </div>
                     <p className={styles.summary}>{req.summary}</p>
                     <div className={styles.actions}>
-                      <button className={styles.btnApprove} onClick={(e) => { e.stopPropagation(); handleApproveEscalation(req.id); }}>수락 (배정)</button>
-                      <button className={styles.btnReject} onClick={(e) => { e.stopPropagation(); handleRejectEscalation(req.id); }}>반려</button>
+                      <Button variant="primary" size="medium" fullWidth onClick={(e) => { e.stopPropagation(); handleApproveEscalation(req.id); }}>수락 (배정)</Button>
+                      <Button variant="secondary" size="medium" fullWidth onClick={(e) => { e.stopPropagation(); handleRejectEscalation(req.id); }}>반려</Button>
                     </div>
                   </div>
                 ))}
