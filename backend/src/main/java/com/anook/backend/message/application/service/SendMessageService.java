@@ -284,8 +284,17 @@ public class SendMessageService implements SendMessageUseCase {
     @Override
     @Transactional
     public void sendStaffMessage(com.anook.backend.message.application.dto.request.SendStaffMessageCommand command) {
-        // ★ 고객의 실제 언어를 메모리에서 조회 (감지 이력 기반)
-        String guestLang = guestLanguageMap.getOrDefault(command.roomNo(), "ko");
+        // ★ 고객의 실제 언어를 메모리에서 조회 (감지 이력 기반), 없으면 최근 고객 메시지로 감지
+        String guestLang = guestLanguageMap.get(command.roomNo());
+        if (guestLang == null) {
+            guestLang = messagePort.findRecentByRoomNoAndGuestId(command.roomNo(), command.guestId(), 10)
+                    .stream()
+                    .filter(com.anook.backend.message.domain.model.Message::isFromGuest)
+                    .findFirst()
+                    .map(m -> detectLanguage(m.getContent()))
+                    .orElse("ko");
+            guestLanguageMap.put(command.roomNo(), guestLang);
+        }
         log.info("[Message] 직원 메시지 전송 — room: {}, 고객 언어: {}", command.roomNo(), guestLang);
 
         // 0. 즉시 STAFF_TYPING 이벤트 전송 (번역 전 게스트에게 타이핑 인디케이터 표시)
