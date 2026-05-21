@@ -737,6 +737,61 @@ export function useChat() {
 
   // 7. Handle Pill Selection
   const handlePillSelect = (msgId: string, option: string) => {
+    // [Contextual Pill Fix] Intercept cancellation option clicked in Pill
+    const isCancelOption = /취소|cancel/i.test(option);
+    if (isCancelOption && activeRequests.length > 0) {
+      const parentMsg = messages.find(m => m.id === msgId);
+      const parentMeta = parentMsg?.meta;
+
+      let targetRequest: ActiveRequest | undefined;
+
+      if (activeRequests.length === 1) {
+        // Edge case: if there's only 1 active request, target it directly
+        targetRequest = activeRequests[0];
+      } else if (parentMeta) {
+        const { domainCode, summary, targetKeyword } = parentMeta;
+        
+        // Try matching by targetKeyword/summary first, then by domainCode
+        if (targetKeyword) {
+          targetRequest = activeRequests.find(req => 
+            req.summary.includes(targetKeyword) || 
+            (req.entities && JSON.stringify(req.entities).includes(targetKeyword))
+          );
+        }
+        
+        if (!targetRequest && domainCode) {
+          targetRequest = activeRequests.find(req => req.domainCode === domainCode);
+        }
+        
+        if (!targetRequest && summary) {
+          targetRequest = activeRequests.find(req => 
+            req.summary.includes(summary) || summary.includes(req.summary)
+          );
+        }
+      }
+
+      if (targetRequest) {
+        const tempId = `temp-${Date.now()}`;
+        const newUserMsg: ChatMessage = {
+          id: tempId,
+          variant: 'sent',
+          content: option,
+        };
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.type !== 'WELCOME');
+          const updated = [...filtered, newUserMsg];
+          return updated.map(m =>
+            m.id === msgId
+              ? { ...m, meta: { ...m.meta, selectedOption: option, pillDisabled: true } }
+              : m
+          );
+        });
+
+        cancelRequest(targetRequest.requestId);
+        return;
+      }
+    }
+
     sendMessage(option);
     setMessages(prev => prev.map(m =>
       m.id === msgId
