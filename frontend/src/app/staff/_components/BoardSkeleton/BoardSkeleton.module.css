@@ -121,3 +121,18 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite ease-in-out;
 }
+
+@media (max-width: 768px) {
+  .board {
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  .column {
+    padding: var(--space-16) !important;
+  }
+
+  .column:not(:first-child) {
+    display: none !important;
+  }
+}

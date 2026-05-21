@@ -72,7 +72,7 @@ public class FrontdeskMessageController {
         
         Long guestId = adminMessageQueryPort.getLatestGuestId(roomNo);
         sendMessageUseCase.sendStaffMessage(
-                new SendStaffMessageCommand(content, roomNo, guestId, "ko")
+                new SendStaffMessageCommand(content, roomNo, guestId, null)
         );
         
         try {

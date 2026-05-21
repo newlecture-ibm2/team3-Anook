@@ -480,5 +480,20 @@
     "cancelSuccess": "您的请求已成功取消。😌 如果您还有其他需要，请随时告诉我！",
     "cancelPending": "您的请求正在处理中，因此我们已向相关部门发送了取消请求。🏃‍♂️ 确认后我们将立刻通知您！",
     "piiGuard": "为了保护您宝贵的个人信息，我们不接受通过聊天提供敏感信息。🔒 如需详细查询，请使用客房内的电话联系前台（分机0），我们将为您提供安全的帮助。😊"
+  },
+  "feedbackCard": {
+    "systemCompletedTitle": "이전 상담 및 처리가 모두 완료되었습니다.",
+    "systemCompletedSubtitle": "(※ 고객에게 노출되지 않는 프론트 운영용 메시지입니다)",
+    "requestCompleted": "요청 완료",
+    "consultationCompleted": "상담이 완료되었습니다",
+    "satisfactionQuestion": "서비스가 만족스러우셨나요?",
+    "thankYou": "감사합니다!",
+    "ratings": {
+      "1": "별로예요",
+      "2": "그저 그래요",
+      "3": "보통이에요",
+      "4": "좋았어요",
+      "5": "최고예요!"
+    }
   }
 }

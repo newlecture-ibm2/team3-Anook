@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import styles from './FeedbackCard.module.css';
 import { ReviewStarIcon } from '@/components/icons';
 import { Check, Home, Utensils, Wrench, ConciergeBell, Monitor, AlertTriangle, FileText } from 'lucide-react';
-
-const RATING_LABELS = ['', '별로예요', '그저 그래요', '보통이에요', '좋았어요', '최고예요!'];
+import { useTranslation } from '@/app/useTranslation';
 
 const DOMAIN_MAP: Record<string, { icon: React.ElementType; label: string }> = {
   HK: { icon: Home, label: '하우스키핑' },
@@ -43,9 +42,12 @@ export default function FeedbackCard({
   systemContent,
   systemSubtitle
 }: FeedbackCardProps) {
+  const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  
+  const ratingLabels = ['', t.feedbackCard?.ratings['1'] || '별로예요', t.feedbackCard?.ratings['2'] || '그저 그래요', t.feedbackCard?.ratings['3'] || '보통이에요', t.feedbackCard?.ratings['4'] || '좋았어요', t.feedbackCard?.ratings['5'] || '최고예요!'];
 
   const activeRating = hoverRating || rating;
   const domainInfo = DOMAIN_MAP[domainCode || 'UNKNOWN'] || DOMAIN_MAP['UNKNOWN'];
@@ -92,13 +94,13 @@ export default function FeedbackCard({
             <div className={styles.content}>
               <div className={styles.summaryRow}>
                 <div className={styles.title}>
-                  {systemContent || '이전 상담 및 처리가 모두 완료되었습니다.'}
+                  {systemContent || t.feedbackCard?.systemCompletedTitle || '이전 상담 및 처리가 모두 완료되었습니다.'}
                 </div>
               </div>
             </div>
 
             <div className={styles.subtitle}>
-              {systemSubtitle || '(※ 고객에게 노출되지 않는 프론트 운영용 메시지입니다)'}
+              {systemSubtitle || t.feedbackCard?.systemCompletedSubtitle || '(※ 고객에게 노출되지 않는 프론트 운영용 메시지입니다)'}
             </div>
           </div>
         </div>
@@ -108,8 +110,8 @@ export default function FeedbackCard({
 
   // 게스트용 제목: 도메인 라벨 + "요청 완료"
   const displayTitle = hasRequestInfo
-    ? `${domainInfo.label} 요청 완료`
-    : '상담이 완료되었습니다';
+    ? `${domainInfo.label} ${t.feedbackCard?.requestCompleted || '요청 완료'}`
+    : (t.feedbackCard?.consultationCompleted || '상담이 완료되었습니다');
 
   return (
     <div className={`glass-panel ${styles.card}`}>
@@ -132,8 +134,8 @@ export default function FeedbackCard({
 
           <div className={styles.subtitle}>
             {submitted
-              ? `${RATING_LABELS[rating]} — 감사합니다!`
-              : '서비스가 만족스러우셨나요?'}
+              ? `${ratingLabels[rating]} — ${t.feedbackCard?.thankYou || '감사합니다!'}`
+              : (t.feedbackCard?.satisfactionQuestion || '서비스가 만족스러우셨나요?')}
           </div>
 
           {/* Inline Star Rating */}

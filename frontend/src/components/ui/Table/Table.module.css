@@ -17,6 +17,7 @@
   gap: var(--space-24);
   border-bottom: 1px solid var(--color-gray-300);
   background: var(--color-bg);
+  transition: all 0.2s ease;
 }
 
 .tableRow {
@@ -28,11 +29,17 @@
   align-items: center;
   gap: var(--space-24);
   background: var(--color-bg);
+  transition: all 0.2s ease;
 }
 
 .headerItem {
   color: var(--color-gray-700);
   font: var(--text-body-regular);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  width: 100%;
 }
 
 .rowItem {
@@ -41,9 +48,40 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  width: 100%;
 }
 
-@media (max-width: 1024px) {
+/* Ensure nested plain text and custom elements in row items clip properly with ellipsis */
+.rowItem > *, .headerItem > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Gradual Responsive Spacing & Scaling above the 768px card breakpoint */
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .tableHeader, .tableRow {
+    padding: var(--space-12) var(--space-16);
+    gap: var(--space-16);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tableHeader, .tableRow {
+    padding: var(--space-8) var(--space-12);
+    gap: var(--space-10);
+    height: var(--space-72); /* Squeeze height a bit */
+  }
+  
+  .headerItem, .rowItem {
+    font-size: 0.8125rem !important; /* Scale text down slightly */
+  }
+}
+
+/* Mini mobile breakpoint - convert to Card Layout */
+@media (max-width: 768px) {
   .tableContainer {
     overflow-x: visible !important;
   }
@@ -93,6 +131,9 @@
   .tableContainer.inline .rowItem > * {
     margin-left: auto !important;
     text-align: right !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   /* --- STACKED VARIANT --- */
@@ -121,5 +162,9 @@
   .tableContainer.stacked .rowItem > * {
     margin-left: 0 !important;
     text-align: left !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 }
+

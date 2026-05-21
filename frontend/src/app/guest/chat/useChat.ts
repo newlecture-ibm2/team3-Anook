@@ -126,13 +126,22 @@ export function useChat() {
         }
 
         // 텍스트 메시지 변환
-        const chatMessages: (ChatMessage & { _ts: number })[] = msgData.map(msg => ({
-          id: msg.id.toString(),
-          variant: msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const,
-          content: msg.senderType === 'AI' ? translateContent(msg.content) : msg.content,
-          type: 'TEXT' as const,
-          _ts: new Date(msg.createdAt).getTime(),
-        }));
+        const chatMessages: (ChatMessage & { _ts: number })[] = msgData.map(msg => {
+          let displayContent = msg.content;
+          if (msg.senderType === 'AI') {
+            displayContent = translateContent(msg.content);
+          } else if (msg.senderType === 'STAFF' && msg.translatedContent) {
+            // 직원 메시지: 고객 언어로 번역된 내용 표시 (새로고침 시에도 번역본 유지)
+            displayContent = msg.translatedContent;
+          }
+          return {
+            id: msg.id.toString(),
+            variant: msg.senderType === 'GUEST' ? 'sent' as const : 'received' as const,
+            content: displayContent,
+            type: 'TEXT' as const,
+            _ts: new Date(msg.createdAt).getTime(),
+          };
+        });
 
         // 요청 카드 변환 (시간순 삽입을 위해 _ts 포함)
         const progressMap: Record<string, number> = {
