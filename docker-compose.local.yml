@@ -19,6 +19,8 @@ services:
       - "8000:8000"
     environment:
       - BACKEND_URL=http://host.docker.internal:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   neo4j:
     image: neo4j:5

@@ -56,6 +56,7 @@ public class SendMessageService implements SendMessageUseCase {
     private final AsyncAiLoggingService asyncAiLoggingService;
     private final MessageRoomStatusPort roomStatusPort;
     private final MessageActiveRequestPort activeRequestPort;
+    private final com.anook.backend.room.application.service.RoomInventoryService roomInventoryService;
 
     @Autowired
     @Lazy
@@ -139,8 +140,11 @@ public class SendMessageService implements SendMessageUseCase {
             // 3-1. 취소 문맥 분석을 위한 현재 고객의 활성(대기 중인) 주문 목록 조회
             java.util.List<Map<String, Object>> activeRequests = activeRequestPort.findActiveRequests(roomNo, guestId);
 
+            // 3-2. Stateful AI: 객실 일일 제한 물품(수건, 생수) 사용량 조회 (6 AM 리셋)
+            Map<String, Integer> roomInventory = roomInventoryService.getInventory(roomNo);
+
             // AI 호출
-            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests);
+            java.util.List<MessageAiResult> analyses = aiPort.analyze(content, roomNo, language, chatHistory, images, activeRequests, roomInventory);
 
             // 4. AI 응답 메시지 저장
             String combinedReply = analyses.stream()
