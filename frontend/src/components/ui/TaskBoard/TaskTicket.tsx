@@ -260,13 +260,19 @@ export default function TaskTicket({
       return displaySummary;
     }
     
-    switch (deptKey) {
-      case 'facility':
-      case 'hk':
-        return displaySummary;
-      default:
-        return displaySummary.split('(')[0].trim();
+    const intent = entities?.intent as string | undefined;
+    
+    // Fallback: intent 기반 번역 매핑
+    if (deptKey !== 'hk' && deptKey !== 'facility') {
+      if (intent && (t.intents as any)?.[intent]) {
+        return (t.intents as any)[intent];
+      }
     }
+    
+    if (!department) {
+      return displaySummary.split('(')[0].trim();
+    }
+    return displaySummary;
   };
 
   let displayTitle = getFixedTitle();
