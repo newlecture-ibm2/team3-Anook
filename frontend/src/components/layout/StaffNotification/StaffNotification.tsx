@@ -4,7 +4,7 @@ import { useUiStore } from '@/stores/useUiStore';
 import { useTranslation } from '@/app/useTranslation';
 import { useSSE } from '@/app/useSSE';
 import { handleResponse } from '@/lib/api';
-import Button from '@/components/ui/Button/Button';
+import NotificationCard from '@/components/ui/NotificationCard/NotificationCard';
 import styles from './StaffNotification.module.css';
 
 export interface StaffTask {
@@ -16,6 +16,9 @@ export interface StaffTask {
   roomNumber: string;
   cancelRequested: boolean;
   version: number;
+  rawText?: string;
+  departmentName?: string;
+  createdAt?: string;
 }
 
 export default function StaffNotification() {
@@ -162,31 +165,20 @@ export default function StaffNotification() {
             ) : (
               <div className={styles.list}>
                 {pendingCancellations.map(req => (
-                  <div key={`cancel-${req.id}`} className={styles.item}>
-                    <div className={styles.itemHeader}>
-                      <span className={styles.tagCancel}>취소 요청</span>
-                      <span className={styles.roomNo}>객실 {req.roomNumber}</span>
-                    </div>
-                    <p className={styles.summary}>{req.summary}</p>
-                    <div className={styles.actions}>
-                      <Button
-                        variant="primary"
-                        size="medium"
-                        fullWidth
-                        onClick={() => handleApproveCancel(req.id, req.version)}
-                      >
-                        취소 승인
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="medium"
-                        fullWidth
-                        onClick={() => handleRejectCancel(req.id, req.version)}
-                      >
-                        반려
-                      </Button>
-                    </div>
-                  </div>
+                  <NotificationCard
+                    key={`cancel-${req.id}`}
+                    variant="cancel"
+                    title={req.summary}
+                    description={req.rawText}
+                    roomNumber={req.roomNumber}
+                    departmentName={req.departmentName}
+                    createdAt={req.createdAt}
+                    priority={req.priority}
+                    primaryLabel="취소 승인"
+                    secondaryLabel="반려"
+                    onPrimaryClick={() => handleApproveCancel(req.id, req.version)}
+                    onSecondaryClick={() => handleRejectCancel(req.id, req.version)}
+                  />
                 ))}
               </div>
             )}
