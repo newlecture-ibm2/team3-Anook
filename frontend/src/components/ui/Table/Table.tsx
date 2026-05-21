@@ -8,10 +8,30 @@ interface TableProps {
 }
 
 export const Table = ({ columns, responsiveVariant = 'inline', children }: TableProps) => {
+  const responsiveColumns = React.useMemo(() => {
+    return columns
+      .split(/\s+/)
+      .map((col) => {
+        const matchPx = col.match(/^(\d+)px$/);
+        if (matchPx) {
+          const pxVal = parseInt(matchPx[1], 10);
+          const minVal = Math.max(50, Math.floor(pxVal * 0.5));
+          return `minmax(${minVal}px, ${pxVal}px)`;
+        }
+        const matchFr = col.match(/^([\d.]+)fr$/);
+        if (matchFr) {
+          const frVal = parseFloat(matchFr[1]);
+          return `minmax(0px, ${frVal}fr)`;
+        }
+        return col;
+      })
+      .join(' ');
+  }, [columns]);
+
   return (
     <div
       className={`${styles.tableContainer} ${styles[responsiveVariant]}`}
-      style={{ '--table-columns': columns } as React.CSSProperties}
+      style={{ '--table-columns': responsiveColumns } as React.CSSProperties}
     >
       {children}
     </div>
