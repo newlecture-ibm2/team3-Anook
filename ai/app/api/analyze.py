@@ -41,6 +41,7 @@ class AnalyzeRequest(BaseModel):
     chat_history: List[dict] = []
     images: Optional[List[str]] = []
     active_requests: Optional[List[dict]] = []
+    room_inventory: Optional[Dict[str, int]] = {}
 
 
 # ── 부서별 에이전트 레지스트리 ──
@@ -667,7 +668,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     chat_history=request.chat_history,
                     images=request.images,
                     system_language=request.language,
-                    active_requests=getattr(request, 'active_requests', [])
+                    active_requests=getattr(request, 'active_requests', []),
+                    room_inventory=getattr(request, 'room_inventory', {})
                 )
                 agent_tasks.append((domain, primary, coro))
                 continue
@@ -1405,6 +1407,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
             final_responses.append(response)
             continue
 
+
+
+
+
     # ──────────────────────────────────────────────
     # STEP 3-g: 병렬 실행 대기 및 결과 합치기
     # ──────────────────────────────────────────────
@@ -1511,4 +1517,6 @@ async def translate_text(request: TranslateRequest) -> dict:
         system_instruction="You are a professional translator for a hotel dashboard UI. Provide exact, concise translations without formatting or conversational filler."
     )
     return {"translated_text": translated_text}
+
+
 

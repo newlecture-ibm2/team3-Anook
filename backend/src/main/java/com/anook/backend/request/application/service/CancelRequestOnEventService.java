@@ -1,20 +1,23 @@
 package com.anook.backend.request.application.service;
-
+ 
 import com.anook.backend.message.application.event.RequestCancelledByGuestEvent;
 import com.anook.backend.request.application.dto.response.RequestSsePayload;
 import com.anook.backend.request.application.port.out.DispatchPort;
 import com.anook.backend.request.application.port.out.RequestRepositoryPort;
 import com.anook.backend.request.domain.model.Request;
 import com.anook.backend.request.domain.model.RequestStatus;
+import com.anook.backend.request.domain.model.DomainCode;
+import com.anook.backend.room.application.service.RoomInventoryService;
+import com.anook.backend.room.application.service.InventoryPolicyProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-
+ 
+ 
 import java.util.Optional;
-
+ 
 /**
  * Message 모듈에서 발생한 '요청 취소' 이벤트를 구독하여 처리하는 서비스.
  *
@@ -25,9 +28,11 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class CancelRequestOnEventService {
-
+ 
     private final RequestRepositoryPort requestPort;
     private final DispatchPort dispatchPort;
+    private final RoomInventoryService roomInventoryService;
+    private final InventoryPolicyProperties inventoryPolicyProperties;
 
     @EventListener
     @Transactional
@@ -98,6 +103,42 @@ public class CancelRequestOnEventService {
                 requestPort.save(request);
 
                 log.info("[Request] 최근 요청 취소 완료 — id: {}, newStatus: {}", request.getId(), request.getStatus());
+
+                // [Stateful Inventory] Redis 물품 차감 원복
+                if (request.getDomainCode() == DomainCode.HK && request.getEntities() != null) {
+                    Object itemsObj = request.getEntities().get("items");
+                    if (itemsObj instanceof java.util.List<?> items) {
+                        for (Object itemObj : items) {
+                            if (itemObj instanceof java.util.Map<?, ?> itemMap) {
+                                String name = (String) itemMap.get("item");
+                                Object countObj = itemMap.get("count");
+                                if (name != null && countObj != null) {
+                                    int quantity = 0;
+                                    if (countObj instanceof Integer) quantity = (Integer) countObj;
+                                    else if (countObj instanceof Double) quantity = ((Double) countObj).intValue();
+                                    else if (countObj instanceof String) {
+                                        try { quantity = Integer.parseInt((String) countObj); } catch (Exception ignored) {}
+                                    }
+
+                                    if (quantity > 0) {
+                                        boolean matched = false;
+                                        for (InventoryPolicyProperties.PolicyItem policy : inventoryPolicyProperties.getPolicies()) {
+                                            for (String alias : policy.getAliases()) {
+                                                if (name.equalsIgnoreCase(policy.getCode()) || name.toLowerCase().contains(alias.toLowerCase())) {
+                                                    roomInventoryService.decrementItem(request.getRoomNo(), policy.getCode(), quantity);
+                                                    log.info("[Inventory] 취소 원복 반영: 객실 {} / {} x{}", request.getRoomNo(), policy.getCode(), quantity);
+                                                    matched = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (matched) break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // 웹소켓 발송: 프론트엔드 UI(게이지바) 업데이트용
                 RequestSsePayload payload = RequestSsePayload.statusChanged(

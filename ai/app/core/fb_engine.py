@@ -59,7 +59,7 @@ def _fetch_menu_context(system_language: str = "ko") -> str:
         print(f"[FB Agent] 메뉴 조회 API 호출 중 오류 발생: {e}")
         return "메뉴 정보를 현재 불러올 수 없습니다. 프론트데스크로 문의 부탁드립니다."
 
-async def run_fb_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None) -> dict:
+async def run_fb_agent(user_message: str, room_no: str, chat_history: list = None, images: list = None, system_language: str = "ko", active_requests: list = None, room_inventory: dict = None) -> dict:
     """F&B 에이전트: 메뉴 조회, RAG 지식 결합, 2턴 주문 확인 로직 처리"""
     
     # 1. pms_menu 백엔드 조회
@@ -90,6 +90,12 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
             for m in chat_history[-5:]
         ])
         prompt += f"[Chat History]\n{context}\n\n"
+        
+    if room_inventory:
+        import json
+        prompt += f"[Stateful Room Inventory (Daily Allowed Limits)]\n"
+        prompt += f"This is the actual, current usage data for the room from the backend database. You MUST strictly adhere to this:\n"
+        prompt += f"{json.dumps(room_inventory, ensure_ascii=False)}\n\n"
     
     prompt += f"[Current Request]\nGuest: {user_message}"
 
@@ -115,15 +121,15 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
 
     result = HotelRequestSchema(**raw)
 
-    # 6. SPENDING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
-    if result.entities.get("intent") == "SPENDING_INQUIRY":
-        guest_reply = await asyncio.to_thread(_handle_spending_inquiry, room_no, user_message, system_language)
+    # 6. BILLING_INQUIRY → 백엔드 API 호출로 실시간 데이터 기반 응답 생성
+    if result.entities.get("intent") == "BILLING_INQUIRY":
+        guest_reply = await asyncio.to_thread(_handle_billing_inquiry, room_no, user_message, system_language)
         return {
             "guest_reply": guest_reply,
             "summary": "룸서비스 이용 금액 조회",
             "domain_code": None,  # 정보 조회일 뿐, request 생성 불필요
             "priority": "NORMAL",
-            "entities": {"intent": "SPENDING_INQUIRY"},
+            "entities": {"intent": "BILLING_INQUIRY"},
             "confidence": result.confidence,
         }
 
@@ -184,7 +190,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     }
 
 
-def _handle_spending_inquiry(room_no: str, user_message: str, system_language: str = "ko") -> str:
+def _handle_billing_inquiry(room_no: str, user_message: str, system_language: str = "ko") -> str:
     """백엔드 영수증 요약 API를 호출하여 이용 금액 안내 메시지를 생성"""
     try:
         base_url = os.getenv("BACKEND_URL", "http://localhost:8080")

@@ -44,7 +44,7 @@ public class PythonAiHttpAdapter implements MessageAiPort {
     }
 
     @Override
-    public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory, java.util.List<String> images, java.util.List<java.util.Map<String, Object>> activeRequests) {
+    public java.util.List<MessageAiResult> analyze(String text, String roomNo, String language, java.util.List<java.util.Map<String, String>> chatHistory, java.util.List<String> images, java.util.List<java.util.Map<String, Object>> activeRequests, java.util.Map<String, Integer> roomInventory) {
         log.info("[PythonAI] 분석 요청 — room: {}, lang: {}, text: {}", roomNo, language, text);
 
         try {
@@ -59,6 +59,9 @@ public class PythonAiHttpAdapter implements MessageAiPort {
             }
             if (activeRequests != null) {
                 body.put("active_requests", activeRequests);
+            }
+            if (roomInventory != null) {
+                body.put("room_inventory", roomInventory);
             }
 
             java.util.List<Map<String, Object>> responses = webClient.post()
