@@ -247,10 +247,6 @@ public class SendMessageService implements SendMessageUseCase {
                     .map(MessageAiResult::clarificationOptions)
                     .filter(java.util.Objects::nonNull)
                     .flatMap(java.util.List::stream)
-                    .filter(opt -> {
-                        String s = opt.trim().toLowerCase();
-                        return !s.equals("네") && !s.equals("아니오") && !s.equals("아니요") && !s.equals("yes") && !s.equals("no");
-                    })
                     .toList();
 
             if (!options.isEmpty() && conflictRequestId == null) {

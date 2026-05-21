@@ -948,7 +948,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                 additional_instructions = ""
                 import random
                 if domain == "CONCIERGE" and rag_results:
-                    rag_results = [r for r in rag_results if r.get('similarity', 1.0) >= 0.3]
+                    rag_results = [r for r in rag_results if r.get('similarity', 1.0) >= 0.5]
                     
                     # --- [추가] 카테고리 주입 및 목표 카테고리 감지 ---
                     from app.domains.concierge.knowledge_data import CONCIERGE_KNOWLEDGE
@@ -1073,9 +1073,9 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         info_prompt = (
                             f"고객 질문: {request.text}\n\n"
                             f"아래 제공된 [호텔 지식]을 바탕으로 고객의 질문에 친절하게 답변하세요. {additional_instructions}\n"
-                            f"**중요**: [호텔 지식]에 해당 서비스에 대한 정보가 조금이라도 포함되어 있다면, '모른다'고 하지 말고 제공된 지식 안에서 최대한 정보를 제공하세요. "
-                            f"만약 답변 내용이 택시, 꽃배달, 예약 등 서비스 관련 내용이라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스 이용을 유도하는 질문을 포함하세요.\n"
-                            f"**주의**: 서비스 유도 질문을 포함했다면, 절대로 '{_get_static_reply('NEED_MORE_INFO', request.language)}' 라는 문장은 사용하지 마세요.\n"
+                            f"**중요**: 제공된 [호텔 지식]이 고객의 명시적인 질문(예: 특정 목적지)과 무관하다면, 억지로 답변을 지어내지 말고 '죄송합니다. 현재 해당 정보는 안내가 어렵습니다. 프론트 데스크로 연결해 드릴까요?' 라고 정중하게 답변하세요.\n"
+                            f"만약 답변 내용이 택시, 꽃배달, 예약 등 서비스 관련 내용이거나, 프론트 데스크 연결을 제안하는 내용이라면, 답변 마지막에 반드시 '지금 바로 예약을 도와드릴까요?' 또는 '필요하시면 바로 접수해 드릴까요?'와 같이 서비스 이용을 유도하는 질문을 포함하세요.\n"
+                            f"**주의**: 질문형으로 대화를 끝맺었다면, 고객이 누를 수 있는 답변 버튼(예: ['네', '아니오'])을 clarification_options에 반드시 제공하세요.\n"
                             f"서비스 유도 질문이 없는 일반적인 정보 안내인 경우에만 마지막에 '{_get_static_reply('NEED_MORE_INFO', request.language)}'를 덧붙이세요.\n\n"
                             f"[호텔 지식]\n{knowledge}"
                         )
@@ -1091,9 +1091,10 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                         )
                     raw = await call_gemini_async(
                         prompt=info_prompt, 
-                        system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용"} 형식의 JSON으로만 출력하세요.'
+                        system_instruction='당신은 친절한 아눅(Anook) 호텔 컨시어지입니다. 반드시 {"reply": "답변내용", "clarification_options": ["옵션1", "옵션2"]} 형식의 JSON으로만 출력하세요. 선택지가 필요 없으면 빈 배열을 넣으세요.'
                     )
                     guest_reply = raw.get("reply", _get_static_reply("INFO_NOT_FOUND", request.language)) if isinstance(raw, dict) else _get_static_reply("INFO_NOT_FOUND", request.language)
+                    info_clarification_options = raw.get("clarification_options", []) if isinstance(raw, dict) else []
                 else:
                     # [수정] RAG 결과가 없을 때 에이전트 폴백 실행 시, 에이전트의 전체 결과를 response로 활용함
                     if domain == "CONCIERGE" and "CONCIERGE" in DOMAIN_AGENTS:
@@ -1170,6 +1171,8 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "reasoning": getattr(primary, 'reasoning', '알 수 없음')
                 }
             else:
+                # LLM이 생성한 clarification_options가 있으면 사용
+                options = info_clarification_options if 'info_clarification_options' in locals() else []
                 response = {
                     "guest_reply": guest_reply,
                     "summary": "정보 문의",
@@ -1177,6 +1180,7 @@ async def _analyze_message_core(request: AnalyzeRequest) -> List[Dict[str, Any]]
                     "priority": "NORMAL",
                     "entities": {},
                     "confidence": primary.confidence,
+                    "clarification_options": options
                 }
                 
             print(f"[Analyze] ℹ️ INFO 응답")
