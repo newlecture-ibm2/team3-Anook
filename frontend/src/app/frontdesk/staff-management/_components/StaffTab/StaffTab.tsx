@@ -119,19 +119,19 @@ export default function StaffTab() {
             <TableCell>부서</TableCell>
             <TableCell>역할</TableCell>
             <TableCell>PIN</TableCell>
-            <TableCell>액션</TableCell>
+            <TableCell></TableCell>
           </TableHeader>
           {filteredStaff.length > 0 ? (
             filteredStaff.map((staff) => (
               <TableRow key={staff.id}>
-                <TableCell>
+                <TableCell label="이름">
                   <span style={{ font: 'var(--text-body-medium)' }}>{staff.name}</span>
                 </TableCell>
-                <TableCell>
+                <TableCell label="부서">
                   {getDeptName(staff.departmentId)}
                 </TableCell>
-                <TableCell>{getRoleName(staff.roleId)}</TableCell>
-                <TableCell>
+                <TableCell label="역할">{getRoleName(staff.roleId)}</TableCell>
+                <TableCell label="PIN">
                   <code style={{ background: 'var(--color-gray-50)', padding: 'var(--space-4) var(--space-8)', borderRadius: 'var(--radius-sm)', font: 'var(--font-mono)' }}>
                     {staff.pin}
                   </code>

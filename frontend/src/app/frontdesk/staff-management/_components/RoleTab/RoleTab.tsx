@@ -100,13 +100,13 @@ export default function RoleTab() {
           <TableHeader>
             <TableCell>부서</TableCell>
             <TableCell>역할명</TableCell>
-            <TableCell>액션</TableCell>
+            <TableCell></TableCell>
           </TableHeader>
           {filteredRoles.length > 0 ? (
             filteredRoles.map((role) => (
               <TableRow key={role.id}>
-                <TableCell>{departments.find(d => d.id === role.departmentId)?.name || role.departmentId}</TableCell>
-                <TableCell>{role.name}</TableCell>
+                <TableCell label="부서">{departments.find(d => d.id === role.departmentId)?.name || role.departmentId}</TableCell>
+                <TableCell label="역할명">{role.name}</TableCell>
                 <TableCell>
                   <div style={{ display: 'flex', gap: 'var(--space-8)' }}>
                     <button 

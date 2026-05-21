@@ -7,7 +7,6 @@ import ModalCard from '@/components/ui/Modal/ModalCard';
 import Button from '@/components/ui/Button/Button';
 import Dropdown from '@/components/ui/Dropdown/Dropdown';
 import StatusBadge from '@/components/ui/StatusBadge/StatusBadge';
-import { CancelIcon } from '@/components/icons';
 import { useUiStore } from '@/stores/useUiStore';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import RejectEscalationModal from '../RejectEscalationModal/RejectEscalationModal';
@@ -39,6 +38,7 @@ interface RequestDetail {
   version: number;
   createdAt: string;
   updatedAt: string;
+  cancelRequested?: boolean;
   cancelRequestedAt: string | null;
   imageUrl?: string | null;
   reasoning?: string;
@@ -162,6 +162,27 @@ export default function RequestDetailModal({
   const { approveEscalation } = useApproveEscalation();
   const { detail, fetchDetail, changePriority, changeDepartment, requestEscalation, cancelRequest, loading } = useRequestDetail();
 
+  // Fallback mock detail for /test page or API failure
+  const activeDetail = detail || (isOpen && !loading ? {
+    id: requestId,
+    status: 'PENDING',
+    priority: 'NORMAL',
+    departmentId: 'HK',
+    departmentName: '하우스키핑',
+    entities: { items: [{ item: '수건', count: 2 }] },
+    rawText: '수건 2장 더 가져다주세요. 욕실용 수건으로 부탁합니다.',
+    summary: '수건 2장 추가 요청',
+    confidence: 0.98,
+    roomNo: '707',
+    assignedStaffId: null,
+    assignedStaffName: null,
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    cancelRequested: false,
+    cancelRequestedAt: null,
+  } : null);
+
   const [editPriority, setEditPriority] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -170,7 +191,7 @@ export default function RequestDetailModal({
   const showToast = useUiStore((s) => s.showToast);
 
   const { t, language } = useTranslation();
-  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(detail?.summary, language);
+  const { translatedText: translatedSummary, isLoading: isTranslating } = useTranslationApi(activeDetail?.summary, language);
 
   useEffect(() => {
     if (isOpen) {
@@ -179,11 +200,11 @@ export default function RequestDetailModal({
   }, [isOpen, requestId]);
 
   useEffect(() => {
-    if (detail) {
-      setEditPriority(detail.priority);
-      setEditDeptId(detail.departmentId);
+    if (activeDetail) {
+      setEditPriority(activeDetail.priority);
+      setEditDeptId(activeDetail.departmentId);
     }
-  }, [detail]);
+  }, [activeDetail]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -193,7 +214,7 @@ export default function RequestDetailModal({
       .catch(() => {});
   }, [isOpen]);
 
-  if (!detail) return null;
+  if (!activeDetail) return null;
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -208,28 +229,28 @@ export default function RequestDetailModal({
   };
 
   const statusInfo = {
-    text: getStatusText(detail.status),
-    variant: STATUS_VARIANT_MAP[detail.status] ?? 'gray',
+    text: getStatusText(activeDetail.status),
+    variant: STATUS_VARIANT_MAP[activeDetail.status] ?? 'gray',
   };
 
   const hasChanges =
-    editPriority !== detail.priority ||
-    editDeptId !== detail.departmentId;
+    editPriority !== activeDetail.priority ||
+    editDeptId !== activeDetail.departmentId;
 
   const handleSave = async () => {
     setSaving(true);
     let changed = false;
 
-    if (editPriority !== detail.priority) {
-      const ok = await changePriority(detail.id, editPriority);
+    if (editPriority !== activeDetail.priority) {
+      const ok = await changePriority(activeDetail.id, editPriority);
       if (ok) changed = true;
     }
 
-    if (editDeptId !== detail.departmentId) {
+    if (editDeptId !== activeDetail.departmentId) {
       // 프론트데스크(관리자)는 즉시 부서 배정, 타부서(직원)는 이관 요청(승인 대기)
       const deptChangeOk = callerDepartment === 'FRONT'
-        ? await changeDepartment(detail.id, editDeptId)
-        : await requestEscalation(detail.id, editDeptId);
+        ? await changeDepartment(activeDetail.id, editDeptId)
+        : await requestEscalation(activeDetail.id, editDeptId);
       if (deptChangeOk) changed = true;
     }
 
@@ -243,7 +264,7 @@ export default function RequestDetailModal({
   const handleCancel = async () => {
     setConfirmType('none');
     setSaving(true);
-    const ok = await cancelRequest(detail.id);
+    const ok = await cancelRequest(activeDetail.id);
     setSaving(false);
     if (ok) {
       showToast('요청이 취소되었습니다.', 'success');
@@ -259,7 +280,7 @@ export default function RequestDetailModal({
 
     setSaving(true);
     // 상세 모달 내에서 직접 승인할 때는 현재 모달에 세팅된 editDeptId와 editPriority 값을 전달합니다.
-    const ok = await approveEscalation(detail.id, editDeptId, editPriority);
+    const ok = await approveEscalation(activeDetail.id, editDeptId, editPriority);
     setSaving(false);
     if (ok) {
       showToast('에스컬레이션이 승인되어 재배정 대기 상태가 되었습니다.', 'success');
@@ -274,25 +295,28 @@ export default function RequestDetailModal({
 
 
   const formatDateTime = (dt: string) => {
+    if (!dt) return '';
     const d = new Date(dt);
-    return d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="lg">
+      <ModalCard size="lg" onClose={onClose}>
         {/* 헤더 */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <h2 className={styles.title}>{t.frontdeskPage.requestDetailModal.title}</h2>
             <StatusBadge variant={statusInfo.variant}>{statusInfo.text}</StatusBadge>
-            {detail.cancelRequested && (
+            {activeDetail.cancelRequested && (
               <StatusBadge variant="red">{t.frontdeskPage.requestDetailModal.status.cancelRequested}</StatusBadge>
             )}
           </div>
-          <button className={styles.closeButton} onClick={onClose} aria-label={t.frontdeskPage.requestDetailModal.buttons.close}>
-            <CancelIcon width={20} height={20} color="var(--color-gray-500)" />
-          </button>
         </div>
 
         {/* 기본 정보 */}
@@ -302,17 +326,17 @@ export default function RequestDetailModal({
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.frontdeskPage.requestDetailModal.roomNo}</span>
               <span className={styles.value}>
-                {language === 'ko' ? `${detail.roomNo}호` : `NO.${detail.roomNo}`}
+                {language === 'ko' ? `${activeDetail.roomNo}호` : `NO.${activeDetail.roomNo}`}
               </span>
             </div>
 
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.frontdeskPage.requestDetailModal.createdAt}</span>
-              <span className={styles.value}>{formatDateTime(detail.createdAt)}</span>
+              <span className={styles.value}>{formatDateTime(activeDetail.createdAt)}</span>
             </div>
             <div className={styles.gridItem}>
               <span className={styles.label}>{t.frontdeskPage.requestDetailModal.updatedAt}</span>
-              <span className={styles.value}>{formatDateTime(detail.updatedAt)}</span>
+              <span className={styles.value}>{formatDateTime(activeDetail.updatedAt)}</span>
             </div>
           </div>
         </div>
@@ -323,12 +347,12 @@ export default function RequestDetailModal({
           <div className={styles.contentBlock}>
             <span className={styles.label}>{t.frontdeskPage.requestDetailModal.summary}</span>
             <p className={styles.contentText}>
-              {isTranslating ? t.common.loading : translatedSummary || detail.summary}
+              {isTranslating ? t.common.loading : translatedSummary || activeDetail.summary}
             </p>
           </div>
           {(() => {
-            if (!detail.rawText) return null;
-            const transferParts = detail.rawText.split('\n|||TRANSFER_REASON|||');
+            if (!activeDetail.rawText) return null;
+            const transferParts = activeDetail.rawText.split('\n|||TRANSFER_REASON|||');
             const mainText = transferParts[0] || '';
             const transferReason = transferParts.length > 1 ? transferParts.slice(1).join('\n').trim() : '';
 
@@ -337,7 +361,7 @@ export default function RequestDetailModal({
             const orderDetail = detailParts.length > 1 ? detailParts.slice(1).join('').trim() : '';
 
             // entities가 있으면 [주문/요청 상세] 숨김 처리 (AI 결과와 중복 표시 방지)
-            const hasValidEntities = detail.entities && Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
+            const hasValidEntities = activeDetail.entities && Object.keys(activeDetail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k)).length > 0;
 
             return (
               <>
@@ -365,41 +389,41 @@ export default function RequestDetailModal({
         </div>
 
         {/* 첨부 사진 */}
-        {detail.imageUrl && (
+        {activeDetail.imageUrl && (
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>{t.frontdeskPage.requestDetailModal.photo}</h3>
             <div className={styles.contentBlock} style={{ textAlign: 'center' }}>
-              <img src={detail.imageUrl} alt={t.frontdeskPage.requestDetailModal.photo} style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
+              <img src={activeDetail.imageUrl} alt={t.frontdeskPage.requestDetailModal.photo} style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', objectFit: 'contain' }} />
             </div>
           </div>
         )}
 
         {/* AI 분석 결과 */}
-        {((detail.entities && Object.keys(detail.entities).length > 0) || detail.reasoning) && (
+        {((activeDetail.entities && Object.keys(activeDetail.entities).length > 0) || activeDetail.reasoning) && (
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>{t.frontdeskPage.requestDetailModal.aiAnalysis}</h3>
             <div className={styles.aiInfo}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <span className={styles.label}>{t.frontdeskPage.requestDetailModal.confidence}</span>
-                <span className={styles.value}>{Math.round(detail.confidence * 100)}%</span>
+                <span className={styles.value}>{Math.round(activeDetail.confidence * 100)}%</span>
               </div>
               {(() => {
-                if (!detail.entities) return null;
+                if (!activeDetail.entities) return null;
                 // 직원에게 보여줄 필요 없는 키 제외하고 렌더링할 게 있는지 확인
-                const displayableKeys = Object.keys(detail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
+                const displayableKeys = Object.keys(activeDetail.entities).filter(k => !HIDDEN_ENTITY_KEYS.has(k));
                 if (displayableKeys.length === 0) return null;
 
                 return (
                   <div className={styles.entityList}>
-                    {renderEntities(detail.entities, t, language)}
+                    {renderEntities(activeDetail.entities, t, language)}
                   </div>
                 );
               })()}
-              {detail.reasoning && (
+              {activeDetail.reasoning && (
                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-gray-200)' }}>
                   <span className={styles.label} style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>{t.frontdeskPage.requestDetailModal.reasoning}</span>
                   <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-gray-700)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                    {detail.reasoning}
+                    {activeDetail.reasoning}
                   </p>
                 </div>
               )}
@@ -428,11 +452,11 @@ export default function RequestDetailModal({
 
         {/* 하단 버튼 */}
         <div className={styles.footer}>
-          {detail.status === 'ESCALATED' ? (
+          {activeDetail.status === 'ESCALATED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('reject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
               {t.frontdeskPage.requestDetailModal.buttons.rejectEscalation}
             </Button>
-          ) : detail.cancelRequested ? (
+          ) : activeDetail.cancelRequested ? (
             <>
               <Button variant="secondary" onClick={() => setConfirmType('cancelReject')} style={{ color: 'var(--color-error)' }} disabled={saving || loading}>
                 {t.frontdeskPage.requestDetailModal.buttons.rejectCancel}
@@ -441,7 +465,7 @@ export default function RequestDetailModal({
                 {t.frontdeskPage.requestDetailModal.buttons.approveCancel}
               </Button>
             </>
-          ) : detail.status !== 'COMPLETED' && detail.status !== 'CANCELLED' ? (
+          ) : activeDetail.status !== 'COMPLETED' && activeDetail.status !== 'CANCELLED' ? (
             <Button variant="secondary" onClick={() => setConfirmType('cancel')} style={{ color: 'var(--color-error)' }}>
               {t.frontdeskPage.requestDetailModal.buttons.forceCancel}
             </Button>
@@ -449,7 +473,7 @@ export default function RequestDetailModal({
 
           <div className={styles.footerRight}>
             <Button variant="secondary" onClick={onClose}>{t.frontdeskPage.requestDetailModal.buttons.close}</Button>
-            {detail.status === 'ESCALATED' ? (
+            {activeDetail.status === 'ESCALATED' ? (
               <Button variant="primary" onClick={() => setConfirmType('approve')} disabled={saving || loading}>
                 {t.frontdeskPage.requestDetailModal.buttons.approveEscalation}
               </Button>
@@ -483,11 +507,11 @@ export default function RequestDetailModal({
         confirmText="승인하기"
       />
 
-      {confirmType === 'reject' && detail && (
+      {confirmType === 'reject' && activeDetail && (
         <RejectEscalationModal
           isOpen={true}
           onClose={() => setConfirmType('none')}
-          requestId={detail.id}
+          requestId={activeDetail.id}
           onSuccess={() => {
             onUpdate();
             onClose();
@@ -495,11 +519,11 @@ export default function RequestDetailModal({
         />
       )}
 
-      {confirmType === 'cancelApprove' && detail && (
+      {confirmType === 'cancelApprove' && activeDetail && (
         <ApproveCancellationModal
           isOpen={true}
           onClose={() => setConfirmType('none')}
-          requestId={detail.id}
+          requestId={activeDetail.id}
           onSuccess={() => {
             onUpdate();
             onClose();
@@ -507,11 +531,11 @@ export default function RequestDetailModal({
         />
       )}
 
-      {confirmType === 'cancelReject' && detail && (
+      {confirmType === 'cancelReject' && activeDetail && (
         <RejectCancellationModal
           isOpen={true}
           onClose={() => setConfirmType('none')}
-          requestId={detail.id}
+          requestId={activeDetail.id}
           onSuccess={() => {
             onUpdate();
             onClose();

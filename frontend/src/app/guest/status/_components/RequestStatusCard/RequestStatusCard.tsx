@@ -30,7 +30,9 @@ export default function RequestStatusCard({
   
   const formatTime = (isoStr: string) => {
     const date = new Date(isoStr);
-    return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${min}`;
   };
 
   return (

@@ -52,10 +52,7 @@ export default function RoleFormModal({ isOpen, onClose, onSave, initialData, de
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="sm" padding="var(--space-24)">
-        <h3 style={{ font: 'var(--text-h3-bold)', marginBottom: 'var(--space-24)' }}>
-          {initialData ? '역할 수정' : '새 역할 추가'}
-        </h3>
+      <ModalCard size="sm" onClose={onClose} title={initialData ? '역할 수정' : '새 역할 추가'}>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-16)', marginBottom: 'var(--space-32)' }}>
           <Dropdown

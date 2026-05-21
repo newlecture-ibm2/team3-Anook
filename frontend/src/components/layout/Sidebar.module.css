@@ -139,3 +139,67 @@
 .danger:hover {
   background-color: var(--color-gray-50);
 }
+
+/* ── Collapse Utility Styles ── */
+.sidebarCollapsed .label {
+  display: none;
+}
+
+.logoCollapsed {
+  display: none;
+}
+
+.categoryHeader {
+  padding: var(--space-8) var(--space-24);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-4);
+  display: block;
+}
+
+.categoryCollapsed {
+  display: none;
+}
+
+.dividerHidden {
+  display: none;
+}
+
+/* ── Mobile Responsive Overrides ── */
+@media (max-width: 768px) {
+  .sidebar.sidebarCollapsed {
+    align-items: flex-start !important;
+  }
+  
+  .sidebarCollapsed .logoRow {
+    justify-content: space-between !important;
+    padding: var(--space-24) var(--space-24) var(--space-8) !important;
+  }
+
+  .sidebarCollapsed .item {
+    justify-content: flex-start !important;
+    padding: var(--space-12) var(--space-24) !important;
+  }
+
+  .sidebarCollapsed .label {
+    display: inline !important;
+  }
+
+  .logoCollapsed {
+    display: flex !important;
+  }
+
+  .categoryCollapsed {
+    display: block !important;
+  }
+
+  .collapsedDivider {
+    display: none !important;
+  }
+
+  .collapseBtn {
+    display: none !important;
+  }
+}

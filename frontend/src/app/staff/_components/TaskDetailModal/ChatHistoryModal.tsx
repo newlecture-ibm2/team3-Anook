@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ModalOverlay from '@/components/ui/Modal/ModalOverlay';
 import ModalCard from '@/components/ui/Modal/ModalCard';
-import { CancelIcon } from '@/components/icons';
 import ChatBubble from '@/app/guest/chat/_components/ChatBubble';
 import styles from './ChatHistoryModal.module.css';
 
@@ -58,16 +57,8 @@ export default function ChatHistoryModal({ isOpen, onClose, roomNumber }: ChatHi
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <ModalCard size="md" padding="0">
+      <ModalCard size="md" onClose={onClose} title={`${roomNumber}호 대화 내역`}>
         <div className={styles.container}>
-          <div className={styles.header}>
-            <h3 className={styles.headerTitle}>
-              💬 {roomNumber}호 대화 내역
-            </h3>
-            <button className={styles.closeBtn} onClick={onClose} aria-label="닫기">
-              <CancelIcon width={20} height={20} color="var(--color-gray-400)" />
-            </button>
-          </div>
 
           <div className={styles.messageList} ref={listRef}>
             {loading && (
