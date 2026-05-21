@@ -6,5 +6,9 @@ public record BillingItemResult(
         int quantity,
         double unitPrice,
         double totalPrice,
+        double unitPriceKrw,
+        double totalPriceKrw,
+        double unitPriceUsd,
+        double totalPriceUsd,
         String createdAt
 ) {}

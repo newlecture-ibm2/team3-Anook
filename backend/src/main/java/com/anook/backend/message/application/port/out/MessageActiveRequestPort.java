@@ -27,4 +27,11 @@ public interface MessageActiveRequestPort {
      */
     java.util.List<java.util.Map<String, Object>> findActiveRequests(String roomNo, Long guestId);
 
+    /**
+     * 특정 요청 ID를 기준으로 요청 상세 정보를 조회합니다.
+     * @param requestId 요청 ID
+     * @return 요청 상세 정보 Map
+     */
+    java.util.Map<String, Object> findRequestById(Long requestId);
+
 }

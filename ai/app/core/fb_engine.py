@@ -8,7 +8,7 @@ from app.domains.rag import service as rag_service
 
 import os
 
-def _fetch_menu_context(system_language: str = "ko") -> str:
+def _fetch_menu_context() -> str:
     """백엔드 PMS API를 호출하여 메뉴 데이터를 가져와 프롬프트 컨텍스트로 변환"""
     try:
         # 환경 변수에 BACKEND_URL이 있으면 사용하고 (배포용), 없으면 로컬 도커 환경의 호스트 접근 주소를 사용
@@ -35,22 +35,13 @@ def _fetch_menu_context(system_language: str = "ko") -> str:
                 options = m.get("options")
                 allergy_str = f" (알러지: {allergens})" if allergens else ""
                 
-                # 프롬프트의 REQUIRED OPTION RULE에 맞게 포맷 유지
-                option_str = ""
-                if options and isinstance(options, list):
-                    opt_list = []
-                    for opt in options:
-                        req_label = "[필수옵션]" if opt.get("isRequired") else "[선택옵션]"
-                        items = "|".join(opt.get("items", []))
-                        opt_list.append(f"{req_label} {opt.get('groupName')}:{items}")
-                    option_str = " " + " / ".join(opt_list)
-                    
-                if system_language == "ko":
-                    price_str = f"{int(price):,}원"
+                # 프롬프트의 REQUIRED OPTION RULE에 맞게 포맷 유지: [선택옵션] 카테고리:옵션1|옵션2
+                if options:
+                    option_str = f" [선택옵션] {options}"
                 else:
-                    price_str = f"${(price / 1300):.2f}"
+                    option_str = ""
                     
-                menu_lines.append(f"- [{category}] {name}: {price_str}{allergy_str}{option_str}")
+                menu_lines.append(f"- [{category}] {name}: ${price:.2f}{allergy_str}{option_str}")
             return "\n".join(menu_lines)
         else:
             print(f"[FB Agent] 메뉴 조회 API 실패: HTTP {resp.status_code}")
@@ -63,7 +54,7 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     """F&B 에이전트: 메뉴 조회, RAG 지식 결합, 2턴 주문 확인 로직 처리"""
     
     # 1. pms_menu 백엔드 조회
-    menu_context = await asyncio.to_thread(_fetch_menu_context, system_language)
+    menu_context = await asyncio.to_thread(_fetch_menu_context)
     
     # 2. RAG 검색 → FB 도메인 지식 (운영시간, 기타 정책 등)
     rag_context = ""
@@ -102,11 +93,6 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
     # 4. Gemini 호출
     system_instruction_with_lang = FB_SYSTEM_PROMPT.replace("{system_language}", system_language)
     raw = await call_gemini_async(prompt=prompt, system_instruction=system_instruction_with_lang, images=images)
-    
-    if isinstance(raw, list):
-        if not raw:
-            raise ValueError("AI returned an empty list")
-        raw = raw[0]
 
     # 5. Pydantic 검증
     if "request_id" not in raw or raw["request_id"] == "auto":
@@ -141,40 +127,25 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         guest_reply = result.final_reply or "룸서비스 주문이 접수되었습니다."
 
     # 8. analyze.py 응답 포맷 반환
-    # [AN-344] 더블체크 UX 제거:
-    # - missing_fields가 비어있고 intent가 ROOM_SERVICE인 확인 질문 단계에서는
-    #   domain_code="FB"를 유지하여 티켓을 생성함 → 백엔드에서 graceRemaining=-1 설정
-    #   → 프론트에서 정적 RequestCard(취소/진행 버튼)가 확인 질문과 함께 표시됨
-    # - missing_fields가 있거나 정보 문의(MENU_INQUIRY 등)인 경우에만 domain_code=None
-    missing = getattr(result, "missing_fields", [])
-    intent = result.entities.get("intent", "")
-    is_order_intent = intent in ("ROOM_SERVICE", "ORDER_MODIFY")
-    
-    # [AN-344] 룸서비스 주문 목록 존재 여부 검증 (유효한 수량의 아이템이 1개 이상 필요)
-    menu_items = result.entities.get("menu_items", [])
-    has_items = False
-    if isinstance(menu_items, list) and len(menu_items) > 0:
-        has_items = any(
-            isinstance(item, dict) and item.get("quantity", 0) > 0 
-            for item in menu_items
-        )
-        
-    is_ready_for_confirm = (
-        result.needs_clarification 
-        and not missing 
-        and is_order_intent 
-        and has_items
+    # [수정] 주문 확인 단계(needs_clarification=True, missing_fields가 비어있고, intent가 주문/변경 관련인 경우)
+    # 에는 domain_code="FB"를 전달하여 DB에 수락 대기 상태의 요청 카드가 생성되게 하고,
+    # 네/아니오 칩(clarification_options)을 비워 화면 하단에 퀵 리플레이 버튼이 나타나지 않도록 제어합니다.
+    is_confirm_stage = (
+        result.needs_clarification
+        and not getattr(result, "missing_fields", [])
+        and result.entities.get("intent") in ["ROOM_SERVICE", "ORDER_MODIFY"]
     )
 
-    if is_ready_for_confirm:
-        # 확인 질문 + 정적 카드를 동시에 표시 (더블체크 제거)
+    clarification_options = getattr(result, "clarification_options", [])
+    if is_confirm_stage:
         domain_code = "FB"
-    elif result.needs_clarification:
-        # 아직 정보가 부족하거나, 정보 문의 → 티켓 생성 방지
-        domain_code = None
+        clarification_options = []
     else:
-        # 최종 확정 (고객이 "네" 응답 후) → 기존 흐름 유지
-        domain_code = "FB"
+        domain_code = None if result.needs_clarification else "FB"
+
+    action_type = result.entities.get("action_type") or raw.get("action_type") or "ADD"
+    target_keyword = result.entities.get("target_keyword") or raw.get("target_keyword")
+    target_request_id = result.target_request_id or result.entities.get("target_request_id") or raw.get("target_request_id")
 
     action_type = raw.get("action_type")
     if action_type is None:
@@ -189,12 +160,13 @@ async def run_fb_agent(user_message: str, room_no: str, chat_history: list = Non
         "priority": result.priority,
         "entities": result.entities,
         "confidence": result.confidence,
-        "missing_fields": missing,
-        "clarification_options": getattr(result, "clarification_options", []),
+        "missing_fields": getattr(result, "missing_fields", []),
+        "clarification_options": clarification_options,
         "reasoning": result.reasoning,
         "action_type": action_type,
+        "target_keyword": target_keyword,
+        "target_request_id": target_request_id,
     }
-
 
 
 def _handle_billing_inquiry(room_no: str, user_message: str, system_language: str = "ko") -> str:
@@ -218,17 +190,17 @@ def _handle_billing_inquiry(room_no: str, user_message: str, system_language: st
                 name = item.get("menuName", "")
                 qty = item.get("quantity", 0)
                 price = item.get("totalPrice", 0)
-                if system_language == "ko":
-                    lines.append(f"- {name} {qty}개: {int(price):,}원")
-                else:
-                    lines.append(f"- {name} x{qty}: ${(price / 1300):.2f}")
+                lines.append(f"- {name} {qty}개: ${price:.2f}")
 
             detail = "\n".join(lines)
 
-            if system_language == "ko":
-                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: {int(total):,}원"
+            # 고객 언어 감지 (간단한 휴리스틱)
+            is_english = any(c.isascii() and c.isalpha() for c in user_message) and not any('\uac00' <= c <= '\ud7a3' for c in user_message)
+
+            if is_english:
+                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${total:.2f}"
             else:
-                return f"Here is your room service usage so far:\n{detail}\n\nTotal: ${(total / 1300):.2f}"
+                return f"현재까지 룸서비스 이용 내역입니다:\n{detail}\n\n총 금액: ${total:.2f}"
         else:
             print(f"[FB Agent] 영수증 조회 API 실패: HTTP {resp.status_code}")
             return "이용 내역 조회 중 오류가 발생했습니다. 프론트데스크로 문의 부탁드립니다."

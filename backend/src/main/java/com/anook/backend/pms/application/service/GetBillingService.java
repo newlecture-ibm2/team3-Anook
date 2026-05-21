@@ -38,7 +38,7 @@ public class GetBillingService implements GetBillingUseCase {
         String resolvedCategory = (category == null || category.isBlank()) ? "ALL" : category.toUpperCase();
         
         boolean isKorean = "ko".equalsIgnoreCase(language);
-        double conversionRate = isKorean ? 1.0 : exchangeRate.getKrwToUsdRate();
+        double krwToUsd = exchangeRate.getKrwToUsdRate();
         String targetCurrency = isKorean ? "KRW" : "USD";
 
         List<BillingItemResult> items = receipts.stream()
@@ -56,23 +56,54 @@ public class GetBillingService implements GetBillingUseCase {
                 .map(r -> {
                     PmsMenu menu = menuMap.get(r.menuId());
                     String cat = menu != null ? menu.category() : "UNKNOWN";
-                    double unitPrice = round2(menu != null ? menu.price() * conversionRate : 0.0);
-                    double totalPrice = round2(r.totalPrice() * conversionRate);
+
+                    double unitPriceKrw = menu != null ? menu.price() : 0.0;
+                    double totalPriceKrw = r.totalPrice();
+
+                    double unitPriceUsd;
+                    double totalPriceUsd;
+                    if (menu != null && menu.priceUsd() != null) {
+                        unitPriceUsd = menu.priceUsd();
+                        totalPriceUsd = r.totalPriceUsd() != null ? r.totalPriceUsd() : round2(unitPriceUsd * r.quantity());
+                    } else {
+                        unitPriceUsd = round2(unitPriceKrw * krwToUsd);
+                        totalPriceUsd = round2(totalPriceKrw * krwToUsd);
+                    }
+
+                    double unitPrice = isKorean ? unitPriceKrw : unitPriceUsd;
+                    double totalPrice = isKorean ? totalPriceKrw : totalPriceUsd;
+
                     return new BillingItemResult(
                             r.menuName(),
                             cat,
                             r.quantity(),
                             unitPrice,
                             totalPrice,
+                            unitPriceKrw,
+                            totalPriceKrw,
+                            unitPriceUsd,
+                            totalPriceUsd,
                             r.createdAt().toString()
                     );
                 })
                 .toList();
 
-        double subtotal = round2(items.stream().mapToDouble(BillingItemResult::totalPrice).sum());
-        double tax = round2(subtotal * TAX_RATE);
-        double serviceCharge = round2(subtotal * SERVICE_CHARGE_RATE);
-        double totalAmount = round2(subtotal + tax + serviceCharge);
+        double subtotalKrw = items.stream().mapToDouble(BillingItemResult::totalPriceKrw).sum();
+        double taxKrw = round2(subtotalKrw * TAX_RATE);
+        double serviceChargeKrw = round2(subtotalKrw * SERVICE_CHARGE_RATE);
+        double totalAmountKrw = subtotalKrw + taxKrw + serviceChargeKrw;
+
+        double subtotalUsd = round2(items.stream().mapToDouble(BillingItemResult::totalPriceUsd).sum());
+        double taxUsd = round2(subtotalUsd * TAX_RATE);
+        double serviceChargeUsd = round2(subtotalUsd * SERVICE_CHARGE_RATE);
+        double totalAmountUsd = round2(subtotalUsd + taxUsd + serviceChargeUsd);
+
+        double subtotal = isKorean ? subtotalKrw : subtotalUsd;
+        double tax = isKorean ? taxKrw : taxUsd;
+        double serviceCharge = isKorean ? serviceChargeKrw : serviceChargeUsd;
+        double totalAmount = isKorean ? totalAmountKrw : totalAmountUsd;
+
+        double currentExchangeRate = exchangeRate.getUsdToKrwRate();
 
         return new GetBillingSummaryResult(
                 roomNo,
@@ -82,7 +113,16 @@ public class GetBillingService implements GetBillingUseCase {
                 tax,
                 serviceCharge,
                 totalAmount,
-                targetCurrency
+                targetCurrency,
+                subtotalKrw,
+                subtotalUsd,
+                taxKrw,
+                taxUsd,
+                serviceChargeKrw,
+                serviceChargeUsd,
+                totalAmountKrw,
+                totalAmountUsd,
+                currentExchangeRate
         );
     }
 
