@@ -108,7 +108,7 @@ def upsert_knowledge_entry(cur, domain_code: str, question: str, answer: str, fo
         """
         INSERT INTO knowledge_entry (question, answer, domain_code, status, embedding)
         VALUES (%s, %s, %s, 'APPROVED', %s::vector)
-        ON CONFLICT (domain_code, question) DO UPDATE SET
+        ON CONFLICT (domain_code, question) WHERE status = 'APPROVED' DO UPDATE SET
             answer = EXCLUDED.answer,
             embedding = EXCLUDED.embedding,
             updated_at = NOW()
