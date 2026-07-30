@@ -171,47 +171,67 @@ SELECT setval('pms_guest_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pms_guest));
 
 -- ============================================================
 -- 데모용 활동 데이터 (요청/영수증/대화) — 최초 1회만 삽입
--- data.sql은 매 기동 시 재실행되므로(spring.sql.init.mode=always),
--- 이미 데이터가 있으면 건너뛰어 재기동마다 중복 삽입되지 않게 함
+-- data.sql은 매 기동 시 재실행되므로(spring.sql.init.mode=always), 각 SELECT의
+-- WHERE NOT EXISTS 가드로 재기동마다 중복 삽입되지 않게 함.
+-- (DO $$ ... $$ 블록은 Spring의 세미콜론 기준 스크립트 분리기가 잘못 쪼개서
+--  continue-on-error=true 아래 조용히 실패했음 — 순수 INSERT SELECT 문으로 대체)
 -- ============================================================
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM request LIMIT 1) THEN
-        INSERT INTO request (department_id, room_no, priority, status, raw_text, summary, assigned_staff_id, guest_id, created_at) VALUES
-            ('HK',        '707', 'NORMAL',    'PENDING',     '수건 좀 더 가져다주세요',              '수건 추가 요청',                 NULL, (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '3 hours'),
-            ('FB',        '707', 'NORMAL',    'IN_PROGRESS', '스테이크 미디엄으로 룸서비스 주문할게요', '스테이크 룸서비스 주문 (미디엄)', 1,    (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '1 hour'),
-            ('HK',        '101', 'NORMAL',    'COMPLETED',   '생수 6병 요청드립니다',                '생수 추가 요청',                  1,    (SELECT id FROM pms_guest WHERE room_no = '101'), NOW() - INTERVAL '1 day'),
-            ('FACILITY',  '201', 'URGENT',    'PENDING',     '에어컨이 작동하지 않습니다',            '에어컨 고장 신고',                NULL, NULL, NOW() - INTERVAL '30 minutes'),
-            ('CONCIERGE', '301', 'NORMAL',    'COMPLETED',   '근처 맛집 추천해주세요',                '주변 맛집 추천 요청',             NULL, NULL, NOW() - INTERVAL '5 hours'),
-            ('HK',        '402', 'NORMAL',    'CANCELLED',   '엑스트라 베드 요청 취소할게요',          '엑스트라 베드 요청 취소',          NULL, NULL, NOW() - INTERVAL '2 days'),
-            ('EMERGENCY', '503', 'EMERGENCY', 'ESCALATED',   '객실에서 연기 냄새가 나요',              '연기 냄새 신고 (안전 관련)',       1,    NULL, NOW() - INTERVAL '10 minutes'),
-            ('FRONT',     '106', 'NORMAL',    'SETTLED',     '체크아웃 시간 좀 늦출 수 있을까요?',      '체크아웃 시간 연장 문의',          NULL, NULL, NOW() - INTERVAL '6 hours');
-    END IF;
-END $$;
+INSERT INTO request (department_id, room_no, priority, status, raw_text, summary, assigned_staff_id, guest_id, created_at)
+SELECT 'HK', '707', 'NORMAL', 'PENDING', '수건 좀 더 가져다주세요', '수건 추가 요청', NULL::bigint, (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '3 hours'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'FB', '707', 'NORMAL', 'IN_PROGRESS', '스테이크 미디엄으로 룸서비스 주문할게요', '스테이크 룸서비스 주문 (미디엄)', 1::bigint, (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '1 hour'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'HK', '101', 'NORMAL', 'COMPLETED', '생수 6병 요청드립니다', '생수 추가 요청', 1::bigint, (SELECT id FROM pms_guest WHERE room_no = '101'), NOW() - INTERVAL '1 day'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'FACILITY', '201', 'URGENT', 'PENDING', '에어컨이 작동하지 않습니다', '에어컨 고장 신고', NULL::bigint, NULL::bigint, NOW() - INTERVAL '30 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'CONCIERGE', '301', 'NORMAL', 'COMPLETED', '근처 맛집 추천해주세요', '주변 맛집 추천 요청', NULL::bigint, NULL::bigint, NOW() - INTERVAL '5 hours'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'HK', '402', 'NORMAL', 'CANCELLED', '엑스트라 베드 요청 취소할게요', '엑스트라 베드 요청 취소', NULL::bigint, NULL::bigint, NOW() - INTERVAL '2 days'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'EMERGENCY', '503', 'EMERGENCY', 'ESCALATED', '객실에서 연기 냄새가 나요', '연기 냄새 신고 (안전 관련)', 1::bigint, NULL::bigint, NOW() - INTERVAL '10 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1)
+UNION ALL
+SELECT 'FRONT', '106', 'NORMAL', 'SETTLED', '체크아웃 시간 좀 늦출 수 있을까요?', '체크아웃 시간 연장 문의', NULL::bigint, NULL::bigint, NOW() - INTERVAL '6 hours'
+WHERE NOT EXISTS (SELECT 1 FROM request LIMIT 1);
 
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1) THEN
-        INSERT INTO pms_receipt (room_no, menu_id, quantity, total_price, status, created_at) VALUES
-            ('707', (SELECT id FROM pms_menu WHERE name = '클래식 치즈버거'),      1, 15000, 'PAID',   NOW() - INTERVAL '2 hours'),
-            ('707', (SELECT id FROM pms_menu WHERE name = '아메리카노'),          2, 10000, 'PAID',   NOW() - INTERVAL '2 hours'),
-            ('101', (SELECT id FROM pms_menu WHERE name = '트러플 머쉬룸 리조또'), 1, 28000, 'UNPAID', NOW() - INTERVAL '1 day'),
-            ('201', (SELECT id FROM pms_menu WHERE name = '콜라'),                3, 12000, 'PAID',   NOW() - INTERVAL '5 hours'),
-            ('301', (SELECT id FROM pms_menu WHERE name = '미니바 와인'),         1, 15000, 'UNPAID', NOW() - INTERVAL '3 hours'),
-            ('402', (SELECT id FROM pms_menu WHERE name = '감자튀김'),            2, 16000, 'PAID',   NOW() - INTERVAL '1 day');
-    END IF;
-END $$;
+INSERT INTO pms_receipt (room_no, menu_id, quantity, total_price, status, created_at)
+SELECT '707', (SELECT id FROM pms_menu WHERE name = '클래식 치즈버거'), 1, 15000, 'PAID', NOW() - INTERVAL '2 hours'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1)
+UNION ALL
+SELECT '707', (SELECT id FROM pms_menu WHERE name = '아메리카노'), 2, 10000, 'PAID', NOW() - INTERVAL '2 hours'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1)
+UNION ALL
+SELECT '101', (SELECT id FROM pms_menu WHERE name = '트러플 머쉬룸 리조또'), 1, 28000, 'UNPAID', NOW() - INTERVAL '1 day'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1)
+UNION ALL
+SELECT '201', (SELECT id FROM pms_menu WHERE name = '콜라'), 3, 12000, 'PAID', NOW() - INTERVAL '5 hours'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1)
+UNION ALL
+SELECT '301', (SELECT id FROM pms_menu WHERE name = '미니바 와인'), 1, 15000, 'UNPAID', NOW() - INTERVAL '3 hours'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1)
+UNION ALL
+SELECT '402', (SELECT id FROM pms_menu WHERE name = '감자튀김'), 2, 16000, 'PAID', NOW() - INTERVAL '1 day'
+WHERE NOT EXISTS (SELECT 1 FROM pms_receipt LIMIT 1);
 
 -- ============================================================
 -- AI 대화 메시지 시드 데이터 (격리 테스트용)
 -- ============================================================
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM message LIMIT 1) THEN
-        INSERT INTO message (sender_type, content, room_no, guest_id, created_at) VALUES
-            ('GUEST', '안녕하세요, 707호 홍길동입니다. 수건 좀 가져다주세요.', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '2 hours'),
-            ('AI',    '안녕하세요! 요청하신 대로 수건 2장을 하우스키핑 부서에 전달했습니다. 더 필요하신 게 있으신가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '119 minutes'),
-            ('GUEST', '아, 그리고 스테이크 주문도 가능한가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '60 minutes'),
-            ('AI',    '네, 가능합니다! 스테이크 굽기는 어떻게 해드릴까요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '59 minutes');
-    END IF;
-END $$;
+INSERT INTO message (sender_type, content, room_no, guest_id, created_at)
+SELECT 'GUEST', '안녕하세요, 707호 홍길동입니다. 수건 좀 가져다주세요.', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '2 hours'
+WHERE NOT EXISTS (SELECT 1 FROM message LIMIT 1)
+UNION ALL
+SELECT 'AI', '안녕하세요! 요청하신 대로 수건 2장을 하우스키핑 부서에 전달했습니다. 더 필요하신 게 있으신가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '119 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM message LIMIT 1)
+UNION ALL
+SELECT 'GUEST', '아, 그리고 스테이크 주문도 가능한가요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '60 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM message LIMIT 1)
+UNION ALL
+SELECT 'AI', '네, 가능합니다! 스테이크 굽기는 어떻게 해드릴까요?', '707', (SELECT id FROM pms_guest WHERE room_no = '707'), NOW() - INTERVAL '59 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM message LIMIT 1);
