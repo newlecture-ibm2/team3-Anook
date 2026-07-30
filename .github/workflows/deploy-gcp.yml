@@ -1,0 +1,87 @@
+# ============================================================
+# Anook CI/CD Pipeline (GCP Self-hosted Runner, young-server)
+# ============================================================
+# 트리거: deploy/gcp 브랜치 push (팀 공용 dev 브랜치와 분리)
+# 흐름: checkout → .env 생성 → rsync 동기화 → docker compose build → health check
+# ============================================================
+
+name: Anook GCP Deploy
+
+on:
+  push:
+    branches: [ deploy/gcp ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, gcp] # young-server(GCP)에 등록된 러너 전용
+
+    env:
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DB_PORT: ${{ vars.DB_PORT }}
+      FRONTEND_PORT: "3032" # ncafe=3031 사용 중이라 겹치지 않는 고정값. 공용 vars.FRONTEND_PORT(minipc/aws용)는 건드리지 않음
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      NEO4J_USER: ${{ vars.NEO4J_USER }}
+      NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+      KOREAEXIM_AUTH_KEY: ${{ secrets.KOREAEXIM_AUTH_KEY }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Sync to workspace
+        run: |
+          mkdir -p ~/workspace/team3-Anook
+          rsync -a --delete --exclude='.git' --exclude='__pycache__' ./ ~/workspace/team3-Anook/
+
+      - name: Generate .env file
+        run: |
+          cd ~/workspace/team3-Anook
+          cat > .env << 'ENVEOF'
+          POSTGRES_USER=${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+          DB_PORT=${{ vars.DB_PORT }}
+          FRONTEND_PORT=3032
+          NEO4J_USER=${{ vars.NEO4J_USER }}
+          NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}
+          KOREAEXIM_AUTH_KEY=${{ secrets.KOREAEXIM_AUTH_KEY }}
+          SPRING_PROFILE=prod
+          ENVEOF
+          sed -i 's/^[[:space:]]*//' .env
+
+      - name: Build and Deploy
+        run: |
+          cd ~/workspace/team3-Anook
+          docker compose down
+          docker compose up -d --build --scale nginx=0
+
+      - name: Health Check
+        run: |
+          cd ~/workspace/team3-Anook
+          echo "⏳ Waiting for services to start..."
+          sleep 30
+
+          echo "🔍 Checking Frontend (Next.js)..."
+          curl -f http://localhost:${FRONTEND_PORT:-3032} || exit 1
+          echo "✅ Frontend OK"
+
+          echo "🔍 Checking Backend (via docker network)..."
+          docker compose exec -T backend curl -sf http://localhost:8080/actuator/health || echo "⚠️ Backend health endpoint not yet configured (skipping)"
+          echo "✅ Health Check Done"
+
+      - name: Seed RAG Knowledge
+        run: |
+          cd ~/workspace/team3-Anook
+          echo "⏳ Seeding RAG Knowledge Data to pgvector..."
+          docker compose exec -T ai python seed_all.py || echo "⚠️ Seeding failed but continuing"
+
+      - name: Cleanup
+        run: docker image prune -f

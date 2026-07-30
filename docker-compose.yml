@@ -45,6 +45,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     restart: on-failure
+    mem_limit: 100m
     networks:
       - Anook-network
 
@@ -63,6 +64,7 @@ services:
       - KOREAEXIM_AUTH_KEY=${KOREAEXIM_AUTH_KEY}
       - AI_SERVER_URL=http://ai:8000
       - SPRING_DATA_REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS=-Xmx320m -Xms192m
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -74,6 +76,7 @@ services:
       redis:
         condition: service_started
     restart: on-failure              # 실패 시 자동 재시작
+    mem_limit: 500m
     networks:
       - Anook-network
 
@@ -103,6 +106,7 @@ services:
       neo4j:
         condition: service_healthy
     restart: on-failure
+    mem_limit: 400m
     networks:
       - Anook-network
 
@@ -120,6 +124,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+    mem_limit: 300m
     networks:
       - Anook-network
 
@@ -129,6 +134,8 @@ services:
     container_name: anook-neo4j
     environment:
       - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
+      - NEO4J_server_memory_heap_max__size=512m
+      - NEO4J_server_memory_pagecache_size=256m
     # 배포용이므로 7474, 7687 포트를 외부에 열지 않아 보안을 유지합니다.
     volumes:
       - neo4j-data:/data
@@ -140,6 +147,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+    mem_limit: 900m
     networks:
       - Anook-network
 
