@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,7 +12,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @lombok.extern.slf4j.Slf4j
@@ -22,12 +26,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort;
     private final com.anook.backend.guest.application.port.out.GuestRepositoryPort guestRepositoryPort;
 
+    /**
+     * 중복 로그인(JTI) 검사를 면제할 데모 계정 PIN 목록.
+     * 포트폴리오 데모 계정은 여러 방문자가 동시에 사용해야 하므로 단일 세션 강제에서 제외한다.
+     * 비어 있으면(운영 환경) 모든 계정에 기존 중복 로그인 차단이 그대로 적용된다.
+     */
+    private final Set<String> demoStaffPins;
+
     public JwtAuthFilter(JwtProvider jwtProvider,
                          com.anook.backend.staff.application.port.out.StaffRepositoryPort staffRepositoryPort,
-                         com.anook.backend.guest.application.port.out.GuestRepositoryPort guestRepositoryPort) {
+                         com.anook.backend.guest.application.port.out.GuestRepositoryPort guestRepositoryPort,
+                         @Value("${anook.demo.staff-pins:}") String demoStaffPins) {
         this.jwtProvider = jwtProvider;
         this.staffRepositoryPort = staffRepositoryPort;
         this.guestRepositoryPort = guestRepositoryPort;
+        this.demoStaffPins = Arrays.stream(demoStaffPins.split(","))
+                .map(String::trim)
+                .filter(pin -> !pin.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -62,12 +78,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     var staffOpt = staffRepositoryPort.findById(staffId);
                     
                     if (staffOpt.isPresent()) {
-                        String dbJti = staffOpt.get().getJti();
-                        // JTI 비교
-                        if (jti == null || !jti.equals(dbJti)) {
-                            log.warn("중복 로그인 감지: Staff={}, TokenJTI={}, DBJTI={}", identifier, jti, dbJti);
-                            sendErrorResponse(response, com.anook.backend.global.exception.ErrorCode.DUPLICATE_LOGIN);
-                            return; // 필터 체인 중단
+                        // 데모 계정은 여러 방문자가 동시에 접속해야 하므로 JTI 검사를 면제한다.
+                        // (면제하지 않으면 나중에 로그인한 방문자가 앞선 방문자를 튕겨낸다)
+                        if (demoStaffPins.contains(staffOpt.get().getPin())) {
+                            log.debug("데모 계정 - JTI 검사 면제: staffId={}", identifier);
+                        } else {
+                            String dbJti = staffOpt.get().getJti();
+                            // JTI 비교
+                            if (jti == null || !jti.equals(dbJti)) {
+                                log.warn("중복 로그인 감지: Staff={}, TokenJTI={}, DBJTI={}", identifier, jti, dbJti);
+                                sendErrorResponse(response, com.anook.backend.global.exception.ErrorCode.DUPLICATE_LOGIN);
+                                return; // 필터 체인 중단
+                            }
                         }
                     } else {
                         isAuthorized = false;

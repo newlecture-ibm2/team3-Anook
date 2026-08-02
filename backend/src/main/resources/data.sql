@@ -65,6 +65,16 @@ ON CONFLICT (pin) DO NOTHING;
 INSERT INTO staff (name, pin, role_id, department_id) VALUES
     ('김직원', '111111', 1, 'HK')
 ON CONFLICT (pin) DO NOTHING;
+
+-- ============================================================
+-- 포트폴리오 데모 팝업 전용 계정 (PIN: 999999)
+-- 진짜 관리자(000000)는 노출하지 않고, 이 계정만 로그인 팝업에 연결한다.
+-- 여러 방문자가 동시에 사용하므로 JTI(중복 로그인) 검사는
+-- application.yml의 anook.demo.staff-pins 설정으로 면제된다.
+-- ============================================================
+INSERT INTO staff (name, pin, role_id, department_id) VALUES
+    ('데모관리자', '999999', 1, 'FRONT')
+ON CONFLICT (pin) DO NOTHING;
 -- PMS 객실 (6개 타입 · 총 23실)
 INSERT INTO pms_room (number, type) VALUES
     -- 1층: 스탠다드 (기본 객실)
@@ -158,11 +168,14 @@ UPDATE pms_menu SET price_usd = 3.8 WHERE name = '미니바 스낵' AND price_us
 -- ============================================================4ㄱ
 -- PMS 테스트 데이터 (투숙객 인증 테스트용)
 -- ============================================================
+-- 707호는 데모 팝업의 '투숙객으로 체험'이 사용하는 계정이므로
+-- 체크아웃 날짜를 미래로 유지한다. (로그인 자체는 날짜를 검사하지 않지만 PMS 화면 표시용)
 INSERT INTO pms_guest (room_no, name, phone, access_code, checkout_date) VALUES
-    ('707', '김철수', '010-1234-5678', 'test-guest-code-1234', '2024-12-31'),
-    ('101', '테스트', '010-0000-0000', 'test-guest-code-1233', '2024-12-31')
+    ('707', '김철수', '010-1234-5678', 'test-guest-code-1234', '2027-12-31'),
+    ('101', '테스트', '010-0000-0000', 'test-guest-code-1233', '2027-12-31')
 ON CONFLICT (room_no) DO UPDATE SET
-    access_code = EXCLUDED.access_code;
+    access_code   = EXCLUDED.access_code,
+    checkout_date = EXCLUDED.checkout_date;
 
 -- 시퀀스 동기화
 SELECT setval('pms_guest_id_seq', (SELECT COALESCE(MAX(id), 1) FROM pms_guest));

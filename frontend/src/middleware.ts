@@ -14,15 +14,11 @@ export async function middleware(request: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
   const { pathname } = request.nextUrl;
 
-  // 1. 이미 로그인한 사용자가 로그인 페이지에 접근할 때
+  // 1. 로그인 페이지는 세션 유무와 관계없이 항상 렌더링한다.
+  //    이미 로그인한 사용자를 역할별 페이지로 리다이렉트하면
+  //    데모 팝업(처음 방문자를 위한 안내 UI)을 다시 볼 방법이 없어지기 때문이다.
+  //    세션은 파기하지 않으므로, 로그인 화면의 배너에서 "이어서 보기"로 복귀할 수 있다.
   if (pathname === "/login") {
-    if (session.isLoggedIn) {
-      let redirectUrl = "/staff";
-      if (session.role === "FRONTDESK") redirectUrl = "/frontdesk/requests";
-      if (session.role === "GUEST") redirectUrl = "/guest/chat";
-
-      return NextResponse.redirect(new URL(redirectUrl, request.url));
-    }
     return NextResponse.next();
   }
 

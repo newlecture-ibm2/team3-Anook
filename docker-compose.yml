@@ -65,6 +65,8 @@ services:
       - AI_SERVER_URL=http://ai:8000
       - SPRING_DATA_REDIS_HOST=redis
       - JAVA_TOOL_OPTIONS=-Xmx320m -Xms192m
+      # 데모 계정(포트폴리오 팝업)의 중복 로그인 검사 면제 PIN. 빈 값이면 기능 비활성화
+      - DEMO_STAFF_PINS=${DEMO_STAFF_PINS:-999999}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -121,6 +123,9 @@ services:
       - BACKEND_URL=http://backend:8080
       - AI_SERVER_URL=http://ai:8000
       - DISABLE_SECURE_COOKIE=${DISABLE_SECURE_COOKIE:-false}
+      # 데모 로그인 팝업이 사용하는 계정. 클라이언트에 노출되지 않고 서버에서만 읽는다
+      - DEMO_ADMIN_PIN=${DEMO_ADMIN_PIN:-999999}
+      - DEMO_GUEST_CODE=${DEMO_GUEST_CODE:-test-guest-code-1234}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro

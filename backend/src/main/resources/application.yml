@@ -29,6 +29,14 @@ jwt:
   secret: ${JWT_SECRET:default-local-secret-key-for-anook-1234567890}
   expiration-time: 86400000 # 24 hours in ms # 24 hours in ms
 
+# 포트폴리오 데모 계정 설정
+anook:
+  demo:
+    # JTI(중복 로그인) 검사를 면제할 직원 PIN 목록 (쉼표 구분)
+    # 데모 계정은 여러 방문자가 동시에 사용해야 하므로 단일 세션 강제에서 제외한다.
+    # 운영 전환 시 빈 값(DEMO_STAFF_PINS=)으로 두면 기능이 완전히 비활성화된다.
+    staff-pins: ${DEMO_STAFF_PINS:999999}
+
 server:
   port: 8080
 

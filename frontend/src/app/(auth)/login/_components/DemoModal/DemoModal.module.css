@@ -1,0 +1,93 @@
+/* 데모 역할 선택 카드 */
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  width: 100%;
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-24);
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.roleCard:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.roleCard:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* 역할별 강조 색상 (부서 팔레트 재사용) */
+.guest:hover:not(:disabled) {
+  border-color: var(--color-dept-concierge-border);
+}
+
+.admin:hover:not(:disabled) {
+  border-color: var(--color-dept-front-border);
+}
+
+.emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.5rem;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-4);
+}
+
+.guest .emoji {
+  background: var(--color-dept-concierge-bg);
+}
+
+.admin .emoji {
+  background: var(--color-dept-front-bg);
+}
+
+.roleTitle {
+  font: var(--text-h3-bold);
+  color: var(--color-gray-900);
+}
+
+.roleDesc {
+  font: var(--text-caption-regular);
+  color: var(--color-gray-500);
+}
+
+.error {
+  font: var(--text-body-medium);
+  color: var(--color-error);
+  text-align: center;
+}
+
+.hint {
+  font: var(--text-caption-regular);
+  color: var(--color-gray-400);
+  text-align: center;
+}
+
+/* 모바일: 카드를 세로로 쌓는다 */
+@media (max-width: 480px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .roleCard {
+    padding: var(--space-16);
+  }
+}

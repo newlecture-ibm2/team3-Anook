@@ -1,8 +1,10 @@
 .container {
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-16);
   padding: var(--space-24);
   background:
     radial-gradient(at 10% 10%, rgba(255, 228, 196, 0.2) 0px, transparent 50%),
@@ -11,4 +13,91 @@
     radial-gradient(at 10% 90%, rgba(255, 125, 180, 0.12) 0px, transparent 50%),
     radial-gradient(at 50% 50%, rgba(233, 109, 255, 0.05) 0px, transparent 60%),
     linear-gradient(180deg, #F5F5F8 0%, #EFEBF2 30%, #E8E0EC 100%);
+}
+/* ──────────────────────────────────────────────────────────
+   세션 유지 배너
+   미들웨어가 /login에서 리다이렉트하지 않으므로,
+   이미 로그인한 사용자에게 현재 상태와 복귀 수단을 알린다.
+   ────────────────────────────────────────────────────────── */
+.sessionBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-12) var(--space-16);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.sessionText {
+  font: var(--text-caption-regular);
+  color: var(--color-gray-600);
+}
+
+.sessionText strong {
+  color: var(--color-gray-900);
+}
+
+.sessionActions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.sessionPrimary,
+.sessionGhost {
+  font: var(--text-caption-medium);
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.sessionPrimary {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: 1px solid var(--color-primary);
+}
+
+.sessionPrimary:hover {
+  background: var(--color-primary-hover);
+}
+
+.sessionGhost {
+  background: transparent;
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-300);
+}
+
+.sessionGhost:hover {
+  background: var(--color-gray-100);
+  color: var(--color-gray-900);
+}
+
+/* ──────────────────────────────────────────────────────────
+   데모 팝업 재오픈 트리거 (로그인 폼 푸터)
+   ────────────────────────────────────────────────────────── */
+.demoTrigger {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-12);
+  padding: var(--space-8) var(--space-16);
+  font: var(--text-body-medium);
+  color: var(--color-gray-700);
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.demoTrigger:hover {
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-300);
 }
