@@ -22,6 +22,11 @@ export const sessionOptions: SessionOptions = {
   cookieOptions: {
     secure: process.env.NODE_ENV === "production" && process.env.DISABLE_SECURE_COOKIE !== "true",
     httpOnly: true,
+    // 세션 안에 담기는 백엔드 JWT의 만료(24시간)와 일치시킨다.
+    // 이 값을 생략하면 iron-session이 기본 ttl(14일)로 채워넣어,
+    // JWT는 만료됐는데 쿠키는 살아있는 구간(24시간~14일)이 생긴다.
+    // 그 구간에서는 로그인 상태로 보이지만 모든 API가 거부되어 화면이 비어 보인다.
+    maxAge: 60 * 60 * 24,
   },
 };
 

@@ -47,7 +47,15 @@ secure: NODE_ENV === "production" && DISABLE_SECURE_COOKIE !== "true"
 
 - **서버 저장소(Redis/DB) 없음.** iron-session은 세션 내용을 AES로 암호화해 쿠키 자체에 담는다(stateless).
 - 담기는 값: `token`(백엔드 JWT), `role`, `name`, `department`, `departmentId`, `roomNo`, `isLoggedIn`
-- 만료: **쿠키에 maxAge/expires 미지정 → 브라우저 세션 쿠키.** 탭을 다 닫으면 사라지지만, 요즘 브라우저의 "세션 복원" 때문에 실제로는 며칠씩 살아남는다. 안쪽 JWT는 24h ([application.yml:30](backend/src/main/resources/application.yml#L30)).
+- 만료: **24시간** — 쿠키 `maxAge`와 안쪽 JWT([application.yml:30](backend/src/main/resources/application.yml#L30))가 일치한다.
+
+> **정정 이력 (2026-08-03):** 이 문서 초판에는 "maxAge 미지정 → 브라우저 세션 쿠키"라고 적혀 있었으나 **틀린 설명이었다.**
+> iron-session은 `cookieOptions`에 `maxAge` 키가 없으면 기본 `ttl`(14일)에서 60초를 뺀 값을 자동으로 채워넣는다
+> (`node_modules/iron-session/dist/index.cjs`의 `computeCookieMaxAge`).
+> 즉 실제로는 **14일짜리 쿠키**였고, 안쪽 JWT는 24시간이라 **24시간~14일 사이에 "좀비 세션"** 구간이 있었다 —
+> 쿠키가 살아있어 `isLoggedIn: true`인데 JWT는 만료되어 모든 데이터 API가 403이 되는 상태.
+> 미들웨어의 verify 검사도 이걸 못 걸렀다(`/auth/**`가 `permitAll`이라 만료 토큰에도 200을 반환).
+> → `lib/session.ts`에 `maxAge: 60 * 60 * 24`를 명시해 해소함.
 
 ### 1.4 진입 경로와 자동 라우팅 (← 지금 문제의 핵심)
 
